@@ -22,14 +22,16 @@ function intro(){const el=$('#intro');if(P.get('nointro')){el.remove();document.
  const fr=P.get('introframe');if(fr!==null){document.body.classList.add('frozen');el.querySelector('.ihint').hidden=true;const draw=()=>R.frame(+fr);draw();[300,1000,2000,3500].forEach(t=>setTimeout(draw,t));return}
  let done=false,raf=0;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';if(skipped){S.introStop();S.bell()}
   tg.style.opacity='';tg.style.clipPath='';tg.style.visibility='';document.body.classList.remove('cintro');el.classList.add('done');document.body.classList.add('intro-done');$('#home').classList.add('enter');setTimeout(()=>{S.ambience($('#player').hidden&&$('#details').hidden);el.remove()},skipped?600:1800)};
- const start=()=>{el.classList.remove('gated');S.unlock();try{S.introSeq(short)}catch(e){}const t0=performance.now();
-  const loop=now=>{const r=(now-t0)/1000,s=short?R.mapC(r):r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop);
-  setTimeout(()=>{const sk=e=>{if(e.type==='keydown'&&e.repeat)return;e.preventDefault&&e.preventDefault();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);end(true)};addEventListener('keydown',sk,true);el.addEventListener('pointerdown',sk)},250)};
+ let t0=performance.now(),last=0;const hint=el.querySelector('.ihint'),snd=el.querySelector('.isnd');
+ const loop=now=>{const r=(now-t0)/1000,s=short?R.mapC(r):r;last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
  let st='suspended';try{S.unlock();st=S.state()}catch(e){}
- R.frame(0);
- if(st==='running')start();else{el.classList.add('gated');const g=e=>{removeEventListener('keydown',g,true);el.removeEventListener('pointerdown',g);if(e.preventDefault)e.preventDefault();S.unlock();setTimeout(start,30)};addEventListener('keydown',g,true);el.addEventListener('pointerdown',g)}}
+ if(st==='running'){try{S.introSeq(short)}catch(e){}}
+ else if(snd){snd.hidden=false;snd.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();snd.hidden=true;S.unlock();setTimeout(()=>{try{S.introSeq(short,(performance.now()-t0)/1000)}catch(e){}},40)})}
+ R.frame(0);raf=requestAnimationFrame(loop);
+ const sk=e=>{if(e.type==='keydown'&&e.repeat)return;if(e.target===snd)return;e.preventDefault&&e.preventDefault();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);S.unlock();if(snd)snd.hidden=true;end(true)};
+ setTimeout(()=>{if(!done){addEventListener('keydown',sk,true);el.addEventListener('pointerdown',sk)}},250)}
 // first interaction anywhere unlocks audio (autoplay rules)
-addEventListener('pointerdown',()=>{const first=!window._u;window._u=1;S.unlock();if(first&&$('#details').hidden&&$('#player').hidden)S.ambience(true)},{capture:true});
+addEventListener('pointerdown',()=>{const first=!window._u;window._u=1;S.unlock();if(first&&document.body.classList.contains('intro-done')&&$('#details').hidden&&$('#player').hidden)S.ambience(true)},{capture:true});
 /* ---------- DRIVE (live) ---------- */
 const F='id,name,mimeType,size,modifiedTime,parents,thumbnailLink,shortcutDetails';
 async function api(q,pageToken){const u=new URL('https://www.googleapis.com/drive/v3/files');

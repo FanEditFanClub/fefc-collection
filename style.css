@@ -233,3 +233,5 @@ html.no3d #home{perspective:none}html.no3d #hub{-webkit-transform:translate(-50%
 @supports (font-size:1cqh){#hub .hb:not(.hb-logo) span{font-size:clamp(16px,min(30cqh,18.5cqw),130px)}#hub .hb:not(.hb-logo) small{font-size:clamp(10px,min(9cqh,5.5cqw),36px)}}
 #hub .hb-logo img{width:40%}
 
+
+#intro .isnd{position:absolute;right:calc(3vw + 7.5em);bottom:4vh;font:600 clamp(13px,1.8vh,22px) 'Source Sans 3',sans-serif;color:#fffb;padding:.35em .9em;border:1px solid #fff4;border-radius:3px;background:#0006;z-index:3;cursor:pointer}#intro .isnd[hidden]{display:none}

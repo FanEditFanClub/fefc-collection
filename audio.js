@@ -103,10 +103,11 @@ window.SFX = (() => {
       return ctx.state;
     },
     // full intro score; times are seconds of the 26 s story (condensed: 4 s)
-    introSeq(short) {
+    introSeq(short, from) {
       init();
       if (ctx.state !== "running") return;
-      const t0 = ctx.currentTime + 0.05, bus = ctx.createGain();
+      from = from || 0;
+      const t0 = ctx.currentTime + 0.05 - from, now0 = ctx.currentTime, bus = ctx.createGain();
       bus.gain.value = 1;
       bus.connect(master);
       S._bus = bus;
@@ -123,6 +124,7 @@ window.SFX = (() => {
         g.gain.linearRampToValueAtTime(0, b);
       };
       const osc = (type, f, a, b, pk, f2, dst) => {
+        if (b <= now0 + 0.05) return { detune: {} };
         const o = ctx.createOscillator(), g = ctx.createGain();
         o.type = type;
         o.frequency.setValueAtTime(f, a);
@@ -135,6 +137,8 @@ window.SFX = (() => {
         return o;
       };
       const nz = (a, b, pk, type, f1, f2, q) => {
+        if (b <= now0 + 0.05) return;
+        a = Math.max(a, now0);
         const n = noise(b - a + 0.1), fl = ctx.createBiquadFilter(), g = ctx.createGain();
         fl.type = type;
         fl.Q.value = q || 1;
@@ -148,6 +152,7 @@ window.SFX = (() => {
         n.stop(b + 0.1);
       };
       const bell = (a) => {
+        a = Math.max(a, now0 + 0.05);
         [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
           const c = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(), g = ctx.createGain(), s = a + i * 0.03;
           c.frequency.value = f;
