@@ -247,6 +247,14 @@ var __spreadValues = (a, b) => {
       }
     }, sndOn ? 250 : 0);
   }
+  addEventListener("keydown", function kU() {
+    removeEventListener("keydown", kU);
+    if (!window._u) {
+      window._u = 1;
+      S.unlock();
+      if (document.body.classList.contains("intro-done") && $("#details").hidden && $("#player").hidden) S.ambience(true);
+    }
+  });
   addEventListener("pointerdown", () => {
     const first = !window._u;
     window._u = 1;
@@ -324,11 +332,18 @@ var __spreadValues = (a, b) => {
     const h = HUES[hash(parse(f.name).series || f.name) % 8];
     return "radial-gradient(circle at 75% 20%,hsl(".concat(h, " 90% 60% / .85),hsl(").concat(h, " 70% 25%) 45%,#050a14 100%)");
   }
+  const SUPRE = /^\s*\w{1,3}\s*-\s*support\b|support\s+(us|patreon)|patreon|paypal|venmo|donat(e|ion)/i;
+  function isSupportDoc(f) {
+    if (!f || isFolder(f)) return false;
+    const t = f.targetId && items.get(f.targetId);
+    return SUPRE.test(f.name || "") || !!(t && SUPRE.test(t.name || ""));
+  }
   function tile(f, live_) {
-    const fold = isFolder(f), p = parse(f.name), vid = !fold && isVid(f), pp = fold && people[target(f)];
+    const fold = isFolder(f), p = parse(f.name), aud = !fold && !isVid(f) && isAud(f), vid = !fold && (isVid(f) || aud), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
+    if (!fold && !vid && isSupportDoc(f)) return '<button class="ol-tile sup" data-id="'.concat(f.id, '" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small></button>');
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
-    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
+    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<span class="star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-pressed="').concat(on, '" aria-label="').concat(on ? "Remove from My List" : "Add to My List", '" title="').concat(on ? "Starred" : "Star", ' (S)">').concat(on ? "\u2605" : "\u2606", "</span>");
     })() : "").concat(vid ? '<div class="pcap '.concat((() => {
@@ -337,11 +352,19 @@ var __spreadValues = (a, b) => {
     })(), '">').concat(esc(p.raw), "</div>") : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
   }
   async function art(el, f) {
+    if (!f || el.classList.contains("sup")) return;
     let src = null;
     const p = parse(f.name);
     if (isFolder(f) && people[target(f)]) src = people[target(f)].url;
-    else if (!isFolder(f) && isVid(f)) {
-      const ps = posters[f.id] || posters[target(f)];
+    else if (!isFolder(f) && isMedia(f)) {
+      const ps = posters[f.id] || posters[target(f)] || (isAud(f) ? (() => {
+        const sb = kids.get(f.parent) || [], pf = parse(f.name).film;
+        for (const x of sb) {
+          const q = !isFolder(x) && isVid(x) && parse(x.name).film === pf && (posters[x.id] || posters[target(x)]);
+          if (q) return q;
+        }
+        return null;
+      })() : null);
       if (!ps) return;
       src = ps.url;
       el.classList.add("has-poster");
@@ -450,6 +473,19 @@ var __spreadValues = (a, b) => {
     if (/^application\/vnd\.google-apps\.(?!shortcut)/.test(m) || /^(text|image|audio)\/|pdf|html|url/.test(m) || DOCX.test(f.name)) return false;
     return /^video\//.test(m) || /\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name);
   }
+  const AUDX = /\.(mp3|m4a|m4b|aac|flac|wav|ogg|opus)$/i;
+  function isAud(f, d) {
+    if (!f || isFolder(f) || /^\._/.test(f.name || "")) return false;
+    const t = f.targetId;
+    if (t && t !== f.id && (d | 0) < 3) {
+      const x = items.get(t);
+      if (x) return isAud(x, (d | 0) + 1);
+    }
+    if (/^application\/vnd\.google-apps\.(?!shortcut)/.test(f.mimeType || "")) return false;
+    const m = f.mimeType || "";
+    return /^audio\//.test(m) || (!m || m === "application/octet-stream") && AUDX.test(f.name || "");
+  }
+  const isMedia = (f) => isVid(f) || isAud(f);
   const JUNK = /^\.|^thumbs\.db$|^desktop\.ini$/i, _dc = {};
   const mdate = (f) => {
     const D = NA.dates || {}, r = D[f.id] || D[f.targetId || ""] || D[target(f)];
@@ -627,6 +663,7 @@ var __spreadValues = (a, b) => {
     if (need > 1) {
       H.D += need * 1.15;
       [].forEach.call(hb.querySelectorAll(".mc.above"), (c) => c.style.top = c._top(H.D));
+      [].forEach.call(hb.querySelectorAll(".mc.band"), (c) => bandFit(c, H.D, hb._g || 8));
       rb = Math.max(...row.map((c) => c.getBoundingClientRect().bottom));
     }
     tg.style.top = Math.round((rb + gt) / 2 - h / 2) + "px";
@@ -646,6 +683,18 @@ var __spreadValues = (a, b) => {
   }
   addEventListener("resize", () => requestAnimationFrame(placeHeader));
   addEventListener("resize", syncTag);
+  function bandFit(el, D, g) {
+    const sh = Math.max(0, D - 2 * g), tw = el._tw || 0;
+    let w = tw, h = tw * 9 / 16;
+    if (h > sh) {
+      h = sh;
+      w = h * 16 / 9;
+    }
+    el.style.width = w + "px";
+    el.style.height = h + "px";
+    el.style.marginLeft = (tw - w) / 2 + "px";
+    el.style.top = -(D - g) + (sh - h) / 2 + "px";
+  }
   function mosaic() {
     syncTag();
     const M = $("#mosaic");
@@ -697,10 +746,31 @@ var __spreadValues = (a, b) => {
         el._top = (D) => "calc(".concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px - ").concat(Math.max(0, D - 2 * g), "px)");
         el.style.top = el._top(hb._hdr && hb._hdr.D || 2 * g);
       }
+      el.style.height = "auto";
+      el.style.aspectRatio = "16 / 9";
+      el.style.marginTop = (th - tw * 9 / 16) / 2 + "px";
       el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
       hb.appendChild(el);
       cells.push(el);
       budget--;
+    }
+    if (hb._hdr) {
+      hb._g = g;
+      const D = hb._hdr.D;
+      for (let c = -cols; c < 3 + cols && budget > 0; c++) {
+        if (c >= 0 && c <= 2) continue;
+        const ex = c < 0 ? -g : c > 2 ? g : 0, x = hx + c * (tw + g) + ex;
+        if (x + tw < -tw * 0.6 || x > W + tw * 0.6) continue;
+        const el = document.createElement("div");
+        el.className = "mc band";
+        el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);width:calc((100% - ").concat(2 * g, "px) / 3);top:").concat(-(D - g), "px;height:").concat(Math.max(0, D - 2 * g), "px");
+        el._tw = tw;
+        bandFit(el, D, g);
+        el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
+        hb.appendChild(el);
+        cells.push(el);
+        budget--;
+      }
     }
     const pick = () => pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
     const set = (c, first) => {
@@ -920,9 +990,7 @@ var __spreadValues = (a, b) => {
     if (k === "people") return go("#/people");
     if (k === "actors") return virtual([items.get(FOLD.actors) || { id: FOLD.actors, name: "Actors", mimeType: FOLDER }, items.get(FOLD.directors) || { id: FOLD.directors, name: "Directors", mimeType: FOLDER }], "Actors & Directors");
     if (k === "search") {
-      hideHome();
-      open(ROOT, "all");
-      setTimeout(() => $("#q").focus(), 50);
+      openSpot("");
       return;
     }
     if (k === "genres") {
@@ -963,7 +1031,7 @@ var __spreadValues = (a, b) => {
   let lastHub = null;
   function doSearch() {
     S.click();
-    go("#/search");
+    openSpot("");
   }
   function doMute() {
     S.unlock();
@@ -1019,6 +1087,11 @@ var __spreadValues = (a, b) => {
     }
   })();
   document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+      e.preventDefault();
+      doSearch();
+      return;
+    }
     if (e.target.tagName === "INPUT") return;
     if (e.key === "/" || e.keyCode === 403) {
       e.preventDefault();
@@ -1078,7 +1151,7 @@ var __spreadValues = (a, b) => {
   });
   const RF_IDS = { "1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk": 1 };
   function rfKind(f) {
-    if (!f || isFolder(f) || isVid(f)) return null;
+    if (!f || isFolder(f) || isMedia(f)) return null;
     if (/support|patreon|paypal|venmo/i.test(f.name)) return "support";
     if (/\bread (first|me)\b/i.test(f.name)) return "readfirst";
     return null;
@@ -1112,7 +1185,43 @@ var __spreadValues = (a, b) => {
     RFX.open(p);
     setTimeout(() => focusEl($("#rfclose")), 60);
   }
+  let FSFX = {};
+  tmo("data/folder-sfx.json", 1e4).then((m) => {
+    FSFX = m;
+    const pre = () => {
+      Object.keys(m).forEach((k) => Array.isArray(m[k]) && S.loadFx && S.loadFx(m[k]));
+      (m._rules || []).forEach((r) => S.loadFx && S.loadFx(r.files || [r.file]));
+    };
+    (window.requestIdleCallback || setTimeout)(pre, { timeout: 4e3 });
+  }).catch(() => {
+  });
+  function folderSfx(id) {
+    const f = items.get(id);
+    let L = FSFX[id] || f && FSFX[f.name];
+    if (!L && f && Array.isArray(FSFX._rules)) {
+      const names = [];
+      let c = f, n = 0;
+      while (c && n++ < 30) {
+        names.push((c.name || "").toLowerCase());
+        c = items.get(c.parent);
+      }
+      const sc = [...items.values()].find((x) => x.targetId === id && x.id !== id);
+      if (sc) names.push((sc.name || "").toLowerCase());
+      const r = FSFX._rules.find((r2) => {
+        const q = (r2.match || "").toLowerCase();
+        return q && (r2.path ? names : names.slice(0, 1).concat(sc ? [(sc.name || "").toLowerCase()] : [])).some((x) => x.includes(q));
+      });
+      if (r) L = r.files || [r.file];
+    }
+    if (Array.isArray(L) && S.fx) S.fx(L);
+  }
+  addEventListener("hashchange", () => {
+    const m = location.hash.match(/^#\/folder\/([^/?]+)/);
+    if (m && !navBack) folderSfx(decodeURIComponent(m[1]));
+  });
   function go(h) {
+    const m = h.match(/^#\/folder\/([^/?]+)/);
+    if (m) folderSfx(decodeURIComponent(m[1]));
     if (location.hash === h) return route();
     history.pushState({ fefc: 1 }, "", h);
     route();
@@ -1205,13 +1314,12 @@ var __spreadValues = (a, b) => {
       return virtual(list.length ? list : folders, G);
     }
     if (k === "search") {
+      if (!$("#home").hidden && !r[1]) {
+        openSpot("");
+        return;
+      }
       hideHome();
-      open(ROOT, "all");
-      setTimeout(() => {
-        $("#q").value = r[1] || "";
-        $("#q").focus();
-        if (r[1]) $("#q").dispatchEvent(new Event("input"));
-      }, 60);
+      open(ROOT, "all").then(() => openSpot(r[1] || ""));
       return;
     }
     showHome();
@@ -1574,9 +1682,20 @@ var __spreadValues = (a, b) => {
       return x && x[0] || "Uncategorized";
     };
     let groups;
-    if (k === "az") groups = [["", list.sort(nm)]];
-    else if (k === "za") groups = [["", list.sort((a, b) => nm(b, a))]];
-    else if (k === "newest" || k === "oldest") {
+    if (k === "az" || k === "za") {
+      list.sort(k === "az" ? nm : (a, b) => nm(b, a));
+      const L = (f) => {
+        const c = (f.name || "").trim().charAt(0).normalize("NFD").charAt(0).toUpperCase();
+        return /[A-Z]/.test(c) ? c : "#";
+      };
+      const by = /* @__PURE__ */ new Map();
+      list.forEach((f) => {
+        const x = L(f);
+        if (!by.has(x)) by.set(x, []);
+        by.get(x).push(f);
+      });
+      groups = [...by.entries()].map(([x, a]) => [x, a, 1]);
+    } else if (k === "newest" || k === "oldest") {
       const s = k === "newest" ? -1 : 1;
       groups = [["", list.sort((a, b) => (dt(a) < dt(b) ? -s : dt(a) > dt(b) ? s : 0) || nm(a, b))]];
     } else if (k === "size") groups = [["", list.sort((a, b) => (+b.size || 0) - (+a.size || 0) || nm(a, b))]];
@@ -1590,10 +1709,10 @@ var __spreadValues = (a, b) => {
       groups = [...by.entries()].sort((a, b) => (a[0] === "Uncategorized") - (b[0] === "Uncategorized") || a[0].localeCompare(b[0], void 0, { sensitivity: "base" })).map(([x, a]) => [x, a.sort(nm)]);
     }
     const bar = '<div class="sortbar" role="toolbar" aria-label="Sort">'.concat(extra || "").concat(SORTS.map(([v, l]) => '<button class="sortpill'.concat(v === k ? " on" : "", '" data-sort="').concat(v, '" aria-pressed="').concat(v === k, '">').concat(l, "</button>")).join(""), "</div>");
-    g.innerHTML = bar + groups.map(([x, a], n) => (x ? '<div class="ol-div"><span>'.concat(esc(x), "</span><i></i><b>").concat(a.length, "</b></div>") : "") + '<div class="sgrid folds" data-g="'.concat(n, 'f"></div><div class="sgrid vids" data-g="').concat(n, 'v"></div>')).join("");
+    g.innerHTML = bar + groups.map(([x, a, lt], n) => (x ? '<div class="ol-div'.concat(lt ? " letter" : "", '" id="').concat(lt ? "L-" + (x === "#" ? "num" : x) : "", '"><span>').concat(esc(x), "</span><i></i><b>").concat(a.length, "</b></div>") : "") + '<div class="sgrid folds" data-g="'.concat(n, 'f"></div><div class="sgrid vids" data-g="').concat(n, 'v"></div>')).join("");
     const job = ++sortJob, q = [];
     groups.forEach(([x, a], n) => {
-      [["f", a.filter((f) => !isVid(f))], ["v", a.filter((f) => isVid(f))]].forEach(([t, b]) => {
+      [["f", a.filter((f) => !isMedia(f))], ["v", a.filter((f) => isMedia(f))]].forEach(([t, b]) => {
         const el = g.querySelector('[data-g="'.concat(n).concat(t, '"]'));
         if (!b.length) el.remove();
         for (let i = 0; i < b.length; i += 60) q.push([el, b.slice(i, i + 60)]);
@@ -1817,7 +1936,7 @@ var __spreadValues = (a, b) => {
     S.open();
     S.ambience(false);
     const p = parse(f.name), id = target(f), m = meta[f.id] || meta[id] || {};
-    const F2 = meta.films && meta.map && meta.films[meta.map[f.id] || meta.map[id]] || null;
+    const F2 = window.FEX && FEX.film(f.id, id) || meta.films && meta.map && meta.films[meta.map[f.id] || meta.map[id]] || null;
     const film = F2 ? { title: F2.title, year: F2.year, director: (F2.director || []).join(", ") } : m.sourceFilm || { title: p.film, year: p.year };
     const cast = m.cast && m.cast.length ? m.cast : (F2 && F2.cast || []).map((n2) => ({ name: n2 })), desc = m.description, plot = F2 && F2.plot;
     const old = m.ratings || [], R = [];
@@ -1834,13 +1953,17 @@ var __spreadValues = (a, b) => {
     const tr = m.trailer && m.trailer.youtubeId ? { id: m.trailer.youtubeId } : F2 && F2.trailer;
     const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source film.</p>';
     const T = m.title || p.raw, meta1 = [film.year, F2 && F2.runtime ? F2.runtime + " min" : "", F2 && F2.tv ? "TV series" : ""].filter(Boolean).join(" \xB7 ");
-    const PS = posters[f.id] || posters[id], PU = PS && PS.url;
-    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat(R.length ? '<button class="pill p4" data-jump="ratings">Ratings</button>' : "", '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    const PS = posters[f.id] || posters[id], PU = F2 && F2.fx && F2.poster && (!PS || meta.map && (meta.map[f.id] || meta.map[id])) ? F2.poster : PS && PS.url;
+    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
+      const on = !!(window.UD && UD.isStarred(f.id));
+      return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
+    })(), '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     $("#details").hidden = false;
     $("#details").dataset.id = f.id;
     detBackdrop(f, PU);
     const E = episodes(f);
     epWire(f, E);
+    if (window.FEX) FEX.ready.then(() => FEX.enhance(f, { items, target, root: ROOT }, F2));
     $("#details").scrollTop = 0;
     const lb = $("#details .lc-body");
     if (lb) lb.scrollTop = 0;
@@ -1914,6 +2037,11 @@ var __spreadValues = (a, b) => {
     }
     const t = e.target.closest(".ol-tile");
     if (t && !t.dataset.genre && !t.classList.contains("link")) {
+      if (t.dataset.sup) {
+        S.click();
+        go("#/supportus");
+        return;
+      }
       const f = items.get(t.dataset.id);
       if (!f) return;
       if (isFolder(f)) {
@@ -1921,7 +2049,7 @@ var __spreadValues = (a, b) => {
         go("#/folder/" + target(f));
       } else if (rfKind(f)) {
         openDocTile(f);
-      } else if (!isVid(f)) {
+      } else if (!isMedia(f)) {
         S.click();
         window.open("https://drive.google.com/file/d/" + target(f) + "/view", "_blank");
       } else go("#/edit/" + f.id);
@@ -1967,48 +2095,14 @@ var __spreadValues = (a, b) => {
     }
   }
   const looksLikeQuestion = (q) => /\?$/.test(q) || q.trim().split(/\s+/).length >= 3;
-  $("#aiq").addEventListener("click", () => {
-    const q = $("#q").value.trim();
-    if (q) aiSearch(q);
-    else {
-      $("#q").focus();
-      $("#q").placeholder = "Describe a fan edit, then Ask Optimus";
-    }
-  });
-  $("#q").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      const q = e.target.value.trim();
-      if (q && looksLikeQuestion(q)) {
-        e.preventDefault();
-        clearTimeout(qt);
-        aiSearch(q);
-      }
-    }
-  });
   let qt;
-  $("#q").addEventListener("input", (e) => {
-    clearTimeout(qt);
-    qt = setTimeout(async () => {
-      const q = e.target.value.trim().toLowerCase();
-      if (!q) return open(cur);
-      let res = [...items.values()].filter((f) => f.name.toLowerCase().includes(q));
-      if (live) {
-        try {
-          const s = q.replace(/'/g, "\\'");
-          const r = await api("name contains '".concat(s, "' and trashed=false and (mimeType contains 'video/' or mimeType='").concat(SC, "')"));
-          r.files.map((f) => norm(f)).forEach((f) => {
-            if (!items.has(f.id)) {
-              items.set(f.id, f);
-              res.push(f);
-            }
-          });
-        } catch (e2) {
-        }
-      }
-      view = "search";
-      render(res, "Search: " + q, "home");
-    }, 250);
-  });
+  $("#q").readOnly = true;
+  ["focus", "click"].forEach((ev) => $("#q").addEventListener(ev, (e) => {
+    if (spOpen()) return;
+    e.preventDefault();
+    $("#q").blur();
+    openSpot("");
+  }));
   setTimeout(sm2, 0);
   const FOC = ".sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#pframe";
   function visible(el) {
@@ -2180,62 +2274,278 @@ var __spreadValues = (a, b) => {
     b.className = "mi tv-only";
     b.textContent = "\u2315 Search";
     $("#bar").insertBefore(b, $("#q"));
-    const ov = document.createElement("div");
-    ov.id = "tvsearch";
-    ov.hidden = true;
-    ov.innerHTML = '<div class="tvs-box"><label>Search the collection</label><input id="tvs-in" type="search" autocomplete="off" placeholder="Title, or describe a fan edit\u2026"><div class="tvs-row"><button type="button" class="mi" data-tvs="find">Search</button><button type="button" class="mi ai-btn" data-tvs="ai"><img class="opt-btn-av" src="assets/optimus.png" alt="">Ask Fan Edit Optimus</button><button type="button" class="mi" data-tvs="close">Close</button></div></div>';
-    document.body.appendChild(ov);
-    const inp = ov.querySelector("#tvs-in"), close = () => {
-      ov.hidden = true;
-      focusEl(b);
-    }, run = (ai) => {
-      const q = inp.value.trim();
-      ov.hidden = true;
-      if (!q) return focusEl(b);
-      if (ai || looksLikeQuestion(q)) aiSearch(q);
-      else go("#/search/" + encodeURIComponent(q));
-    };
     b.onclick = () => {
-      ov.hidden = false;
-      inp.value = "";
-      setTimeout(() => inp.focus(), 30);
+      S.click();
+      openSpot("");
     };
-    ov.addEventListener("click", (e) => {
-      const x = e.target.closest("[data-tvs]");
-      if (!x) return;
-      x.dataset.tvs === "close" ? close() : run(x.dataset.tvs === "ai");
+  })();
+  const OPT_SVG = '<svg class="opt-svg" viewBox="0 0 160 120" aria-hidden="true">\n<g class="o-pc"><rect x="100" y="52" width="52" height="38" rx="4" fill="#1b222d" stroke="#5a6678" stroke-width="2"/><rect class="o-scr" x="104" y="56" width="44" height="30" rx="2" fill="#2fa8ff"/><g class="o-film"><rect x="108" y="61" width="36" height="20" fill="#0b1626" opacity=".55"/><path d="M122 65l9 6-9 6z" fill="#fff" opacity=".9"/></g><rect x="120" y="90" width="12" height="6" fill="#3a4452"/><rect x="112" y="96" width="28" height="4" rx="2" fill="#3a4452"/></g>\n<g class="o-bot">\n <rect x="30" y="98" width="14" height="18" rx="2" fill="#1f4fa8"/><rect x="50" y="98" width="14" height="18" rx="2" fill="#1f4fa8"/><rect x="28" y="112" width="18" height="6" rx="2" fill="#9aa6b5"/><rect x="48" y="112" width="18" height="6" rx="2" fill="#9aa6b5"/>\n <g class="o-armL"><rect x="12" y="62" width="12" height="32" rx="4" fill="#c81e2b"/><rect x="11" y="90" width="14" height="10" rx="3" fill="#9aa6b5"/></g>\n <g class="o-torso"><rect x="24" y="58" width="46" height="42" rx="5" fill="#d42433"/><rect x="28" y="62" width="17" height="16" rx="2" fill="#7fd3ff" opacity=".85"/><rect x="49" y="62" width="17" height="16" rx="2" fill="#7fd3ff" opacity=".85"/><rect x="34" y="82" width="26" height="14" rx="2" fill="#9aa6b5"/><path d="M38 85h18M38 89h18M38 93h18" stroke="#5a6678" stroke-width="1.5"/></g>\n <g class="o-armR"><rect x="70" y="62" width="12" height="32" rx="4" fill="#c81e2b"/><g class="o-hand"><rect x="69" y="90" width="14" height="10" rx="3" fill="#9aa6b5"/><rect class="o-thumb" x="80" y="84" width="4" height="9" rx="2" fill="#9aa6b5"/></g></g>\n <g class="o-head"><rect x="34" y="40" width="26" height="6" fill="#5a6678"/><path d="M30 14h34v28l-6 6H36l-6-6z" fill="#1f4fa8"/><rect x="29" y="4" width="4" height="16" rx="2" fill="#1f4fa8"/><rect x="61" y="4" width="4" height="16" rx="2" fill="#1f4fa8"/><path d="M36 24h22v14l-4 6H40l-4-6z" fill="#c9d2dd"/><path d="M40 36h14M40 39h14M41 42h12" stroke="#5a6678" stroke-width="1.4"/><g class="o-eyes"><rect x="37" y="26" width="8" height="4" rx="1" fill="#5fd0ff"/><rect x="49" y="26" width="8" height="4" rx="1" fill="#5fd0ff"/></g><rect class="o-scan" x="36" y="25" width="3" height="6" fill="#fff" opacity="0"/><rect x="45" y="16" width="4" height="7" fill="#9aa6b5"/></g>\n</g>\n<g class="o-fx"><text class="o-q" x="74" y="20" font-size="16" fill="#ffd34d" font-weight="800">?</text><g class="o-conf"><circle cx="20" cy="18" r="3" fill="#ffd34d"/><circle cx="84" cy="10" r="3" fill="#2fa8ff"/><circle cx="8" cy="40" r="2.5" fill="#d42433"/><circle cx="90" cy="34" r="2.5" fill="#7cf29a"/></g></g>\n</svg>';
+  let spEl = null, spSeq = 0, spT = null, spAiT = null, spMoodT = null, spIdx = null, spIdxN = -1, spSel = -1, spLastFocus = null;
+  const spOpen = () => !!(spEl && spEl.classList.contains("on"));
+  const spNorm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  function spBuild() {
+    if (spIdx && spIdxN === items.size) return spIdx;
+    spIdxN = items.size;
+    const out = [];
+    items.forEach((f) => {
+      const fold = isFolder(f);
+      if (!fold && !isVid(f)) return;
+      const mm = meta.map && meta.films && meta.films[meta.map[f.id] || meta.map[target(f)]] || {};
+      const p = parse(f.name);
+      const cast = (mm.cast || []).map((c) => c && c.name || c).filter(Boolean), dir = [].concat(mm.director || []).filter(Boolean);
+      out.push({ f, fold, n: spNorm(fold ? f.name : p.raw + " " + (mm.title || "")), cast, dir, cn: cast.map(spNorm), dn: dir.map(spNorm), year: mm.year || p.year || "" });
     });
-    ov.addEventListener("keydown", (e) => {
+    return spIdx = out;
+  }
+  function spThumb(f) {
+    if (isFolder(f)) {
+      const pp = people[target(f)];
+      if (pp) return pp.url;
+      const t = fthumbs[target(f)];
+      return t ? t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=w200&id=" + t : "";
+    }
+    const ps = posters[f.id] || posters[target(f)];
+    return ps ? ps.url : "";
+  }
+  function spLocal(q) {
+    const n = spNorm(q).trim();
+    if (!n) return [];
+    const words = n.split(/\s+/).filter((w) => w.length > 1 || n.length < 3), idx = spBuild(), seenT = /* @__PURE__ */ new Set();
+    const hit = (s) => words.every((w) => s.includes(w)) || s.includes(n);
+    const titles = [], cols = [], ppl = [], peopleHits = {};
+    for (const r of idx) {
+      if (r.fold) {
+        if (hit(r.n)) {
+          (people[target(r.f)] ? ppl : cols).push({ f: r.f, sub: people[target(r.f)] ? people[target(r.f)].role === "director" ? "Director" : "Actor" : "Collection" });
+        }
+        continue;
+      }
+      if (hit(r.n)) {
+        const k = target(r.f);
+        if (!seenT.has(k)) {
+          seenT.add(k);
+          titles.push({ f: r.f, sub: r.year ? String(r.year) : "Fan edit" });
+        }
+      }
+      r.cn.forEach((c, i) => {
+        if (n.length > 2 && c.includes(n)) (peopleHits[r.cast[i]] = peopleHits[r.cast[i]] || []).push(r.f);
+      });
+      r.dn.forEach((c, i) => {
+        if (n.length > 2 && c.includes(n)) (peopleHits[r.dir[i] + " (director)"] = peopleHits[r.dir[i] + " (director)"] || []).push(r.f);
+      });
+    }
+    const byStart = (a, b) => {
+      const an = spNorm(isFolder(a.f) ? a.f.name : parse(a.f.name).raw), bn = spNorm(isFolder(b.f) ? b.f.name : parse(b.f.name).raw);
+      return bn.startsWith(n) - an.startsWith(n) || an.localeCompare(bn);
+    };
+    titles.sort(byStart);
+    cols.sort(byStart);
+    const castFilms = [];
+    Object.keys(peopleHits).slice(0, 4).forEach((nm) => peopleHits[nm].forEach((f) => {
+      const k = target(f);
+      if (!seenT.has(k)) {
+        seenT.add(k);
+        castFilms.push({ f, sub: "with " + nm.replace(" (director)", "") + (/director\)$/.test(nm) ? " (dir.)" : "") });
+      }
+    }));
+    const G = /* @__PURE__ */ new Set();
+    Object.keys(genreMap).forEach((k) => genreMap[k].genres.forEach((g) => G.add(g)));
+    const gen = [...G].filter((g) => spNorm(g).includes(n)).map((g) => ({ genre: g, sub: "Genre" }));
+    return [["Titles", titles.slice(0, 8)], ["Actors & Directors", ppl.slice(0, 4).concat(castFilms.slice(0, 6))], ["Collections", cols.slice(0, 5)], ["Genres", gen.slice(0, 4)]].filter((x) => x[1].length);
+  }
+  const spNatural = (q) => /\?/.test(q) || q.trim().split(/\s+/).length >= 3 || /\b(like|with|where|about|movies?|films?|edits?|similar|starring|featuring|without|who|what|which|something|funny|scary|best)\b/i.test(q);
+  function spRow(x, ai) {
+    const thumb = x.genre ? "" : spThumb(x.f), label = x.genre || (isFolder(x.f) ? x.f.name : parse(x.f.name).raw);
+    return '<button type="button" class="sp-it'.concat(ai ? " ai" : "", '" ').concat(x.genre ? 'data-g="'.concat(esc(x.genre), '"') : 'data-id="'.concat(x.f.id, '"'), '><span class="sp-th').concat(x.genre ? " gn" : "", '">').concat(thumb ? '<img src="'.concat(esc(thumb), '" alt="" loading="lazy" decoding="async">') : x.genre ? "\u2666" : isFolder(x.f) ? "\u25A6" : "\u25B6", '</span><span class="sp-tx"><b>').concat(esc(label), "</b><small>").concat(esc(x.sub || ""), "</small></span></button>");
+  }
+  function spMood(m, hold) {
+    clearTimeout(spMoodT);
+    const o = spEl.querySelector(".sp-opt");
+    const set = () => {
+      o.className = "sp-opt m-" + m;
+    };
+    if (o.dataset.lock && Date.now() < +o.dataset.lock) {
+      spMoodT = setTimeout(set, +o.dataset.lock - Date.now());
+    } else set();
+    if (hold) o.dataset.lock = Date.now() + hold;
+  }
+  function spSay(t) {
+    spEl.querySelector(".sp-say").textContent = t;
+  }
+  function spMk() {
+    spEl = document.createElement("div");
+    spEl.id = "spot";
+    spEl.setAttribute("role", "dialog");
+    spEl.setAttribute("aria-label", "Search");
+    spEl.innerHTML = '<div class="sp-back"></div><div class="sp-panel"><div class="sp-top"><div class="sp-opt m-idle">'.concat(OPT_SVG, '</div><div class="sp-in"><span class="sp-ic">\u2315</span><input id="sp-q" type="search" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="Search titles, actors, genres\u2026 or just describe it"><span class="sp-say">Optimus is watching a fan edit. Type to interrupt him.</span></div></div><div class="sp-res" role="listbox"></div><div class="sp-hint"><span>\u2191\u2193 move</span><span>\u21B5 open</span><span>esc close</span></div></div>');
+    document.body.appendChild(spEl);
+    const inp = spEl.querySelector("#sp-q");
+    spEl.querySelector(".sp-back").addEventListener("click", closeSpot);
+    inp.addEventListener("input", () => {
+      const q = inp.value;
+      const o = spEl.querySelector(".sp-opt");
+      if (q.trim() && /m-idle/.test(o.className)) {
+        spMood("wave", 1300);
+        spSay("Oh! Hi there. What are we looking for?");
+      }
+      if (!q.trim()) {
+        spMood("idle");
+        spSay("Optimus is watching a fan edit. Type to interrupt him.");
+      }
+      clearTimeout(spT);
+      clearTimeout(spAiT);
+      spT = setTimeout(() => spRun(q), 120);
+    });
+    spEl.addEventListener("click", (e) => {
+      const it = e.target.closest(".sp-it");
+      if (it) spGo(it);
+    });
+    spEl.addEventListener("keydown", (e) => {
       const k = e.keyCode;
       e.stopPropagation();
-      const btns = [].slice.call(ov.querySelectorAll("button")), i = btns.indexOf(document.activeElement);
-      if (k === 27 || k === 10009 || k === 461 || e.key === "GoBack") {
+      const L = [].slice.call(spEl.querySelectorAll(".sp-it"));
+      if (k === 27 || k === 10009 || k === 461 || e.key === "GoBack" || e.key === "BrowserBack") {
         e.preventDefault();
-        close();
+        closeSpot();
         return;
       }
-      if (e.target === inp) {
-        if (k === 13) {
-          e.preventDefault();
-          run(false);
-        } else if (k === 40) {
-          e.preventDefault();
-          btns[0].focus();
+      if (k === 40 || k === 38) {
+        e.preventDefault();
+        if (!L.length) return;
+        spSel = k === 40 ? Math.min(L.length - 1, spSel + 1) : spSel - 1;
+        if (spSel < 0) {
+          spSel = -1;
+          inp.focus();
+          spHi(L);
+          return;
+        }
+        spHi(L);
+        L[spSel].focus({ preventScroll: true });
+        L[spSel].scrollIntoView({ block: "nearest" });
+        return;
+      }
+      if (k === 13) {
+        e.preventDefault();
+        const a = document.activeElement && document.activeElement.closest(".sp-it");
+        if (a) return spGo(a);
+        const q = inp.value.trim();
+        if (L[0]) return spGo(L[Math.max(0, spSel)]);
+        if (q) {
+          closeSpot();
+          aiSearch(q);
         }
         return;
       }
-      if (k === 37 || k === 39) {
-        e.preventDefault();
-        (btns[i + (k === 39 ? 1 : -1)] || btns[i]).focus();
-      } else if (k === 38) {
-        e.preventDefault();
+      if (document.activeElement !== inp && e.key && e.key.length === 1) {
         inp.focus();
-      } else if (k === 13) {
-        e.preventDefault();
-        document.activeElement.click();
       }
-    }, true);
-  })();
+    }, false);
+  }
+  function spHi(L) {
+    L.forEach((x, i) => x.classList.toggle("sel", i === spSel));
+  }
+  function spGo(it) {
+    S.click();
+    const g = it.dataset.g, f = it.dataset.id && items.get(it.dataset.id);
+    closeSpot(true);
+    if (g) return go("#/genre/" + encodeURIComponent(g));
+    if (!f) return;
+    if (isFolder(f)) go("#/folder/" + target(f));
+    else go("#/edit/" + f.id);
+  }
+  function spPaint(groups, smart) {
+    const R = spEl.querySelector(".sp-res");
+    let h = groups.map(([t, L]) => '<div class="sp-g"><div class="sp-gh">'.concat(t, "<i>").concat(L.length, "</i></div>").concat(L.map((x) => spRow(x)).join(""), "</div>")).join("");
+    if (smart) h += '<div class="sp-g sp-smart"><div class="sp-gh">\u2726 Smart picks from Optimus'.concat(smart.list ? "<i>".concat(smart.list.length, "</i>") : "", "</div>").concat(smart.wait ? '<div class="sp-wait"><span class="dots"><i></i><i></i><i></i></span> Optimus is scanning the vault\u2026</div>' : smart.list.length ? smart.list.map((x) => spRow(x, 1)).join("") : '<div class="sp-wait">No smart picks this time.</div>', "</div>");
+    R.innerHTML = h;
+    spSel = -1;
+    R.classList.toggle("has", !!h);
+  }
+  function spRun(q) {
+    const my = ++spSeq;
+    q = q.trim();
+    if (!q) {
+      spPaint([]);
+      return;
+    }
+    const groups = spLocal(q), n = groups.reduce((a, g) => a + g[1].length, 0), ai = spNatural(q) || n < 3;
+    spPaint(groups, ai ? { wait: 1 } : null);
+    if (!ai) {
+      spMood(n ? "yay" : "shrug", 0);
+      spSay(n ? "Found ".concat(n, " match").concat(n === 1 ? "" : "es", "!") : "Hmm, nothing for that.");
+      return;
+    }
+    spMood(n ? "yay" : "think");
+    spSay(n ? "".concat(n, " instant match").concat(n === 1 ? "" : "es", ". Asking my smart circuits too\u2026") : "Let me think about that\u2026");
+    spAiT = setTimeout(async () => {
+      if (my !== spSeq) return;
+      spMood("think");
+      try {
+        const r = await fetch("/api/ai-search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q: q.slice(0, 200) }) });
+        if (!r.ok) throw 0;
+        const j = await r.json();
+        if (my !== spSeq) return;
+        const local = /* @__PURE__ */ new Set();
+        groups.forEach((g) => g[1].forEach((x) => x.f && local.add(target(x.f))));
+        const list = (j.results || []).map((x) => ({ f: items.get(x.id), sub: x.reason })).filter((x) => x.f && !local.has(target(x.f))).slice(0, 10);
+        spPaint(groups, { list });
+        const t = n + list.length;
+        spMood(t ? "yay" : "shrug");
+        spSay(t ? list.length ? "I found ".concat(list.length, " smart pick").concat(list.length === 1 ? "" : "s", " for you!") : "Found ".concat(n, " match").concat(n === 1 ? "" : "es", "!") : "Hmm, nothing for that. Try other words?");
+      } catch (e) {
+        if (my !== spSeq) return;
+        spPaint(groups, { list: [] });
+        spMood(n ? "yay" : "shrug");
+        spSay(n ? "Found ".concat(n, " match").concat(n === 1 ? "" : "es", "!") : "Hmm, nothing for that.");
+      }
+    }, 600);
+  }
+  function openSpot(q) {
+    if (!spEl) spMk();
+    spLastFocus = document.activeElement;
+    const inp = spEl.querySelector("#sp-q");
+    spEl.hidden = false;
+    document.body.classList.add("sp-lock");
+    requestAnimationFrame(() => spEl.classList.add("on"));
+    inp.value = q || "";
+    spSeq++;
+    clearTimeout(spAiT);
+    spPaint([]);
+    const o = spEl.querySelector(".sp-opt");
+    o.dataset.lock = 0;
+    spMood("idle");
+    spSay("Optimus is watching a fan edit. Type to interrupt him.");
+    if (q) {
+      inp.dispatchEvent(new Event("input"));
+    }
+    setTimeout(() => {
+      try {
+        inp.focus({ preventScroll: true });
+      } catch (e) {
+        inp.focus();
+      }
+    }, 30);
+  }
+  function closeSpot(nav) {
+    if (!spOpen()) return;
+    spSeq++;
+    clearTimeout(spT);
+    clearTimeout(spAiT);
+    spEl.classList.remove("on");
+    document.body.classList.remove("sp-lock");
+    const inp = spEl.querySelector("#sp-q");
+    inp.blur();
+    setTimeout(() => {
+      if (!spOpen()) spEl.hidden = true;
+    }, 260);
+    if (nav !== true && spLastFocus && document.contains(spLastFocus) && spLastFocus.id !== "q" && spLastFocus !== document.body) {
+      try {
+        spLastFocus.focus({ preventScroll: true });
+      } catch (e) {
+      }
+    }
+  }
+  window.FEFCSpot = { open: openSpot, close: closeSpot };
   const _render = render;
   render = function() {
     _render.apply(this, arguments);
@@ -2268,6 +2578,7 @@ var __spreadValues = (a, b) => {
   };
   const _play = play;
   play = function(f) {
+    S.ambience(false);
     _play(f);
     (() => {
       let b = $("#pshuf");
@@ -2350,6 +2661,11 @@ var __spreadValues = (a, b) => {
     else if (/^#\/(newarrivals|arena|folder)/.test(location.hash)) route();
   }).catch((e) => console.warn(e));
   tmo("data/metadata.json", 8e3).then((m) => meta = m).catch((e) => console.warn(e));
+  {
+    const sx = document.createElement("script");
+    sx.src = "details-extra.js";
+    document.head.appendChild(sx);
+  }
   tmo("data/index.json", 15e3).then((d) => {
     window._idx = d.items;
     if (!live) add(d.items);

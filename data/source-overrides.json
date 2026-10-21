@@ -1,0 +1,4 @@
+{
+  "_doc": "Manual source-title overrides. Key: regex matched against the file name (case-insensitive) or an exact Drive file id. Value: Wikidata QID or IMDb id (tt...). Applied by tools/editinfo.py.",
+  "^Serenity\\b(?!.*2019)": "tt0379786"
+}

@@ -1,0 +1,34 @@
+{
+ "_note": "Folder sound effects: key = Drive folder id or exact folder name; value = list of files, first playable wins (m4a/mp3, wav fallback). Played once each time that folder is opened. \"_rules\": case-insensitive substring match on the folder name (and, with \"path\":true, any ancestor folder name). Exact id/name entries win over rules.",
+ "1DEWGPeFVQYiB-Yj6wYwAWv_jZ4j0fPAQ": [
+  "assets/sfx/james-bond.m4a",
+  "assets/sfx/james-bond.mp3",
+  "assets/sfx/james-bond.wav"
+ ],
+ "James Bond": [
+  "assets/sfx/james-bond.m4a",
+  "assets/sfx/james-bond.mp3",
+  "assets/sfx/james-bond.wav"
+ ],
+ "1wY9t-JoF-Q91IyHYH8yyNZjO2cKh2fYF": [
+  "assets/sfx/tron.m4a",
+  "assets/sfx/tron.mp3",
+  "assets/sfx/tron.wav"
+ ],
+ "Tron": [
+  "assets/sfx/tron.m4a",
+  "assets/sfx/tron.mp3",
+  "assets/sfx/tron.wav"
+ ],
+ "_rules": [
+  {
+   "match": "star wars",
+   "path": true,
+   "files": [
+    "assets/sfx/star-wars.m4a",
+    "assets/sfx/star-wars.mp3",
+    "assets/sfx/star-wars.wav"
+   ]
+  }
+ ]
+}

@@ -20,33 +20,47 @@ window.SFX = (() => {
     o.start(t0);
     o.stop(t0 + d + 0.05);
   }
+  let ambWant = false;
   function ambStart() {
-    if (!ctx || amb) return;
-    const g = ctx.createGain();
-    g.gain.value = 0;
-    g.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 3);
+    if (!ctx || amb || ctx.state !== "running") return;
+    const t = ctx.currentTime, g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.075, t + 5);
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 900;
+    lp.frequency.value = 700;
+    lp.Q.value = 0.4;
     lp.connect(g);
     g.connect(master);
     const lfo = ctx.createOscillator(), lg = ctx.createGain();
-    lfo.frequency.value = 0.07;
-    lg.gain.value = 400;
+    lfo.frequency.value = 0.05;
+    lg.gain.value = 260;
     lfo.connect(lg);
     lg.connect(lp.frequency);
     lfo.start();
-    const os = [55, 82.4, 110, 164.8, 220.5].map((f, i) => {
-      const o = ctx.createOscillator();
-      o.type = i % 2 ? "triangle" : "sawtooth";
-      o.frequency.value = f;
-      o.detune.value = (i - 2) * 6;
-      const v = ctx.createGain();
-      v.gain.value = i > 2 ? 0.25 : 0.5;
-      o.connect(v);
-      v.connect(lp);
-      o.start();
-      return o;
+    const os = [];
+    [[65.41, "sine", 0.55], [98, "triangle", 0.22], [130.81, "sine", 0.28], [246.94, "triangle", 0.07], [369.99, "sine", 0.045], [392, "sine", 0.04]].forEach(([f, ty, v], i) => {
+      [-5, 5].forEach((dt) => {
+        const o = ctx.createOscillator();
+        o.type = ty;
+        o.frequency.value = f;
+        o.detune.value = dt + (i % 2 ? 2 : -2);
+        const vg = ctx.createGain();
+        vg.gain.value = v / 2;
+        if (i >= 3) {
+          const tr = ctx.createOscillator(), tg = ctx.createGain();
+          tr.frequency.value = 0.08 + i * 0.031;
+          tg.gain.value = v / 2 * 0.8;
+          tr.connect(tg);
+          tg.connect(vg.gain);
+          tr.start();
+          os.push(tr);
+        }
+        o.connect(vg);
+        vg.connect(lp);
+        o.start();
+        os.push(o);
+      });
     });
     amb = { g, os: [...os, lfo] };
   }
@@ -54,16 +68,28 @@ window.SFX = (() => {
     if (!amb) return;
     const a = amb;
     amb = null;
-    a.g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
-    setTimeout(() => a.os.forEach((o) => o.stop()), 700);
+    const t = ctx.currentTime;
+    a.g.gain.cancelScheduledValues(t);
+    a.g.gain.setValueAtTime(a.g.gain.value, t);
+    a.g.gain.linearRampToValueAtTime(0, t + 0.8);
+    setTimeout(() => a.os.forEach((o) => {
+      try {
+        o.stop();
+      } catch (e) {
+      }
+    }), 900);
   }
   const INTRO_MP3 = "assets/intro.mp3?v=352e1617";
   const S = {
     INTRO_MP3,
     unlock() {
       init();
-      if (ctx.state === "suspended") ctx.resume();
+      if (ctx.state === "suspended") ctx.resume().then(() => {
+        if (ambWant) ambStart();
+      }, () => {
+      });
       started = true;
+      if (ambWant) ambStart();
     },
     get muted() {
       return muted;
@@ -75,9 +101,14 @@ window.SFX = (() => {
       return muted;
     },
     ambience(on) {
-      if (amb && !on) ambStop();
+      ambWant = !!on && document.body.classList.contains("intro-done");
+      if (!ambWant) {
+        ambStop();
+        return;
+      }
+      init();
+      ambStart();
     },
-    /* ambient drone disabled */
     move() {
       if (!started) return;
       tone(1400, ctx.currentTime, 0.06, "sine", 0.05);
@@ -99,6 +130,40 @@ window.SFX = (() => {
       const t = ctx.currentTime, seq = [[1320, 1760], [988, 1480], [1760, 1175]][n % 3];
       tone(seq[0], t, 0.07, "square", 0.04);
       tone(seq[1], t + 0.08, 0.09, "square", 0.04);
+    },
+    /* one-shot sound effects (Carson-supplied files), decoded once and cached; ducks the ambient bed while playing */
+    _fx: {},
+    loadFx(list) {
+      init();
+      const k = list.join("|");
+      if (S._fx[k]) return S._fx[k];
+      const tryN = (i) => i >= list.length ? Promise.resolve(null) : fetch(list[i]).then((r) => {
+        if (!r.ok) throw 0;
+        return r.arrayBuffer();
+      }).then((a) => new Promise((res, rej) => ctx.decodeAudioData(a, res, rej))).catch(() => tryN(i + 1));
+      return S._fx[k] = tryN(0);
+    },
+    fx(list) {
+      if (muted) return;
+      init();
+      if (ctx.state === "suspended") ctx.resume();
+      S.loadFx(list).then((b) => {
+        if (!b || muted) return;
+        const src = ctx.createBufferSource(), g = ctx.createGain();
+        g.gain.value = 1;
+        src.buffer = b;
+        src.connect(g);
+        g.connect(master);
+        const t = ctx.currentTime;
+        if (amb) {
+          amb.g.gain.cancelScheduledValues(t);
+          amb.g.gain.setValueAtTime(amb.g.gain.value, t);
+          amb.g.gain.linearRampToValueAtTime(0.012, t + 0.25);
+          amb.g.gain.setValueAtTime(0.012, t + b.duration);
+          amb.g.gain.linearRampToValueAtTime(0.075, t + b.duration + 2.5);
+        }
+        src.start(t);
+      });
     },
     state() {
       init();

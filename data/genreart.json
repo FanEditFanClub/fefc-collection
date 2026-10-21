@@ -11,18 +11,21 @@
  },
  "Family": {
   "folder": "Harry Potter and The Sorcerer's Stone - Extended Edition - ADigitalMan Cut - Fan Edit",
-  "img": "assets/genres/family.jpg",
-  "src0": "assets/clips/132.jpg"
+  "img": "assets/genres/family.webp?v=3",
+  "src0": "assets/clips/132.jpg",
+  "credit": "Still from Father of the Bride (1991) via TMDB (themoviedb.org) backdrops"
  },
  "Fantasy": {
   "folder": "The Lord of The Rings - The Reinvented Series - Season 3 Episode 6 - There And Back Again - Fan Edit",
-  "img": "assets/genres/fantasy.jpg",
-  "src0": "assets/clips/20.jpg"
+  "img": "assets/genres/fantasy.webp?v=3",
+  "src0": "assets/clips/20.jpg",
+  "credit": "Still from The Lord of the Rings: The Fellowship of the Ring (2001) via TMDB (themoviedb.org) backdrops"
  },
  "Action": {
   "folder": "She-Hulk: Attorney at Law - Episode 5-6 - Titania Cut - Fan Edit",
-  "img": "assets/genres/action.jpg",
-  "src0": "assets/clips/9.jpg"
+  "img": "assets/genres/action.webp?v=3",
+  "src0": "assets/clips/9.jpg",
+  "credit": "Still from Die Hard (1988) via TMDB (themoviedb.org) backdrops"
  },
  "Drama": {
   "folder": "Battlestar Galactica - Season 1 Episode 5 - You Cant Go Home Again - Extended Episode - Fan Edit",
@@ -43,13 +46,15 @@
  },
  "Comedy": {
   "folder": "S1E03 The Reporter (Extended)",
-  "img": "assets/genres/comedy.jpg",
-  "src0": "assets/clips/83.jpg"
+  "img": "assets/genres/comedy.webp?v=3",
+  "src0": "assets/clips/83.jpg",
+  "credit": "Still from Dumb and Dumber (1994) via TMDB (themoviedb.org) backdrops"
  },
  "Superhero": {
   "folder": "The Avengers: Earth's Mightiest Heroes (Animated Series) - Season 1 - Movie Fan Edit",
-  "img": "assets/genres/superhero.jpg",
-  "src0": "assets/clips/50.jpg"
+  "img": "assets/genres/superhero.webp?v=3",
+  "src0": "assets/clips/50.jpg",
+  "credit": "Still from The Avengers (2012) via TMDB (themoviedb.org) backdrops"
  },
  "Animation": {
   "folder": "Naruto - Ocean Cut - Womp Rat Remix - Part 1 - Hell - Fan Edit.mp4",
@@ -59,8 +64,9 @@
  },
  "Western": {
   "folder": "Firefly - The Serenity Chronicles I - Firefly - Movie Fan Edit.mp4",
-  "img": "assets/genres/western.jpg",
-  "src0": "assets/posters/serenity-chronicles-i-firefly.webp"
+  "img": "assets/genres/western.webp?v=3",
+  "src0": "assets/posters/serenity-chronicles-i-firefly.webp",
+  "credit": "Still from Back to the Future Part III (1990) via TMDB (themoviedb.org) backdrops"
  },
  "Documentary": {
   "folder": "",
