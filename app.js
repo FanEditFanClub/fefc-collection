@@ -757,7 +757,8 @@ var __spreadValues = (a, b) => {
     if (hb._hdr) {
       hb._g = g;
       const D = hb._hdr.D;
-      for (let c = -cols; c < 3 + cols && budget > 0; c++) {
+      let bb = 12;
+      for (let c = -cols; c < 3 + cols && bb > 0; c++) {
         if (c >= 0 && c <= 2) continue;
         const ex = c < 0 ? -g : c > 2 ? g : 0, x = hx + c * (tw + g) + ex;
         if (x + tw < -tw * 0.6 || x > W + tw * 0.6) continue;
@@ -769,7 +770,7 @@ var __spreadValues = (a, b) => {
         el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
         hb.appendChild(el);
         cells.push(el);
-        budget--;
+        bb--;
       }
     }
     const pick = () => pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;

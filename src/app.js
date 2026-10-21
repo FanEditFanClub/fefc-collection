@@ -160,9 +160,9 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
   el.style.height='auto';el.style.aspectRatio='16 / 9';el.style.marginTop=((th-tw*9/16)/2)+'px';
   el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);budget--}
  // band beside the headline: fill its left/right sides with tiles (text area itself stays clear)
- if(hb._hdr){hb._g=g;const D=hb._hdr.D;for(let c=-cols;c<3+cols&&budget>0;c++){if(c>=0&&c<=2)continue;const ex=(c<0?-g:c>2?g:0),x=hx+c*(tw+g)+ex;if(x+tw<-tw*.6||x>W+tw*.6)continue;
+ if(hb._hdr){hb._g=g;const D=hb._hdr.D;let bb=12;for(let c=-cols;c<3+cols&&bb>0;c++){if(c>=0&&c<=2)continue;const ex=(c<0?-g:c>2?g:0),x=hx+c*(tw+g)+ex;if(x+tw<-tw*.6||x>W+tw*.6)continue;
   const el=document.createElement('div');el.className='mc band';el.style.cssText=`left:calc(${c} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ex}px);width:calc((100% - ${2*g}px) / 3);top:${-(D-g)}px;height:${Math.max(0,D-2*g)}px`;el._tw=tw;bandFit(el,D,g);
-  el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);budget--}}
+  el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);bb--}}
  const pick=()=>pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
  const set=(c,first)=>{const v=pick(),layers=c.children,on=c._on?0:1;c._on=!c._on;const L=layers[on];
   if(v){L.src='https://drive.google.com/thumbnail?sz=w480&id='+v.target;c.dataset.id=v.id}else{c.style.background='radial-gradient(circle at 60% 30%,hsl('+(Math.random()*360|0)+' 70% 45%),#050a14 80%)'}
