@@ -236,13 +236,20 @@ var __spreadValues = (a, b) => {
     return "radial-gradient(circle at 75% 20%,hsl(".concat(h, " 90% 60% / .85),hsl(").concat(h, " 70% 25%) 45%,#050a14 100%)");
   }
   function tile(f, live_) {
-    const fold = isFolder(f), p = parse(f.name);
-    return '<button class="ol-tile '.concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : fold ? "COLLECTION" : "FAN EDIT", '</span><div class="nm">').concat(esc(fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
+    const fold = isFolder(f), p = parse(f.name), vid = !fold && isVid(f), pp = fold && people[target(f)];
+    const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
+    return '<button class="ol-tile '.concat(cls, " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", '</span><div class="nm">').concat(esc(pp ? pp.name : fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
   }
   async function art(el, f) {
     let src = null;
     const p = parse(f.name);
-    if (isFolder(f)) {
+    if (isFolder(f) && people[target(f)]) src = people[target(f)].url;
+    else if (!isFolder(f) && isVid(f)) {
+      const ps = posters[f.id] || posters[target(f)];
+      if (!ps) return;
+      src = ps.url;
+      el.classList.add("has-poster");
+    } else if (isFolder(f)) {
       const fid = target(f);
       let t = fthumbs[fid];
       if (!t) {
@@ -284,7 +291,7 @@ var __spreadValues = (a, b) => {
   }
   const FOLD = { readFirst: "1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT", collections: "1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB", tbc: "1503Wl56hzRppaIFcQisvQksOaeYOEjnk", actors: "1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS", directors: "1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib" };
   const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<svg viewBox="0 0 24 24"><circle cx="15" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" fill="currentColor"/></svg>' }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub", sub: "One-time donation", logo: "<b>P</b>" }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: "<b>V</b>" }];
-  let mosaicList = [], mosaicTimer = null, genreMap = {}, fthumbs = {};
+  let posters = {}, people = {}, mosaicList = [], mosaicTimer = null, genreMap = {}, fthumbs = {};
   const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
   function topFolder(f) {
     let x = f, guard = 0;
@@ -680,13 +687,14 @@ var __spreadValues = (a, b) => {
     $("#arena").innerHTML = mode !== "collections" ? recent.map((f) => tile(f, 1)).join("") : "";
     const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
     $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
+    const docs = vids2.filter((f) => !isVid(f)), evs = vids2.filter(isVid), sec = (k, l, a) => a.length ? '<div class="ol-div"><span>'.concat(l, "</span><i></i><b>").concat(a.length, '</b></div><div class="sgrid ').concat(k, '">').concat(a.map((f) => tile(f)).join(""), "</div>") : "";
     const g = $("#grid");
     if (mode === "arena") {
       $("#arena").innerHTML = "";
       NA.render(window._idx ? Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f)) : all, tile, art, (i) => items.get(i));
     } else {
-      g.className = "";
-      g.innerHTML = all.map((f) => tile(f)).join("");
+      g.className = "sectioned";
+      g.innerHTML = sec("folds", "COLLECTIONS", fold.filter((f) => !people[target(f)])) + sec("vids", "PEOPLE", fold.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach((el) => art(el, items.get(el.dataset.id)));
     status(all.length ? "" : live ? "Empty" : "Not in saved index \u2014 sign in for live Drive");
@@ -955,6 +963,26 @@ var __spreadValues = (a, b) => {
       const f = items.get(el.dataset.id);
       if (f && isFolder(f) && !el.querySelector("img")) art(el, f);
     });
+  }).catch(() => {
+  });
+  const reArt = () => document.querySelectorAll("#grid .ol-tile,#arena .ol-tile").forEach((el) => {
+    const f = items.get(el.dataset.id);
+    if (f && !el.querySelector("img")) {
+      if (isFolder(f) && people[target(f)]) {
+        el.outerHTML = tile(f);
+        const n = document.querySelector('[data-id="' + f.id + '"]');
+        n && art(n, f);
+      } else art(el, f);
+    }
+  });
+  tmo("data/posters.json", 15e3).then((m) => {
+    posters = m;
+    reArt();
+  }).catch(() => {
+  });
+  tmo("data/people.json", 1e4).then((m) => {
+    people = m;
+    reArt();
   }).catch(() => {
   });
   tmo("data/genres.json", 1e4).then((g) => {
