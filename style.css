@@ -677,3 +677,29 @@ body.tv .priv-box h2{font-size:4vh}body.tv .priv-box p{font-size:2.2vh}body.tv .
 .ol-tile .lockb{position:absolute;right:8px;bottom:34px;z-index:4;font-size:16px;background:#000a;border:1px solid #ff9c00aa;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
 /* Optimus popcorn bowl: shown while he watches */
 .o-pop{transition:opacity .3s ease}.sp-opt:not(.m-idle) .o-pop{opacity:0}
+.ol-tile.fecc{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em;text-align:center;background:linear-gradient(180deg,#2c333e,#0b0e13);border:2px solid #9fb6cf;color:#fff;font-family:'Source Sans 3','Segoe UI','PT Sans',sans-serif;padding:10px;min-width:0;max-width:100%;overflow:hidden;box-sizing:border-box;position:relative}
+.ol-tile.fecc .fecc-t{font-size:clamp(20px,2.2vw,40px);font-weight:700;line-height:1.02;text-shadow:0 1px 3px #000}
+.ol-tile.fecc .fecc-c{color:#ffa31a;font-size:clamp(11px,.95vw,18px);font-weight:600}
+body.tv .ol-tile.fecc .fecc-t{font-size:3.4vh}body.tv .ol-tile.fecc .fecc-c{font-size:1.7vh}
+/* Optimus photo avatar (real Tesla Optimus photos; poses = subtle motion) */
+.sp-opt .op-ph{position:relative;width:100%;height:100%}
+.op-ph img{position:absolute;display:block;pointer-events:none}
+.op-watch{inset:0;width:100%;height:100%;object-fit:cover;object-position:30% 30%;border-radius:10px;transition:opacity .35s ease}
+.op-fig{position:absolute;left:50%;top:4%;height:150%;aspect-ratio:272/698;transform:translateX(-50%);transform-origin:50% 85%;opacity:0;transition:opacity .35s ease,transform .45s ease}
+.op-full{inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 4px #000a)}
+.sp-opt .op-ph{overflow:hidden;border-radius:10px}
+.op-glow{position:absolute;left:30%;top:0;width:40%;height:9%;border-radius:50%;background:radial-gradient(#fff 0,#bfe9ff88 40%,transparent 70%);mix-blend-mode:screen;opacity:0}
+.op-cue{position:absolute;right:2px;top:0;font-size:18px;line-height:1;opacity:0;transition:opacity .3s;filter:drop-shadow(0 1px 2px #000)}
+.sp-opt:not(.m-idle) .op-watch{opacity:0}.sp-opt:not(.m-idle) .op-fig{opacity:1}
+.m-idle .op-watch{animation:opw 6s ease-in-out infinite}@keyframes opw{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+.m-wave .op-fig{animation:opwave 1.1s ease-in-out infinite}.m-wave .op-cue{opacity:1}.m-wave .op-cue::after{content:'👋'}
+@keyframes opwave{0%,100%{transform:translateX(-50%) rotate(-4deg)}50%{transform:translateX(-50%) rotate(4deg)}}
+.m-think .op-fig{animation:opbob 1.6s ease-in-out infinite}.m-think .op-glow{animation:opglow 1.2s ease-in-out infinite}.m-think .op-cue{opacity:1}.m-think .op-cue::after{content:'💭'}
+@keyframes opbob{0%,100%{transform:translateX(-50%) translateY(0) rotate(-2deg)}50%{transform:translateX(-50%) translateY(-3%) rotate(2deg)}}
+@keyframes opglow{0%,100%{opacity:.15}50%{opacity:.9}}
+.m-yay .op-fig{animation:opyay .6s ease-out 2}.m-yay .op-glow{opacity:.7}.m-yay .op-cue{opacity:1}.m-yay .op-cue::after{content:'👍'}
+@keyframes opyay{0%,100%{transform:translateX(-50%) scale(1)}40%{transform:translateX(-50%) translateY(-6%) scale(1.06)}}
+.m-shrug .op-fig{animation:opshrug 1.4s ease-in-out infinite}.m-shrug .op-cue{opacity:1}.m-shrug .op-cue::after{content:'🤷'}
+@keyframes opshrug{0%,100%{transform:translateX(-50%) rotate(0)}50%{transform:translateX(-50%) translateY(2%) rotate(-6deg)}}
+body.tv .op-cue{font-size:3vh}
+@media (prefers-reduced-motion:reduce){.op-ph *{animation:none!important}}
