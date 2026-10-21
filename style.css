@@ -219,3 +219,10 @@ body.intro-done:not(.at-home) #tagline{visibility:hidden}
 body.cintro #tagline{animation:none!important;opacity:0;visibility:hidden}
 .ol-tile .art:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000e 0,#0008 35%,#0000 65%)}
 .ol-tile .nm{text-shadow:0 1px 3px #000,0 0 10px #000}
+/* ---------- OnLive-style 3D tilt of the dashboard plane (hub + edge mosaic share it) ---------- */
+@supports ((transform:rotateX(1deg)) and (perspective:1px)) or (-webkit-perspective:1px){
+ #home{-webkit-perspective:var(--tilt-p,95vh);perspective:var(--tilt-p,95vh);-webkit-perspective-origin:50% 52%;perspective-origin:50% 52%}
+ #hub{-webkit-transform:translate(-50%,-50%) rotateX(var(--tilt-x,11deg));transform:translate(-50%,-50%) rotateX(var(--tilt-x,11deg));-webkit-transform-style:preserve-3d;transform-style:preserve-3d;-webkit-backface-visibility:hidden}
+ #hub .hb{-webkit-backface-visibility:hidden;backface-visibility:hidden}
+}
+html.no3d #home{perspective:none}html.no3d #hub{-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%)}

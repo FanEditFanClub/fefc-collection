@@ -46,6 +46,10 @@ var __spreadValues = (a, b) => {
     return { title: parts.length > 1 ? parts.slice(1).join(" \xB7 ") : parts[0], series: parts.length > 1 ? parts[0] : "", raw: base, film: parts[0].replace(/\s*\(\d{4}\)\s*/, ""), year: (base.match(/\((\d{4})\)/) || [])[1] };
   }
   const sz = (b) => b ? (b / 1e9).toFixed(2) + " GB" : "";
+  (function() {
+    var d = document.createElement("div").style;
+    if (!("perspective" in d || "webkitPerspective" in d)) document.documentElement.classList.add("no3d");
+  })();
   function intro() {
     const el = $("#intro");
     if (P.get("nointro")) {
@@ -327,17 +331,21 @@ var __spreadValues = (a, b) => {
     M.innerHTML = "";
     [].slice.call(document.querySelectorAll("#hub .mc")).forEach((x) => x.remove());
     const cells = [];
-    const H = $("#home"), hb = $("#hub"), W = H.clientWidth, Ht = H.clientHeight, HR = H.getBoundingClientRect(), BR = hb.getBoundingClientRect(), hw = BR.width, hh = BR.height;
+    const H = $("#home"), hb = $("#hub");
+    const _tf = hb.style.transform;
+    hb.style.transform = "translate(-50%,-50%)";
+    const W = H.clientWidth, Ht = H.clientHeight, HR = H.getBoundingClientRect(), BR = hb.getBoundingClientRect(), hw = BR.width, hh = BR.height;
     const hx = BR.left - HR.left, hy = BR.top - HR.top, g = parseFloat(getComputedStyle(hb).columnGap) || 8;
     const tw = (hw - 2 * g) / 3, th = (hh - 2 * g) / 3;
     const tg = $("#tagline span"), tr = tg ? tg.getBoundingClientRect() : null, hr = H.getBoundingClientRect();
     const tb = tr && tr.height ? { l: tr.left - hr.left - g, t: tr.top - hr.top - g, r: tr.right - hr.left + g, b: tr.bottom - hr.top + g } : null;
+    hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 1;
     let budget = tv ? 40 : 90;
     for (let r = -rows; r < 3 + rows && budget > 0; r++) for (let c = -cols; c < 3 + cols && budget > 0; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
-      if (box.r < 0 || box.b < 0 || box.l > W || box.t > Ht || ov(box, hub2) || tb && ov(box, tb)) continue;
+      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || tb && ov(box, tb)) continue;
       const el = document.createElement("div");
       el.className = "mc";
       const ex = c < 0 ? -g : c > 2 ? g : 0, ey = r < 0 ? -g : r > 2 ? g : 0;
