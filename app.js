@@ -315,7 +315,7 @@ var __spreadValues = (a, b) => {
     return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? '<span class="star'.concat(window.UD && UD.isStarred(f.id) ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-label="Star" title="Star (S)">\u2605</span>') : "").concat(vid ? '<div class="pcap '.concat((() => {
       const n = p.raw.length;
       return n > 90 ? "c4" : n > 55 ? "c3" : n > 30 ? "c2" : "c1";
-    })(), '">').concat(esc(p.raw)).concat(f.size ? "<small>".concat(sz(f.size), "</small>") : "", "</div>") : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
+    })(), '">').concat(esc(p.raw), "</div>") : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
   }
   async function art(el, f) {
     let src = null;
