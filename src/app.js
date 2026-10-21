@@ -330,14 +330,14 @@ let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.
 document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi'))S.move()});
 /* ---------- AI search (server-side Gemini via /api/ai-search; key never in the browser) ---------- */
 let aiSeq=0;
-async function aiSearch(q){q=(q||'').trim();if(!q)return;const my=++aiSeq;pageShell('Ask AI','Looking for: “'+q+'”');const g=$('#grid');g.className='sectioned';g.innerHTML='<div class="ai-wait">✦ Searching the collection…</div>';
+async function aiSearch(q){q=(q||'').trim();if(!q)return;const my=++aiSeq;pageShell('Ask Fan Edit Optimus','Looking for: “'+q+'”');const g=$('#grid');g.className='sectioned';g.innerHTML=`<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble thinking"><span class="dots"><i></i><i></i><i></i></span> Searching the vault for “${esc(q)}”…</div></div>`;
  try{const r=await fetch('/api/ai-search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q:q.slice(0,200)})});if(!r.ok)throw 0;const j=await r.json();if(my!==aiSeq)return;
   const res=(j.results||[]).map(x=>({f:items.get(x.id),why:x.reason})).filter(x=>x.f);if(!res.length)throw 0;
-  $('#sec2').textContent=res.length+' AI matches for “'+q+'”';
-  g.innerHTML=`<div class="ol-div"><span>AI MATCHES</span><i></i><b>${res.length}</b></div><div class="sgrid vids ai-res">${res.map(x=>`<div class="ai-cell">${tile(x.f)}<p class="ai-why">${esc(x.why)}</p></div>`).join('')}</div>`;g.querySelectorAll('.ol-tile').forEach(lazyArt)}
+  $('#sec2').textContent=res.length+' picks from Fan Edit Optimus for “'+q+'”';
+  const intro=j.intro||`I found ${res.length} fan edit${res.length===1?'':'s'} for you!`;g.innerHTML=`<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble">${esc(intro)}</div></div><div class="ol-div"><span>OPTIMUS PICKS</span><i></i><b>${res.length}</b></div><div class="sgrid vids ai-res">${res.map(x=>`<div class="ai-cell">${tile(x.f)}<p class="ai-why"><img src="assets/optimus.png" alt="" class="opt-mini">${esc(x.why)}</p></div>`).join('')}</div>`;g.querySelectorAll('.ol-tile').forEach(lazyArt)}
  catch(e){if(my!==aiSeq)return;open(ROOT,'all').then(()=>{$('#q').value=q;$('#q').dispatchEvent(new Event('input'))})}}
 const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
-$('#aiq').addEventListener('click',()=>{const q=$('#q').value.trim();if(q)aiSearch(q);else{$('#q').focus();$('#q').placeholder='Describe a fan edit, then Ask AI'}});
+$('#aiq').addEventListener('click',()=>{const q=$('#q').value.trim();if(q)aiSearch(q);else{$('#q').focus();$('#q').placeholder='Describe a fan edit, then Ask Optimus'}});
 $('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){const q=e.target.value.trim();if(q&&looksLikeQuestion(q)){e.preventDefault();clearTimeout(qt);aiSearch(q)}}});
 let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(async()=>{const q=e.target.value.trim().toLowerCase();if(!q)return open(cur);
  let res=[...items.values()].filter(f=>f.name.toLowerCase().includes(q));
@@ -387,7 +387,7 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
 document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('.ol-tile');if(t)lastTile=t});
 /* TV: search input becomes a 'Search' button that opens an on-screen search overlay */
 (function(){const b=document.createElement('button');b.id='tvq';b.type='button';b.className='mi tv-only';b.textContent='⌕ Search';$('#bar').insertBefore(b,$('#q'));
- const ov=document.createElement('div');ov.id='tvsearch';ov.hidden=true;ov.innerHTML='<div class="tvs-box"><label>Search the collection</label><input id="tvs-in" type="search" autocomplete="off" placeholder="Title, or describe a fan edit…"><div class="tvs-row"><button type="button" class="mi" data-tvs="find">Search</button><button type="button" class="mi ai-btn" data-tvs="ai">✦ Ask AI</button><button type="button" class="mi" data-tvs="close">Close</button></div></div>';document.body.appendChild(ov);
+ const ov=document.createElement('div');ov.id='tvsearch';ov.hidden=true;ov.innerHTML='<div class="tvs-box"><label>Search the collection</label><input id="tvs-in" type="search" autocomplete="off" placeholder="Title, or describe a fan edit…"><div class="tvs-row"><button type="button" class="mi" data-tvs="find">Search</button><button type="button" class="mi ai-btn" data-tvs="ai"><img class="opt-btn-av" src="assets/optimus.png" alt="">Ask Fan Edit Optimus</button><button type="button" class="mi" data-tvs="close">Close</button></div></div>';document.body.appendChild(ov);
  const inp=ov.querySelector('#tvs-in'),close=()=>{ov.hidden=true;focusEl(b)},run=ai=>{const q=inp.value.trim();ov.hidden=true;if(!q)return focusEl(b);if(ai||looksLikeQuestion(q))aiSearch(q);else go('#/search/'+encodeURIComponent(q))};
  b.onclick=()=>{ov.hidden=false;inp.value='';setTimeout(()=>inp.focus(),30)};
  ov.addEventListener('click',e=>{const x=e.target.closest('[data-tvs]');if(!x)return;x.dataset.tvs==='close'?close():run(x.dataset.tvs==='ai')});

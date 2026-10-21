@@ -1474,10 +1474,10 @@ var __spreadValues = (a, b) => {
     q = (q || "").trim();
     if (!q) return;
     const my = ++aiSeq;
-    pageShell("Ask AI", "Looking for: \u201C" + q + "\u201D");
+    pageShell("Ask Fan Edit Optimus", "Looking for: \u201C" + q + "\u201D");
     const g = $("#grid");
     g.className = "sectioned";
-    g.innerHTML = '<div class="ai-wait">\u2726 Searching the collection\u2026</div>';
+    g.innerHTML = '<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble thinking"><span class="dots"><i></i><i></i><i></i></span> Searching the vault for \u201C'.concat(esc(q), "\u201D\u2026</div></div>");
     try {
       const r = await fetch("/api/ai-search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q: q.slice(0, 200) }) });
       if (!r.ok) throw 0;
@@ -1485,8 +1485,9 @@ var __spreadValues = (a, b) => {
       if (my !== aiSeq) return;
       const res = (j.results || []).map((x) => ({ f: items.get(x.id), why: x.reason })).filter((x) => x.f);
       if (!res.length) throw 0;
-      $("#sec2").textContent = res.length + " AI matches for \u201C" + q + "\u201D";
-      g.innerHTML = '<div class="ol-div"><span>AI MATCHES</span><i></i><b>'.concat(res.length, '</b></div><div class="sgrid vids ai-res">').concat(res.map((x) => '<div class="ai-cell">'.concat(tile(x.f), '<p class="ai-why">').concat(esc(x.why), "</p></div>")).join(""), "</div>");
+      $("#sec2").textContent = res.length + " picks from Fan Edit Optimus for \u201C" + q + "\u201D";
+      const intro2 = j.intro || "I found ".concat(res.length, " fan edit").concat(res.length === 1 ? "" : "s", " for you!");
+      g.innerHTML = '<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble">'.concat(esc(intro2), '</div></div><div class="ol-div"><span>OPTIMUS PICKS</span><i></i><b>').concat(res.length, '</b></div><div class="sgrid vids ai-res">').concat(res.map((x) => '<div class="ai-cell">'.concat(tile(x.f), '<p class="ai-why"><img src="assets/optimus.png" alt="" class="opt-mini">').concat(esc(x.why), "</p></div>")).join(""), "</div>");
       g.querySelectorAll(".ol-tile").forEach(lazyArt);
     } catch (e) {
       if (my !== aiSeq) return;
@@ -1502,7 +1503,7 @@ var __spreadValues = (a, b) => {
     if (q) aiSearch(q);
     else {
       $("#q").focus();
-      $("#q").placeholder = "Describe a fan edit, then Ask AI";
+      $("#q").placeholder = "Describe a fan edit, then Ask Optimus";
     }
   });
   $("#q").addEventListener("keydown", (e) => {
@@ -1713,7 +1714,7 @@ var __spreadValues = (a, b) => {
     const ov = document.createElement("div");
     ov.id = "tvsearch";
     ov.hidden = true;
-    ov.innerHTML = '<div class="tvs-box"><label>Search the collection</label><input id="tvs-in" type="search" autocomplete="off" placeholder="Title, or describe a fan edit\u2026"><div class="tvs-row"><button type="button" class="mi" data-tvs="find">Search</button><button type="button" class="mi ai-btn" data-tvs="ai">\u2726 Ask AI</button><button type="button" class="mi" data-tvs="close">Close</button></div></div>';
+    ov.innerHTML = '<div class="tvs-box"><label>Search the collection</label><input id="tvs-in" type="search" autocomplete="off" placeholder="Title, or describe a fan edit\u2026"><div class="tvs-row"><button type="button" class="mi" data-tvs="find">Search</button><button type="button" class="mi ai-btn" data-tvs="ai"><img class="opt-btn-av" src="assets/optimus.png" alt="">Ask Fan Edit Optimus</button><button type="button" class="mi" data-tvs="close">Close</button></div></div>';
     document.body.appendChild(ov);
     const inp = ov.querySelector("#tvs-in"), close = () => {
       ov.hidden = true;

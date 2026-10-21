@@ -454,3 +454,18 @@ body.tv .sortpill{font-size:2.2vh;padding:1vh 2.2vh;min-height:48px}
 .sortpill.shuf-btn:hover,.sortpill.shuf-btn:focus{border-color:#fff;box-shadow:0 0 16px rgba(47,168,255,.9)}
 body.tv .sortpill.shuf-btn:focus{transform:scale(1.08);box-shadow:0 0 0 4px #fff,0 0 30px 6px #2fa8ffcc}
 #pshuf[hidden]{display:none}.shuf-again{display:inline-flex;align-items:center}
+/* Fan Edit Optimus branding */
+.opt-btn-av{width:1.5em;height:1.5em;border-radius:50%;margin-right:.4em;vertical-align:middle;object-fit:cover;box-shadow:0 0 0 1px #ffb02e88}
+.ai-btn{display:inline-flex;align-items:center;white-space:nowrap}
+.opt-head{display:flex;align-items:center;gap:12px;margin:6px 0 10px}.opt-head .opt-av{width:48px;height:48px}
+.opt-head b{display:block;font-size:18px;letter-spacing:.06em;color:#fff}.opt-head small{color:#9fb6cf;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.opt-av{border-radius:50%;object-fit:cover;flex:none;box-shadow:0 0 0 2px #2fa8ff,0 0 14px #2fa8ff88}
+.opt-chat{display:flex;align-items:flex-end;gap:10px;margin:0 0 18px}.opt-chat .opt-av{width:40px;height:40px}
+.opt-bubble{max-width:760px;background:linear-gradient(180deg,#26303d,#151b23);border:1px solid #3d4b5d;border-radius:16px 16px 16px 4px;padding:12px 16px;color:#e8eef6;font-size:15px;line-height:1.4}
+.opt-bubble.thinking{animation:optPulse 1.4s ease-in-out infinite}
+.opt-bubble .dots{display:inline-flex;gap:4px;margin-right:8px;vertical-align:middle}.opt-bubble .dots i{width:7px;height:7px;border-radius:50%;background:#2fa8ff;animation:optDot 1.2s infinite}
+.opt-bubble .dots i:nth-child(2){animation-delay:.2s}.opt-bubble .dots i:nth-child(3){animation-delay:.4s}
+@keyframes optPulse{0%,100%{box-shadow:0 0 0 0 #2fa8ff00}50%{box-shadow:0 0 18px 2px #2fa8ff66}}
+@keyframes optDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}
+.ai-why .opt-mini{width:16px;height:16px;border-radius:50%;vertical-align:-3px;margin-right:6px}
+body.tv .opt-bubble{font-size:2vh}

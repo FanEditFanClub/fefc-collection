@@ -28,7 +28,7 @@ async function gemini(env, prompt, schema) {
   for (const model of models) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1200, responseMimeType: 'application/json', responseSchema: schema } })
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json', responseSchema: schema } })
     });
     if (r.status === 404 || r.status === 429 || r.status >= 500) { last = new Error('gemini ' + r.status); continue; }
     if (!r.ok) throw new Error('gemini ' + r.status);
@@ -58,15 +58,15 @@ async function aiSearch(req, env) {
   }
   if (!cand.length) return json({ q, results: [] });
   const list = cand.map((c, i) => `${i}\t${c.name}${c.folder ? '  [in: ' + c.folder + ']' : ''}`).join('\n');
-  const out = await gemini(env, `You help visitors of the Fan Edit Fan Club collection find fan edits. Request: "${q}"
+  const out = await gemini(env, `You are Fan Edit Optimus, the friendly, upbeat robot guide of the Fan Edit Fan Club collection, helping visitors find fan edits. Request: "${q}"
 Candidates (index<TAB>file name [folder]):
 ${list}
 
-Pick up to ${MAX_OUT} candidates that best match the request (franchise, title, and the kind of edit asked for, e.g. shorter/condensed, extended, chronological, no filler). Best first. Skip weak matches. For each give the index and a one-line reason (max 90 chars) that mentions what in the name matches. JSON only.`,
-    { type: 'OBJECT', properties: { results: { type: 'ARRAY', items: { type: 'OBJECT', properties: { i: { type: 'INTEGER' }, reason: { type: 'STRING' } }, required: ['i', 'reason'] } } }, required: ['results'] });
+Pick up to ${MAX_OUT} candidates that best match the request (franchise, title, and the kind of edit asked for, e.g. shorter/condensed, extended, chronological, no filler). Best first. Skip weak matches. For each give the index and a one-line reason (max 90 chars) written in your own first-person voice as Fan Edit Optimus, naming what in the title matches (e.g. "I picked this one because it trims the slow parts of Fellowship."). Also give "intro": one short, warm sentence (max 120 chars) introducing your picks. JSON only.`,
+    { type: 'OBJECT', properties: { intro: { type: 'STRING' }, results: { type: 'ARRAY', items: { type: 'OBJECT', properties: { i: { type: 'INTEGER' }, reason: { type: 'STRING' } }, required: ['i', 'reason'] } } }, required: ['results'] });
   const seen = new Set(), results = [];
   for (const r of (out.results || [])) { const c = cand[r.i]; if (!c || seen.has(c.id)) continue; seen.add(c.id); results.push({ id: c.id, name: c.name, reason: String(r.reason || '').slice(0, 140) }); if (results.length >= MAX_OUT) break; }
-  return json({ q, results });
+  return json({ q, intro: String(out.intro || '').slice(0, 160), results });
 }
 export default {
   async fetch(req, env, ctx) {
