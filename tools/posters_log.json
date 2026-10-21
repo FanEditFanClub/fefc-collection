@@ -1,44 +1,34 @@
 {
  "counts": {
-  "none": 803,
-  "original": 317,
-  "custom": 36
+  "none": 110,
+  "original": 70,
+  "custom": 4
  },
  "doubtful": [
   [
-   "Alien V - Prometheus - A CK Sensical Cut.txt",
-   "Alien (film)",
-   0.83
+   "Batman: The Man Who Laughs",
+   "The Man Who Laughs (1928 film)",
+   0.84
   ],
   [
-   "James Bond - Goldeneye - N64 Music - Fan Edit.divx",
-   "James Bond Jr.",
-   0.87
+   "In Search Of Darkness Part III",
+   "In Search of Darkness",
+   0.82
   ],
   [
-   "Predator 4 - The Predator - The sensical Cut.txt",
-   "Predator 2",
-   0.9
-  ],
-  [
-   "Predator 5 - Prey The Sensical Cut.txt",
-   "Predator 2",
-   0.9
-  ],
-  [
-   "The Suicide Squad 0 - The Taskforce X David Ayer's Ill Received Prologue - Fan Edit",
-   "The Suicide Squad (film)",
-   0.94
-  ],
-  [
-   "The Three Little Pigs - Uncensored - Fan Edit.mpg",
-   "Three Little Pigs (film)",
+   "In Search of Darkness 1990-1994",
+   "In Search of Darkness",
    0.89
   ],
   [
-   "Venom 1 & 2: Let There Be Carnage - Symbiotes - Mashup Fan Edit",
-   "Venom: Let There Be Carnage",
-   0.87
+   "In Search of Darkness 1995-1999",
+   "In Search of Darkness",
+   0.89
+  ],
+  [
+   "In Search of Darkness Part I",
+   "In Search of Darkness: Part II",
+   0.98
   ]
  ]
 }

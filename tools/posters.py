@@ -25,6 +25,7 @@ while q:
     q=n
 VEXT=('.mkv','.mp4','.avi','.m4v','.mov','.webm','.wmv','.mpg','.ts')
 def isvid(x,dd=0):
+    if x.get('kind'): return x['kind']=='video'
     if re.match(r'application/vnd\.google-apps\.(?!shortcut)|text/|image/|audio/',x['mimeType']) or re.search(r'\.(pdf|docx?|txt|xlsx?|url|html?)$',x['name'],re.I): return False
     if x['mimeType'].startswith('video') or x['name'].lower().endswith(VEXT+('.m2ts','.mts','.mpeg','.flv','.3gp','.ogv','.vob','.divx')): return True
     t=x.get('targetId')

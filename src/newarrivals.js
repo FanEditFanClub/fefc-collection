@@ -8,8 +8,8 @@ var NA=window.NA={dates:{},
  isNew:function(f){return !!(NA._set&&(NA._set[f.id]||NA._set[f.targetId||f.id]))},
  newCount:function(list){return NA.top(list).length},
  sort:function(list){return list.slice().sort(function(a,b){var x=NA.d(a),y=NA.d(b);return x<y?1:x>y?-1:a.name.localeCompare(b.name)})},
- MENU:function(F){return [['#/','Home'],['#/readfirst','Read First'],['#/newarrivals','New Arrivals'],['#/support','Support Us'],['#/folder/'+F.collections,'Fan Edit Collections'],['#/all','Main Collection'],['#/folder/'+F.tbc,'To Be Catalogued'],['#/folder/'+F.actors,'Actors'],['#/folder/'+F.directors,'Directors'],['#/genres','Genres']]},
- menuHTML:function(F,back){var h=location.hash||'#/';if(h==='#/arena')h='#/newarrivals';if(/^#\/genre\//.test(h))h='#/genres';
+ MENU:function(F){return [['#/','Home'],['#/readfirst','Read First'],['#/newarrivals','New Arrivals'],['#/supportus','Support Us'],['#/folder/'+F.collections,'Fan Edit Collections'],['#/folder/'+F.tbc,'To Be Catalogued'],['#/people','Actors & Directors'],['#/mylist','My List'],['#/genres','Genres']]},
+ menuHTML:function(F,back){var h=location.hash||'#/';if(h==='#/arena')h='#/newarrivals';if(h==='#/support')h='#/supportus';if(/^#\/genre\//.test(h))h='#/genres';
   return (back?'<button class="mi" data-nav="up">◀ Back</button>':'')+NA.MENU(F).map(function(m){var on=h===m[0]||(m[0]==='#/'&&h==='#')||(m[0]!=='#/'&&h.indexOf(m[0]+'/')===0);return '<button class="mi'+(on?' on':'')+'" data-href="'+m[0]+'"'+(on?' aria-current="page"':'')+'>'+m[1]+'</button>'}).join('')},
  PAGE:60,
  plural:function(n,w){return n?n+' '+w+(n===1?'':'s'):''},

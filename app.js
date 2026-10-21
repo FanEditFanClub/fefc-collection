@@ -51,6 +51,9 @@ var __spreadValues = (a, b) => {
     if (!("perspective" in d || "webkitPerspective" in d)) document.documentElement.classList.add("no3d");
   })();
   function intro() {
+    requestAnimationFrame(placeHeader);
+    const wmi = document.getElementById("wordmark");
+    if (wmi && !wmi.complete) wmi.addEventListener("load", placeHeader);
     const el = $("#intro");
     if (P.get("nointro")) {
       el.remove();
@@ -77,14 +80,21 @@ var __spreadValues = (a, b) => {
       [300, 1e3, 2e3, 3500].forEach((t) => setTimeout(draw, t));
       return;
     }
-    let done = false, raf = 0;
+    let done = false, raf = 0, ia = null;
     const end = (skipped) => {
       if (done) return;
       done = true;
       cancelAnimationFrame(raf);
       localStorage.fefcSeen = "1";
+      sndHint(false);
       if (skipped) {
         S.introStop();
+        if (ia) {
+          try {
+            ia.pause();
+          } catch (e) {
+          }
+        }
         S.bell();
       }
       tg.style.opacity = "";
@@ -93,6 +103,7 @@ var __spreadValues = (a, b) => {
       document.body.classList.remove("cintro");
       el.classList.add("done");
       document.body.classList.add("intro-done");
+      window.__ie = Date.now();
       $("#home").classList.add("enter");
       setTimeout(() => {
         S.ambience($("#player").hidden && $("#details").hidden);
@@ -109,6 +120,51 @@ var __spreadValues = (a, b) => {
       if (s >= 24.2) return end(false);
       raf = requestAnimationFrame(loop);
     };
+    const off = () => (performance.now() - t0) / 1e3;
+    const hEl = document.createElement("div");
+    hEl.className = "isnd";
+    hEl.textContent = "Click or press any key for sound";
+    el.appendChild(hEl);
+    function sndHint(on) {
+      hEl.classList.toggle("on", !!on);
+    }
+    const muted = () => {
+      try {
+        return !!S.muted;
+      } catch (e) {
+        return false;
+      }
+    };
+    const tryEl = () => {
+      if (short || sndOn || done) return Promise.resolve(false);
+      if (!ia) {
+        ia = window.__ia = new Audio("assets/intro.mp3");
+        ia.preload = "auto";
+      }
+      ia.muted = muted();
+      try {
+        ia.currentTime = Math.max(0, off());
+      } catch (e) {
+      }
+      const pr = ia.play();
+      return (pr && pr.then ? pr : Promise.resolve()).then(() => {
+        if (sndOn && sndOn !== "el") {
+          ia.pause();
+          return false;
+        }
+        if (done) {
+          ia.pause();
+          return false;
+        }
+        sndOn = "el";
+        try {
+          ia.currentTime = Math.max(0, off());
+        } catch (e) {
+        }
+        sndHint(false);
+        return true;
+      }, () => false);
+    };
     let st = "suspended";
     try {
       S.unlock();
@@ -124,7 +180,9 @@ var __spreadValues = (a, b) => {
       } catch (e) {
       }
       if (s2 === "running") {
-        sndOn = true;
+        if (ia && !ia.paused) return;
+        sndOn = "ctx";
+        sndHint(false);
         try {
           S.introSeq(short, Math.max(0, (performance.now() - t0) / 1e3 - 0.05), () => (performance.now() - t0) / 1e3);
         } catch (e) {
@@ -132,12 +190,15 @@ var __spreadValues = (a, b) => {
       }
     };
     if (st === "running") {
-      sndOn = true;
+      sndOn = "ctx";
       try {
         S.introSeq(short, 0, () => (performance.now() - t0) / 1e3);
       } catch (e) {
       }
     } else {
+      tryEl().then((ok) => {
+        if (!ok && !sndOn && !done && !short) sndHint(true);
+      });
       const tick = setInterval(() => {
         if (sndOn || done) return clearInterval(tick);
         go2();
@@ -148,7 +209,17 @@ var __spreadValues = (a, b) => {
     raf = requestAnimationFrame(loop);
     const sk = (e) => {
       if (e.type === "keydown" && e.repeat) return;
+      if (!sndOn && !short && !done) {
+        S.unlock();
+        tryEl().then((ok) => {
+          if (!ok) go2();
+        });
+        setTimeout(go2, 60);
+        e.stopPropagation && e.stopPropagation();
+        return;
+      }
       e.preventDefault && e.preventDefault();
+      e.stopPropagation && e.stopPropagation();
       removeEventListener("keydown", sk, true);
       el.removeEventListener("pointerdown", sk);
       S.unlock();
@@ -159,7 +230,7 @@ var __spreadValues = (a, b) => {
         addEventListener("keydown", sk, true);
         el.addEventListener("pointerdown", sk);
       }
-    }, 250);
+    }, sndOn ? 250 : 0);
   }
   addEventListener("pointerdown", () => {
     const first = !window._u;
@@ -241,7 +312,8 @@ var __spreadValues = (a, b) => {
   function tile(f, live_) {
     const fold = isFolder(f), p = parse(f.name), vid = !fold && isVid(f), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
-    return '<button class="ol-tile '.concat(cls, " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", '</span><div class="nm">').concat(esc(fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
+    const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
+    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? '<span class="star'.concat(window.UD && UD.isStarred(f.id) ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-label="Star" title="Star (S)">\u2605</span>') : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
   }
   async function art(el, f) {
     let src = null;
@@ -272,7 +344,7 @@ var __spreadValues = (a, b) => {
           q = nq.slice(0, 40);
         }
       }
-      if (t) src = "https://drive.google.com/thumbnail?sz=w640&id=" + t;
+      if (t) src = t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=w640&id=" + t;
     } else if (f.mimeType === "application/octet-stream" && !f.targetId) src = null;
     else src = f.thumb ? f.thumb.replace(/=s\d+$/, "=s640") : "https://drive.google.com/thumbnail?sz=w640&id=" + target(f);
     if (!src) {
@@ -346,15 +418,16 @@ var __spreadValues = (a, b) => {
   const DOCX = /\.(pdf|docx?|txt|xlsx?|pptx?|url|html?|rtf|csv|md|webloc|lnk|json|xml|zip|rar|7z|jpe?g|png|gif|mp3|flac|wav|srt)$/i;
   function isVid(f, d) {
     if (!f) return false;
-    const m = f.mimeType || "";
-    if (/^application\/vnd\.google-apps\.(?!shortcut)/.test(m) || /^(text|image|audio)\/|pdf|html|url/.test(m) || DOCX.test(f.name)) return false;
-    if (/^video\//.test(m) || /\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name)) return true;
+    if (f.kind) return f.kind === "video";
     const t = f.targetId;
     if (t && t !== f.id && (d | 0) < 3) {
       const x = items.get(t);
       if (x) return isVid(x, (d | 0) + 1);
     }
-    return (!m || m === "application/octet-stream") && !/\.[a-z0-9]{2,4}$/i.test(f.name) && (f.size > 5e7 || !!f.videoMediaMetadata) && /fan ?edit|\bcut\b/i.test(f.name);
+    const m = f.mimeType || "";
+    if (/^\._|^\./.test(f.name || "")) return false;
+    if (/^application\/vnd\.google-apps\.(?!shortcut)/.test(m) || /^(text|image|audio)\/|pdf|html|url/.test(m) || DOCX.test(f.name)) return false;
+    return /^video\//.test(m) || /\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name);
   }
   function cnt(id) {
     const k = kids.get(id);
@@ -370,8 +443,11 @@ var __spreadValues = (a, b) => {
       ["folder:" + FOLD.collections, "Fan Edit Collections", NA.plural((kids.get(FOLD.collections) || []).filter(isFolder).length, "Collection")],
       ["main", "", ""],
       ["folder:" + FOLD.tbc, "To Be Catalogued", NA.plural(NA.deep(FOLD.tbc, kids, isFolder), "Unorganized File")],
-      ["folder:" + FOLD.actors, "Actors", NA.plural(cnt(FOLD.actors), "Collection")],
-      ["folder:" + FOLD.directors, "Directors", NA.plural(cnt(FOLD.directors), "Collection")],
+      ["people", "Actors & Directors", NA.plural(cnt(FOLD.actors) + cnt(FOLD.directors), "Collection")],
+      ["mylist", "My List", (() => {
+        const n = window.UD ? UD.stars().length : 0;
+        return n ? n + " Starred" : "Your bookmarks";
+      })()],
       ["genres", "Genres", (() => {
         const h = {};
         Object.keys(genreMap).forEach((x) => genreMap[x].genres.forEach((g) => h[g] = 1));
@@ -391,7 +467,27 @@ var __spreadValues = (a, b) => {
       sp.style.width = w + "px";
       sp.style.maxWidth = "none";
     }
+    placeHeader();
   }
+  function placeHeader() {
+    const tg = $("#tagline");
+    if (!tg) return;
+    const b = document.querySelector("#hub .hb");
+    let top = null;
+    if (b) {
+      const r = b.getBoundingClientRect();
+      if (r.width) top = r.top;
+    }
+    if (top === null) {
+      const W = innerWidth, H = innerHeight, small = matchMedia("(orientation:landscape) and (max-height:520px)").matches, tv = document.body.classList.contains("tv");
+      const hh = small ? 0.56 * H : Math.min(0.6 * W / 1.55, 0.58 * H);
+      top = H * 0.5 + (small ? 0.1 : 0.07) * H - hh / 2;
+    }
+    const gap = Math.max(16, Math.min(24, innerHeight * 0.025)), h = tg.offsetHeight;
+    if (!h) return;
+    tg.style.top = Math.max(4, Math.round(top - gap - h)) + "px";
+  }
+  addEventListener("resize", () => requestAnimationFrame(placeHeader));
   addEventListener("resize", syncTag);
   function mosaic() {
     syncTag();
@@ -516,6 +612,93 @@ var __spreadValues = (a, b) => {
     view = "folder";
     render(list, title, "home");
   }
+  function secHTML(k, l, a, extra) {
+    return '<div class="ol-div"><span>'.concat(l, "</span><i></i>").concat(extra || "", "<b>").concat(a.length, "</b></div>") + (a.length ? '<div class="sgrid '.concat(k, '">').concat(a.map((f) => tile(f)).join(""), "</div>") : "");
+  }
+  function pageShell(title, sub) {
+    hideHome();
+    cur = "virtual";
+    view = "folder";
+    $("#crumb").textContent = title;
+    $("#arena").innerHTML = "";
+    $("#sec2").textContent = sub || "";
+    status("");
+    menu();
+    $("#main").scrollTop = 0;
+  }
+  function peoplePage() {
+    const A = (kids.get(FOLD.actors) || []).filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), D = (kids.get(FOLD.directors) || []).filter(isFolder).sort((a, b) => a.name.localeCompare(b.name));
+    pageShell("Actors & Directors", NA.plural(A.length + D.length, "Collection"));
+    const g = $("#grid");
+    g.className = "sectioned";
+    g.innerHTML = secHTML("folds", "ACTORS", A) + secHTML("folds", "DIRECTORS", D);
+    g.querySelectorAll(".ol-tile").forEach(lazyArt);
+  }
+  let mlSort = localStorage.fefcStarSort || "date";
+  function myListPage() {
+    const U = window.UD;
+    if (!U) return;
+    const H = U.history(50).map((r) => items.get(r.id)).filter(Boolean);
+    let St = U.stars().map((r) => ({ r, f: items.get(r.id) })).filter((x) => x.f);
+    St.sort(mlSort === "az" ? (a, b) => a.f.name.localeCompare(b.f.name) : (a, b) => b.r.starredAt - a.r.starredAt);
+    St = St.map((x) => x.f);
+    pageShell("My List", "".concat(NA.plural(St.length, "Starred"), " \xB7 ").concat(H.length, " recently watched").replace("Starreds", "Starred"));
+    const g = $("#grid");
+    g.className = "sectioned mylist";
+    const vids_ = (a) => a.filter((f) => !isFolder(f)), fold_ = (a) => a.filter(isFolder);
+    g.innerHTML = '<div id="ml-sync"></div>' + secHTML("vids", "CONTINUE WATCHING / RECENTLY WATCHED", H, H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "") + (H.length ? "" : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
+    if (window.FEFCSync) {
+      const c = $("#ml-sync");
+      c && FEFCSync.subscribe && 0;
+    }
+    g.querySelectorAll(".ol-tile").forEach(lazyArt);
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-ml]");
+    if (!b) return;
+    S.click();
+    const k = b.dataset.ml;
+    if (k === "clear") {
+      if (confirm("Clear your watch history?")) UD.clearHistory();
+    } else {
+      mlSort = localStorage.fefcStarSort = k;
+    }
+    myListPage();
+  });
+  function toggleStarFor(id) {
+    if (!window.UD || !id) return;
+    const f = items.get(id), on = UD.toggleStar(id, f && f.name);
+    S.chirp && S.chirp(on ? 1 : 0);
+    document.querySelectorAll('[data-star="' + id + '"]').forEach((x) => {
+      x.classList.toggle("on", on);
+      x.setAttribute("aria-pressed", on);
+    });
+    const db = document.querySelector("#details .star-btn");
+    if (db && db.dataset.star === id) {
+      db.classList.toggle("on", on);
+      db.textContent = on ? "\u2605 Starred" : "\u2606 Star";
+    }
+    if (view !== "home" && parseH()[0] === "mylist" && !on) myListPage();
+    if (!$("#home").hidden) hub();
+  }
+  document.addEventListener("click", (e) => {
+    const st = e.target.closest("[data-star]");
+    if (!st) return;
+    e.preventDefault();
+    e.stopPropagation();
+    toggleStarFor(st.dataset.star);
+  }, true);
+  document.addEventListener("keydown", (e) => {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.keyCode === 83 || e.keyCode === 405 || e.key === "ColorF2Yellow") {
+      const a = document.activeElement, t = a && a.closest && a.closest(".ol-tile");
+      const id = t ? t.dataset.id : !$("#details").hidden ? $("#details").dataset.id : null;
+      if (id && (t ? t.querySelector("[data-star]") : 1)) {
+        e.preventDefault();
+        toggleStarFor(id);
+      }
+    }
+  });
   function _x() {
   }
   function hubGo(k) {
@@ -524,6 +707,7 @@ var __spreadValues = (a, b) => {
     if (k === "arena" || k === "collections") return hideHome(), open(ROOT, k);
     if (k === "readfirst") return readFirst();
     if (k.indexOf("folder:") === 0) return hideHome(), open(k.slice(7));
+    if (k === "people") return go("#/people");
     if (k === "actors") return virtual([items.get(FOLD.actors) || { id: FOLD.actors, name: "Actors", mimeType: FOLDER }, items.get(FOLD.directors) || { id: FOLD.directors, name: "Directors", mimeType: FOLDER }], "Actors & Directors");
     if (k === "search") {
       hideHome();
@@ -533,7 +717,9 @@ var __spreadValues = (a, b) => {
     }
     if (k === "genres") {
       showHome(true);
-      if (window.FEFCGenres && FEFCGenres.hub) FEFCGenres.hub({ genreMap, order: GORDER, items, isVid, esc });
+      if (window.FEFCGenres && FEFCGenres.hub) FEFCGenres.hub({ get genreMap() {
+        return genreMap;
+      }, order: GORDER, items, isVid, esc });
       return;
     }
     if (k === "support") {
@@ -549,7 +735,7 @@ var __spreadValues = (a, b) => {
       menu();
     }
   }
-  const HUBH = { main: "#/all", arena: "#/newarrivals", readfirst: "#/readfirst", genres: "#/genres", support: "#/support", search: "#/search" };
+  const HUBH = { main: "#/all", arena: "#/newarrivals", readfirst: "#/readfirst", genres: "#/genres", support: "#/supportus", people: "#/people", mylist: "#/mylist", search: "#/search" };
   document.addEventListener("click", (e) => {
     const h = e.target.closest("[data-hub]");
     if (!h) return;
@@ -645,13 +831,18 @@ var __spreadValues = (a, b) => {
   const RF_IDS = { "1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk": 1 };
   function rfKind(f) {
     if (!f || isFolder(f) || isVid(f)) return null;
-    const t = target(f);
-    if (/support patreon|paypal\/venmo/i.test(f.name)) return "support";
-    if (RF_IDS[t] || /^\W*\w{0,3}\W*read (first|me)\b/i.test(f.name)) return "readfirst";
+    if (/support|patreon|paypal|venmo/i.test(f.name)) return "support";
+    if (/\bread (first|me)\b/i.test(f.name)) return "readfirst";
     return null;
   }
   function openDocTile(f) {
-    const k = rfKind(f), p = $("#rfpanel"), d = $("#rfdoc"), src = k === "support" ? "data/support-doc.html" : "data/readfirst.html", ttl = k === "support" ? "Support Us" : "Read First";
+    const k = rfKind(f);
+    if (k === "support") {
+      S.click();
+      go("#/supportus");
+      return;
+    }
+    const p = $("#rfpanel"), d = $("#rfdoc"), src = "data/readfirst.html", ttl = "Read First";
     const sp = p.querySelector(".rf-top span");
     if (sp) sp.textContent = ttl;
     if (d.dataset.src !== src) {
@@ -679,6 +870,7 @@ var __spreadValues = (a, b) => {
     route();
   }
   function back(fallback) {
+    navBack = true;
     const h = location.hash, fb = () => {
       history.replaceState(null, "", fallback || "#/");
       route();
@@ -696,6 +888,7 @@ var __spreadValues = (a, b) => {
     if (r[0] === "edit" || r[0] === "readfirst") return "#/";
     if (r[0] === "folder") {
       const f = items.get(r[1]);
+      if (f && (f.parent === FOLD.actors || f.parent === FOLD.directors)) return "#/people";
       return f && f.parent && f.parent !== ROOT && items.has(f.parent) ? "#/folder/" + f.parent : f && f.parent === ROOT ? "#/all" : "#/";
     }
     if (r[0] === "genre") return "#/genres";
@@ -745,7 +938,16 @@ var __spreadValues = (a, b) => {
     if (k === "all") return hideHome(), open(ROOT, "all");
     if (k === "arena") return hideHome(), open(ROOT, "arena");
     if (k === "folder") return hideHome(), open(r[1]);
-    if (k === "genres" || k === "support") return hubGo(k);
+    if (k === "support") {
+      history.replaceState(history.state, "", "#/supportus");
+      return hubGo("support");
+    }
+    if (k === "genres" || k === "supportus") return hubGo(k === "supportus" ? "support" : k);
+    if (k === "people" || k === "actors" || k === "directors") {
+      if (k !== "people") history.replaceState(history.state, "", "#/people");
+      return peoplePage();
+    }
+    if (k === "mylist") return myListPage();
     if (k === "genre") {
       const G = r[1], list = genreList(G), folders = Object.keys(genreMap).filter((x) => genreMap[x].genres.indexOf(G) >= 0).map((x) => items.get(x) || { id: x, name: genreMap[x].folder, mimeType: FOLDER, parent: ROOT });
       return virtual(list.length ? list : folders, G);
@@ -762,7 +964,10 @@ var __spreadValues = (a, b) => {
     }
     showHome();
   }
-  window.addEventListener("popstate", route);
+  window.addEventListener("popstate", () => {
+    navBack = true;
+    route();
+  });
   function status(t) {
     $("#status").textContent = t;
   }
@@ -786,14 +991,14 @@ var __spreadValues = (a, b) => {
   function drain(Q, isNew) {
     const gen = ++drainGen, idle = window.requestIdleCallback ? (cb) => requestIdleCallback(cb, { timeout: 400 }) : (cb) => setTimeout(cb, 30);
     let qi = 0;
-    const step = () => {
-      if (gen !== drainGen) return;
+    const one = () => {
+      if (gen !== drainGen) return false;
       while (qi < Q.length && !Q[qi].length) qi++;
-      if (qi >= Q.length) return;
+      if (qi >= Q.length) return false;
       const box = document.querySelector('#grid .sgrid[data-q="' + qi + '"]');
       if (!box) {
         qi++;
-        return idle(step);
+        return true;
       }
       const part = Q[qi].splice(0, 60), t = document.createElement("div");
       t.innerHTML = part.map((f) => tile(f, isNew[f.id])).join("");
@@ -802,9 +1007,69 @@ var __spreadValues = (a, b) => {
       els.forEach((e) => fr.appendChild(e));
       box.appendChild(fr);
       els.forEach(lazyArt);
-      idle(step);
+      return true;
+    };
+    drainOne = one;
+    const step = () => {
+      if (one()) idle(step);
     };
     setTimeout(() => idle(step), 700);
+  }
+  let drainOne = () => false, navBack = false;
+  const scrollKey = (h) => "fefcScroll:" + (h || location.hash || "#/") + "|" + (window.FEFCSortKey || localStorage.fefcSort || "");
+  function saveScroll(id) {
+    try {
+      const m = $("#main");
+      if (!m || m.hidden) return;
+      sessionStorage.setItem(scrollKey(), JSON.stringify({ y: m.scrollTop, id: id || null }));
+    } catch (e) {
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest && e.target.closest("#grid .ol-tile,#arena .ol-tile");
+    if (t && !e.target.closest("[data-star]")) saveScroll(t.dataset.id);
+  }, true);
+  function restoreScroll() {
+    const m = $("#main");
+    if (!m) return;
+    let rec = null;
+    if (navBack) {
+      try {
+        rec = JSON.parse(sessionStorage.getItem(scrollKey()) || "null");
+      } catch (e) {
+      }
+    }
+    navBack = false;
+    if (!rec) {
+      m.scrollTop = 0;
+      return;
+    }
+    const need = () => m.scrollHeight < rec.y + m.clientHeight + 40 || rec.id && !document.querySelector('#grid [data-id="' + rec.id + '"]');
+    let guard = 0;
+    while (need() && guard++ < 400) {
+      if (drainOne()) continue;
+      const more = document.getElementById("na-more");
+      if (more && !more.hidden && more.offsetParent) {
+        more.onclick && NA && more.click();
+        continue;
+      }
+      break;
+    }
+    const prev = m.style.scrollBehavior;
+    m.style.scrollBehavior = "auto";
+    m.scrollTop = rec.y;
+    m.style.scrollBehavior = prev;
+    if (rec.id) {
+      const t = document.querySelector('#grid [data-id="' + rec.id + '"]');
+      if (t) {
+        try {
+          t.focus({ preventScroll: true });
+        } catch (e) {
+          t.focus();
+        }
+        if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) t.classList.add("ret");
+      }
+    }
   }
   function render(list, title, mode) {
     const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
@@ -818,7 +1083,7 @@ var __spreadValues = (a, b) => {
     });
     const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
     $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
-    const docs = vids2.filter((f) => !isVid(f)), evs = vids2.filter(isVid), Q = [], sec = (k, l, a) => {
+    const isAd = (f) => !isVid(f) && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name), nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), docs = vids2.filter((f) => !isVid(f) && !isAd(f)), evs = vids2.filter((f) => isVid(f) || isAd(f)).sort(nat), Q = [], sec = (k, l, a) => {
       if (!a.length) return "";
       const qi = Q.length;
       Q.push(a.slice(FIRST_TILES));
@@ -836,7 +1101,7 @@ var __spreadValues = (a, b) => {
     if (mode !== "arena") drain(Q, isNew);
     status(all.length ? "" : live ? "Empty" : "Nothing here yet");
     menu();
-    $("#main").scrollTop = 0;
+    restoreScroll();
   }
   async function open(id, mode = "home") {
     cur = id;
@@ -920,6 +1185,10 @@ var __spreadValues = (a, b) => {
   }
   function play(f) {
     const id = target(f);
+    try {
+      window.UD && UD.opened(f.id, f.name);
+    } catch (e) {
+    }
     S.ambience(false);
     S.click();
     $("#ptitle").textContent = parse(f.name).raw;
@@ -1037,6 +1306,10 @@ var __spreadValues = (a, b) => {
   }
   document.addEventListener("keydown", (e) => {
     const k = e.keyCode, inInput = e.target === $("#q");
+    {
+      const it = document.getElementById("intro");
+      if (it && (!it.classList.contains("done") || Date.now() - (window.__ie || 0) < 900)) return;
+    }
     const dir = { 37: "left", 38: "up", 39: "right", 40: "down" }[k];
     if (dir && !$("#rfpanel").hidden && (k === 38 || k === 40)) {
       e.preventDefault();
@@ -1073,7 +1346,14 @@ var __spreadValues = (a, b) => {
   details = async function() {
     await _details.apply(this, arguments);
     const p = document.querySelector('#details [data-act="play"]');
-    if (p) focusEl(p);
+    if (p) {
+      const id = $("#details").dataset.id;
+      if (id && window.UD && !p.parentNode.querySelector(".star-btn")) {
+        const on = UD.isStarred(id);
+        p.insertAdjacentHTML("afterend", '<button class="pill p4 star-btn'.concat(on ? " on" : "", '" data-star="').concat(id, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>"));
+      }
+      focusEl(p);
+    }
   };
   const _play = play;
   play = function(f) {
@@ -1143,7 +1423,7 @@ var __spreadValues = (a, b) => {
           if (f && !a.includes(f)) a.push(f);
         }
       }
-      if (/^#\/(folder|all)/.test(location.hash)) route();
+      if (/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash)) route();
       else if (!$("#home").hidden) hub();
     }).catch(() => {
     });
@@ -1177,6 +1457,7 @@ var __spreadValues = (a, b) => {
     goBack();
   });
   showHome();
+  if (/^#\/(genres|supportus|support|mylist)\b/.test(location.hash)) route();
 })();
 (function() {
   const ua = navigator.userAgent, standalone = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;

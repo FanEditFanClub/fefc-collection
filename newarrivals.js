@@ -45,11 +45,12 @@
       });
     },
     MENU: function(F) {
-      return [["#/", "Home"], ["#/readfirst", "Read First"], ["#/newarrivals", "New Arrivals"], ["#/support", "Support Us"], ["#/folder/" + F.collections, "Fan Edit Collections"], ["#/all", "Main Collection"], ["#/folder/" + F.tbc, "To Be Catalogued"], ["#/folder/" + F.actors, "Actors"], ["#/folder/" + F.directors, "Directors"], ["#/genres", "Genres"]];
+      return [["#/", "Home"], ["#/readfirst", "Read First"], ["#/newarrivals", "New Arrivals"], ["#/supportus", "Support Us"], ["#/folder/" + F.collections, "Fan Edit Collections"], ["#/folder/" + F.tbc, "To Be Catalogued"], ["#/people", "Actors & Directors"], ["#/mylist", "My List"], ["#/genres", "Genres"]];
     },
     menuHTML: function(F, back) {
       var h = location.hash || "#/";
       if (h === "#/arena") h = "#/newarrivals";
+      if (h === "#/support") h = "#/supportus";
       if (/^#\/genre\//.test(h)) h = "#/genres";
       return (back ? '<button class="mi" data-nav="up">\u25C0 Back</button>' : "") + NA.MENU(F).map(function(m) {
         var on = h === m[0] || m[0] === "#/" && h === "#" || m[0] !== "#/" && h.indexOf(m[0] + "/") === 0;

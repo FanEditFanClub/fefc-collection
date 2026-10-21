@@ -3,7 +3,6 @@
 HTML fragment to data/readfirst.html. Run before `npm run build` whenever the doc changes."""
 import re, html, urllib.request, urllib.parse, pathlib, sys
 # usage: readfirst_doc.py [DOC_ID] [OUT]  (default: Read First -> data/readfirst.html)
-# Support shortcuts in Drive point at the same Read First doc: readfirst_doc.py 1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk data/support-doc.html
 DOC=sys.argv[1] if len(sys.argv)>1 else '1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk'
 OUT=sys.argv[2] if len(sys.argv)>2 else 'data/readfirst.html'
 src=urllib.request.urlopen(f'https://docs.google.com/document/d/{DOC}/export?format=html',timeout=30).read().decode('utf8')
