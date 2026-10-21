@@ -8,3 +8,7 @@
   Cache-Control: no-cache
 /data/*
   Cache-Control: public, max-age=300
+/sw.js
+  Cache-Control: no-cache
+/manifest.json
+  Cache-Control: no-cache

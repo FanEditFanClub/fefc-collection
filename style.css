@@ -193,3 +193,18 @@ body.intro-done:not(.at-home) #tagline{visibility:hidden}
 #rfpanel{z-index:70}
 #intro img{border-radius:0;mix-blend-mode:normal;filter:drop-shadow(0 0 24px #9cf)}
 .hb-logo img{width:52%;border-radius:0;box-shadow:none;filter:drop-shadow(0 0 10px #9cf8)}
+#mosaic{display:block;padding:0}#mosaic .mc{position:absolute}
+#home.enter #hub{animation-name:hubin2}@keyframes hubin2{from{opacity:0}to{opacity:1}}
+#hub{background:none;box-shadow:none;padding:0}
+#hub .mc{position:absolute;z-index:0;pointer-events:none}#hub .hb{z-index:1}
+#home{overflow:hidden}
+/* ---------- INSTALL PROMPT ---------- */
+#install{position:fixed;left:0;right:0;bottom:calc(10px + env(safe-area-inset-bottom));z-index:80;display:flex;justify-content:center;pointer-events:none}
+.ins-card{pointer-events:auto;display:flex;align-items:center;gap:12px;max-width:min(680px,94vw);padding:10px 14px;border:2px solid #9fb6cf;border-radius:4px;background:linear-gradient(160deg,#3b4452,#151a22 45%,#0d1117);box-shadow:0 0 0 2px #000,0 8px 30px #000,0 0 18px #ff9c0055;font-family:'Source Sans 3',sans-serif;transform:translateY(140%);transition:transform .4s cubic-bezier(.2,.8,.2,1)}
+#install.open .ins-card{transform:none}
+.ins-card img{width:48px;height:48px;border-radius:10px}
+.ins-txt{display:flex;flex-direction:column;font-size:15px;color:#cfe0f5}.ins-txt b{color:#fff;font-size:17px}
+.ins-btns{display:flex;gap:8px;margin-left:auto}
+.ins-b{min-height:44px;padding:0 14px;border:2px solid #9fb6cf;border-radius:3px;background:#151a22;color:#fff;font:600 15px 'Source Sans 3',sans-serif;cursor:pointer}
+.ins-p{border-color:#ffb02e;box-shadow:0 0 12px #ff9c0088}.ins-b:focus{outline:3px solid #fff}
+.ios-share{display:inline-block;border:1px solid #9cf;border-radius:3px;padding:0 4px;color:#9cf}
