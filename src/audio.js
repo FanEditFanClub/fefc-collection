@@ -33,6 +33,8 @@ const S={
  fx(list){if(muted)return;init();if(ctx.state==='suspended')ctx.resume();S.loadFx(list).then(b=>{if(!b||muted)return;const src=ctx.createBufferSource(),g=ctx.createGain();g.gain.value=1;src.buffer=b;src.connect(g);g.connect(master);const t=ctx.currentTime;
   if(amb){amb.g.gain.cancelScheduledValues(t);amb.g.gain.setValueAtTime(amb.g.gain.value,t);amb.g.gain.linearRampToValueAtTime(.012,t+.25);amb.g.gain.setValueAtTime(.012,t+b.duration);amb.g.gain.linearRampToValueAtTime(.075,t+b.duration+2.5)}
   src.start(t)})},
+ BACK:['assets/sfx/ui-back.m4a','assets/sfx/ui-back.mp3','assets/sfx/ui-back.wav'],
+ back(){const n=Date.now();if(n-(S._bt||0)<350)return;S._bt=n;S.fx(S.BACK)},
  state(){init();return ctx.state},
  // full intro score; times are seconds of the 26 s story (condensed: 4 s)
  loadIntro(){init();if(S._ip)return S._ip;S._ip=fetch(INTRO_MP3).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((res,rej)=>ctx.decodeAudioData(a,res,rej))).then(b=>S._ib=b,()=>null);return S._ip},

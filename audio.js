@@ -165,6 +165,13 @@ window.SFX = (() => {
         src.start(t);
       });
     },
+    BACK: ["assets/sfx/ui-back.m4a", "assets/sfx/ui-back.mp3", "assets/sfx/ui-back.wav"],
+    back() {
+      const n = Date.now();
+      if (n - (S._bt || 0) < 350) return;
+      S._bt = n;
+      S.fx(S.BACK);
+    },
     state() {
       init();
       return ctx.state;

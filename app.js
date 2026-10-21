@@ -1060,7 +1060,7 @@ var __spreadValues = (a, b) => {
     }
     if (k === "back") {
       if (history.length > 1 && location.hash && location.hash !== "#/") {
-        S.click && S.click();
+        S.back();
         return history.back();
       }
       return goBack();
@@ -1250,6 +1250,7 @@ var __spreadValues = (a, b) => {
     route();
   }
   function back(fallback) {
+    S.back();
     navBack = true;
     const h = location.hash, fb = () => {
       history.replaceState(null, "", fallback || "#/");
@@ -1348,9 +1349,16 @@ var __spreadValues = (a, b) => {
     showHome();
   }
   window.addEventListener("popstate", () => {
+    S.back();
     navBack = true;
     route();
   });
+  (window.requestIdleCallback || setTimeout)(() => {
+    try {
+      S.loadFx(S.BACK);
+    } catch (e) {
+    }
+  }, { timeout: 3e3 });
   if (P.get("debug")) window._fefc = { items, kids, episodes: (i) => episodes(items.get(i)) };
   function status(t) {
     $("#status").textContent = t;
@@ -2045,17 +2053,17 @@ var __spreadValues = (a, b) => {
     }
     const nav = e.target.closest("[data-nav]");
     if (nav) {
-      S.click();
       const k = nav.dataset.nav;
       if (k === "up") return back(parentHash());
+      S.click();
       return go(k === "home" ? "#/" : "#/" + k);
     }
     const act = e.target.closest("[data-act]");
     if (act) {
-      S.chirp(1);
       const f = items.get($("#details").dataset.id);
-      if (act.dataset.act === "back") back("#/");
-      else go("#/play/" + f.id);
+      if (act.dataset.act === "back") return back("#/");
+      S.chirp(1);
+      go("#/play/" + f.id);
       return;
     }
     const t = e.target.closest(".ol-tile");
@@ -2164,8 +2172,8 @@ var __spreadValues = (a, b) => {
     if (e.scrollIntoView) e.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   function goBack() {
+    S.back();
     if (!$("#rfpanel").hidden) return rfDismiss();
-    S.click();
     back(parentHash());
   }
   document.addEventListener("keydown", (e) => {
