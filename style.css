@@ -549,3 +549,24 @@ body.touch .sortbar{gap:10px}body.touch .sortpill{padding:10px 16px}
 body.touch #menu{gap:4px}body.touch .mi{display:inline-flex;align-items:center}
 body.touch #details .seat,body.touch #details .ept{min-height:56px}
 body.touch .epnav{gap:10px}
+/* phone portrait Home grid: bigger hub, labels that fit */
+@media (orientation:portrait) and (max-width:600px){
+ #hub{width:94vw!important;aspect-ratio:1.2;grid-template-rows:repeat(3,1fr)!important;gap:2vw}
+ #hub .hb{font-size:min(4.6vw,20px)!important;padding:4px 3px;line-height:1.05;gap:3px;container-type:normal}
+ #hub .hb span{overflow-wrap:normal;word-break:normal;-webkit-hyphens:none;hyphens:none;text-align:center}
+ #hub .hb small,#hub .hb .hb-cnt{display:block;white-space:normal!important;font-size:max(9px,2.5vw)!important;line-height:1.15;text-align:center}
+ #hub .hb-logo img,#hub .hb-logo svg{max-height:38%}
+}
+@media (orientation:portrait) and (max-width:340px){#hub .hb small,#hub .hb .hb-cnt{display:none}}
+/* short screens: slim single-row top bar */
+@media (max-height:500px){
+ #bar{flex-wrap:nowrap!important;height:40px;min-height:0;padding:0 6px!important;gap:6px!important;padding-top:env(safe-area-inset-top)!important;box-sizing:content-box}
+ #brand img{height:26px!important}#brand span{display:none!important}
+ #menu{flex-wrap:nowrap!important;overflow-x:auto;overflow-y:hidden;order:0!important;flex:1 1 auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+ #bar .mi{min-height:34px!important;padding:0 10px!important;font-size:13px!important;display:inline-flex;align-items:center;white-space:nowrap}
+ #q{height:30px!important;width:120px!important;flex:none!important;font-size:13px}
+ #bar .ai-btn{min-height:32px!important;padding:2px 8px!important;font-size:12px!important;white-space:nowrap}
+ #bar .ai-btn img.opt-btn-av{height:24px;width:24px}
+ body.touch #bar .top-inst{display:none!important}
+}
+@media (max-height:500px) and (max-width:900px){#bar .ai-btn{font-size:0!important;padding:2px 4px!important;min-width:36px}#bar .ai-btn img{margin:0}}
