@@ -1,5 +1,5 @@
 {
- "_note": "Folder sound effects: key = Drive folder id or exact folder name; value = list of files, first playable wins (m4a/mp3, wav fallback). Played once each time that folder is opened. \"_rules\": case-insensitive substring match on the folder name (and, with \"path\":true, any ancestor folder name). Exact id/name entries win over rules.",
+ "_note": "Folder sound effects: key = Drive folder id or exact folder name; value = list of files, first playable wins (m4a/mp3, wav fallback). Played once each time that folder is opened. \"_rules\": case-insensitive substring match on the folder name (and, with \"path\":true, any ancestor folder name). Exact id/name entries win over rules. Rule keys: match (substring), regex (case-insensitive, tested on folder/ancestor names), ids, path; files = one list, or file = list of lists with random:true (no immediate repeat).",
  "1DEWGPeFVQYiB-Yj6wYwAWv_jZ4j0fPAQ": [
   "assets/sfx/james-bond.m4a",
   "assets/sfx/james-bond.mp3",
@@ -69,7 +69,9 @@
     "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF",
     "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el",
     "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t",
-    "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC"
+    "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC",
+    "1JRoaEUqc4xn1bTbv-km3u8rHATwIn_vk",
+    "1UKLpEz_W-gH2Fjm2jeQshEhTMnVQnwsQ"
    ]
   },
   {
@@ -130,13 +132,24 @@
    "match": "jurassic"
   },
   {
-   "files": [
-    "assets/sfx/star-trek-communicator.m4a",
-    "assets/sfx/star-trek-communicator.mp3"
-   ],
    "path": true,
-   "source": "myinstants communicator.mp3",
-   "match": "star trek"
+   "source": "myinstants tng_transporter9 / boatswain-pipe-general-call / x-phaser-2-tng",
+   "match": "star trek",
+   "file": [
+    [
+     "assets/sfx/trek-transporter.m4a",
+     "assets/sfx/trek-transporter.mp3"
+    ],
+    [
+     "assets/sfx/trek-bosun.m4a",
+     "assets/sfx/trek-bosun.mp3"
+    ],
+    [
+     "assets/sfx/trek-phaser.m4a",
+     "assets/sfx/trek-phaser.mp3"
+    ]
+   ],
+   "random": true
   },
   {
    "files": [
@@ -171,7 +184,7 @@
     "assets/sfx/die-hard-yippee.mp3"
    ],
    "path": true,
-   "source": "myinstants johnmcclanejapanese.mp3",
+   "source": "myinstants yippy_mf-13464909\u2026mp3",
    "match": "die hard"
   },
   {
@@ -283,7 +296,7 @@
    ],
    "path": true,
    "source": "myinstants xenomorph-screech.mp3",
-   "match": "alien"
+   "regex": "^(alien|aliens|alien 3|alien\u00b3|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
   }
  ]
 }

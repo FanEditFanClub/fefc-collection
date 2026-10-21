@@ -1191,7 +1191,11 @@ var __spreadValues = (a, b) => {
     FSFX = m;
     const pre = () => {
       Object.keys(m).forEach((k) => Array.isArray(m[k]) && S.loadFx && S.loadFx(m[k]));
-      (m._rules || []).forEach((r) => S.loadFx && S.loadFx(r.files || [r.file]));
+      (m._rules || []).forEach((r) => {
+        if (!S.loadFx) return;
+        const V = Array.isArray(r.file) && Array.isArray(r.file[0]) ? r.file : [r.files || (Array.isArray(r.file) ? r.file : [r.file])];
+        V.forEach((x) => S.loadFx(x));
+      });
     };
     (window.requestIdleCallback || setTimeout)(pre, { timeout: 4e3 });
   }).catch(() => {
@@ -1211,10 +1215,26 @@ var __spreadValues = (a, b) => {
       if (sc) names.push((sc.name || "").toLowerCase());
       const r = FSFX._rules.find((r2) => {
         if (r2.ids && r2.ids.some((x) => x === id || r2.path !== false && ids.indexOf(x) >= 0)) return true;
+        if (r2.regex) {
+          let re;
+          try {
+            re = new RegExp(r2.regex, "i");
+          } catch (e) {
+          }
+          if (re && (r2.path ? names : names.slice(0, 1)).some((x) => re.test(x))) return true;
+        }
         const q = (r2.match || "").toLowerCase();
         return q && (r2.path ? names : names.slice(0, 1).concat(sc ? [(sc.name || "").toLowerCase()] : [])).some((x) => x.includes(q));
       });
-      if (r) L = r.files || [r.file];
+      if (r) {
+        if (Array.isArray(r.file) && Array.isArray(r.file[0])) {
+          const V = r.file;
+          let i = Math.random() * V.length | 0;
+          if (V.length > 1 && i === r._last) i = (i + 1 + (Math.random() * (V.length - 1) | 0)) % V.length;
+          r._last = i;
+          L = V[i];
+        } else L = r.files || (Array.isArray(r.file) ? r.file : [r.file]);
+      }
     }
     if (Array.isArray(L) && S.fx) S.fx(L);
   }
