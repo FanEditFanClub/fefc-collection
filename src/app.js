@@ -119,7 +119,7 @@ function hubGo(k){S.click();
   const t=document.querySelector('#grid .ol-tile');if(t&&document.body.classList.contains('kbd'))focusEl(t);return}
  if(k==='support'){hideHome();cur='virtual';view='folder';$('#crumb').textContent='Support Fan Edit Fan Club';$('#arena').innerHTML='';$('#sec2').textContent='Thank you for supporting the collection';
   $('#grid').innerHTML=SUPPORT.map(s=>`<a class="ol-tile link" href="${s.url}" target="_blank" rel="noopener"><div class="art" style="background:radial-gradient(circle at 70% 20%,#ff9c00aa,#1a2233 60%,#05070b)"></div><div class="nm" style="font-size:20px">${s.name}</div></a>`).join('');status('');menu()}}
-const HUBH={main:'#/all',arena:'#/arena',readfirst:'#/readfirst',genres:'#/genres',support:'#/support',search:'#/search'};
+const HUBH={main:'#/all',arena:'#/newarrivals',readfirst:'#/readfirst',genres:'#/genres',support:'#/support',search:'#/search'};
 document.addEventListener('click',e=>{const h=e.target.closest('[data-hub]');if(!h)return;S.click();const k=h.dataset.hub;go(k.indexOf('folder:')===0?'#/folder/'+k.slice(7):HUBH[k]||'#/')});
 document.addEventListener('pointerover',e=>{const h=e.target.closest('.hb');if(h&&h!==lastHub){lastHub=h;S.move()}});let lastHub=null;
 function doSearch(){S.click();go('#/search')}
@@ -135,7 +135,7 @@ $('#rfclose').onclick=()=>back('#/');
 function go(h){if(location.hash===h)return route();history.pushState({fefc:1},'',h);route()}
 function back(fallback){const h=location.hash,fb=()=>{history.replaceState(null,'',fallback||'#/');route()};if(history.state&&history.state.fefc){history.back();setTimeout(()=>{if(location.hash===h)fb()},450)}else fb()}
 function parentHash(){const r=parseH();if(r[0]==='play')return r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/';if(r[0]==='edit'||r[0]==='readfirst')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';return '#/'}
-function parseH(){return (location.hash.replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent)}
+function parseH(){if(/^#\/arena/.test(location.hash))history.replaceState(history.state,'','#/newarrivals');return (location.hash.replace(/^#\/?newarrivals/,'#/arena').replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent)}
 function itemOr(id){return items.get(id)||{id:id,name:'Fan edit',mimeType:'video/mp4'}}
 let baseKey=null;
 function route(){const r=parseH(),k=r[0]||'';

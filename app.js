@@ -478,7 +478,7 @@ var __spreadValues = (a, b) => {
       menu();
     }
   }
-  const HUBH = { main: "#/all", arena: "#/arena", readfirst: "#/readfirst", genres: "#/genres", support: "#/support", search: "#/search" };
+  const HUBH = { main: "#/all", arena: "#/newarrivals", readfirst: "#/readfirst", genres: "#/genres", support: "#/support", search: "#/search" };
   document.addEventListener("click", (e) => {
     const h = e.target.closest("[data-hub]");
     if (!h) return;
@@ -574,7 +574,8 @@ var __spreadValues = (a, b) => {
     return "#/";
   }
   function parseH() {
-    return (location.hash.replace(/^#\/?/, "") || "").split("/").map(decodeURIComponent);
+    if (/^#\/arena/.test(location.hash)) history.replaceState(history.state, "", "#/newarrivals");
+    return (location.hash.replace(/^#\/?newarrivals/, "#/arena").replace(/^#\/?/, "") || "").split("/").map(decodeURIComponent);
   }
   function itemOr(id) {
     return items.get(id) || { id, name: "Fan edit", mimeType: "video/mp4" };
