@@ -314,3 +314,11 @@ body.overlay #tagline{visibility:hidden!important}
 #grid.support-grid .sup small{color:#ffa31a!important;opacity:1}
 #grid.support-grid .sup>*{position:relative;z-index:3}
 #grid.support-grid .sup{-webkit-box-reflect:none!important}
+/* tagline: plain glowing text, no panel; edge clips show through */
+#tagline span,#tagline span{background:none!important;border:0!important;box-shadow:none!important;border-radius:0}
+#tagline span{color:#f4f6fa;text-shadow:0 0 .5em rgba(255,255,255,.35),0 0 1.2em rgba(120,170,255,.25),0 2px 4px #000,0 0 3px #000,0 0 14px rgba(0,0,0,.9)}
+#zflash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:9000}
+#zghost{position:fixed;inset:0;border:3px solid #ff9a2e;box-shadow:0 0 40px #ff8a1a88,inset 0 0 60px #ffffff33;border-radius:8px;opacity:0;pointer-events:none;z-index:8999;transform-origin:50% 50%}
+/* people tiles: face-aware crop (focal point from tools/faces.py); contain over blurred copy when the face can't fit */
+.ol-tile.person img.pbg{object-fit:cover;filter:blur(14px) brightness(.55);transform:scale(1.15)}
+.ol-tile.person img.pfit{object-fit:contain!important;object-position:50% 50%!important;position:absolute;inset:0;width:100%;height:100%;z-index:1}

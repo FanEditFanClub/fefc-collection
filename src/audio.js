@@ -21,7 +21,10 @@ const S={
 
  state(){init();return ctx.state},
  // full intro score; times are seconds of the 26 s story (condensed: 4 s)
- introSeq(short,from){init();if(ctx.state!=='running')return;from=from||0;const t0=ctx.currentTime+.05-from,now0=ctx.currentTime,bus=ctx.createGain();bus.gain.value=1;bus.connect(master);S._bus=bus;
+ loadIntro(){init();if(S._ip)return S._ip;S._ip=fetch('assets/intro.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((res,rej)=>ctx.decodeAudioData(a,res,rej))).then(b=>S._ib=b,()=>null);return S._ip},
+ introSeq(short,from,el){init();if(ctx.state!=='running')return;from=from||0;const t0=ctx.currentTime+.05-from,now0=ctx.currentTime,bus=ctx.createGain();bus.gain.value=1;bus.connect(master);S._bus=bus;
+  if(!short){const play=()=>{const off=el?el():from;if(off>=S._ib.duration-.05)return;const src=ctx.createBufferSource();src.buffer=S._ib;src.connect(bus);src.start(ctx.currentTime+.01,Math.max(0,off+.01))};
+   if(S._ib)play();else S.loadIntro().then(b=>{if(b&&S._bus===bus)play()});return}
   const noise=d=>{const n=ctx.createBufferSource(),b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*d),ctx.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;n.buffer=b;return n};
   const env=(g,a,b,pk,at=.3,rl=.3)=>{g.gain.setValueAtTime(0,a);g.gain.linearRampToValueAtTime(pk,a+Math.min(at,(b-a)/2));g.gain.setValueAtTime(pk,Math.max(a+Math.min(at,(b-a)/2),b-rl));g.gain.linearRampToValueAtTime(0,b)};
   const osc=(type,f,a,b,pk,f2,dst)=>{if(b<=now0+.05)return{detune:{}};const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f,a);if(f2)o.frequency.exponentialRampToValueAtTime(f2,b);env(g,a,b,pk);o.connect(g);g.connect(dst||bus);o.start(a);o.stop(b+.05);return o};
@@ -40,6 +43,11 @@ const S={
    bell(T(24.05))}
   else{nz(T(0),T(.9),.14,'bandpass',4000,300,1.2);nz(T(.8),T(1.5),.16,'highpass',300,9000,.7);nz(T(1.5),T(2.7),.05,'lowpass',380,520,.8);osc('sine',1800,T(2.6),T(4),.05,200);for(let i=0;i<6;i++)osc('square',2600+i*170,T(2.7+i*.2),T(2.725+i*.2),.03);bell(T(4))}},
  introStop(){if(!S._bus)return;const b=S._bus;S._bus=null;b.gain.setTargetAtTime(0,ctx.currentTime,.08)},
+ zoom(out){if(!started)return;const t=ctx.currentTime,n=ctx.createBufferSource(),b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.7),ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;n.buffer=b;
+  const f=ctx.createBiquadFilter(),g=ctx.createGain();f.type='bandpass';f.Q.value=1.4;f.frequency.setValueAtTime(out?2600:500,t);f.frequency.exponentialRampToValueAtTime(out?320:2600,t+.5);
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(out?.12:.16,t+(out?.08:.38));g.gain.linearRampToValueAtTime(0,t+.6);n.connect(f);f.connect(g);g.connect(master);n.start(t);n.stop(t+.7);
+  tone(out?48:62,t,.5,'sine',.22,out?36:55);
+  if(!out)[659.3,987.8,1318.5].forEach((fq,i)=>{const s0=t+.4+i*.02,c=ctx.createOscillator(),m=ctx.createOscillator(),mg=ctx.createGain(),v=ctx.createGain();c.frequency.value=fq;m.frequency.value=fq*1.41;mg.gain.setValueAtTime(fq*2,s0);mg.gain.exponentialRampToValueAtTime(fq*.05,s0+.8);m.connect(mg);mg.connect(c.frequency);v.gain.setValueAtTime(0,s0);v.gain.linearRampToValueAtTime(.045,s0+.005);v.gain.exponentialRampToValueAtTime(.0001,s0+1.4);c.connect(v);v.connect(master);c.start(s0);m.start(s0);c.stop(s0+1.5);m.stop(s0+1.5)})},
  bell(){init();if(ctx.state!=='running')return;const s=ctx.currentTime;[523.25,659.25,783.99].forEach((f,i)=>tone(f,s+i*.03,2.5,'sine',.07))},
  intro(short){if(!started)return;const t=ctx.currentTime;
   // rising whoosh (filtered noise) + swelling chord + bright resolve chime

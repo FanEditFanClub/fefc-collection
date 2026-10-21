@@ -4,12 +4,15 @@ const cl=(x,a=0,b=1)=>x<a?a:x>b?b:x,sm=(a,b,x)=>{x=cl((x-a)/(b-a));return x*x*(3
 // condensed (repeat visit) maps real 0..4s onto story time segments
 const SEG=[[0,.9,2,5],[.9,1.5,10.2,12.2],[1.5,2.6,13,20],[2.6,4,21,24.2]];
 const mapC=r=>{for(const s of SEG)if(r<=s[1])return lerp(s[2],s[3],(r-s[0])/(s[1]-s[0]));return 24.2};
+// full intro: real seconds (timed to the reference's shot changes, total 26.1667 s) -> story time
+const FULL=26.1667,SEGF=[[0,5.2,0,2.6],[5.2,6.2,2.6,4.8],[6.2,7.5,4.8,6.6],[7.5,10,6.6,8.3],[10,11.9,8.3,11.95],[11.9,24.3,11.95,24.2]];
+const mapF=r=>{for(const s of SEGF)if(r<=s[1])return lerp(s[2],s[3],(r-s[0])/(s[1]-s[0]));return 24.2};
 function create(opt){
  const tv=opt.tv,cv=document.createElement('canvas'),c=cv.getContext('2d'),dpr=Math.min(window.devicePixelRatio||1,tv?1:1.5);
  let W=0,H=0;const size=()=>{W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px'};size();addEventListener('resize',size);
  const buf=document.createElement('canvas'),bc=buf.getContext('2d');
  // logo + orange tinted logo
- const logo=new Image();logo.src='assets/fefc-logo.png';let tint=null;
+ const logo=new Image();logo.src='assets/fefc-logo-carson.png';let tint=null;
  logo.onload=()=>{const t=document.createElement('canvas');t.width=t.height=512;const x=t.getContext('2d');x.drawImage(logo,0,0,512,512);x.globalCompositeOperation='source-in';const g=x.createLinearGradient(0,0,512,512);g.addColorStop(0,'#ffb347');g.addColorStop(.45,'#ff8a1a');g.addColorStop(1,'#c24d00');x.fillStyle=g;x.fillRect(0,0,512,512);tint=t};
  // star field + mosaic tiles
  let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
@@ -19,18 +22,18 @@ function create(opt){
  const tile=(i,x,y,w,h)=>{const im=imgs.length?imgs[((i%imgs.length)+imgs.length)%imgs.length]:null;if(im&&im.ok)c.drawImage(im,x,y,w,h);else{c.fillStyle=hues[((i%64)+64)%64];c.fillRect(x,y,w,h)}};
  const hash=(a,b)=>{let h=a*374761393+b*668265263;h=(h^(h>>13))*1274126177;return (h^(h>>16))&0x7fffffff};
  function sky(a){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#000');g.addColorStop(1,'#141a24');c.fillStyle=g;c.fillRect(0,0,W,H);c.fillStyle='#fff';for(const s of stars){c.globalAlpha=a*(.25+.75*s[2]);const r=s[2]>.9?1.6:.9;c.fillRect(s[0]*W,s[1]*H,r,r)}c.globalAlpha=1}
- function drawLogo(s,a,sc,rot,dx,dy,tinted){if(!logo.complete)return;const L=H*.46*sc;c.save();c.globalAlpha=a;c.translate(W/2+dx,H/2+dy);c.rotate(rot);if(!tv){c.shadowColor='rgba(255,140,30,.55)';c.shadowBlur=40*sc}c.drawImage(tinted&&tint?tint:logo,-L/2,-L/2,L,L);c.restore()}
+ function drawLogo(s,a,sc,rot,dx,dy,tinted){if(!logo.complete)return;const L=H*.46*sc;c.save();c.globalAlpha=a;c.translate(W/2+dx,H/2+dy);c.rotate(rot);if(!tv){c.shadowColor='rgba(255,255,255,.35)';c.shadowBlur=30*sc}c.drawImage(logo,-L/2,-L/2,L,L);c.restore()}
  function ribbon(s){ // 0-5: blurred glowing orange ribbons sweeping right->left, then zooming back into the mark
   const p=s/2,z=s<2?1:lerp(1,.18,eo((s-2)/1.6)),fade=sm(0,.5,s)*(1-sm(2.5,3.3,s));if(fade<=0)return;
   c.save();c.translate(W/2,H/2);c.scale(z,z);c.rotate(s<2?0:-(s-2)*.5);c.globalCompositeOperation='lighter';
   for(let k=0;k<2;k++){const cx=lerp(W*1.1,-W*.35,cl(p))+k*W*.25-W/2,cy=k?H*.55:-H*.2,R=H*(k?1.1:.85);
-   const g=c.createLinearGradient(cx-R,cy-R,cx+R,cy+R);g.addColorStop(0,'#3a1500');g.addColorStop(.5,'#ff8c1a');g.addColorStop(.7,'#ffc070');g.addColorStop(1,'#401800');
-   c.strokeStyle=g;c.lineWidth=H*(k?.34:.48);if(!tv&&'filter' in c)c.filter='blur('+Math.round(H*.018)+'px)';c.globalAlpha=fade*(k?.55:.9);if(!tv){c.shadowColor='#ff7a00';c.shadowBlur=70}
+   const g=c.createLinearGradient(cx-R,cy-R,cx+R,cy+R);g.addColorStop(0,'#1c1f24');g.addColorStop(.5,'#c9ced6');g.addColorStop(.7,'#ffffff');g.addColorStop(1,'#202329');
+   c.strokeStyle=g;c.lineWidth=H*(k?.34:.48);if(!tv&&'filter' in c)c.filter='blur('+Math.round(H*.018)+'px)';c.globalAlpha=fade*(k?.55:.9);if(!tv){c.shadowColor='#dfe6f0';c.shadowBlur=60}
    c.beginPath();c.arc(cx,cy,R,Math.PI*(.9+k*.3+p*.25),Math.PI*(1.7+k*.3+p*.25));c.stroke()}
   c.filter='none';c.restore()}
- function sheen(s){const t=(s-3.8)/1;if(t<0||t>1||!logo.complete)return;const L=H*.46;c.save();c.beginPath();c.rect(W/2-L/2,H/2-L/2,L,L);c.clip();c.globalCompositeOperation='lighter';const x=W/2-L+t*2*L,g=c.createLinearGradient(x-L*.15,0,x+L*.15,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,240,210,.55)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.globalCompositeOperation='source-atop';c.restore();
+ function sheen(s){const t=(s-3.8)/1;if(t<0||t>1||!logo.complete)return;const L=H*.46;c.save();c.beginPath();c.rect(W/2-L/2,H/2-L/2,L,L);c.clip();c.globalCompositeOperation='lighter';const x=W/2-L+t*2*L,g=c.createLinearGradient(x-L*.15,0,x+L*.15,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.globalCompositeOperation='source-atop';c.restore();
   // apply sheen only on the logo pixels using buf
-  buf.width=L|0;buf.height=L|0;bc.clearRect(0,0,L,L);bc.drawImage(logo,0,0,L,L);bc.globalCompositeOperation='source-in';const g2=bc.createLinearGradient(t*2*L-L*.65,0,t*2*L-L*.35,0);g2.addColorStop(0,'rgba(255,255,255,0)');g2.addColorStop(.5,'rgba(255,245,220,.9)');g2.addColorStop(1,'rgba(255,255,255,0)');bc.fillStyle=g2;bc.fillRect(0,0,L,L);bc.globalCompositeOperation='source-over';
+  buf.width=L|0;buf.height=L|0;bc.clearRect(0,0,L,L);bc.drawImage(logo,0,0,L,L);bc.globalCompositeOperation='source-in';const g2=bc.createLinearGradient(t*2*L-L*.65,0,t*2*L-L*.35,0);g2.addColorStop(0,'rgba(255,255,255,0)');g2.addColorStop(.5,'rgba(235,240,250,.9)');g2.addColorStop(1,'rgba(255,255,255,0)');bc.fillStyle=g2;bc.fillRect(0,0,L,L);bc.globalCompositeOperation='source-over';
   c.save();c.globalCompositeOperation='lighter';c.drawImage(buf,W/2-L/2,H/2-L/2);c.restore()}
  // tile atlas (mosaic thumbnails, rebuilt as they arrive) used as a repeating ground texture
  const AT=tv?32:64,AN=16,atlas=document.createElement('canvas');atlas.width=atlas.height=AT*AN;const ax=atlas.getContext('2d');let pat=null,dirty=1,lastB=0;
@@ -73,8 +76,8 @@ function create(opt){
   if(s>=11.95)planet(s);
   if(s>22.1)topdown(s);
   const fl=s<12.6?sm(11.7,11.95,s)*(1-sm(11.95,12.6,s)):0;if(fl>0){c.globalAlpha=fl;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1}
-  const sn=sm(23.7,24.05,s);if(sn>0){c.globalAlpha=sn*(1-sm(24.05,24.2,s));c.fillStyle='#ffd9a8';c.fillRect(0,0,W,H);c.globalAlpha=1}
+  const sn=sm(23.7,24.05,s);if(sn>0){c.globalAlpha=sn*(1-sm(24.05,24.2,s));c.fillStyle='#ffffff';c.fillRect(0,0,W,H);c.globalAlpha=1}
   // tagline: fades in at its exact dashboard position (real DOM element)
   const tg=opt.tagline;if(tg){const a=sm(17.4,18.6,s);tg.style.visibility='visible';tg.style.opacity=a;tg.style.clipPath=`inset(0 ${(100-100*eo(cl((s-17.4)/1.4))).toFixed(1)}% 0 0)`}}
- return {canvas:cv,frame,mapC,setTiles}}
-return {create,mapC}})();
+ return {canvas:cv,frame,mapC,mapF,FULL,setTiles}}
+return {create,mapC,mapF,FULL}})();

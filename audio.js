@@ -103,7 +103,16 @@ window.SFX = (() => {
       return ctx.state;
     },
     // full intro score; times are seconds of the 26 s story (condensed: 4 s)
-    introSeq(short, from) {
+    loadIntro() {
+      init();
+      if (S._ip) return S._ip;
+      S._ip = fetch("assets/intro.mp3").then((r) => {
+        if (!r.ok) throw 0;
+        return r.arrayBuffer();
+      }).then((a) => new Promise((res, rej) => ctx.decodeAudioData(a, res, rej))).then((b) => S._ib = b, () => null);
+      return S._ip;
+    },
+    introSeq(short, from, el) {
       init();
       if (ctx.state !== "running") return;
       from = from || 0;
@@ -111,6 +120,21 @@ window.SFX = (() => {
       bus.gain.value = 1;
       bus.connect(master);
       S._bus = bus;
+      if (!short) {
+        const play = () => {
+          const off = el ? el() : from;
+          if (off >= S._ib.duration - 0.05) return;
+          const src = ctx.createBufferSource();
+          src.buffer = S._ib;
+          src.connect(bus);
+          src.start(ctx.currentTime + 0.01, Math.max(0, off + 0.01));
+        };
+        if (S._ib) play();
+        else S.loadIntro().then((b) => {
+          if (b && S._bus === bus) play();
+        });
+        return;
+      }
       const noise = (d) => {
         const n = ctx.createBufferSource(), b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * d), ctx.sampleRate), x = b.getChannelData(0);
         for (let i = 0; i < x.length; i++) x[i] = Math.random() * 2 - 1;
@@ -204,6 +228,44 @@ window.SFX = (() => {
       const b = S._bus;
       S._bus = null;
       b.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+    },
+    zoom(out) {
+      if (!started) return;
+      const t = ctx.currentTime, n = ctx.createBufferSource(), b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.7), ctx.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      n.buffer = b;
+      const f = ctx.createBiquadFilter(), g = ctx.createGain();
+      f.type = "bandpass";
+      f.Q.value = 1.4;
+      f.frequency.setValueAtTime(out ? 2600 : 500, t);
+      f.frequency.exponentialRampToValueAtTime(out ? 320 : 2600, t + 0.5);
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(out ? 0.12 : 0.16, t + (out ? 0.08 : 0.38));
+      g.gain.linearRampToValueAtTime(0, t + 0.6);
+      n.connect(f);
+      f.connect(g);
+      g.connect(master);
+      n.start(t);
+      n.stop(t + 0.7);
+      tone(out ? 48 : 62, t, 0.5, "sine", 0.22, out ? 36 : 55);
+      if (!out) [659.3, 987.8, 1318.5].forEach((fq, i) => {
+        const s0 = t + 0.4 + i * 0.02, c = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(), v = ctx.createGain();
+        c.frequency.value = fq;
+        m.frequency.value = fq * 1.41;
+        mg.gain.setValueAtTime(fq * 2, s0);
+        mg.gain.exponentialRampToValueAtTime(fq * 0.05, s0 + 0.8);
+        m.connect(mg);
+        mg.connect(c.frequency);
+        v.gain.setValueAtTime(0, s0);
+        v.gain.linearRampToValueAtTime(0.045, s0 + 5e-3);
+        v.gain.exponentialRampToValueAtTime(1e-4, s0 + 1.4);
+        c.connect(v);
+        v.connect(master);
+        c.start(s0);
+        m.start(s0);
+        c.stop(s0 + 1.5);
+        m.stop(s0 + 1.5);
+      });
     },
     bell() {
       init();

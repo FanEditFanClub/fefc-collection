@@ -1,6 +1,6 @@
 // FEFC Collection service worker. Version is stamped at build time; a new build = new cache.
 const V='__VERSION__',SHELL='fefc-shell-'+V;
-const ASSETS=['/','/index.html','/style.css','/config.js','/audio.js','/app.js','/intro.js','/manifest.json','/assets/fonts/fonts.css','/assets/fonts/source-sans-3-400.ttf','/assets/fonts/source-sans-3-600.ttf','/assets/fefc-logo.png','/assets/icon-192.png','/assets/icon-512.png','/assets/apple-touch-icon.png','/favicon.ico'];
+const ASSETS=['/','/index.html','/style.css','/config.js','/audio.js','/app.js','/intro.js','/zoom.js','/readfirst.js','/assets/fefc-logo-carson.png','/manifest.json','/assets/fonts/fonts.css','/assets/fonts/source-sans-3-400.ttf','/assets/fonts/source-sans-3-600.ttf','/assets/fefc-logo.png','/assets/icon-192.png','/assets/icon-512.png','/assets/apple-touch-icon.png','/favicon.ico'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);

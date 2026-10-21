@@ -7,10 +7,11 @@
     var t = e.target.closest && e.target.closest('[data-hub="readfirst"]');
     from = t ? t.getBoundingClientRect() : null;
   }, true);
-  function sfx() {
+  function sfx(out) {
     try {
-      var A = window.SFX;
-      if (A && A._ctx) {
+      if (window.SFX && SFX.zoom) {
+        SFX.zoom(!!out);
+        return;
       }
     } catch (_) {
     }
@@ -106,6 +107,7 @@
         setTimeout(done, 250);
         return;
       }
+      sfx(1);
       p.classList.remove("docin");
       z.style.transition = "opacity .2s";
       z.style.opacity = 1;

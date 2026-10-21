@@ -8,6 +8,11 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     for (const s of SEG) if (r <= s[1]) return lerp(s[2], s[3], (r - s[0]) / (s[1] - s[0]));
     return 24.2;
   };
+  const FULL = 26.1667, SEGF = [[0, 5.2, 0, 2.6], [5.2, 6.2, 2.6, 4.8], [6.2, 7.5, 4.8, 6.6], [7.5, 10, 6.6, 8.3], [10, 11.9, 8.3, 11.95], [11.9, 24.3, 11.95, 24.2]];
+  const mapF = (r) => {
+    for (const s of SEGF) if (r <= s[1]) return lerp(s[2], s[3], (r - s[0]) / (s[1] - s[0]));
+    return 24.2;
+  };
   function create(opt) {
     const tv = opt.tv, cv = document.createElement("canvas"), c = cv.getContext("2d"), dpr = Math.min(window.devicePixelRatio || 1, tv ? 1 : 1.5);
     let W = 0, H = 0;
@@ -23,7 +28,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     addEventListener("resize", size);
     const buf = document.createElement("canvas"), bc = buf.getContext("2d");
     const logo = new Image();
-    logo.src = "assets/fefc-logo.png";
+    logo.src = "assets/fefc-logo-carson.png";
     let tint = null;
     logo.onload = () => {
       const t = document.createElement("canvas");
@@ -93,10 +98,10 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       c.translate(W / 2 + dx, H / 2 + dy);
       c.rotate(rot);
       if (!tv) {
-        c.shadowColor = "rgba(255,140,30,.55)";
-        c.shadowBlur = 40 * sc;
+        c.shadowColor = "rgba(255,255,255,.35)";
+        c.shadowBlur = 30 * sc;
       }
-      c.drawImage(tinted && tint ? tint : logo, -L / 2, -L / 2, L, L);
+      c.drawImage(logo, -L / 2, -L / 2, L, L);
       c.restore();
     }
     function ribbon(s) {
@@ -110,17 +115,17 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       for (let k = 0; k < 2; k++) {
         const cx = lerp(W * 1.1, -W * 0.35, cl(p)) + k * W * 0.25 - W / 2, cy = k ? H * 0.55 : -H * 0.2, R = H * (k ? 1.1 : 0.85);
         const g = c.createLinearGradient(cx - R, cy - R, cx + R, cy + R);
-        g.addColorStop(0, "#3a1500");
-        g.addColorStop(0.5, "#ff8c1a");
-        g.addColorStop(0.7, "#ffc070");
-        g.addColorStop(1, "#401800");
+        g.addColorStop(0, "#1c1f24");
+        g.addColorStop(0.5, "#c9ced6");
+        g.addColorStop(0.7, "#ffffff");
+        g.addColorStop(1, "#202329");
         c.strokeStyle = g;
         c.lineWidth = H * (k ? 0.34 : 0.48);
         if (!tv && "filter" in c) c.filter = "blur(" + Math.round(H * 0.018) + "px)";
         c.globalAlpha = fade * (k ? 0.55 : 0.9);
         if (!tv) {
-          c.shadowColor = "#ff7a00";
-          c.shadowBlur = 70;
+          c.shadowColor = "#dfe6f0";
+          c.shadowBlur = 60;
         }
         c.beginPath();
         c.arc(cx, cy, R, Math.PI * (0.9 + k * 0.3 + p * 0.25), Math.PI * (1.7 + k * 0.3 + p * 0.25));
@@ -140,7 +145,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       c.globalCompositeOperation = "lighter";
       const x = W / 2 - L + t * 2 * L, g = c.createLinearGradient(x - L * 0.15, 0, x + L * 0.15, 0);
       g.addColorStop(0, "rgba(255,255,255,0)");
-      g.addColorStop(0.5, "rgba(255,240,210,.55)");
+      g.addColorStop(0.5, "rgba(255,255,255,.55)");
       g.addColorStop(1, "rgba(255,255,255,0)");
       c.fillStyle = g;
       c.globalCompositeOperation = "source-atop";
@@ -152,7 +157,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       bc.globalCompositeOperation = "source-in";
       const g2 = bc.createLinearGradient(t * 2 * L - L * 0.65, 0, t * 2 * L - L * 0.35, 0);
       g2.addColorStop(0, "rgba(255,255,255,0)");
-      g2.addColorStop(0.5, "rgba(255,245,220,.9)");
+      g2.addColorStop(0.5, "rgba(235,240,250,.9)");
       g2.addColorStop(1, "rgba(255,255,255,0)");
       bc.fillStyle = g2;
       bc.fillRect(0, 0, L, L);
@@ -378,7 +383,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       const sn = sm(23.7, 24.05, s);
       if (sn > 0) {
         c.globalAlpha = sn * (1 - sm(24.05, 24.2, s));
-        c.fillStyle = "#ffd9a8";
+        c.fillStyle = "#ffffff";
         c.fillRect(0, 0, W, H);
         c.globalAlpha = 1;
       }
@@ -390,7 +395,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
         tg.style.clipPath = "inset(0 ".concat((100 - 100 * eo(cl((s - 17.4) / 1.4))).toFixed(1), "% 0 0)");
       }
     }
-    return { canvas: cv, frame, mapC, setTiles };
+    return { canvas: cv, frame, mapC, mapF, FULL, setTiles };
   }
-  return { create, mapC };
+  return { create, mapC, mapF, FULL };
 })();

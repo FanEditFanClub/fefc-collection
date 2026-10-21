@@ -64,6 +64,10 @@ var __spreadValues = (a, b) => {
     el.prepend(R.canvas);
     fetch("data/mosaic.json").then((r) => r.json()).then((m) => R.setTiles(m.map((x) => x.target || x.id))).catch(() => {
     });
+    if (!short) try {
+      S.loadIntro();
+    } catch (e) {
+    }
     const fr = P.get("introframe");
     if (fr !== null) {
       document.body.classList.add("frozen");
@@ -93,13 +97,13 @@ var __spreadValues = (a, b) => {
       setTimeout(() => {
         S.ambience($("#player").hidden && $("#details").hidden);
         el.remove();
-      }, skipped ? 600 : 1800);
+      }, skipped ? 600 : 1870);
     };
     let t0 = performance.now(), last = 0;
     const hint = el.querySelector(".ihint");
     let sndOn = false;
     const loop = (now) => {
-      const r = (now - t0) / 1e3, s = short ? R.mapC(r) : r;
+      const r = (now - t0) / 1e3, s = short ? R.mapC(r) : R.mapF(r);
       last = r;
       R.frame(s);
       if (s >= 24.2) return end(false);
@@ -122,7 +126,7 @@ var __spreadValues = (a, b) => {
       if (s2 === "running") {
         sndOn = true;
         try {
-          S.introSeq(short, Math.max(0, (performance.now() - t0) / 1e3 - 0.05));
+          S.introSeq(short, Math.max(0, (performance.now() - t0) / 1e3 - 0.05), () => (performance.now() - t0) / 1e3);
         } catch (e) {
         }
       }
@@ -130,7 +134,7 @@ var __spreadValues = (a, b) => {
     if (st === "running") {
       sndOn = true;
       try {
-        S.introSeq(short);
+        S.introSeq(short, 0, () => (performance.now() - t0) / 1e3);
       } catch (e) {
       }
     } else {
@@ -283,6 +287,20 @@ var __spreadValues = (a, b) => {
       im.onload = () => {
         if (im.naturalWidth > 40) {
           const a = el.querySelector(".art");
+          const pp = isFolder(f) && people[target(f)];
+          if (pp && pp.fx != null) {
+            const vis = Math.min(1, im.naturalWidth * 9 / 16 / im.naturalHeight), py = vis >= 1 ? 50 : Math.max(0, Math.min(100, (pp.fy - vis / 2) / (1 - vis) * 100));
+            if (pp.fit === "contain") {
+              const bg = new Image();
+              bg.alt = "";
+              bg.className = "pbg";
+              bg.referrerPolicy = "no-referrer";
+              bg.src = src;
+              bg.style.objectPosition = "50% " + py + "%";
+              (a || el).appendChild(bg);
+              im.className = "pfit";
+            } else im.style.objectPosition = (pp.fx * 100).toFixed(1) + "% " + py.toFixed(1) + "%";
+          }
           a ? a.appendChild(im) : el.insertBefore(im, el.firstChild);
         }
       };
@@ -377,7 +395,7 @@ var __spreadValues = (a, b) => {
     let budget = tv ? 40 : 90;
     for (let r = -rows; r < 3 + rows && budget > 0; r++) for (let c = -cols; c < 3 + cols && budget > 0; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
-      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || tb && ov(box, tb)) continue;
+      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2)) continue;
       const el = document.createElement("div");
       el.className = "mc";
       const ex = c < 0 ? -g : c > 2 ? g : 0, ey = r < 0 ? -g : r > 2 ? g : 0;

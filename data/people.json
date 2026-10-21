@@ -5,7 +5,10 @@
 "role": "actor",
 "qid": "Q104266",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/94/MelBrooksApr10.jpg/500px-MelBrooksApr10.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:MelBrooksApr10.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:MelBrooksApr10.jpg",
+"fx": 0.483,
+"fy": 0.351,
+"fit": "contain"
 },
 "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq": {
 "name": "Nicolas Cage",
@@ -13,7 +16,10 @@
 "role": "actor",
 "qid": "Q42869",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ab/Nicolas_Cage_Deauville_2013_2.jpg/500px-Nicolas_Cage_Deauville_2013_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Nicolas_Cage_Deauville_2013_2.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Nicolas_Cage_Deauville_2013_2.jpg",
+"fx": 0.618,
+"fy": 0.438,
+"fit": "contain"
 },
 "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ": {
 "name": "Jim Carrey",
@@ -21,7 +27,10 @@
 "role": "actor",
 "qid": "Q40504",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Jim_Carrey_2020_cropped.jpg/500px-Jim_Carrey_2020_cropped.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Jim_Carrey_2020_cropped.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Jim_Carrey_2020_cropped.jpg",
+"fx": 0.477,
+"fy": 0.308,
+"fit": "contain"
 },
 "1MPDDmK5CFqXsUOoFtoDzhP7Fnz6pDOPi": {
 "name": "Kevin Costner",
@@ -29,7 +38,10 @@
 "role": "actor",
 "qid": "Q11930",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Kevin_Costner_2016.jpg/500px-Kevin_Costner_2016.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Kevin_Costner_2016.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Kevin_Costner_2016.jpg",
+"fx": 0.496,
+"fy": 0.401,
+"fit": "contain"
 },
 "1X1_iqdZJ9Nz62fGZSSvbzGuk_92Xespa": {
 "name": "Tom Cruise",
@@ -37,7 +49,10 @@
 "role": "actor",
 "qid": "Q37079",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/2/23/Tom_Cruise_at_53rd_Saturn_Awards_2026-01.jpg/500px-Tom_Cruise_at_53rd_Saturn_Awards_2026-01.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Tom_Cruise_at_53rd_Saturn_Awards_2026-01.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Tom_Cruise_at_53rd_Saturn_Awards_2026-01.jpg",
+"fx": 0.527,
+"fy": 0.371,
+"fit": "contain"
 },
 "18xn8i0B5ygvJluSicKrfg4KOpwdVyvEr": {
 "name": "Harrison Ford",
@@ -45,7 +60,10 @@
 "role": "actor",
 "qid": "Q81328",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/Harrison_Ford_-_Televerse_2025-03.jpg/500px-Harrison_Ford_-_Televerse_2025-03.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Harrison_Ford_-_Televerse_2025-03.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Harrison_Ford_-_Televerse_2025-03.jpg",
+"fx": 0.527,
+"fy": 0.332,
+"fit": "contain"
 },
 "1NJa1uLfjcJBn1W1HsdWB-GE8qjnSwekh": {
 "name": "Mel Gibson",
@@ -53,7 +71,10 @@
 "role": "actor",
 "qid": "Q42229",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Mel_Gibson_Cannes_2016_2.jpg/500px-Mel_Gibson_Cannes_2016_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Mel_Gibson_Cannes_2016_2.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Mel_Gibson_Cannes_2016_2.jpg",
+"fx": 0.542,
+"fy": 0.378,
+"fit": "contain"
 },
 "1sBe2LolQsUBYKe-rFAg7eT44OMJjRJIO": {
 "name": "Adam Sandler",
@@ -61,7 +82,10 @@
 "role": "actor",
 "qid": "Q132952",
 "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Adam_Sandler_Jay_Kelly-33_%28cropped%29.jpg/500px-Adam_Sandler_Jay_Kelly-33_%28cropped%29.jpg",
-"link": "https://commons.wikimedia.org/wiki/File:Adam_Sandler_Jay_Kelly-33_(cropped).jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Adam_Sandler_Jay_Kelly-33_(cropped).jpg",
+"fx": 0.498,
+"fy": 0.326,
+"fit": "contain"
 },
 "1PP8yo_d48WTwbehk3BoAGvDXZssfaDBp": {
 "name": "Arnold Schwarzenegger",
@@ -69,7 +93,10 @@
 "role": "actor",
 "qid": "Q2685",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/44/Arnold_Schwarzenegger_2025_%28cropped%29.jpg/500px-Arnold_Schwarzenegger_2025_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Arnold_Schwarzenegger_2025_(cropped).jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Arnold_Schwarzenegger_2025_(cropped).jpg",
+"fx": 0.416,
+"fy": 0.398,
+"fit": "contain"
 },
 "1JRoaEUqc4xn1bTbv-km3u8rHATwIn_vk": {
 "name": "Martin Scorsese",
@@ -77,7 +104,10 @@
 "role": "actor",
 "qid": "Q41148",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/ce/Martin_Scorsese_MFF_2023.jpg/500px-Martin_Scorsese_MFF_2023.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Martin_Scorsese_MFF_2023.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Martin_Scorsese_MFF_2023.jpg",
+"fx": 0.477,
+"fy": 0.442,
+"fit": "contain"
 },
 "1ofrxewxyqYT_DfprG3iEmjnarIeWPJR-": {
 "name": "Sylvester Stallone",
@@ -85,7 +115,10 @@
 "role": "actor",
 "qid": "Q40026",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/84/Sylvester_Stallone_Cannes_2019.jpg/500px-Sylvester_Stallone_Cannes_2019.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Sylvester_Stallone_Cannes_2019.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Sylvester_Stallone_Cannes_2019.jpg",
+"fx": 0.513,
+"fy": 0.424,
+"fit": "contain"
 },
 "1vQe0SjdRshy0etH5IDRmolw1jKx6M7HB": {
 "name": "Jason Statham",
@@ -93,7 +126,10 @@
 "role": "actor",
 "qid": "Q169963",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/Jason_Statham_2018.jpg/500px-Jason_Statham_2018.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Jason_Statham_2018.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Jason_Statham_2018.jpg",
+"fx": 0.42,
+"fy": 0.295,
+"fit": "contain"
 },
 "1UKLpEz_W-gH2Fjm2jeQshEhTMnVQnwsQ": {
 "name": "Quentin Tarantino",
@@ -101,7 +137,10 @@
 "role": "actor",
 "qid": "Q3772",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Quentin_Tarantino_by_Gage_Skidmore.jpg/500px-Quentin_Tarantino_by_Gage_Skidmore.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Quentin_Tarantino_by_Gage_Skidmore.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Quentin_Tarantino_by_Gage_Skidmore.jpg",
+"fx": 0.508,
+"fy": 0.35,
+"fit": "contain"
 },
 "10PYTtlZVDJMlxIuPrtcpkaeRUrplGf04": {
 "name": "Bruce Willis",
@@ -109,7 +148,10 @@
 "role": "actor",
 "qid": "Q2680",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c4/Bruce_Willis_by_Gage_Skidmore_3.jpg/500px-Bruce_Willis_by_Gage_Skidmore_3.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Bruce_Willis_by_Gage_Skidmore_3.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Bruce_Willis_by_Gage_Skidmore_3.jpg",
+"fx": 0.378,
+"fy": 0.352,
+"fit": "contain"
 },
 "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP": {
 "name": "J. J. Abrams",
@@ -117,7 +159,10 @@
 "role": "director",
 "qid": "Q188137",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4a/J._J._Abrams_%2823175170706%29_%28cropped%29.jpg/500px-J._J._Abrams_%2823175170706%29_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:J._J._Abrams_(23175170706)_(cropped).jpg"
+"link": "https://commons.wikimedia.org/wiki/File:J._J._Abrams_(23175170706)_(cropped).jpg",
+"fx": 0.49,
+"fy": 0.424,
+"fit": "contain"
 },
 "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4": {
 "name": "Michael Bay",
@@ -125,7 +170,10 @@
 "role": "director",
 "qid": "Q59259",
 "url": "https://upload.wikimedia.org/wikipedia/commons/e/ec/Michael.bay.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail_unscaled",
-"link": "https://commons.wikimedia.org/wiki/File:Michael.bay.png"
+"link": "https://commons.wikimedia.org/wiki/File:Michael.bay.png",
+"fx": 0.451,
+"fy": 0.3,
+"fit": "cover"
 },
 "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v": {
 "name": "James Cameron",
@@ -133,7 +181,10 @@
 "role": "director",
 "qid": "Q42574",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/James_Cameron_at_53rd_Saturn_Awards_2026-01_%28cropped%29.jpg/500px-James_Cameron_at_53rd_Saturn_Awards_2026-01_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:James_Cameron_at_53rd_Saturn_Awards_2026-01_(cropped).jpg"
+"link": "https://commons.wikimedia.org/wiki/File:James_Cameron_at_53rd_Saturn_Awards_2026-01_(cropped).jpg",
+"fx": 0.55,
+"fy": 0.34,
+"fit": "contain"
 },
 "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2": {
 "name": "Roland Emmerich",
@@ -141,7 +192,10 @@
 "role": "director",
 "qid": "Q60100",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Independence_Day-_Resurgence_Japan_Premiere-_Roland_Emmerich_%2828502013341%29_CROPPED.jpg/500px-Independence_Day-_Resurgence_Japan_Premiere-_Roland_Emmerich_%2828502013341%29_CROPPED.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Independence_Day-_Resurgence_Japan_Premiere-_Roland_Emmerich_(28502013341)_CROPPED.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Independence_Day-_Resurgence_Japan_Premiere-_Roland_Emmerich_(28502013341)_CROPPED.jpg",
+"fx": 0.43,
+"fy": 0.186,
+"fit": "cover"
 },
 "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg": {
 "name": "Christopher Nolan",
@@ -149,7 +203,10 @@
 "role": "director",
 "qid": "Q25191",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/05/Christopher_Nolan.jpg/500px-Christopher_Nolan.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Christopher_Nolan.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Christopher_Nolan.jpg",
+"fx": 0.445,
+"fy": 0.266,
+"fit": "cover"
 },
 "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o": {
 "name": "Guy Ritchie",
@@ -157,7 +214,10 @@
 "role": "director",
 "qid": "Q192990",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/GuyRitchiebyKathyHutchins.jpg/500px-GuyRitchiebyKathyHutchins.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:GuyRitchiebyKathyHutchins.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:GuyRitchiebyKathyHutchins.jpg",
+"fx": 0.518,
+"fy": 0.359,
+"fit": "contain"
 },
 "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF": {
 "name": "Ridley Scott",
@@ -165,7 +225,10 @@
 "role": "director",
 "qid": "Q56005",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/Ridley_Scott_At_BFI_-_BFI_Southbank_-_Saturday_4th_October_2025.jpg/500px-Ridley_Scott_At_BFI_-_BFI_Southbank_-_Saturday_4th_October_2025.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Ridley_Scott_At_BFI_-_BFI_Southbank_-_Saturday_4th_October_2025.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Ridley_Scott_At_BFI_-_BFI_Southbank_-_Saturday_4th_October_2025.jpg",
+"fx": 0.488,
+"fy": 0.277,
+"fit": "cover"
 },
 "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el": {
 "name": "Zack Snyder",
@@ -173,7 +236,10 @@
 "role": "director",
 "qid": "Q139890",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e5/ZachSnyderMar2011.jpg/500px-ZachSnyderMar2011.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:ZachSnyderMar2011.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:ZachSnyderMar2011.jpg",
+"fx": 0.434,
+"fy": 0.284,
+"fit": "cover"
 },
 "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t": {
 "name": "Steven Spielberg",
@@ -181,7 +247,10 @@
 "role": "director",
 "qid": "Q8877",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3e/Steven_Spielberg_2025.jpg/500px-Steven_Spielberg_2025.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Steven_Spielberg_2025.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Steven_Spielberg_2025.jpg",
+"fx": 0.325,
+"fy": 0.278,
+"fit": "cover"
 },
 "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC": {
 "name": "Paul Verhoeven",
@@ -189,6 +258,9 @@
 "role": "director",
 "qid": "Q129079",
 "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Paul_Verhoeven_Berlinale_2017.jpg/500px-Paul_Verhoeven_Berlinale_2017.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-"link": "https://commons.wikimedia.org/wiki/File:Paul_Verhoeven_Berlinale_2017.jpg"
+"link": "https://commons.wikimedia.org/wiki/File:Paul_Verhoeven_Berlinale_2017.jpg",
+"fx": 0.452,
+"fy": 0.406,
+"fit": "contain"
 }
 }
