@@ -350,7 +350,7 @@ var __spreadValues = (a, b) => {
     })() : "").concat(vid ? '<div class="pcap '.concat((() => {
       const n = p.raw.length;
       return n > 90 ? "c4" : n > 55 ? "c3" : n > 30 ? "c2" : "c1";
-    })(), '">').concat(esc(p.raw), "</div>") : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
+    })(), '">').concat(esc(p.raw), "</div>") : "").concat(fold && typeof isDenied === "function" && isDenied(target(f)) ? '<span class="lockb" title="Private library" aria-label="Private">\u{1F512}</span>' : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
   }
   async function art(el, f) {
     if (!f || el.classList.contains("sup") || el.classList.contains("mainc")) return;
@@ -1681,6 +1681,40 @@ var __spreadValues = (a, b) => {
     menu2();
     restoreScroll();
   }
+  const DENIED = /* @__PURE__ */ new Set();
+  let INACC = /* @__PURE__ */ new Set();
+  tmo("data/inaccessible.json", 1e4).then((j) => {
+    INACC = new Set(j.ids || []);
+    document.querySelectorAll(".ol-tile.fold").forEach((el) => {
+      const f = items.get(el.dataset.id);
+      if (f && isDenied(target(f)) && !el.querySelector(".lockb")) el.insertAdjacentHTML("beforeend", '<span class="lockb" title="Private library" aria-label="Private">\u{1F512}</span>');
+    });
+  }).catch(() => {
+  });
+  function isDenied(id) {
+    return DENIED.has(id) || INACC.has(id);
+  }
+  function privatePrompt(id, f) {
+    const g = $("#grid");
+    if (!g) return;
+    const own = f && (f.owner || f.ownerName), url = "https://drive.google.com/drive/folders/" + encodeURIComponent(id);
+    g.className = "sectioned";
+    g.innerHTML = '<div class="priv"><div class="priv-box"><div class="priv-bar"><span>ACCESS RESTRICTED</span><i></i><b>\u{1F512}</b></div><h2>This library is private.</h2><p>Request access from the owner'.concat(own ? " (<b>".concat(esc(own), "</b>)") : "", ' to view it.</p><div class="priv-row"><a class="pill priv-req" href="').concat(url, '" target="_blank" rel="noopener" data-privreq="1">Request Access</a><button class="pill priv-back" type="button" data-privback="1">Back</button></div><small>Opens Google Drive, where you can ask the owner for access.</small></div></div>');
+    status("");
+    const b = g.querySelector(".priv-req");
+    setTimeout(() => {
+      try {
+        b.focus({ preventScroll: true });
+      } catch (e) {
+      }
+    }, 60);
+  }
+  document.addEventListener("click", (e) => {
+    if (e.target.closest("[data-privback]")) {
+      e.preventDefault();
+      back(parentHash());
+    }
+  });
   async function open(id, mode = "home") {
     cur = id;
     view = id === ROOT ? mode : "folder";
@@ -1689,6 +1723,7 @@ var __spreadValues = (a, b) => {
       try {
         await loadFolder(id);
       } catch (e) {
+        if (/drive (403|404)/.test(e && e.message || "")) DENIED.add(id);
         live = false;
         status("");
         add(window._idx || []);
@@ -1697,6 +1732,7 @@ var __spreadValues = (a, b) => {
     const f = items.get(id);
     if (id === ROOT && mode === "home") return showHome();
     render(kids.get(id) || [], id === ROOT ? { home: "The Fan Edit Fan Club Collection", all: "The Fan Edit Fan Club Collection", arena: "New Arrivals", collections: "Collections" }[mode] : f.name, id === ROOT ? mode : "home");
+    if (id !== ROOT && !(kids.get(id) || []).length && isDenied(id)) privatePrompt(id, f);
   }
   const SORTS = [["az", "A\u2013Z"], ["za", "Z\u2013A"], ["newest", "Newest"], ["oldest", "Oldest"], ["film", "Source Film"], ["genre", "Genre"], ["size", "Largest"]];
   function curSort() {
@@ -2141,7 +2177,7 @@ var __spreadValues = (a, b) => {
     openSpot("");
   }));
   setTimeout(sm2, 0);
-  const FOC = ".sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#pframe";
+  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#pframe";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
