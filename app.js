@@ -233,9 +233,9 @@ var __spreadValues = (a, b) => {
       ["folder:" + FOLD.collections, "Fan Edit Collections", ""],
       ["main", "", ""],
       ["folder:" + FOLD.tbc, "To Be Catalogued", ""],
-      ["actors", "Actors & Directors", ""],
-      ["search", "Search", ""],
-      ["collections", "Collections", (kids.get(ROOT) || []).filter(isFolder).length + " folders"]
+      ["folder:" + FOLD.actors, "Actors", cnt(FOLD.actors) ? cnt(FOLD.actors) + " folders" : ""],
+      ["folder:" + FOLD.directors, "Directors", cnt(FOLD.directors) ? cnt(FOLD.directors) + " folders" : ""],
+      ["genres", "Genres", Object.keys(genreMap).length ? "Browse by genre" : ""]
     ];
     $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/cover.jpg" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '"><span>').concat(esc(t[1]), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
   }
@@ -283,7 +283,6 @@ var __spreadValues = (a, b) => {
     view = "home";
     cur = ROOT;
     $("#home").hidden = false;
-    genreStrip();
     $("#main").hidden = true;
     $("#bar").hidden = true;
     hub();
@@ -318,6 +317,22 @@ var __spreadValues = (a, b) => {
       setTimeout(() => $("#q").focus(), 50);
       return;
     }
+    if (k === "genres") {
+      hideHome();
+      cur = "virtual";
+      view = "folder";
+      const have = {};
+      Object.keys(genreMap).forEach((x) => genreMap[x].genres.forEach((g) => have[g] = (have[g] || 0) + 1));
+      $("#crumb").textContent = "Genres";
+      $("#arena").innerHTML = "";
+      $("#sec2").textContent = "Genres from Wikidata matches of each collection folder";
+      $("#grid").innerHTML = GORDER.filter((g) => have[g]).map((g) => '<button class="ol-tile genre" data-genre="'.concat(g, '"><div class="art" style="background:radial-gradient(circle at 70% 20%,hsl(').concat(HUES[hash(g) % 8], ' 80% 50% / .8),#141b27 60%,#05070b)"></div><div class="nm" style="font-size:20px">').concat(g, '<br><small style="opacity:.7">').concat(have[g], " collections</small></div></button>")).join("");
+      status("");
+      menu();
+      const t = document.querySelector("#grid .ol-tile");
+      if (t && document.body.classList.contains("kbd")) focusEl(t);
+      return;
+    }
     if (k === "support") {
       hideHome();
       cur = "virtual";
@@ -342,11 +357,41 @@ var __spreadValues = (a, b) => {
     }
   });
   let lastHub = null;
+  function doSearch() {
+    S.click();
+    hideHome();
+    open(ROOT, "all");
+    setTimeout(() => $("#q").focus(), 60);
+  }
+  function doMute() {
+    S.unlock();
+    S.toggle();
+    sm2();
+  }
+  function sm2() {
+    const l = $("#hmutel");
+    if (l) l.textContent = S.muted ? "Sound off" : "Sound on";
+    if ($("#mute")) $("#mute").textContent = S.muted ? "\u{1F507}" : "\u{1F50A}";
+  }
+  document.addEventListener("click", (e) => {
+    const h = e.target.closest("[data-hint]");
+    if (!h) return;
+    h.dataset.hint === "search" ? doSearch() : doMute();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT") return;
+    if (e.key === "/" || e.keyCode === 403) {
+      e.preventDefault();
+      doSearch();
+    } else if (e.key === "m" || e.key === "M" || e.keyCode === 404) {
+      doMute();
+    }
+  });
   function status(t) {
     $("#status").textContent = t;
   }
   function menu() {
-    const m = [["home", "Dashboard"], ["all", "Main Collection"], ["arena", "New Arrivals"], ["collections", "Collections"]];
+    const m = [["home", "Dashboard"], ["arena", "New Arrivals"]];
     $("#menu").innerHTML = (cur !== ROOT ? '<button class="mi" data-nav="up">\u25C0 Back</button>' : "") + m.map(([k, l]) => '<button class="mi '.concat(view === k ? "on" : "", '" data-nav="').concat(k, '">').concat(l, "</button>")).join("");
   }
   function render(list, title, mode) {
@@ -474,7 +519,7 @@ var __spreadValues = (a, b) => {
       return;
     }
     const t = e.target.closest(".ol-tile");
-    if (t) {
+    if (t && !t.dataset.genre && !t.classList.contains("link")) {
       const f = items.get(t.dataset.id);
       if (!f) return;
       if (isFolder(f)) {
@@ -528,9 +573,11 @@ var __spreadValues = (a, b) => {
     S.unlock();
     S.toggle();
     sm();
+    sm2();
   };
+  setTimeout(sm2, 0);
   $("#auth").onclick = signIn;
-  const FOC = ".gt,.hb,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
+  const FOC = ".hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -628,7 +675,7 @@ var __spreadValues = (a, b) => {
   }
   fetch("data/genres.json").then((r) => r.json()).then((g) => {
     genreMap = g;
-    if (!$("#home").hidden) genreStrip();
+    if (!$("#home").hidden) hub();
   }).catch(() => {
   });
   fetch("data/mosaic.json").then((r) => r.json()).then((m) => {
