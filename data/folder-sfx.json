@@ -1,6 +1,21 @@
 {
  "_note": "Folder sound effects: key = Drive folder id or exact folder name; value = list of files, first playable wins (m4a/mp3, wav fallback). Played once each time that folder is opened. \"_rules\": case-insensitive substring match on the folder name (and, with \"path\":true, any ancestor folder name). Exact id/name entries win over rules. Rule keys: match (substring), regex (case-insensitive, tested on folder/ancestor names), ids, path; files = one list, or file = list of lists with random:true (no immediate repeat).",
  "1DEWGPeFVQYiB-Yj6wYwAWv_jZ4j0fPAQ": [
+  {
+   "file": [
+    [
+     "assets/sfx/predator-choppa.m4a",
+     "assets/sfx/predator-choppa.mp3"
+    ],
+    [
+     "assets/sfx/alien-hiss.m4a",
+     "assets/sfx/alien-hiss.mp3"
+    ]
+   ],
+   "path": true,
+   "source": "AvP: rotates Predator and Alien",
+   "regex": "alien vs\\.? predator|\\bavp\\b|aliens? versus predator"
+  },
   "assets/sfx/james-bond.m4a",
   "assets/sfx/james-bond.mp3",
   "assets/sfx/james-bond.wav"
