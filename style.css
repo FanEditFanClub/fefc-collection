@@ -322,3 +322,23 @@ body.overlay #tagline{visibility:hidden!important}
 /* people tiles: face-aware crop (focal point from tools/faces.py); contain over blurred copy when the face can't fit */
 .ol-tile.person img.pbg{object-fit:cover;filter:blur(14px) brightness(.55);transform:scale(1.15)}
 .ol-tile.person img.pfit{object-fit:contain!important;object-position:50% 50%!important;position:absolute;inset:0;width:100%;height:100%;z-index:1}
+/* FEFC wordmark headline above the tagline (intro + Home) */
+#wordmark{display:block;margin:0 auto .15em;height:clamp(34px,7.2vh,120px);width:auto;max-width:60vw;filter:drop-shadow(0 0 .4em rgba(120,170,255,.25))}
+@media (orientation:landscape) and (max-height:520px){#wordmark{height:clamp(24px,8vh,46px)}}
+/* Fan edit poster tiles: full titles, caption grows, row aligns to tallest */
+.sgrid.vids{align-items:stretch}
+.sgrid.vids .ol-tile.vid{aspect-ratio:auto;display:flex;flex-direction:column;height:auto}
+.sgrid.vids .ol-tile.vid .art{position:relative;inset:auto;flex:none;width:100%;aspect-ratio:2/3}
+.sgrid.vids .ol-tile.vid .nm,.sgrid.vids .ol-tile.vid.has-poster .nm{position:static;display:block;-webkit-line-clamp:none;line-clamp:none;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;flex:1 0 auto;padding:6px 8px 9px;font-size:12px;line-height:1.22;background:linear-gradient(180deg,#0d1726,#070c15)}
+@media (max-height:520px) and (orientation:landscape){.sgrid.vids .ol-tile.vid .nm{font-size:10.5px;padding:4px 6px 6px}}
+body.tv .sgrid.vids .ol-tile.vid .nm{font-size:1.6vh}
+.sgrid.vids .ol-tile.vid>img{bottom:auto;height:auto;aspect-ratio:2/3}
+/* keep the 3x3 grid clear of the wordmark + tagline header */
+#hub{top:calc(50% + 7vh);width:min(60vw,calc(58vh*1.55))}
+@media (orientation:landscape) and (max-height:520px){#hub{top:calc(50% + 10vh);width:calc(56vh*1.55)}#tagline{font-size:clamp(11px,min(3vh,1.9vw),22px)}#wordmark{height:clamp(20px,7vh,34px)}}
+body.tv #hub{top:calc(50% + 7vh);width:calc(58vh*1.55)}
+/* bottom legend (incl. Sound control) is global on every page */
+#hints{position:fixed;z-index:70}
+#main{padding-bottom:calc(9vh + 40px)}
+body:not(.intro-done) #hints{visibility:hidden}
+body.tv #main{padding-bottom:12vh}

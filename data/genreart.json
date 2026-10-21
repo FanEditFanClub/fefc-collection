@@ -1,0 +1,60 @@
+{
+ "Horror": {
+  "folder": "Bride of Frankenstein (1935) - raymix - Fan Edit.mkv",
+  "img": "assets/posters/bride-of-frankenstein-raymix-the.webp"
+ },
+ "Sci-Fi": {
+  "folder": "The Avengers - Hybrid AR Cut - Fan Edit",
+  "img": "assets/clips/8.jpg"
+ },
+ "Family": {
+  "folder": "Harry Potter and The Sorcerer's Stone - Extended Edition - ADigitalMan Cut - Fan Edit",
+  "img": "assets/clips/132.jpg"
+ },
+ "Fantasy": {
+  "folder": "The Lord of The Rings - The Reinvented Series - Season 3 Episode 6 - There And Back Again - Fan Edit",
+  "img": "assets/clips/20.jpg"
+ },
+ "Action": {
+  "folder": "She-Hulk: Attorney at Law - Episode 5-6 - Titania Cut - Fan Edit",
+  "img": "assets/clips/9.jpg"
+ },
+ "Drama": {
+  "folder": "Battlestar Galactica - Season 1 Episode 5 - You Cant Go Home Again - Extended Episode - Fan Edit",
+  "img": "assets/clips/78.jpg"
+ },
+ "Adventure": {
+  "folder": "Lost - In The Detail - Part 100 - Day 92-93 - Chronological Fan Edit.avi",
+  "img": "assets/clips/38.jpg"
+ },
+ "Thriller": {
+  "folder": "The Defenders Mini-Series - Season 1 - Part 3 - Fan Edit",
+  "img": "assets/clips/94.jpg"
+ },
+ "Comedy": {
+  "folder": "S1E03 The Reporter (Extended)",
+  "img": "assets/clips/83.jpg"
+ },
+ "Superhero": {
+  "folder": "The Avengers: Earth's Mightiest Heroes (Animated Series) - Season 1 - Movie Fan Edit",
+  "img": "assets/clips/50.jpg"
+ },
+ "Animation": {
+  "folder": "Naruto - Ocean Cut - Womp Rat Remix - Part 1 - Hell - Fan Edit.mp4",
+  "img": "https://upload.wikimedia.org/wikipedia/en/9/94/NarutoCoverTankobon1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+ },
+ "Western": {
+  "folder": "Firefly - The Serenity Chronicles I - Firefly - Movie Fan Edit.mp4",
+  "img": "assets/posters/serenity-chronicles-i-firefly.webp"
+ },
+ "Documentary": {
+  "folder": "",
+  "img": "assets/fefc-logo.png",
+  "brand": true
+ },
+ "Uncategorized": {
+  "folder": "",
+  "img": "assets/fefc-logo.png",
+  "brand": true
+ }
+}

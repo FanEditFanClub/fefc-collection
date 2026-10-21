@@ -24,7 +24,14 @@ while q:
             if c not in depth: depth[c]=depth[p]+1; n.append(c)
     q=n
 VEXT=('.mkv','.mp4','.avi','.m4v','.mov','.webm','.wmv','.mpg','.ts')
-vids=[x for x in by.values() if x['mimeType']!=FOLD and (x['mimeType'].startswith('video') or x['name'].lower().endswith(VEXT)) and not x['name'].startswith('._')]
+def isvid(x,dd=0):
+    if x['mimeType'].startswith('video') or x['name'].lower().endswith(VEXT+('.m2ts','.mts','.mpeg','.flv','.3gp','.ogv','.vob','.divx')): return True
+    t=x.get('targetId')
+    if t and t!=x['id'] and t in by and dd<3 and isvid(by[t],dd+1): return True
+    return x['mimeType'] in ('application/octet-stream','') and bool(re.search(r'fan ?edit|\bcut\b',x['name'],re.I))
+vids=[x for x in by.values() if x['mimeType']!=FOLD and isvid(x) and not x['name'].startswith('._')]
+if os.environ.get('ONLY'):
+    _only=set(json.load(open(os.environ['ONLY']))); vids=[x for x in vids if x['id'] in _only]
 vids.sort(key=lambda v:depth.get(v['id'],99))
 NOISE=re.compile(r'\b(fan ?edit|fanedit|4k|1080p|720p|360p|hd|remaster(ed)?|chronological|mashup|workprint)\b',re.I)
 EPI=re.compile(r'^(season|episode|part|chapter|s\d+e\d+|vol|disc|day)\b',re.I)
@@ -94,7 +101,7 @@ print('wiki done',sum(1 for v in bases.values() if v),flush=True)
 with cf.ThreadPoolExecutor(10) as ex:
     for k,r in zip(cuts,ex.map(lambda k:fanedit(*k),cuts)): cuts[k]=r
 print('fanedit done',sum(1 for v in cuts.values() if v),flush=True)
-out={};cnt=collections.Counter();doubt=[]
+out=json.load(open('data/posters.json')) if os.environ.get('ONLY') else {};cnt=collections.Counter();doubt=[]
 for v in work:
     b,c,y=P[v['id']];cm=cuts.get((b,c)) if c else None
     if cm:

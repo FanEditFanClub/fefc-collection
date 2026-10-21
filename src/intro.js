@@ -4,8 +4,8 @@ const cl=(x,a=0,b=1)=>x<a?a:x>b?b:x,sm=(a,b,x)=>{x=cl((x-a)/(b-a));return x*x*(3
 // condensed (repeat visit) maps real 0..4s onto story time segments
 const SEG=[[0,.9,2,5],[.9,1.5,10.2,12.2],[1.5,2.6,13,20],[2.6,4,21,24.2]];
 const mapC=r=>{for(const s of SEG)if(r<=s[1])return lerp(s[2],s[3],(r-s[0])/(s[1]-s[0]));return 24.2};
-// full intro: real seconds (timed to the reference's shot changes, total 26.1667 s) -> story time
-const FULL=26.1667,SEGF=[[0,5.2,0,2.6],[5.2,6.2,2.6,4.8],[6.2,7.5,4.8,6.6],[7.5,10,6.6,8.3],[10,11.9,8.3,11.95],[11.9,24.3,11.95,24.2]];
+// full intro: real seconds (re-aligned to intro.mp3 onsets, total 26.15 s) -> story time
+const FULL=26.15,SEGF=[[0,5.75,0,2.6],[5.75,6.75,2.6,4.8],[6.75,7.6,4.8,6.6],[7.6,10.07,6.6,8.3],[10.07,12.05,8.3,11.95],[12.05,24.75,11.95,24.2]];
 const mapF=r=>{for(const s of SEGF)if(r<=s[1])return lerp(s[2],s[3],(r-s[0])/(s[1]-s[0]));return 24.2};
 function create(opt){
  const tv=opt.tv,cv=document.createElement('canvas'),c=cv.getContext('2d'),dpr=Math.min(window.devicePixelRatio||1,tv?1:1.5);

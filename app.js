@@ -57,7 +57,7 @@ var __spreadValues = (a, b) => {
       document.body.classList.add("intro-done", "no-intro");
       return;
     }
-    const seen = localStorage.fefcSeen === "1" && !P.get("fullintro"), short = seen || P.get("shortintro"), tv = document.body.classList.contains("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
+    const short = !!P.get("shortintro"), tv = document.body.classList.contains("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
     document.body.classList.add("cintro");
     const tg = $("#tagline");
     const R = window.FEFCIntro.create({ tv, tagline: tg });
@@ -208,7 +208,6 @@ var __spreadValues = (a, b) => {
       if (r.access_token) {
         token = r.access_token;
         live = true;
-        $("#auth").textContent = "Live";
         kids.clear();
         await loadFolder(ROOT);
         open(cur);
@@ -242,7 +241,7 @@ var __spreadValues = (a, b) => {
   function tile(f, live_) {
     const fold = isFolder(f), p = parse(f.name), vid = !fold && isVid(f), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
-    return '<button class="ol-tile '.concat(cls, " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", '</span><div class="nm">').concat(esc(pp ? pp.name : fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
+    return '<button class="ol-tile '.concat(cls, " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", '</span><div class="nm">').concat(esc(fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
   }
   async function art(el, f) {
     let src = null;
@@ -338,8 +337,12 @@ var __spreadValues = (a, b) => {
   function vids() {
     return Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f));
   }
-  function isVid(f) {
-    return /^video\//.test(f.mimeType) || /\.(mkv|mp4|m4v|avi|mov|webm)$/i.test(f.name);
+  function isVid(f, d) {
+    if (!f) return false;
+    if (/^video\//.test(f.mimeType) || /\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name)) return true;
+    const t = f.targetId;
+    if (t && t !== f.id && (d | 0) < 3 && isVid(items.get(t), (d | 0) + 1)) return true;
+    return (!f.mimeType || f.mimeType === "application/octet-stream") && /fan ?edit|\bcut\b/i.test(f.name);
   }
   function cnt(id) {
     const k = kids.get(id);
@@ -349,14 +352,19 @@ var __spreadValues = (a, b) => {
     const newN = NA.newCount(vids());
     const T = [
       ["readfirst", "Read First", ""],
-      ["arena", "New Arrivals", newN ? newN + " new" : ""],
+      ["arena", "New Arrivals", newN ? newN + (newN === 1 ? " New File" : " New Files") : ""],
       ["support", "Support Us", "Patreon \xB7 PayPal \xB7 Venmo"],
       ["folder:" + FOLD.collections, "Fan Edit Collections", NA.plural((kids.get(FOLD.collections) || []).filter(isFolder).length, "Collection")],
       ["main", "", ""],
       ["folder:" + FOLD.tbc, "To Be Catalogued", NA.plural(NA.deep(FOLD.tbc, kids, isFolder), "Unorganized File")],
       ["folder:" + FOLD.actors, "Actors", NA.plural(cnt(FOLD.actors), "Collection")],
       ["folder:" + FOLD.directors, "Directors", NA.plural(cnt(FOLD.directors), "Collection")],
-      ["genres", "Genres", Object.keys(genreMap).length ? "Browse by genre" : ""]
+      ["genres", "Genres", (() => {
+        const h = {};
+        Object.keys(genreMap).forEach((x) => genreMap[x].genres.forEach((g) => h[g] = 1));
+        const n = GORDER.filter((g) => h[g]).length;
+        return n ? n + (n === 1 ? " Genre" : " Genres") : "";
+      })()]
     ];
     const keep = [].slice.call(document.querySelectorAll("#hub .mc"));
     $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '"><span>').concat(esc(t[1]), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
@@ -387,15 +395,15 @@ var __spreadValues = (a, b) => {
     const W = H.clientWidth, Ht = H.clientHeight, HR = H.getBoundingClientRect(), BR = hb.getBoundingClientRect(), hw = BR.width, hh = BR.height;
     const hx = BR.left - HR.left, hy = BR.top - HR.top, g = parseFloat(getComputedStyle(hb).columnGap) || 8;
     const tw = (hw - 2 * g) / 3, th = (hh - 2 * g) / 3;
-    const tg = $("#tagline span"), tr = tg ? tg.getBoundingClientRect() : null, hr = H.getBoundingClientRect();
-    const tb = tr && tr.height ? { l: tr.left - hr.left - g, t: tr.top - hr.top - g, r: tr.right - hr.left + g, b: tr.bottom - hr.top + g } : null;
+    const tg = $("#tagline"), tr = tg ? tg.getBoundingClientRect() : null, hr = H.getBoundingClientRect();
+    const tb = tr && tr.height ? { l: -1e9, t: -1e9, r: 1e9, b: tr.bottom - hr.top + g } : null;
     hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 1;
     let budget = tv ? 40 : 90;
     for (let r = -rows; r < 3 + rows && budget > 0; r++) for (let c = -cols; c < 3 + cols && budget > 0; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
-      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2)) continue;
+      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || tb && ov(box, tb)) continue;
       const el = document.createElement("div");
       el.className = "mc";
       const ex = c < 0 ? -g : c > 2 ? g : 0, ey = r < 0 ? -g : r > 2 ? g : 0;
@@ -502,9 +510,8 @@ var __spreadValues = (a, b) => {
       Object.keys(genreMap).forEach((x) => genreMap[x].genres.forEach((g) => have[g] = (have[g] || 0) + 1));
       $("#crumb").textContent = "Genres";
       $("#arena").innerHTML = "";
-      $("#sec2").textContent = "Genres from Wikidata matches of each collection folder";
-      $("#grid").className = "";
-      $("#grid").innerHTML = GORDER.filter((g) => have[g]).map((g) => '<button class="ol-tile genre" data-genre="'.concat(g, '"><div class="art" style="background:radial-gradient(circle at 70% 20%,hsl(').concat(HUES[hash(g) % 8], ' 80% 50% / .8),#141b27 60%,#05070b)"></div><div class="nm" style="font-size:20px">').concat(g, '<br><small style="opacity:.7">').concat(have[g], " collections</small></div></button>")).join("");
+      $("#sec2").textContent = "";
+      if (window.FEFCGenres) FEFCGenres.render({ genreMap, order: GORDER, kids, items, isFolder, isVid, esc });
       status("");
       menu();
       const t = document.querySelector("#grid .ol-tile");
@@ -702,10 +709,12 @@ var __spreadValues = (a, b) => {
     const recent = NA.sort(vids2).slice(0, 4);
     $("#crumb").textContent = title;
     hideHome();
-    $("#arena").innerHTML = mode !== "collections" ? recent.map((f) => tile(f, 1)).join("") : "";
+    $("#arena").innerHTML = "";
+    const isNew = {};
+    if (mode !== "collections") recent.forEach((f) => isNew[f.id] = 1);
     const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
     $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
-    const docs = vids2.filter((f) => !isVid(f)), evs = vids2.filter(isVid), sec = (k, l, a) => a.length ? '<div class="ol-div"><span>'.concat(l, "</span><i></i><b>").concat(a.length, '</b></div><div class="sgrid ').concat(k, '">').concat(a.map((f) => tile(f)).join(""), "</div>") : "";
+    const docs = vids2.filter((f) => !isVid(f)), evs = vids2.filter(isVid), sec = (k, l, a) => a.length ? '<div class="ol-div"><span>'.concat(l, "</span><i></i><b>").concat(a.length, '</b></div><div class="sgrid ').concat(k, '">').concat(a.map((f) => tile(f, isNew[f.id])).join(""), "</div>") : "";
     const g = $("#grid");
     if (mode === "arena") {
       $("#arena").innerHTML = "";
@@ -715,7 +724,7 @@ var __spreadValues = (a, b) => {
       g.innerHTML = sec("folds", "COLLECTIONS", fold.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fold.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach((el) => art(el, items.get(el.dataset.id)));
-    status(all.length ? "" : live ? "Empty" : "Not in saved index \u2014 sign in for live Drive");
+    status(all.length ? "" : live ? "Empty" : "Nothing here yet");
     menu();
     $("#main").scrollTop = 0;
   }
@@ -872,18 +881,8 @@ var __spreadValues = (a, b) => {
       render(res, "Search: " + q, "home");
     }, 250);
   });
-  const mb = $("#mute");
-  const sm = () => mb.textContent = S.muted ? "\u{1F507}" : "\u{1F50A}";
-  sm();
-  mb.onclick = () => {
-    S.unlock();
-    S.toggle();
-    sm();
-    sm2();
-  };
   setTimeout(sm2, 0);
-  $("#auth").onclick = signIn;
-  const FOC = "#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
+  const FOC = "#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -973,7 +972,6 @@ var __spreadValues = (a, b) => {
   intro();
   if (C.GOOGLE_API_KEY) {
     live = true;
-    $("#auth").textContent = "Sign in";
   }
   tmo("data/folderthumbs.json", 1e4).then((m) => {
     fthumbs = m;
@@ -1074,6 +1072,15 @@ var __spreadValues = (a, b) => {
   const box = document.getElementById("install");
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((r) => r.update()).catch(() => {
   });
+  if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+    let rl = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (rl || sessionStorage.fefcSwReload) return;
+      rl = true;
+      sessionStorage.fefcSwReload = "1";
+      location.reload();
+    });
+  }
   const allowed = () => (mobile || new URLSearchParams(location.search).get("installdemo")) && !standalone && !isTV && !snoozed;
   function show() {
     if (!allowed() || !box.hidden) return;
@@ -1121,4 +1128,15 @@ addEventListener("load", () => {
   const mo = new MutationObserver(sync);
   ["details", "player"].forEach((i) => mo.observe(document.getElementById(i), { attributes: true, attributeFilter: ["hidden"] }));
   sync();
+})();
+addEventListener("load", () => {
+  const w = document.getElementById("wordmark");
+  if (w) window.dispatchEvent(new Event("resize"));
+});
+(() => {
+  const h = document.getElementById("hints"), pl = document.getElementById("player"), up = () => {
+    if (h) h.style.display = pl && !pl.hidden ? "none" : "";
+  };
+  if (pl && window.MutationObserver) new MutationObserver(up).observe(pl, { attributes: true, attributeFilter: ["hidden"] });
+  up();
 })();

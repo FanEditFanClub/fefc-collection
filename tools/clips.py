@@ -1,5 +1,5 @@
 import json,random,subprocess,os,re,collections,sys
-os.chdir('/workspace/fefc-app')
+os.chdir(os.path.dirname(os.path.abspath(__file__))+'/..')
 d=json.load(open('data/index.json'))['items']
 byid={x['id']:x for x in d}
 v=[x for x in d if x.get('mimeType','').startswith('video')]
@@ -8,7 +8,11 @@ def top(x):
   p=x.get('parent');last=p
   while p in byid and byid[p].get('parent') in byid: last=p;p=byid[p].get('parent')
   return p
-random.seed(7)
+random.seed(int(os.environ.get('SEED','7')))
+prev=json.load(open('data/clips.json')) if os.path.exists('data/clips.json') else []
+have={c['target'] for c in prev}
+BAD=re.compile(r'(late late show|craig ferguson|tonight show|letterman|conan|monstervision|talk show|smallville|lost - in the detail)',re.I)
+v=[x for x in v if (x.get('targetId') or x['id']) not in have and not BAD.search(x['name'])]
 fam=[x for x in v if famous.search(x['name'])];random.shuffle(fam)
 oth=[x for x in v if not famous.search(x['name'])];random.shuffle(oth)
 seen=collections.Counter();cands=[]
@@ -17,10 +21,10 @@ for x in fam[:400]+oth[:200]:
   if seen[k]>=2 or seen['f:'+fk]>=2: continue
   seen[k]+=1;seen['f:'+fk]+=1;cands.append(x)
 os.makedirs('assets/clips',exist_ok=True)
-out=[];n=0
+out=prev;n=int(os.environ.get('NSTART') or max([c['n'] for c in prev]+[-1])+1);N=n+int(os.environ.get('COUNT','100'))
 def url(i): return f'https://drive.usercontent.google.com/download?id={i}&export=download&confirm=t'
 for x in cands:
-  if n>=50: break
+  if n>=N: break
   i=x.get('targetId') or x['id'];u=url(i)
   try:
     dur=float(subprocess.run(['ffprobe','-v','error','-show_entries','format=duration','-of','csv=p=0',u],capture_output=True,text=True,timeout=40).stdout.strip())
@@ -29,7 +33,8 @@ for x in cands:
   ok=False
   for t in range(4):
     ss=dur*random.uniform(.2,.7);fn=f'assets/clips/{n}.mp4'
-    r=subprocess.run(['ffmpeg','-y','-v','error','-ss',f'{ss:.1f}','-i',u,'-t','4','-an','-vf','scale=384:216:force_original_aspect_ratio=increase,crop=384:216,fps=24,format=yuv420p','-c:v','libx264','-profile:v','main','-crf','30','-preset','slow','-movflags','+faststart',fn],capture_output=True,timeout=120)
+    try: r=subprocess.run(['ffmpeg','-y','-v','error','-ss',f'{ss:.1f}','-i',u,'-t','4','-an','-vf','scale=384:216:force_original_aspect_ratio=increase,crop=384:216,fps=24,format=yuv420p','-c:v','libx264','-profile:v','main','-crf','30','-preset','slow','-movflags','+faststart',fn],capture_output=True,timeout=120)
+    except subprocess.TimeoutExpired: continue
     if r.returncode or not os.path.exists(fn) or os.path.getsize(fn)<20000: continue
     s=subprocess.run(['ffmpeg','-v','info','-i',fn,'-vf','signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-','-f','null','-'],capture_output=True,text=True).stdout
     ys=[float(m) for m in re.findall(r'YAVG=([\d.]+)',s)]
@@ -39,6 +44,6 @@ for x in cands:
     ok=True;break
   if ok:
     out.append({'n':n,'id':x['id'],'target':i,'title':re.sub(r'\.(mp4|mkv)$','',x['name']),'src':f'assets/clips/{n}.mp4','poster':f'assets/clips/{n}.jpg'})
-    print(n,x['name'],os.path.getsize(fn),flush=True);n+=1
+    print(n,x['name'],os.path.getsize(fn),flush=True);n+=1;json.dump(out,open('data/clips.json','w'),indent=1)
   elif os.path.exists(f'assets/clips/{n}.mp4'): os.remove(f'assets/clips/{n}.mp4')
 json.dump(out,open('data/clips.json','w'),indent=1)

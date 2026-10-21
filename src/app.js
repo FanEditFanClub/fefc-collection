@@ -15,7 +15,7 @@ const sz=b=>b?(b/1e9).toFixed(2)+' GB':'';
 /* ---------- INTRO ---------- */
 (function(){var d=document.createElement('div').style;if(!('perspective' in d||'webkitPerspective' in d))document.documentElement.classList.add('no3d')})();
 function intro(){const el=$('#intro');if(P.get('nointro')){el.remove();document.body.classList.add('intro-done','no-intro');return}
- const seen=localStorage.fefcSeen==='1'&&!P.get('fullintro'),short=seen||P.get('shortintro'),tv=document.body.classList.contains('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
+ const short=!!P.get('shortintro'),tv=document.body.classList.contains('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
  document.body.classList.add('cintro');const tg=$('#tagline');
  const R=window.FEFCIntro.create({tv,tagline:tg});el.prepend(R.canvas);
  fetch('data/mosaic.json').then(r=>r.json()).then(m=>R.setTiles(m.map(x=>x.target||x.id))).catch(()=>{});
@@ -45,14 +45,14 @@ async function loadFolder(id){if(!live)return;status('Loading…');let t,all=[];
  kids.set(id,[]);add(all);
  status('')}
 function signIn(){if(!C.GOOGLE_CLIENT_ID){alert('Live Drive mode needs a Google OAuth Client ID in config.js (see README). Showing the saved index.');return}
- const go=()=>google.accounts.oauth2.initTokenClient({client_id:C.GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.readonly',callback:async r=>{if(r.access_token){token=r.access_token;live=true;$('#auth').textContent='Live';kids.clear();await loadFolder(ROOT);open(cur)}}}).requestAccessToken();
+ const go=()=>google.accounts.oauth2.initTokenClient({client_id:C.GOOGLE_CLIENT_ID,scope:'https://www.googleapis.com/auth/drive.readonly',callback:async r=>{if(r.access_token){token=r.access_token;live=true;kids.clear();await loadFolder(ROOT);open(cur)}}}).requestAccessToken();
  if(window.google?.accounts)return go();const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.onload=go;document.head.appendChild(s)}
 /* ---------- ART ---------- */
 const cache=JSON.parse(localStorage.fefcCache||'{}');const save=()=>localStorage.fefcCache=JSON.stringify(cache);
 async function tmdbFind(q,year){if(!C.TMDB_API_KEY)return null;const k='t:'+q+year;if(k in cache)return cache[k];
  try{const j=await(await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${C.TMDB_API_KEY}&query=${encodeURIComponent(q)}${year?'&year='+year:''}`)).json();cache[k]=(j.results||[]).find(x=>x.poster_path)||null}catch(e){cache[k]=null}save();return cache[k]}
 function artBg(f){const h=HUES[hash(parse(f.name).series||f.name)%8];return `radial-gradient(circle at 75% 20%,hsl(${h} 90% 60% / .85),hsl(${h} 70% 25%) 45%,#050a14 100%)`}
-function tile(f,live_){const fold=isFolder(f),p=parse(f.name),vid=!fold&&isVid(f),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';return `<button class="ol-tile ${cls} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}">${vid?`<div class="ptitle">${esc(p.raw)}</div>`:''}</div><span class="kind">${live_?'NEW':pp?(pp.role==='director'?'DIRECTOR':'ACTOR'):fold?'COLLECTION':vid?'FAN EDIT':'DOCUMENT'}</span><div class="nm">${esc(pp?pp.name:fold?f.name:p.raw)}${!fold&&f.size?`<br><small style="opacity:.6">${sz(f.size)}</small>`:''}</div></button>`}
+function tile(f,live_){const fold=isFolder(f),p=parse(f.name),vid=!fold&&isVid(f),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';return `<button class="ol-tile ${cls} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}">${vid?`<div class="ptitle">${esc(p.raw)}</div>`:''}</div><span class="kind">${live_?'NEW':pp?(pp.role==='director'?'DIRECTOR':'ACTOR'):fold?'COLLECTION':vid?'FAN EDIT':'DOCUMENT'}</span><div class="nm">${esc(fold?f.name:p.raw)}${!fold&&f.size?`<br><small style="opacity:.6">${sz(f.size)}</small>`:''}</div></button>`}
 async function art(el,f){let src=null;const p=parse(f.name);
  if(isFolder(f)&&people[target(f)])src=people[target(f)].url;else if(!isFolder(f)&&isVid(f)){const ps=posters[f.id]||posters[target(f)];if(!ps)return;src=ps.url;el.classList.add('has-poster')}else
  if(isFolder(f)){const fid=target(f);let t=fthumbs[fid];if(!t){let q=[fid];for(let d=0;d<3&&!t&&q.length;d++){const nq=[];for(const id of q){const ks=kids.get(id)||[],v=ks.find(x=>!isFolder(x)&&isVid(x));if(v){t=target(v);break}ks.forEach(x=>{if(isFolder(x))nq.push(target(x))})}q=nq.slice(0,40)}}if(t)src='https://drive.google.com/thumbnail?sz=w640&id='+t}
@@ -74,12 +74,13 @@ function genreStrip(){const have={};Object.keys(genreMap).forEach(k=>genreMap[k]
  $('#genres').innerHTML='<span class="glab">Genres</span>'+GORDER.filter(g=>have[g]).map(g=>`<button class="gt" data-genre="${g}">${g}</button>`).join('')}
 document.addEventListener('click',e=>{const g=e.target.closest('[data-genre]');if(!g)return;S.click();go('#/genre/'+encodeURIComponent(g.dataset.genre))});
 function vids(){return Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f))}
-function isVid(f){return /^video\//.test(f.mimeType)||/\.(mkv|mp4|m4v|avi|mov|webm)$/i.test(f.name)}
+function isVid(f,d){if(!f)return false;if(/^video\//.test(f.mimeType)||/\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name))return true;
+ const t=f.targetId;if(t&&t!==f.id&&(d|0)<3&&isVid(items.get(t),(d|0)+1))return true;return (!f.mimeType||f.mimeType==='application/octet-stream')&&/fan ?edit|\bcut\b/i.test(f.name)}
 function cnt(id){const k=kids.get(id);return k?k.length:0}
 function hub(){const newN=NA.newCount(vids());
- const T=[['readfirst','Read First',''],['arena','New Arrivals',newN?newN+' new':''],['support','Support Us','Patreon · PayPal · Venmo'],
+ const T=[['readfirst','Read First',''],['arena','New Arrivals',newN?newN+(newN===1?' New File':' New Files'):''],['support','Support Us','Patreon · PayPal · Venmo'],
   ['folder:'+FOLD.collections,'Fan Edit Collections',NA.plural((kids.get(FOLD.collections)||[]).filter(isFolder).length,'Collection')],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',NA.plural(NA.deep(FOLD.tbc,kids,isFolder),'Unorganized File')],
-  ['folder:'+FOLD.actors,'Actors',NA.plural(cnt(FOLD.actors),'Collection')],['folder:'+FOLD.directors,'Directors',NA.plural(cnt(FOLD.directors),'Collection')],['genres','Genres',Object.keys(genreMap).length?'Browse by genre':'']];
+  ['folder:'+FOLD.actors,'Actors',NA.plural(cnt(FOLD.actors),'Collection')],['folder:'+FOLD.directors,'Directors',NA.plural(cnt(FOLD.directors),'Collection')],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
  const keep=[].slice.call(document.querySelectorAll('#hub .mc'));$('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>`
   :`<button class="hb" data-hub="${t[0]}"><span>${esc(t[1])}</span>${t[2]?`<small>${esc(t[2])}</small>`:''}</button>`).join('');keep.forEach(x=>$('#hub').appendChild(x))}
 function syncTag(){const hb=$('#hub'),sp=$('#tagline span');if(!hb||!sp)return;const w=hb.offsetWidth;if(w>0){sp.style.width=w+'px';sp.style.maxWidth='none'}}
@@ -91,13 +92,13 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
  // geometry: tiles sized like hub tiles, aligned to hub edges, only OUTSIDE the hub box and below the tagline
  const H=$('#home'),hb=$('#hub');const _tf=hb.style.transform;hb.style.transform='translate(-50%,-50%)';const W=H.clientWidth,Ht=H.clientHeight,HR=H.getBoundingClientRect(),BR=hb.getBoundingClientRect(),hw=BR.width,hh=BR.height;
  const hx=BR.left-HR.left,hy=BR.top-HR.top,g=parseFloat(getComputedStyle(hb).columnGap)||8;
- const tw=(hw-2*g)/3,th=(hh-2*g)/3;const tg=$('#tagline span'),tr=tg?tg.getBoundingClientRect():null,hr=H.getBoundingClientRect();
- const tb=tr&&tr.height?{l:tr.left-hr.left-g,t:tr.top-hr.top-g,r:tr.right-hr.left+g,b:tr.bottom-hr.top+g}:null;
+ const tw=(hw-2*g)/3,th=(hh-2*g)/3;const tg=$('#tagline'),tr=tg?tg.getBoundingClientRect():null,hr=H.getBoundingClientRect();
+ const tb=tr&&tr.height?{l:-1e9,t:-1e9,r:1e9,b:tr.bottom-hr.top+g}:null;
  hb.style.transform=_tf;const ov=(a,b)=>a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t,hub={l:hx-g/2,t:hy-g/2,r:hx+hw+g/2,b:hy+hh+g/2};
  const cols=Math.ceil(hx/(tw+g))+1,rows=Math.ceil(hy/(th+g))+1;let budget=tv?40:90;
  for(let r=-rows;r<3+rows&&budget>0;r++)for(let c=-cols;c<3+cols&&budget>0;c++){
   const x=hx+c*(tw+g)+(c<0?-g:c>2?g:0),y=hy+r*(th+g)+(r<0?-g:r>2?g:0),box={l:x,t:y,r:x+tw,b:y+th};
-  if(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub))continue;
+  if(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub)||(tb&&ov(box,tb)))continue;
   const el=document.createElement('div');el.className='mc';const ex=(c<0?-g:c>2?g:0),ey=(r<0?-g:r>2?g:0);
   el.style.cssText=`left:calc(${c} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ex}px);top:calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px);width:calc((100% - ${2*g}px) / 3);height:calc((100% - ${2*g}px) / 3)`;
   el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);budget--}
@@ -122,8 +123,8 @@ function hubGo(k){S.click();
  if(k==='actors')return virtual([items.get(FOLD.actors)||{id:FOLD.actors,name:'Actors',mimeType:FOLDER},items.get(FOLD.directors)||{id:FOLD.directors,name:'Directors',mimeType:FOLDER}],'Actors & Directors');
  if(k==='search'){hideHome();open(ROOT,'all');setTimeout(()=>$('#q').focus(),50);return}
  if(k==='genres'){hideHome();cur='virtual';view='folder';const have={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>have[g]=(have[g]||0)+1));
-  $('#crumb').textContent='Genres';$('#arena').innerHTML='';$('#sec2').textContent='Genres from Wikidata matches of each collection folder';
-  $('#grid').className='';$('#grid').innerHTML=GORDER.filter(g=>have[g]).map(g=>`<button class="ol-tile genre" data-genre="${g}"><div class="art" style="background:radial-gradient(circle at 70% 20%,hsl(${HUES[hash(g)%8]} 80% 50% / .8),#141b27 60%,#05070b)"></div><div class="nm" style="font-size:20px">${g}<br><small style="opacity:.7">${have[g]} collections</small></div></button>`).join('');status('');menu();
+  $('#crumb').textContent='Genres';$('#arena').innerHTML='';$('#sec2').textContent='';
+  if(window.FEFCGenres)FEFCGenres.render({genreMap,order:GORDER,kids,items,isFolder,isVid,esc});status('');menu();
   const t=document.querySelector('#grid .ol-tile');if(t&&document.body.classList.contains('kbd'))focusEl(t);return}
  if(k==='support'){hideHome();cur='virtual';view='folder';$('#crumb').textContent='Support Us';$('#arena').innerHTML='';$('#sec2').textContent='Thank you for supporting the collection';
   $('#grid').className='support-grid';$('#grid').innerHTML=SUPPORT.map(s=>`<a class="ol-tile link sup sup-${s.name.toLowerCase()}" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} (opens in a new tab)"><span class="sup-logo">${s.logo}</span><span class="sup-nm">${s.name}</span><small>${s.sub}</small></a>`).join('');status('');menu()}}
@@ -171,13 +172,13 @@ function menu(){$('#menu').innerHTML=NA.menuHTML(FOLD,cur!==ROOT);const o=$('#me
 function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));
  const recent=NA.sort(vids).slice(0,4);
  $('#crumb').textContent=title;hideHome();
- $('#arena').innerHTML=mode!=='collections'?recent.map(f=>tile(f,1)).join(''):'';
+ $('#arena').innerHTML='';const isNew={};if(mode!=='collections')recent.forEach(f=>isNew[f.id]=1);
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
  $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':`${fold.length} collections · ${vids.length} fan edits`;
- const docs=vids.filter(f=>!isVid(f)),evs=vids.filter(isVid),sec=(k,l,a)=>a.length?`<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}">${a.map(f=>tile(f)).join('')}</div>`:'';
+ const docs=vids.filter(f=>!isVid(f)),evs=vids.filter(isVid),sec=(k,l,a)=>a.length?`<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}">${a.map(f=>tile(f,isNew[f.id])).join('')}</div>`:'';
  const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else{g.className='sectioned';g.innerHTML=sec('folds','COLLECTIONS',fold.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fold.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
  document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(el=>art(el,items.get(el.dataset.id)));
- status(all.length?'':(live?'Empty':'Not in saved index — sign in for live Drive'));menu();$('#main').scrollTop=0}
+ status(all.length?'':(live?'Empty':'Nothing here yet'));menu();$('#main').scrollTop=0}
 async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){live=false;status('');add(window._idx||[])}}
  const f=items.get(id);if(id===ROOT&&mode==='home')return showHome();render(kids.get(id)||[],id===ROOT?{home:'The Fan Edit Fan Club Collection',all:'The Fan Edit Fan Club Collection',arena:'New Arrivals',collections:'Collections'}[mode]:f.name,id===ROOT?mode:'home')}
 /* ---------- DETAILS (LCARS) ---------- */
@@ -222,9 +223,9 @@ let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(async
  let res=[...items.values()].filter(f=>f.name.toLowerCase().includes(q));
  if(live){try{const s=q.replace(/'/g,"\\'");const r=await api(`name contains '${s}' and trashed=false and (mimeType contains 'video/' or mimeType='${SC}')`);r.files.map(f=>norm(f)).forEach(f=>{if(!items.has(f.id)){items.set(f.id,f);res.push(f)}})}catch(e){}}
  view='search';render(res,'Search: '+q,'home')},250)});
-const mb=$('#mute');const sm=()=>mb.textContent=S.muted?'🔇':'🔊';sm();mb.onclick=()=>{S.unlock();S.toggle();sm();sm2()};setTimeout(sm2,0);$('#auth').onclick=signIn;
+setTimeout(sm2,0);
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-const FOC='#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe';
+const FOC='#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe';
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
 function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).filter(visible),a=document.activeElement;
@@ -249,7 +250,7 @@ const _play=play;play=function(f){_play(f);setTimeout(()=>focusEl($('#back')),50
 if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
 document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once:true});
 /* ---------- BOOT ---------- */
-intro();if(C.GOOGLE_API_KEY){live=true;$('#auth').textContent='Sign in';}
+intro();if(C.GOOGLE_API_KEY){live=true;}
 tmo('data/folderthumbs.json',10000).then(m=>{fthumbs=m;document.querySelectorAll('#grid .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&isFolder(f)&&!el.querySelector('img'))art(el,f)})}).catch(()=>{});
 const reArt=()=>document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&!el.querySelector('img')){if(isFolder(f)&&people[target(f)]){el.outerHTML=tile(f);const n=document.querySelector('[data-id="'+f.id+'"]');n&&art(n,f)}else art(el,f)}});
 tmo('data/posters.json',15000).then(m=>{posters=m;reArt()}).catch(()=>{});tmo('data/people.json',10000).then(m=>{people=m;reArt()}).catch(()=>{});
@@ -269,7 +270,7 @@ showHome();
  const isTV=document.body.classList.contains('tv'),mobile=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/.test(ua)&&'ontouchend' in document);
  const ios=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),snoozed=+localStorage.fefcInstallSnooze>Date.now();
  let deferred=null;const box=document.getElementById('install');
- if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
+ if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});if('serviceWorker' in navigator&&navigator.serviceWorker.controller){let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl||sessionStorage.fefcSwReload)return;rl=true;sessionStorage.fefcSwReload='1';location.reload()})}
  const allowed=()=>(mobile||new URLSearchParams(location.search).get('installdemo'))&&!standalone&&!isTV&&!snoozed;
  function show(){if(!allowed()||!box.hidden)return;const go=document.getElementById('ins-go'),msg=document.getElementById('ins-msg');
   if(ios){msg.innerHTML='Tap <b>Share</b> <span class="ios-share">⬆︎</span> then <b>Add to Home Screen</b>.';go.hidden=true}
@@ -281,3 +282,6 @@ showHome();
  const t=setInterval(()=>{if(document.body.classList.contains('intro-done')){clearInterval(t);setTimeout(show,1200)}},400)})();
 addEventListener('load',()=>{const s=document.createElement('script');s.src='clips.js?v='+(document.querySelector('script[src*="app.js?v="]')||{src:''}).src.split('v=')[1];s.async=true;document.body.appendChild(s)}); // moving edge clips (src/clips.js)
 ;(function(){const sync=()=>document.body.classList.toggle('overlay',!document.getElementById('details').hidden||!document.getElementById('player').hidden);const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden']}));sync()})();
+addEventListener('load',()=>{const w=document.getElementById('wordmark');if(w)window.dispatchEvent(new Event('resize'))});
+
+(()=>{const h=document.getElementById('hints'),pl=document.getElementById('player'),up=()=>{if(h)h.style.display=pl&&!pl.hidden?'none':''};if(pl&&window.MutationObserver)new MutationObserver(up).observe(pl,{attributes:true,attributeFilter:['hidden']});up()})(); // one sound/legend control on every page, hidden in the player
