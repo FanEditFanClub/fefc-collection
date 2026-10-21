@@ -178,26 +178,185 @@ var __spreadValues = (a, b) => {
       const im = new Image();
       im.alt = "";
       im.loading = "lazy";
+      im.referrerPolicy = "no-referrer";
       im.onload = () => {
         if (im.naturalWidth > 40) el.insertBefore(im, el.firstChild);
       };
       im.src = src;
     }
   }
+  const FOLD = { readFirst: "1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT", collections: "1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB", tbc: "1503Wl56hzRppaIFcQisvQksOaeYOEjnk", actors: "1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS", directors: "1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib" };
+  const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub" }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub" }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub" }];
+  let mosaicList = [], mosaicTimer = null, genreMap = {};
+  const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
+  function topFolder(f) {
+    let x = f, guard = 0;
+    while (x && x.parent && x.parent !== ROOT && guard++ < 30) x = items.get(x.parent);
+    return x && x.parent === ROOT ? x.id : null;
+  }
+  function genresOf(f) {
+    const t = topFolder(f), g = t && genreMap[t];
+    return g ? g.genres : ["Uncategorized"];
+  }
+  function genreList(g) {
+    return vids().filter((f) => genresOf(f).indexOf(g) >= 0);
+  }
+  function genreStrip() {
+    const have = {};
+    Object.keys(genreMap).forEach((k) => genreMap[k].genres.forEach((g) => have[g] = 1));
+    have.Uncategorized = 1;
+    $("#genres").innerHTML = '<span class="glab">Genres</span>' + GORDER.filter((g) => have[g]).map((g) => '<button class="gt" data-genre="'.concat(g, '">').concat(g, "</button>")).join("");
+  }
+  document.addEventListener("click", (e) => {
+    const g = e.target.closest("[data-genre]");
+    if (!g) return;
+    S.click();
+    const G = g.dataset.genre, list = genreList(G), folders = Object.keys(genreMap).filter((k) => genreMap[k].genres.indexOf(G) >= 0).map((k) => items.get(k)).filter(Boolean);
+    virtual(list.length ? list : folders, G + (list.length ? "" : " \u2014 collections"));
+  });
+  function vids() {
+    return [].slice.call(items.values()).filter((f) => !isFolder(f) && isVid(f));
+  }
+  function isVid(f) {
+    return /^video\//.test(f.mimeType) || /\.(mkv|mp4|m4v|avi|mov|webm)$/i.test(f.name);
+  }
+  function cnt(id) {
+    const k = kids.get(id);
+    return k ? k.length : 0;
+  }
+  function hub() {
+    const now = Date.now(), newN = vids().filter((f) => f.modified && now - Date.parse(f.modified) < 30 * 864e5).length;
+    const T = [
+      ["readfirst", "Read First", cnt(FOLD.readFirst) ? cnt(FOLD.readFirst) + " docs" : ""],
+      ["arena", "New Arrivals", newN ? newN + " new" : ""],
+      ["support", "Support", "Patreon \xB7 PayPal \xB7 Venmo"],
+      ["folder:" + FOLD.collections, "Fan Edit Collections", ""],
+      ["main", "", ""],
+      ["folder:" + FOLD.tbc, "To Be Catalogued", ""],
+      ["actors", "Actors & Directors", ""],
+      ["search", "Search", ""],
+      ["collections", "Collections", (kids.get(ROOT) || []).filter(isFolder).length + " folders"]
+    ];
+    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/cover.jpg" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '"><span>').concat(esc(t[1]), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
+  }
+  function mosaic() {
+    const M = $("#mosaic");
+    const tv = document.body.classList.contains("tv");
+    const n = tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
+    let pool = mosaicList.length ? mosaicList.slice() : vids().slice(0, 40).map((f) => ({ id: f.id, target: target(f), name: f.name }));
+    M.innerHTML = "";
+    const cells = [];
+    for (let i = 0; i < 30; i++) {
+      const c = document.createElement("div");
+      c.className = "mc";
+      c.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
+      M.appendChild(c);
+      cells.push(c);
+    }
+    const pick = () => pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+    const set = (c, first) => {
+      const v = pick(), layers = c.children, on = c._on ? 0 : 1;
+      c._on = !c._on;
+      const L = layers[on];
+      if (v) {
+        L.src = "https://drive.google.com/thumbnail?sz=w480&id=" + v.target;
+        c.dataset.id = v.id;
+      } else {
+        c.style.background = "radial-gradient(circle at 60% 30%,hsl(" + (Math.random() * 360 | 0) + " 70% 45%),#050a14 80%)";
+      }
+      L.style.animationName = "none";
+      void L.offsetWidth;
+      L.style.animationName = "";
+      L.className = (on ? "mi2" : "mi1") + " kb" + (Math.random() * 4 | 0);
+      layers[on].style.opacity = 1;
+      layers[1 - on].style.opacity = 0;
+    };
+    cells.forEach((c) => set(c, true));
+    clearInterval(mosaicTimer);
+    mosaicTimer = setInterval(() => {
+      if ($("#home").hidden || document.hidden) return;
+      const k = tv ? 1 : 2;
+      for (let j = 0; j < k; j++) set(cells[Math.random() * cells.length | 0]);
+    }, tv ? 3500 : 1800);
+  }
+  function showHome() {
+    view = "home";
+    cur = ROOT;
+    $("#home").hidden = false;
+    genreStrip();
+    $("#main").hidden = true;
+    $("#bar").hidden = true;
+    hub();
+    if (!$("#mosaic").children.length) mosaic();
+    setTimeout(() => {
+      if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) focusEl($(".hb-logo"));
+    }, 30);
+  }
+  function hideHome() {
+    $("#home").hidden = true;
+    $("#main").hidden = false;
+    $("#bar").hidden = false;
+  }
+  function virtual(list, title) {
+    hideHome();
+    cur = "virtual";
+    view = "folder";
+    render(list, title, "home");
+  }
+  function _x() {
+  }
+  function hubGo(k) {
+    S.click();
+    if (k === "main") return hideHome(), open(ROOT, "all");
+    if (k === "arena" || k === "collections") return hideHome(), open(ROOT, k);
+    if (k === "readfirst") return hideHome(), open(FOLD.readFirst);
+    if (k.indexOf("folder:") === 0) return hideHome(), open(k.slice(7));
+    if (k === "actors") return virtual([items.get(FOLD.actors) || { id: FOLD.actors, name: "Actors", mimeType: FOLDER }, items.get(FOLD.directors) || { id: FOLD.directors, name: "Directors", mimeType: FOLDER }], "Actors & Directors");
+    if (k === "search") {
+      hideHome();
+      open(ROOT, "all");
+      setTimeout(() => $("#q").focus(), 50);
+      return;
+    }
+    if (k === "support") {
+      hideHome();
+      cur = "virtual";
+      view = "folder";
+      $("#crumb").textContent = "Support Fan Edit Fan Club";
+      $("#arena").innerHTML = "";
+      $("#sec2").textContent = "Thank you for supporting the collection";
+      $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link" href="'.concat(s.url, '" target="_blank" rel="noopener"><div class="art" style="background:radial-gradient(circle at 70% 20%,#ff9c00aa,#1a2233 60%,#05070b)"></div><div class="nm" style="font-size:20px">').concat(s.name, "</div></a>")).join("");
+      status("");
+      menu();
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const h = e.target.closest("[data-hub]");
+    if (h) hubGo(h.dataset.hub);
+  });
+  document.addEventListener("pointerover", (e) => {
+    const h = e.target.closest(".hb");
+    if (h && h !== lastHub) {
+      lastHub = h;
+      S.move();
+    }
+  });
+  let lastHub = null;
   function status(t) {
     $("#status").textContent = t;
   }
   function menu() {
-    const m = [["home", "Home"], ["arena", "New Arrivals"], ["collections", "Collections"]];
+    const m = [["home", "Dashboard"], ["all", "Main Collection"], ["arena", "New Arrivals"], ["collections", "Collections"]];
     $("#menu").innerHTML = (cur !== ROOT ? '<button class="mi" data-nav="up">\u25C0 Back</button>' : "") + m.map(([k, l]) => '<button class="mi '.concat(view === k ? "on" : "", '" data-nav="').concat(k, '">').concat(l, "</button>")).join("");
   }
   function render(list, title, mode) {
-    const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
-    const recent = [...vids].sort((a, b) => (b.modified || "").localeCompare(a.modified || "")).slice(0, 4);
+    const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
+    const recent = [...vids2].sort((a, b) => (b.modified || "").localeCompare(a.modified || "")).slice(0, 4);
     $("#crumb").textContent = title;
+    hideHome();
     $("#arena").innerHTML = mode !== "collections" ? recent.map((f) => tile(f, 1)).join("") : "";
-    const all = mode === "arena" ? [...vids].sort((a, b) => (b.modified || "").localeCompare(a.modified || "")) : mode === "collections" ? fold : [...fold, ...vids];
-    $("#sec2").textContent = mode === "arena" ? "All fan edits by date" : "".concat(fold.length, " collections \xB7 ").concat(vids.length, " fan edits");
+    const all = mode === "arena" ? [...vids2].sort((a, b) => (b.modified || "").localeCompare(a.modified || "")) : mode === "collections" ? fold : [...fold, ...vids2];
+    $("#sec2").textContent = mode === "arena" ? "All fan edits by date" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
     $("#grid").innerHTML = all.map((f) => tile(f)).join("");
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach((el) => art(el, items.get(el.dataset.id)));
     status(all.length ? "" : live ? "Empty" : "Not in saved index \u2014 sign in for live Drive");
@@ -218,7 +377,8 @@ var __spreadValues = (a, b) => {
       }
     }
     const f = items.get(id);
-    render(kids.get(id) || [], id === ROOT ? { home: "The Fan Edit Fan Club Collection", arena: "New Arrivals", collections: "Collections" }[mode] : f.name, id === ROOT ? mode : "home");
+    if (id === ROOT && mode === "home") return showHome();
+    render(kids.get(id) || [], id === ROOT ? { home: "The Fan Edit Fan Club Collection", all: "The Fan Edit Fan Club Collection", arena: "New Arrivals", collections: "Collections" }[mode] : f.name, id === ROOT ? mode : "home");
   }
   async function omdb(title, year) {
     if (!C.OMDB_API_KEY) return null;
@@ -278,6 +438,8 @@ var __spreadValues = (a, b) => {
     $("#player").hidden = false;
     history.pushState({ p: 1 }, "");
   }
+  addEventListener("resize", () => {
+  });
   addEventListener("popstate", () => {
     if (!$("#player").hidden) {
       $("#player").hidden = true;
@@ -296,9 +458,11 @@ var __spreadValues = (a, b) => {
       S.click();
       const k = nav.dataset.nav;
       if (k === "up") {
+        if (cur === "virtual") return showHome();
         const f = items.get(cur);
         return open((f == null ? void 0 : f.parent) && items.has(f.parent) ? f.parent : ROOT);
       }
+      if (k === "home") return showHome();
       return open(ROOT, k);
     }
     const act = e.target.closest("[data-act]");
@@ -316,6 +480,9 @@ var __spreadValues = (a, b) => {
       if (isFolder(f)) {
         S.click();
         open(target(f));
+      } else if (!isVid(f)) {
+        S.click();
+        window.open("https://drive.google.com/file/d/" + target(f) + "/view", "_blank");
       } else details(f);
     }
   });
@@ -363,7 +530,7 @@ var __spreadValues = (a, b) => {
     sm();
   };
   $("#auth").onclick = signIn;
-  const FOC = ".mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
+  const FOC = ".gt,.hb,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -402,6 +569,10 @@ var __spreadValues = (a, b) => {
     if (!$("#player").hidden || !$("#details").hidden) {
       history.back();
       return;
+    }
+    if (cur === "virtual" || cur === ROOT && view !== "home") {
+      S.click();
+      return showHome();
     }
     if (cur !== ROOT) {
       const f = items.get(cur);
@@ -455,6 +626,16 @@ var __spreadValues = (a, b) => {
     live = true;
     $("#auth").textContent = "Sign in";
   }
+  fetch("data/genres.json").then((r) => r.json()).then((g) => {
+    genreMap = g;
+    if (!$("#home").hidden) genreStrip();
+  }).catch(() => {
+  });
+  fetch("data/mosaic.json").then((r) => r.json()).then((m) => {
+    mosaicList = m;
+    if (!$("#home").hidden) mosaic();
+  }).catch(() => {
+  });
   Promise.all([fetch("data/index.json").then((r) => r.json()), fetch("data/metadata.json").then((r) => r.json()).catch(() => ({}))]).then(([d, md]) => {
     meta = md;
     window._idx = d.items;
