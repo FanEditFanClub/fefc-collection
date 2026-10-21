@@ -236,7 +236,7 @@ function renderBase(h){baseKey=h;const r=(h.replace(/^#\/?/,'')||'').split('/').
  if(k==='genres'||k==='supportus')return hubGo(k==='supportus'?'support':k);
  if(k==='people'||k==='actors'||k==='directors'){if(k!=='people')history.replaceState(history.state,'','#/people');return peoplePage()}
  if(k==='mylist')return myListPage();
- if(k==='genre'){const G=r[1],list=genreList(G),folders=Object.keys(genreMap).filter(x=>genreMap[x].genres.indexOf(G)>=0).map(x=>items.get(x)||{id:x,name:genreMap[x].folder,mimeType:FOLDER,parent:ROOT});return virtual(list.length?list:folders,G)}
+ if(k==='genre'){window.__gscope=r[1];const G=r[1],list=genreList(G),folders=Object.keys(genreMap).filter(x=>genreMap[x].genres.indexOf(G)>=0).map(x=>items.get(x)||{id:x,name:genreMap[x].folder,mimeType:FOLDER,parent:ROOT});return virtual(list.length?list:folders,G)}
  if(k==='search'){hideHome();open(ROOT,'all');setTimeout(()=>{$('#q').value=r[1]||'';$('#q').focus();if(r[1])$('#q').dispatchEvent(new Event('input'))},60);return}
  showHome()}
 window.addEventListener('popstate',()=>{navBack=true;route()});
@@ -269,13 +269,23 @@ function csortFn(k){const nat=(a,b)=>a.name.localeCompare(b.name,undefined,{nume
 /* sort a list but keep support-ad tiles in their A–Z slots */
 function csortList(a,k,isAd){const az=a.slice().sort(csortFn('az'));if(k==='az')return az;const rest=az.filter(f=>!isAd(f)).sort(csortFn(k));return az.map(f=>isAd(f)?f:rest.shift())}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-csort]');if(!b)return;try{localStorage.setItem('fefcSort:'+b.closest('.sortbar').dataset.for,b.dataset.csort)}catch(_){}S.click&&S.click();const keep=b.dataset.csort;const sy=$('#main').scrollTop;open(cur,view==='folder'?'folder':view).then(()=>{$('#main').scrollTop=sy;const n=document.querySelector(`[data-csort="${keep}"]`);if(n&&document.body.classList.contains('tv'))focusEl(n)})});
+/* ---------- SHUFFLE PLAY ---------- */
+let SHUF=null;tmo('data/shuffle.json',15000).then(d=>{SHUF=new Set(d.ids)}).catch(()=>{SHUF=new Set()});
+const SHUF_ICON='<svg class="shuf-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3l4 4-4 4V8h-2.6l-2.2 2.7-1.3-1.6L13.4 6H17V3zM3 6h4.6l8 10H17v-3l4 4-4 4v-3h-2.6l-8-10H3V6zm0 10h3.4l2.1-2.6 1.3 1.6L7.6 18H3v-2z"/></svg>';
+function shufPool(scope){if(!SHUF)return [];const seen={};return vids().filter(f=>{const t=target(f);if(seen[t]||!SHUF.has(t))return false;if(scope&&scope!=='all'&&genresOf(f).indexOf(scope)<0)return false;return seen[t]=1})}
+function shufPick(scope){const pool=shufPool(scope);if(!pool.length)return null;let rec=[];try{rec=JSON.parse(localStorage.fefcShufRecent||'[]')}catch(e){}
+ const fresh=pool.filter(f=>rec.indexOf(target(f))<0),from=fresh.length?fresh:pool,f=from[Math.floor(Math.random()*from.length)];
+ rec.push(target(f));rec=rec.slice(-20);try{localStorage.fefcShufRecent=JSON.stringify(rec)}catch(e){}return f}
+function shuffle(scope){const f=shufPick(scope);if(!f){status('Nothing to shuffle yet');return}try{sessionStorage.fefcShufScope=scope}catch(e){}window.__shufPlay=1;go('#/play/'+encodeURIComponent(f.id))}
+const shufBtn=scope=>`<button class="sortpill shuf-btn" data-shuffle="${esc(scope)}" title="Play a random fan edit">${SHUF_ICON}Shuffle Play</button>`;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-shuffle]');if(!b)return;e.preventDefault();S.unlock&&S.unlock();shuffle(b.dataset.shuffle)});
 function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));
  $('#crumb').textContent=title;hideHome();
  $('#arena').innerHTML='';NA.top(allVids());const isNew={};if(mode!=='collections')list.forEach(f=>{if(NA.isNew(f))isNew[f.id]=1});
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
  $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':(cur===ROOT||cur===FOLD.collections||cur===FOLD.tbc)?countsLine(cur):`${fold.length} collections · ${vids.length} fan edits`;
  const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),ck=mode==='arena'?'az':csortGet(cur),evs=csortList(vids.filter(f=>isVid(f)||isAd(f)),ck,isAd),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
- const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else{g.className='sectioned';const sb=list.length>1?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
+ const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':cur==='virtual'&&window.__gscope&&title===window.__gscope?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
  document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena')drain(Q,isNew);
  status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll()}
 async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){live=false;status('');add(window._idx||[])}}
@@ -335,7 +345,7 @@ let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(async
  view='search';render(res,'Search: '+q,'home')},250)});
 setTimeout(sm2,0);
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-const FOC='#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe';
+const FOC='#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,.sortpill,#details .pill:not(.lab),#details a,#player .pill,#pframe';
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
 function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).filter(visible),a=document.activeElement;
@@ -388,7 +398,7 @@ document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.close
 // focus first item after views open
 const _render=render;render=function(){_render.apply(this,arguments);if(document.body.classList.contains('tv')){const t=document.querySelector('#arena .ol-tile,#grid .ol-tile');if(t)focusEl(t)}};
 const _details=details;details=async function(){await _details.apply(this,arguments);const p=document.querySelector('#details [data-act="play"]');if(p){const id=$('#details').dataset.id;if(id&&window.UD&&!p.parentNode.querySelector('.star-btn')){const on=UD.isStarred(id);p.insertAdjacentHTML('afterend',`<button class="pill p4 star-btn${on?' on':''}" data-star="${id}">${on?'★ Starred':'☆ Star'}</button>`)}focusEl(p)}};
-const _play=play;play=function(f){_play(f);setTimeout(()=>focusEl($('#back')),50)};
+const _play=play;play=function(f){_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>focusEl($('#back')),50)};
 if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
 document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once:true});
 /* ---------- BOOT ---------- */

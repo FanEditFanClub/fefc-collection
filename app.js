@@ -1083,6 +1083,7 @@ var __spreadValues = (a, b) => {
     }
     if (k === "mylist") return myListPage();
     if (k === "genre") {
+      window.__gscope = r[1];
       const G = r[1], list = genreList(G), folders = Object.keys(genreMap).filter((x) => genreMap[x].genres.indexOf(G) >= 0).map((x) => items.get(x) || { id: x, name: genreMap[x].folder, mimeType: FOLDER, parent: ROOT });
       return virtual(list.length ? list : folders, G);
     }
@@ -1244,6 +1245,61 @@ var __spreadValues = (a, b) => {
       if (n && document.body.classList.contains("tv")) focusEl(n);
     });
   });
+  let SHUF = null;
+  tmo("data/shuffle.json", 15e3).then((d) => {
+    SHUF = new Set(d.ids);
+  }).catch(() => {
+    SHUF = /* @__PURE__ */ new Set();
+  });
+  const SHUF_ICON = '<svg class="shuf-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3l4 4-4 4V8h-2.6l-2.2 2.7-1.3-1.6L13.4 6H17V3zM3 6h4.6l8 10H17v-3l4 4-4 4v-3h-2.6l-8-10H3V6zm0 10h3.4l2.1-2.6 1.3 1.6L7.6 18H3v-2z"/></svg>';
+  function shufPool(scope) {
+    if (!SHUF) return [];
+    const seen = {};
+    return vids().filter((f) => {
+      const t = target(f);
+      if (seen[t] || !SHUF.has(t)) return false;
+      if (scope && scope !== "all" && genresOf(f).indexOf(scope) < 0) return false;
+      return seen[t] = 1;
+    });
+  }
+  function shufPick(scope) {
+    const pool = shufPool(scope);
+    if (!pool.length) return null;
+    let rec = [];
+    try {
+      rec = JSON.parse(localStorage.fefcShufRecent || "[]");
+    } catch (e) {
+    }
+    const fresh = pool.filter((f2) => rec.indexOf(target(f2)) < 0), from = fresh.length ? fresh : pool, f = from[Math.floor(Math.random() * from.length)];
+    rec.push(target(f));
+    rec = rec.slice(-20);
+    try {
+      localStorage.fefcShufRecent = JSON.stringify(rec);
+    } catch (e) {
+    }
+    return f;
+  }
+  function shuffle(scope) {
+    const f = shufPick(scope);
+    if (!f) {
+      status("Nothing to shuffle yet");
+      return;
+    }
+    try {
+      sessionStorage.fefcShufScope = scope;
+    } catch (e) {
+    }
+    window.__shufPlay = 1;
+    go("#/play/" + encodeURIComponent(f.id));
+  }
+  const shufBtn = (scope) => '<button class="sortpill shuf-btn" data-shuffle="'.concat(esc(scope), '" title="Play a random fan edit">').concat(SHUF_ICON, "Shuffle Play</button>");
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-shuffle]");
+    if (!b) return;
+    e.preventDefault();
+    S.unlock && S.unlock();
+    shuffle(b.dataset.shuffle);
+  });
   function render(list, title, mode) {
     const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
     $("#crumb").textContent = title;
@@ -1268,7 +1324,7 @@ var __spreadValues = (a, b) => {
       NA.render(window._idx ? Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f)) : all, tile, art, (i) => items.get(i));
     } else {
       g.className = "sectioned";
-      const sb = list.length > 1 ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
+      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === "virtual" && window.__gscope && title === window.__gscope ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
       g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
@@ -1484,7 +1540,7 @@ var __spreadValues = (a, b) => {
     }, 250);
   });
   setTimeout(sm2, 0);
-  const FOC = "#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
+  const FOC = "#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,.sortpill,#details .pill:not(.lab),#details a,#player .pill,#pframe";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -1734,6 +1790,31 @@ var __spreadValues = (a, b) => {
   const _play = play;
   play = function(f) {
     _play(f);
+    (() => {
+      let b = $("#pshuf");
+      if (!b) {
+        b = document.createElement("button");
+        b.id = "pshuf";
+        b.className = "pill p6 shuf-again";
+        b.innerHTML = SHUF_ICON + "Shuffle again";
+        b.onclick = () => shuffle(sessionStorage.fefcShufScope || "all");
+        $("#popen").before(b);
+      }
+      let sc = "";
+      try {
+        sc = sessionStorage.fefcShufScope || "";
+      } catch (e) {
+      }
+      if (!window.__shufPlay) {
+        try {
+          sessionStorage.removeItem("fefcShufScope");
+        } catch (e) {
+        }
+        sc = "";
+      }
+      window.__shufPlay = 0;
+      b.hidden = !sc;
+    })();
     setTimeout(() => focusEl($("#back")), 50);
   };
   if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
