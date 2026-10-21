@@ -63,7 +63,7 @@ function hub(){const now=Date.now(),newN=vids().filter(f=>f.modified&&now-Date.p
  const T=[['readfirst','Read First',cnt(FOLD.readFirst)?cnt(FOLD.readFirst)+' docs':''],['arena','New Arrivals',newN?newN+' new':''],['support','Support','Patreon · PayPal · Venmo'],
   ['folder:'+FOLD.collections,'Fan Edit Collections',''],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',''],
   ['folder:'+FOLD.actors,'Actors',cnt(FOLD.actors)?cnt(FOLD.actors)+' folders':''],['folder:'+FOLD.directors,'Directors',cnt(FOLD.directors)?cnt(FOLD.directors)+' folders':''],['genres','Genres',Object.keys(genreMap).length?'Browse by genre':'']];
- $('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/cover.jpg" alt=""><small>Main Collection</small></button>`
+ $('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>`
   :`<button class="hb" data-hub="${t[0]}"><span>${esc(t[1])}</span>${t[2]?`<small>${esc(t[2])}</small>`:''}</button>`).join('')}
 function mosaic(){const M=$('#mosaic');const tv=document.body.classList.contains('tv');
  const n=tv?14:Math.max(10,Math.min(22,Math.round(innerWidth*innerHeight/60000)));

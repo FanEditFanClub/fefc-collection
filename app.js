@@ -247,7 +247,7 @@ var __spreadValues = (a, b) => {
       ["folder:" + FOLD.directors, "Directors", cnt(FOLD.directors) ? cnt(FOLD.directors) + " folders" : ""],
       ["genres", "Genres", Object.keys(genreMap).length ? "Browse by genre" : ""]
     ];
-    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/cover.jpg" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '"><span>').concat(esc(t[1]), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
+    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '"><span>').concat(esc(t[1]), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
   }
   function mosaic() {
     const M = $("#mosaic");
