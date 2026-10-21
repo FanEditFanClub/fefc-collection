@@ -208,3 +208,14 @@ body.intro-done:not(.at-home) #tagline{visibility:hidden}
 .ins-b{min-height:44px;padding:0 14px;border:2px solid #9fb6cf;border-radius:3px;background:#151a22;color:#fff;font:600 15px 'Source Sans 3',sans-serif;cursor:pointer}
 .ins-p{border-color:#ffb02e;box-shadow:0 0 12px #ff9c0088}.ins-b:focus{outline:3px solid #fff}
 .ios-share{display:inline-block;border:1px solid #9cf;border-radius:3px;padding:0 4px;color:#9cf}
+
+/* canvas intro */
+#intro canvas{position:absolute;inset:0;display:block}
+#intro .gate{position:absolute;inset:0;display:none;place-items:center;background:radial-gradient(circle,#1a1206 0,#000 70%)}
+#intro.gated .gate{display:grid}#intro.gated .ihint{display:none}
+#intro .gate span{font:600 clamp(16px,2.6vh,30px) 'Source Sans 3',sans-serif;color:#ffb347;letter-spacing:.08em;padding:.6em 1.4em;border:1px solid #ff8a1a88;border-radius:4px;animation:gp 1.6s ease-in-out infinite}
+@keyframes gp{50%{opacity:.45}}
+#intro .ihint{position:absolute;right:3vw;bottom:4vh;font:600 clamp(13px,1.8vh,22px) 'Source Sans 3',sans-serif;color:#fff9;padding:.35em .9em;border:1px solid #fff4;border-radius:3px;background:#0006;z-index:2}
+body.cintro #tagline{animation:none!important;opacity:0;visibility:hidden}
+.ol-tile .art:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000e 0,#0008 35%,#0000 65%)}
+.ol-tile .nm{text-shadow:0 1px 3px #000,0 0 10px #000}

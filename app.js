@@ -53,46 +53,91 @@ var __spreadValues = (a, b) => {
       document.body.classList.add("intro-done", "no-intro");
       return;
     }
-    const seen = localStorage.fefcSeen === "1", d = seen ? 1.4 : 3.2;
-    el.style.setProperty("--d", d + "s");
-    document.documentElement.style.setProperty("--d", d + "s");
-    const sun = el.querySelector(".sun");
-    for (let i = 0; i < 24; i++) {
-      const t = document.createElement("i"), a = i / 24 * 360, r = i % 2 ? 24 : 19;
-      t.style.transform = "rotate(".concat(a, "deg) translate(").concat(r, "vmin) rotate(90deg)");
-      t.style.animationDelay = i % 6 * 0.05 + "s";
-      sun.appendChild(t);
-    }
-    if (P.get("introframe")) {
+    const seen = localStorage.fefcSeen === "1" && !P.get("fullintro"), short = seen || P.get("shortintro"), tv = document.body.classList.contains("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
+    document.body.classList.add("cintro");
+    const tg = $("#tagline");
+    const R = window.FEFCIntro.create({ tv, tagline: tg });
+    el.prepend(R.canvas);
+    fetch("data/mosaic.json").then((r) => r.json()).then((m) => R.setTiles(m.map((x) => x.target || x.id))).catch(() => {
+    });
+    const fr = P.get("introframe");
+    if (fr !== null) {
       document.body.classList.add("frozen");
-      document.documentElement.style.setProperty("--tf", -P.get("introframe") + "s");
-      el.querySelectorAll("*").forEach((e) => {
-        e.style.animationPlayState = "paused";
-        e.style.animationDelay = -P.get("introframe") + "s";
-      });
-      el.style.animation = "none";
+      el.querySelector(".ihint").hidden = true;
+      const draw = () => R.frame(+fr);
+      draw();
+      [300, 1e3, 2e3, 3500].forEach((t) => setTimeout(draw, t));
       return;
     }
-    let done = false;
-    const end = () => {
+    let done = false, raf = 0;
+    const end = (skipped) => {
       if (done) return;
       done = true;
+      cancelAnimationFrame(raf);
       localStorage.fefcSeen = "1";
+      if (skipped) {
+        S.introStop();
+        S.bell();
+      }
+      tg.style.opacity = "";
+      tg.style.clipPath = "";
+      tg.style.visibility = "";
+      document.body.classList.remove("cintro");
       el.classList.add("done");
       document.body.classList.add("intro-done");
       $("#home").classList.add("enter");
-      S.ambience(view !== "player");
+      setTimeout(() => {
+        S.ambience(view !== "player");
+        el.remove();
+      }, skipped ? 600 : 1800);
     };
+    const start = () => {
+      el.classList.remove("gated");
+      S.unlock();
+      try {
+        S.introSeq(short);
+      } catch (e) {
+      }
+      const t0 = performance.now();
+      const loop = (now) => {
+        const r = (now - t0) / 1e3, s = short ? R.mapC(r) : r;
+        R.frame(s);
+        if (s >= 24.2) return end(false);
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+      setTimeout(() => {
+        const sk = (e) => {
+          if (e.type === "keydown" && e.repeat) return;
+          e.preventDefault && e.preventDefault();
+          removeEventListener("keydown", sk, true);
+          el.removeEventListener("pointerdown", sk);
+          end(true);
+        };
+        addEventListener("keydown", sk, true);
+        el.addEventListener("pointerdown", sk);
+      }, 250);
+    };
+    let st = "suspended";
     try {
       S.unlock();
-      S.intro(seen);
+      st = S.state();
     } catch (e) {
     }
-    el.addEventListener("pointerdown", () => {
-      S.unlock();
-      end();
-    }, { once: true });
-    setTimeout(end, d * 1e3 + 300);
+    R.frame(0);
+    if (st === "running") start();
+    else {
+      el.classList.add("gated");
+      const g = (e) => {
+        removeEventListener("keydown", g, true);
+        el.removeEventListener("pointerdown", g);
+        if (e.preventDefault) e.preventDefault();
+        S.unlock();
+        setTimeout(start, 30);
+      };
+      addEventListener("keydown", g, true);
+      el.addEventListener("pointerdown", g);
+    }
   }
   addEventListener("pointerdown", () => {
     const first = !window._u;
@@ -183,11 +228,25 @@ var __spreadValues = (a, b) => {
       const fid = target(f);
       let t = fthumbs[fid];
       if (!t) {
-        const v = (kids.get(fid) || []).find((x) => !isFolder(x) && isVid(x) && x.targetId);
-        if (v) t = v.targetId;
+        let q = [fid];
+        for (let d = 0; d < 3 && !t && q.length; d++) {
+          const nq = [];
+          for (const id of q) {
+            const ks = kids.get(id) || [], v = ks.find((x) => !isFolder(x) && isVid(x));
+            if (v) {
+              t = target(v);
+              break;
+            }
+            ks.forEach((x) => {
+              if (isFolder(x)) nq.push(target(x));
+            });
+          }
+          q = nq.slice(0, 40);
+        }
       }
       if (t) src = "https://drive.google.com/thumbnail?sz=w640&id=" + t;
-    } else src = f.thumb ? f.thumb.replace(/=s\d+$/, "=s640") : "https://drive.google.com/thumbnail?sz=w640&id=" + target(f);
+    } else if (f.mimeType === "application/octet-stream" && !f.targetId) src = null;
+    else src = f.thumb ? f.thumb.replace(/=s\d+$/, "=s640") : "https://drive.google.com/thumbnail?sz=w640&id=" + target(f);
     if (!src) {
       const r = await tmdbFind(isFolder(f) ? f.name : p.film, p.year);
       if (r) src = "https://image.tmdb.org/t/p/w780" + (r.backdrop_path || r.poster_path);
@@ -195,10 +254,12 @@ var __spreadValues = (a, b) => {
     if (src) {
       const im = new Image();
       im.alt = "";
-      im.loading = "lazy";
       im.referrerPolicy = "no-referrer";
       im.onload = () => {
-        if (im.naturalWidth > 40) el.insertBefore(im, el.firstChild);
+        if (im.naturalWidth > 40) {
+          const a = el.querySelector(".art");
+          a ? a.appendChild(im) : el.insertBefore(im, el.firstChild);
+        }
       };
       im.src = src;
     }
@@ -835,6 +896,24 @@ var __spreadValues = (a, b) => {
   tmo("data/index.json", 15e3).then((d) => {
     window._idx = d.items;
     if (!live) add(d.items);
+    if (!live) tmo("data/links.json", 15e3).then((L) => {
+      for (const p in L) {
+        if (!kids.has(p)) kids.set(p, []);
+        const a = kids.get(p);
+        for (const id of L[p]) {
+          const f = items.get(id);
+          if (f && !a.includes(f)) a.push(f);
+        }
+      }
+      if (/^#\/(folder|all)/.test(location.hash)) route();
+    }).catch(() => {
+    });
+    if (d.partial !== false && !live) tmo("data/index.interim.json", 2e4).then((x) => {
+      add(x.items.filter((f) => !items.has(f.id)));
+      window._idx = Array.from(items.values());
+      route();
+    }).catch(() => {
+    });
   }).catch((e) => {
     console.warn(e);
     status("Saved index unavailable");

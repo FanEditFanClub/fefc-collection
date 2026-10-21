@@ -18,6 +18,29 @@ const S={
  click(){if(!started)return;const t=ctx.currentTime;tone(600,t,.08,'triangle',.12,900);tone(1200,t+.03,.1,'sine',.06)},
  open(){if(!started)return;const t=ctx.currentTime;tone(300,t,.35,'sawtooth',.05,1200);tone(880,t+.12,.25,'sine',.08)},
  chirp(n=0){if(!started)return;const t=ctx.currentTime,seq=[[1320,1760],[988,1480],[1760,1175]][n%3];tone(seq[0],t,.07,'square',.04);tone(seq[1],t+.08,.09,'square',.04)},
+
+ state(){init();return ctx.state},
+ // full intro score; times are seconds of the 26 s story (condensed: 4 s)
+ introSeq(short){init();if(ctx.state!=='running')return;const t0=ctx.currentTime+.05,bus=ctx.createGain();bus.gain.value=1;bus.connect(master);S._bus=bus;
+  const noise=d=>{const n=ctx.createBufferSource(),b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*d),ctx.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;n.buffer=b;return n};
+  const env=(g,a,b,pk,at=.3,rl=.3)=>{g.gain.setValueAtTime(0,a);g.gain.linearRampToValueAtTime(pk,a+Math.min(at,(b-a)/2));g.gain.setValueAtTime(pk,Math.max(a+Math.min(at,(b-a)/2),b-rl));g.gain.linearRampToValueAtTime(0,b)};
+  const osc=(type,f,a,b,pk,f2,dst)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f,a);if(f2)o.frequency.exponentialRampToValueAtTime(f2,b);env(g,a,b,pk);o.connect(g);g.connect(dst||bus);o.start(a);o.stop(b+.05);return o};
+  const nz=(a,b,pk,type,f1,f2,q)=>{const n=noise(b-a+.1),fl=ctx.createBiquadFilter(),g=ctx.createGain();fl.type=type;fl.Q.value=q||1;fl.frequency.setValueAtTime(f1,a);fl.frequency.exponentialRampToValueAtTime(f2,b);env(g,a,b,pk,(b-a)*.6,(b-a)*.35);n.connect(fl);fl.connect(g);g.connect(bus);n.start(a);n.stop(b+.1)};
+  const bell=a=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>{const c=ctx.createOscillator(),m=ctx.createOscillator(),mg=ctx.createGain(),g=ctx.createGain(),s=a+i*.03;c.frequency.value=f;m.frequency.value=f*1.4;mg.gain.setValueAtTime(f*2.2,s);mg.gain.exponentialRampToValueAtTime(f*.05,s+3);m.connect(mg);mg.connect(c.frequency);g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.09,s+.01);g.gain.exponentialRampToValueAtTime(.0001,s+4.5);c.connect(g);g.connect(master);c.start(s);m.start(s);c.stop(s+4.6);m.stop(s+4.6)})};
+  const T=x=>t0+x;
+  if(!short){
+   osc('sine',32,T(0),T(2),.35,58);osc('sine',64,T(.4),T(2),.08,90);           // sub-bass swell
+   nz(T(2),T(5),.16,'bandpass',4000,260,1.2);                                   // whoosh as it zooms back
+   osc('sine',60,T(5.05),T(11),.025);osc('sine',120,T(5.05),T(11),.01);        // near-silence hum
+   [440,554.4,659.3,880].forEach((f,i)=>{const o=osc('triangle',f,T(8),T(11.2),.025);o.detune.value=(i-1.5)*9});nz(T(8),T(11.2),.03,'highpass',6000,9000); // shimmer pad
+   nz(T(10.9),T(12),.2,'highpass',300,9000,.7);                                // rising swoosh into the dive
+   nz(T(12),T(21.2),.07,'lowpass',380,520,.8);nz(T(12.5),T(21),.03,'bandpass',900,600,3); // wind bed
+   osc('sine',1800,T(21),T(24),.06,180);                                        // falling digital tone
+   for(let i=0;i<14;i++)osc('square',2400+((i*733)%1600),T(21.2+i*.19),T(21.2+i*.19+.025),.03);
+   bell(T(24.05))}
+  else{nz(T(0),T(.9),.14,'bandpass',4000,300,1.2);nz(T(.8),T(1.5),.16,'highpass',300,9000,.7);nz(T(1.5),T(2.7),.05,'lowpass',380,520,.8);osc('sine',1800,T(2.6),T(4),.05,200);for(let i=0;i<6;i++)osc('square',2600+i*170,T(2.7+i*.2),T(2.725+i*.2),.03);bell(T(4))}},
+ introStop(){if(!S._bus)return;const b=S._bus;S._bus=null;b.gain.setTargetAtTime(0,ctx.currentTime,.08)},
+ bell(){init();if(ctx.state!=='running')return;const s=ctx.currentTime;[523.25,659.25,783.99].forEach((f,i)=>tone(f,s+i*.03,2.5,'sine',.07))},
  intro(short){if(!started)return;const t=ctx.currentTime;
   // rising whoosh (filtered noise) + swelling chord + bright resolve chime
   const n=ctx.createBufferSource(),b=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;n.buffer=b;

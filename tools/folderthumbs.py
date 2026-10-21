@@ -38,7 +38,9 @@ for s in SEED:
 folders.update({s:'seed' for s in SEED})
 out={}
 with cf.ThreadPoolExecutor(8) as ex:
-    for fid,t in zip(folders,ex.map(thumb,list(folders))):
+    for n,(fid,t) in enumerate(zip(folders,ex.map(thumb,list(folders)))):
         if t:out[fid]=t
+        if n%10==0:
+            json.dump(out,open(os.path.join(D,'folderthumbs.json'),'w'));print('progress',n,'/',len(folders),'thumbs',len(out),flush=True)
 json.dump(out,open(os.path.join(D,'folderthumbs.json'),'w'))
 print('DONE',len(out),'of',len(folders))
