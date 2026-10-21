@@ -199,7 +199,7 @@
     "assets/sfx/die-hard-yippee.mp3"
    ],
    "path": true,
-   "source": "myinstants yippy_mf-13464909\u2026mp3",
+   "source": "myinstants yippy_mf-13464909…mp3",
    "match": "die hard"
   },
   {
@@ -311,7 +311,124 @@
    ],
    "path": true,
    "source": "myinstants xenomorph-screech.mp3",
-   "regex": "^(alien|aliens|alien 3|alien\u00b3|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
+   "regex": "^(alien|aliens|alien 3|alien³|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
+  },
+  {
+   "files": [
+    "assets/sfx/iron-man.m4a",
+    "assets/sfx/iron-man.mp3"
+   ],
+   "path": true,
+   "source": "myinstants ironman_Qaec4ow.mp3 (Iron Man: 'I am Iron Man')",
+   "regex": "^iron man\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/hulk-smash.m4a",
+    "assets/sfx/hulk-smash.mp3"
+   ],
+   "path": true,
+   "source": "myinstants hulk_smash.mp3 (Hulk: 'Hulk smash')",
+   "regex": "^(the incredible )?hulk\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/avengers-assemble.m4a",
+    "assets/sfx/avengers-assemble.mp3"
+   ],
+   "path": true,
+   "source": "myinstants avengers-assemble.mp3 (Marvel: 'Avengers assemble')",
+   "regex": "^marvel\\b|\\bavengers\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/superman-theme.m4a",
+    "assets/sfx/superman-theme.mp3"
+   ],
+   "path": true,
+   "source": "myinstants superman.mp3 (Superman: Williams theme)",
+   "regex": "\\bsuperman\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/rocky-adrian.m4a",
+    "assets/sfx/rocky-adrian.mp3"
+   ],
+   "path": true,
+   "source": "myinstants yo-adrian-i-did-it.mp3 (Rocky/Stallone: 'Yo Adrian')",
+   "regex": "^rocky( (ii|iii|iv|v|balboa))?\\b(?! horror)|^stallone$"
+  },
+  {
+   "files": [
+    "assets/sfx/madmax-witness.m4a",
+    "assets/sfx/madmax-witness.mp3"
+   ],
+   "path": true,
+   "source": "myinstants nux-witness-me-blood-bag-mad-max-mp3cut.mp3 (Mad Max: 'Witness me')",
+   "regex": "\\bmad max\\b|^furiosa\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/halloween-theme.m4a",
+    "assets/sfx/halloween-theme.mp3"
+   ],
+   "path": true,
+   "source": "myinstants halloween.mp3 (Halloween: Carpenter theme)",
+   "regex": "^halloween\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/fast-family.m4a",
+    "assets/sfx/fast-family.mp3"
+   ],
+   "path": true,
+   "source": "myinstants fast-and-furious-family.mp3 (Fast & Furious: 'Family')",
+   "regex": "^(the )?fast (&|and) (the )?furious\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/evil-dead-groovy.m4a",
+    "assets/sfx/evil-dead-groovy.mp3"
+   ],
+   "path": true,
+   "source": "myinstants evil-dead-2-groovy.mp3 (Evil Dead: 'Groovy')",
+   "regex": "\\bevil dead\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/godfather-offer.m4a",
+    "assets/sfx/godfather-offer.mp3"
+   ],
+   "path": true,
+   "source": "myinstants make-offer-he-cant-refuse.mp3 (Godfather: 'offer he can't refuse')",
+   "regex": "^the godfather\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/tmnt-cowabunga.m4a",
+    "assets/sfx/tmnt-cowabunga.mp3"
+   ],
+   "path": true,
+   "source": "myinstants cowabunga-tmnt.mp3 (TMNT: 'Cowabunga')",
+   "regex": "teenage mutant ninja turtles|^tmnt\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/chucky-laugh.m4a",
+    "assets/sfx/chucky-laugh.mp3"
+   ],
+   "path": true,
+   "source": "myinstants chucky-laugh.mp3 (Chucky: laugh)",
+   "regex": "\\bchucky\\b|^child'?s play\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/austin-groovy.m4a",
+    "assets/sfx/austin-groovy.mp3"
+   ],
+   "path": true,
+   "source": "myinstants austin-powers_XkOpRDM.mp3 (Austin Powers: 'Groovy baby')",
+   "regex": "^austin powers\\b"
   }
  ]
 }
