@@ -455,27 +455,13 @@ var __spreadValues = (a, b) => {
     const D = NA.dates || {}, r = D[f.id] || D[f.targetId || ""] || D[target(f)];
     return r && r.m || f.modified || "";
   };
-  let _vcm = null, _vck = -1;
-  const vkey = (f) => {
-    const t = items.get(target(f)) || f, z = t.size || f.size;
-    return z ? String(t.name || f.name || "").toLowerCase().replace(/\.[^.]*$/, "").replace(/\W+/g, "") + "|" + z : null;
-  };
+  const XTRA = /\b(sample|trailer|teaser|featurette|extras?|bonus|promo|behind the scenes|deleted scenes?|interview|making of)\b/i;
   function vcanon(f) {
-    if (_vck !== items.size) {
-      _vck = items.size;
-      _vcm = /* @__PURE__ */ new Map();
-      items.forEach((x) => {
-        if (!isFolder(x) && x.kind === "video") {
-          const k2 = vkey(x);
-          if (k2 && x.md5) _vcm.set("m:" + x.md5, _vcm.get("m:" + x.md5) || target(x));
-          if (k2 && !_vcm.has(k2)) _vcm.set(k2, target(x));
-        }
-      });
-    }
-    const T = items.get(target(f)) || f;
-    if (T.md5 && _vcm.has("m:" + T.md5)) return _vcm.get("m:" + T.md5);
-    const k = vkey(f);
-    return k && _vcm.has(k) ? _vcm.get(k) : target(f);
+    const t = items.get(target(f)) || f;
+    if (XTRA.test(t.name || f.name || "")) return null;
+    if (t.md5) return "m:" + t.md5;
+    const z = t.size || f.size;
+    return z ? "s:" + z : target(f);
   }
   function deepCounts(id) {
     if (_dc[id] && _dc[id].k === items.size && _dc[id].d === !!NA.dates) return _dc[id];
@@ -497,7 +483,7 @@ var __spreadValues = (a, b) => {
         } else if (!JUNK.test(f.name || "") && isVid(f) && !fs[target(f)]) {
           fs[target(f)] = 1;
           const ck = vcanon(f);
-          if (fs["c:" + ck]) return;
+          if (ck === null || fs["c:" + ck]) return;
           fs["c:" + ck] = 1;
           n++;
           sz2 += f.size || 0;
@@ -573,7 +559,7 @@ var __spreadValues = (a, b) => {
       })()]
     ];
     const keep = [].slice.call(document.querySelectorAll("#hub .mc"));
-    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small><small class="hb-cnt">'.concat(countsLine(ROOT), "</small></button>") : '<button class="hb" data-hub="'.concat(t[0], '">').concat(t[0] === "mylist" ? '<i class="hb-star" aria-hidden="true">\u2605</i>' : "", "<span>").concat(esc(t[1]).replace(/\n&amp;\n/, '<br><i class="amp">&amp;</i><br>').replace(/\n/g, "<br>"), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
+    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small><small class="hb-cnt">'.concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>") : '<button class="hb" data-hub="'.concat(t[0], '">').concat(t[0] === "mylist" ? '<i class="hb-star" aria-hidden="true">\u2605</i>' : "", "<span>").concat(esc(t[1]).replace(/\n&amp;\n/, '<br><i class="amp">&amp;</i><br>').replace(/\n/g, "<br>"), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]).replace(/ · /g, " <wbr>\xB7 "), "</small>") : "", "</button>")).join("");
     keep.forEach((x) => $("#hub").appendChild(x));
   }
   function syncTag() {
@@ -2543,3 +2529,25 @@ addEventListener("load", () => {
   if (window.MutationObserver) [pl, rf].forEach((x) => x && new MutationObserver(up).observe(x, { attributes: true, attributeFilter: ["hidden"] }));
   up();
 })();
+function fitSmalls() {
+  document.querySelectorAll("#hub .hb small,#grid.gnrs .gnr small").forEach((el) => {
+    el.style.removeProperty("font-size");
+    const p = el.parentElement;
+    if (!p || !el.offsetWidth) return;
+    const room = () => {
+      const r = el.getBoundingClientRect(), q = p.getBoundingClientRect();
+      return el.scrollWidth <= el.clientWidth + 1 && r.left >= q.left - 1 && r.right <= q.right + 1 && r.bottom <= q.bottom + 1;
+    };
+    let fs = parseFloat(getComputedStyle(el).fontSize), i = 0;
+    while (!room() && fs > 7 && i++ < 30) {
+      fs -= 0.5;
+      el.style.setProperty("font-size", fs + "px", "important");
+    }
+  });
+}
+window.fitSmalls = fitSmalls;
+addEventListener("resize", () => setTimeout(fitSmalls, 60));
+new MutationObserver(() => {
+  clearTimeout(fitSmalls._t);
+  fitSmalls._t = setTimeout(fitSmalls, 80);
+}).observe(document.documentElement, { childList: true, subtree: true });

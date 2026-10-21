@@ -414,7 +414,7 @@ body.tv .mi{padding:0 .32vw;font-size:1.32vh}body.tv #q{width:9vw}
 #tagline .gtitle{display:none}
 body.genres-mode #wordmark,body.genres-mode #tagline span{display:none!important}
 body.genres-mode #tagline .gtitle{display:inline-block;font:600 1.5em/1.1 Antonio,'Source Sans 3',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#fff;text-shadow:0 0 .5em rgba(255,255,255,.3),0 2px 4px #000}
-#hub .hb small{white-space:nowrap}#hub .hb-logo .hb-cnt{color:#ffa31a;font-size:.42em;opacity:.95;margin-top:-.2em}#hub .hb small{font-size:min(.55em,9cqw)}#hub .hb{container-type:inline-size}
+#hub .hb small,#hub .hb .hb-cnt,#grid.gnrs .gnr small{white-space:normal!important;max-width:96%;overflow-wrap:anywhere;text-align:center;line-height:1.15;display:block;margin-left:auto;margin-right:auto}#hub .hb-logo .hb-cnt{color:#ffa31a;font-size:.42em;opacity:.95;margin-top:-.2em}#hub .hb small{font-size:min(.55em,9cqw)}#hub .hb{container-type:inline-size}
 /* Ask AI */
 .ai-btn{flex:none;color:#ffb02e!important;border:1px solid #ff9c0066!important;border-radius:19px!important;min-height:34px;padding:4px 12px!important}
 .ai-btn:hover,.ai-btn:focus-visible{background:linear-gradient(180deg,#ffb02e,#ff8a00)!important;color:#000!important}

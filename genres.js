@@ -56,7 +56,7 @@
         st[i] = 1;
       });
       var m = files(st, o.items, o.isVid);
-      return '<button class="ol-tile gnr" data-genre="' + o.esc(x) + '"><img class="gimg" alt="" referrerpolicy="no-referrer"><span>' + o.esc(x) + "</span><small>" + pl(by[x].length, "Collection") + " \xB7 " + pl(m, "File") + "</small></button>";
+      return '<button class="ol-tile gnr" data-genre="' + o.esc(x) + '"><img class="gimg" alt="" referrerpolicy="no-referrer"><span>' + o.esc(x) + "</span><small>" + pl(by[x].length, "Collection") + " <wbr>\xB7 " + pl(m, "File") + "</small></button>";
     }).join("");
     paint();
   } };

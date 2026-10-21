@@ -21,7 +21,7 @@ window.FEFCGenres={render:function(o){// o:{genreMap,order,kids,isFolder,isVid,e
  var by={};Object.keys(o.genreMap).forEach(function(fid){o.genreMap[fid].genres.forEach(function(g){(by[g]=by[g]||[]).push(fid)})});
  var g=document.getElementById('grid');g.className='gnrs';
  g.innerHTML=o.order.filter(function(x){return by[x]}).map(function(x){var st={};by[x].forEach(function(i){st[i]=1});var m=files(st,o.items,o.isVid);
-  return '<button class="ol-tile gnr" data-genre="'+o.esc(x)+'"><img class="gimg" alt="" referrerpolicy="no-referrer"><span>'+o.esc(x)+'</span><small>'+pl(by[x].length,'Collection')+' · '+pl(m,'File')+'</small></button>'}).join('');
+  return '<button class="ol-tile gnr" data-genre="'+o.esc(x)+'"><img class="gimg" alt="" referrerpolicy="no-referrer"><span>'+o.esc(x)+'</span><small>'+pl(by[x].length,'Collection')+' <wbr>· '+pl(m,'File')+'</small></button>'}).join('');
  paint()}};
 })();
 // Genres as a Home-style 3x3 hub (tilted grid + live edge clips), 9 per page.
