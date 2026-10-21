@@ -57,7 +57,9 @@ window.SFX = (() => {
     a.g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
     setTimeout(() => a.os.forEach((o) => o.stop()), 700);
   }
+  const INTRO_MP3 = "assets/intro.mp3?v=352e1617";
   const S = {
+    INTRO_MP3,
     unlock() {
       init();
       if (ctx.state === "suspended") ctx.resume();
@@ -73,9 +75,9 @@ window.SFX = (() => {
       return muted;
     },
     ambience(on) {
-      if (!started) return;
-      on ? ambStart() : ambStop();
+      if (amb && !on) ambStop();
     },
+    /* ambient drone disabled */
     move() {
       if (!started) return;
       tone(1400, ctx.currentTime, 0.06, "sine", 0.05);
@@ -106,7 +108,7 @@ window.SFX = (() => {
     loadIntro() {
       init();
       if (S._ip) return S._ip;
-      S._ip = fetch("assets/intro.mp3").then((r) => {
+      S._ip = fetch(INTRO_MP3).then((r) => {
         if (!r.ok) throw 0;
         return r.arrayBuffer();
       }).then((a) => new Promise((res, rej) => ctx.decodeAudioData(a, res, rej))).then((b) => S._ib = b, () => null);
@@ -116,112 +118,22 @@ window.SFX = (() => {
       init();
       if (ctx.state !== "running") return;
       from = from || 0;
-      const t0 = ctx.currentTime + 0.05 - from, now0 = ctx.currentTime, bus = ctx.createGain();
+      const bus = ctx.createGain();
       bus.gain.value = 1;
       bus.connect(master);
       S._bus = bus;
-      if (!short) {
-        const play = () => {
-          const off = el ? el() : from;
-          if (off >= S._ib.duration - 0.05) return;
-          const src = ctx.createBufferSource();
-          src.buffer = S._ib;
-          src.connect(bus);
-          src.start(ctx.currentTime + 0.01, Math.max(0, off + 0.01));
-        };
-        if (S._ib) play();
-        else S.loadIntro().then((b) => {
-          if (b && S._bus === bus) play();
-        });
-        return;
-      }
-      const noise = (d) => {
-        const n = ctx.createBufferSource(), b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * d), ctx.sampleRate), x = b.getChannelData(0);
-        for (let i = 0; i < x.length; i++) x[i] = Math.random() * 2 - 1;
-        n.buffer = b;
-        return n;
+      const play = () => {
+        const off = el ? el() : from;
+        if (!S._ib || off >= S._ib.duration - 0.05) return;
+        const src = ctx.createBufferSource();
+        src.buffer = S._ib;
+        src.connect(bus);
+        src.start(ctx.currentTime + 0.01, Math.max(0, off + 0.01));
       };
-      const env = (g, a, b, pk, at = 0.3, rl = 0.3) => {
-        g.gain.setValueAtTime(0, a);
-        g.gain.linearRampToValueAtTime(pk, a + Math.min(at, (b - a) / 2));
-        g.gain.setValueAtTime(pk, Math.max(a + Math.min(at, (b - a) / 2), b - rl));
-        g.gain.linearRampToValueAtTime(0, b);
-      };
-      const osc = (type, f, a, b, pk, f2, dst) => {
-        if (b <= now0 + 0.05) return { detune: {} };
-        const o = ctx.createOscillator(), g = ctx.createGain();
-        o.type = type;
-        o.frequency.setValueAtTime(f, a);
-        if (f2) o.frequency.exponentialRampToValueAtTime(f2, b);
-        env(g, a, b, pk);
-        o.connect(g);
-        g.connect(dst || bus);
-        o.start(a);
-        o.stop(b + 0.05);
-        return o;
-      };
-      const nz = (a, b, pk, type, f1, f2, q) => {
-        if (b <= now0 + 0.05) return;
-        a = Math.max(a, now0);
-        const n = noise(b - a + 0.1), fl = ctx.createBiquadFilter(), g = ctx.createGain();
-        fl.type = type;
-        fl.Q.value = q || 1;
-        fl.frequency.setValueAtTime(f1, a);
-        fl.frequency.exponentialRampToValueAtTime(f2, b);
-        env(g, a, b, pk, (b - a) * 0.6, (b - a) * 0.35);
-        n.connect(fl);
-        fl.connect(g);
-        g.connect(bus);
-        n.start(a);
-        n.stop(b + 0.1);
-      };
-      const bell = (a) => {
-        a = Math.max(a, now0 + 0.05);
-        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
-          const c = ctx.createOscillator(), m = ctx.createOscillator(), mg = ctx.createGain(), g = ctx.createGain(), s = a + i * 0.03;
-          c.frequency.value = f;
-          m.frequency.value = f * 1.4;
-          mg.gain.setValueAtTime(f * 2.2, s);
-          mg.gain.exponentialRampToValueAtTime(f * 0.05, s + 3);
-          m.connect(mg);
-          mg.connect(c.frequency);
-          g.gain.setValueAtTime(0, s);
-          g.gain.linearRampToValueAtTime(0.09, s + 0.01);
-          g.gain.exponentialRampToValueAtTime(1e-4, s + 4.5);
-          c.connect(g);
-          g.connect(master);
-          c.start(s);
-          m.start(s);
-          c.stop(s + 4.6);
-          m.stop(s + 4.6);
-        });
-      };
-      const T = (x) => t0 + x;
-      if (!short) {
-        osc("sine", 32, T(0), T(2), 0.35, 58);
-        osc("sine", 64, T(0.4), T(2), 0.08, 90);
-        nz(T(2), T(5), 0.16, "bandpass", 4e3, 260, 1.2);
-        osc("sine", 60, T(5.05), T(11), 0.025);
-        osc("sine", 120, T(5.05), T(11), 0.01);
-        [440, 554.4, 659.3, 880].forEach((f, i) => {
-          const o = osc("triangle", f, T(8), T(11.2), 0.025);
-          o.detune.value = (i - 1.5) * 9;
-        });
-        nz(T(8), T(11.2), 0.03, "highpass", 6e3, 9e3);
-        nz(T(10.9), T(12), 0.2, "highpass", 300, 9e3, 0.7);
-        nz(T(12), T(21.2), 0.07, "lowpass", 380, 520, 0.8);
-        nz(T(12.5), T(21), 0.03, "bandpass", 900, 600, 3);
-        osc("sine", 1800, T(21), T(24), 0.06, 180);
-        for (let i = 0; i < 14; i++) osc("square", 2400 + i * 733 % 1600, T(21.2 + i * 0.19), T(21.2 + i * 0.19 + 0.025), 0.03);
-        bell(T(24.05));
-      } else {
-        nz(T(0), T(0.9), 0.14, "bandpass", 4e3, 300, 1.2);
-        nz(T(0.8), T(1.5), 0.16, "highpass", 300, 9e3, 0.7);
-        nz(T(1.5), T(2.7), 0.05, "lowpass", 380, 520, 0.8);
-        osc("sine", 1800, T(2.6), T(4), 0.05, 200);
-        for (let i = 0; i < 6; i++) osc("square", 2600 + i * 170, T(2.7 + i * 0.2), T(2.725 + i * 0.2), 0.03);
-        bell(T(4));
-      }
+      if (S._ib) play();
+      else S.loadIntro().then((b) => {
+        if (b && S._bus === bus) play();
+      });
     },
     introStop() {
       if (!S._bus) return;
@@ -266,36 +178,6 @@ window.SFX = (() => {
         c.stop(s0 + 1.5);
         m.stop(s0 + 1.5);
       });
-    },
-    bell() {
-      init();
-      if (ctx.state !== "running") return;
-      const s = ctx.currentTime;
-      [523.25, 659.25, 783.99].forEach((f, i) => tone(f, s + i * 0.03, 2.5, "sine", 0.07));
-    },
-    intro(short) {
-      if (!started) return;
-      const t = ctx.currentTime;
-      const n = ctx.createBufferSource(), b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = b.getChannelData(0);
-      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-      n.buffer = b;
-      const bp = ctx.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.Q.value = 2;
-      bp.frequency.setValueAtTime(200, t);
-      bp.frequency.exponentialRampToValueAtTime(5e3, t + (short ? 0.6 : 1.6));
-      const ng = ctx.createGain();
-      ng.gain.setValueAtTime(0, t);
-      ng.gain.linearRampToValueAtTime(0.12, t + (short ? 0.4 : 1.2));
-      ng.gain.linearRampToValueAtTime(0, t + (short ? 0.8 : 1.9));
-      n.connect(bp);
-      bp.connect(ng);
-      ng.connect(master);
-      n.start(t);
-      n.stop(t + 2);
-      const r = t + (short ? 0.6 : 1.7);
-      [220, 277.2, 329.6, 440].forEach((f, i) => tone(f, t + 0.2, short ? 1 : 2.2, "triangle", 0.05));
-      [880, 1318.5, 1760].forEach((f, i) => tone(f, r + i * 0.07, 1.4, "sine", 0.09));
     }
   };
   return S;

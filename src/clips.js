@@ -23,8 +23,8 @@ function play(cell){const c=pick();if(!c)return;layers(cell);const v=cell._v,p=c
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight}
 function stop(){timers.forEach(clearTimeout);timers=[];[].forEach.call(document.querySelectorAll('#hub .mcv'),v=>{try{v.pause()}catch(e){}});active=[]}
 function schedule(){stop();if(!clips||!clips.length||!atHome())return;
- const cells=[].slice.call(document.querySelectorAll('#hub .mc')).filter(visible);
- cells.sort(()=>Math.random()-.5);if(tv()){const hb=document.querySelector('#hub .hb'),ht=hb?hb.getBoundingClientRect().top:0;cells.sort((a,b)=>(a.getBoundingClientRect().bottom<ht?0:1)-(b.getBoundingClientRect().bottom<ht?0:1))}active=cells.slice(0,cap());
+ const cells=[].slice.call(document.querySelectorAll('#hub .mc')).filter(visible).filter(c=>c.style.visibility!=='hidden');
+ cells.sort(()=>Math.random()-.5);if(tv()){const hb=document.querySelector('#hub .hb'),ht=hb?hb.getBoundingClientRect().top:0;cells.sort((a,b)=>(a.getBoundingClientRect().bottom<ht?0:1)-(b.getBoundingClientRect().bottom<ht?0:1))}cells.sort((a,b)=>(b.classList.contains('toprow')?1:0)-(a.classList.contains('toprow')?1:0));active=cells.slice(0,cap());
  active.forEach((c,i)=>{let first=true;const loop=()=>{if(!atHome())return;if(first&&c._v&&c._v.currentSrc){first=false;const r=c._v.play();if(r&&r.catch)r.catch(()=>{})}else{first=false;play(c)}
    timers.push(setTimeout(loop,SWAP[0]+Math.random()*(SWAP[1]-SWAP[0])))};
   timers.push(setTimeout(loop,80*i+Math.random()*300))})}

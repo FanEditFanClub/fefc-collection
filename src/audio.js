@@ -9,11 +9,14 @@ function ambStart(){if(!ctx||amb)return;const g=ctx.createGain();g.gain.value=0;
  const os=[55,82.4,110,164.8,220.5].map((f,i)=>{const o=ctx.createOscillator();o.type=i%2?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=(i-2)*6;const v=ctx.createGain();v.gain.value=i>2?.25:.5;o.connect(v);v.connect(lp);o.start();return o});
  amb={g,os:[...os,lfo]}}
 function ambStop(){if(!amb)return;const a=amb;amb=null;a.g.gain.linearRampToValueAtTime(0,ctx.currentTime+.6);setTimeout(()=>a.os.forEach(o=>o.stop()),700)}
+/* The intro has exactly one sound: Carson's assets/intro.mp3. No synthesized intro, drone, bells or stings. */
+const INTRO_MP3='assets/intro.mp3?v=352e1617';
 const S={
+ INTRO_MP3,
  unlock(){init();if(ctx.state==='suspended')ctx.resume();started=true},
  get muted(){return muted},
  toggle(){muted=!muted;localStorage.fefcMute=muted?'1':'0';if(master)master.gain.setTargetAtTime(muted?0:.6,ctx.currentTime,.05);return muted},
- ambience(on){if(!started)return;on?ambStart():ambStop()},
+ ambience(on){if(amb&&!on)ambStop()},/* ambient drone disabled */
  move(){if(!started)return;tone(1400,ctx.currentTime,.06,'sine',.05)},
  click(){if(!started)return;const t=ctx.currentTime;tone(600,t,.08,'triangle',.12,900);tone(1200,t+.03,.1,'sine',.06)},
  open(){if(!started)return;const t=ctx.currentTime;tone(300,t,.35,'sawtooth',.05,1200);tone(880,t+.12,.25,'sine',.08)},
@@ -21,39 +24,14 @@ const S={
 
  state(){init();return ctx.state},
  // full intro score; times are seconds of the 26 s story (condensed: 4 s)
- loadIntro(){init();if(S._ip)return S._ip;S._ip=fetch('assets/intro.mp3').then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((res,rej)=>ctx.decodeAudioData(a,res,rej))).then(b=>S._ib=b,()=>null);return S._ip},
- introSeq(short,from,el){init();if(ctx.state!=='running')return;from=from||0;const t0=ctx.currentTime+.05-from,now0=ctx.currentTime,bus=ctx.createGain();bus.gain.value=1;bus.connect(master);S._bus=bus;
-  if(!short){const play=()=>{const off=el?el():from;if(off>=S._ib.duration-.05)return;const src=ctx.createBufferSource();src.buffer=S._ib;src.connect(bus);src.start(ctx.currentTime+.01,Math.max(0,off+.01))};
-   if(S._ib)play();else S.loadIntro().then(b=>{if(b&&S._bus===bus)play()});return}
-  const noise=d=>{const n=ctx.createBufferSource(),b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*d),ctx.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;n.buffer=b;return n};
-  const env=(g,a,b,pk,at=.3,rl=.3)=>{g.gain.setValueAtTime(0,a);g.gain.linearRampToValueAtTime(pk,a+Math.min(at,(b-a)/2));g.gain.setValueAtTime(pk,Math.max(a+Math.min(at,(b-a)/2),b-rl));g.gain.linearRampToValueAtTime(0,b)};
-  const osc=(type,f,a,b,pk,f2,dst)=>{if(b<=now0+.05)return{detune:{}};const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f,a);if(f2)o.frequency.exponentialRampToValueAtTime(f2,b);env(g,a,b,pk);o.connect(g);g.connect(dst||bus);o.start(a);o.stop(b+.05);return o};
-  const nz=(a,b,pk,type,f1,f2,q)=>{if(b<=now0+.05)return;a=Math.max(a,now0);const n=noise(b-a+.1),fl=ctx.createBiquadFilter(),g=ctx.createGain();fl.type=type;fl.Q.value=q||1;fl.frequency.setValueAtTime(f1,a);fl.frequency.exponentialRampToValueAtTime(f2,b);env(g,a,b,pk,(b-a)*.6,(b-a)*.35);n.connect(fl);fl.connect(g);g.connect(bus);n.start(a);n.stop(b+.1)};
-  const bell=a=>{a=Math.max(a,now0+.05);[523.25,659.25,783.99,1046.5].forEach((f,i)=>{const c=ctx.createOscillator(),m=ctx.createOscillator(),mg=ctx.createGain(),g=ctx.createGain(),s=a+i*.03;c.frequency.value=f;m.frequency.value=f*1.4;mg.gain.setValueAtTime(f*2.2,s);mg.gain.exponentialRampToValueAtTime(f*.05,s+3);m.connect(mg);mg.connect(c.frequency);g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(.09,s+.01);g.gain.exponentialRampToValueAtTime(.0001,s+4.5);c.connect(g);g.connect(master);c.start(s);m.start(s);c.stop(s+4.6);m.stop(s+4.6)})};
-  const T=x=>t0+x;
-  if(!short){
-   osc('sine',32,T(0),T(2),.35,58);osc('sine',64,T(.4),T(2),.08,90);           // sub-bass swell
-   nz(T(2),T(5),.16,'bandpass',4000,260,1.2);                                   // whoosh as it zooms back
-   osc('sine',60,T(5.05),T(11),.025);osc('sine',120,T(5.05),T(11),.01);        // near-silence hum
-   [440,554.4,659.3,880].forEach((f,i)=>{const o=osc('triangle',f,T(8),T(11.2),.025);o.detune.value=(i-1.5)*9});nz(T(8),T(11.2),.03,'highpass',6000,9000); // shimmer pad
-   nz(T(10.9),T(12),.2,'highpass',300,9000,.7);                                // rising swoosh into the dive
-   nz(T(12),T(21.2),.07,'lowpass',380,520,.8);nz(T(12.5),T(21),.03,'bandpass',900,600,3); // wind bed
-   osc('sine',1800,T(21),T(24),.06,180);                                        // falling digital tone
-   for(let i=0;i<14;i++)osc('square',2400+((i*733)%1600),T(21.2+i*.19),T(21.2+i*.19+.025),.03);
-   bell(T(24.05))}
-  else{nz(T(0),T(.9),.14,'bandpass',4000,300,1.2);nz(T(.8),T(1.5),.16,'highpass',300,9000,.7);nz(T(1.5),T(2.7),.05,'lowpass',380,520,.8);osc('sine',1800,T(2.6),T(4),.05,200);for(let i=0;i<6;i++)osc('square',2600+i*170,T(2.7+i*.2),T(2.725+i*.2),.03);bell(T(4))}},
+ loadIntro(){init();if(S._ip)return S._ip;S._ip=fetch(INTRO_MP3).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()}).then(a=>new Promise((res,rej)=>ctx.decodeAudioData(a,res,rej))).then(b=>S._ib=b,()=>null);return S._ip},
+ introSeq(short,from,el){init();if(ctx.state!=='running')return;from=from||0;const bus=ctx.createGain();bus.gain.value=1;bus.connect(master);S._bus=bus;
+  const play=()=>{const off=el?el():from;if(!S._ib||off>=S._ib.duration-.05)return;const src=ctx.createBufferSource();src.buffer=S._ib;src.connect(bus);src.start(ctx.currentTime+.01,Math.max(0,off+.01))};
+  if(S._ib)play();else S.loadIntro().then(b=>{if(b&&S._bus===bus)play()})},
  introStop(){if(!S._bus)return;const b=S._bus;S._bus=null;b.gain.setTargetAtTime(0,ctx.currentTime,.08)},
  zoom(out){if(!started)return;const t=ctx.currentTime,n=ctx.createBufferSource(),b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.7),ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;n.buffer=b;
   const f=ctx.createBiquadFilter(),g=ctx.createGain();f.type='bandpass';f.Q.value=1.4;f.frequency.setValueAtTime(out?2600:500,t);f.frequency.exponentialRampToValueAtTime(out?320:2600,t+.5);
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(out?.12:.16,t+(out?.08:.38));g.gain.linearRampToValueAtTime(0,t+.6);n.connect(f);f.connect(g);g.connect(master);n.start(t);n.stop(t+.7);
   tone(out?48:62,t,.5,'sine',.22,out?36:55);
   if(!out)[659.3,987.8,1318.5].forEach((fq,i)=>{const s0=t+.4+i*.02,c=ctx.createOscillator(),m=ctx.createOscillator(),mg=ctx.createGain(),v=ctx.createGain();c.frequency.value=fq;m.frequency.value=fq*1.41;mg.gain.setValueAtTime(fq*2,s0);mg.gain.exponentialRampToValueAtTime(fq*.05,s0+.8);m.connect(mg);mg.connect(c.frequency);v.gain.setValueAtTime(0,s0);v.gain.linearRampToValueAtTime(.045,s0+.005);v.gain.exponentialRampToValueAtTime(.0001,s0+1.4);c.connect(v);v.connect(master);c.start(s0);m.start(s0);c.stop(s0+1.5);m.stop(s0+1.5)})},
- bell(){init();if(ctx.state!=='running')return;const s=ctx.currentTime;[523.25,659.25,783.99].forEach((f,i)=>tone(f,s+i*.03,2.5,'sine',.07))},
- intro(short){if(!started)return;const t=ctx.currentTime;
-  // rising whoosh (filtered noise) + swelling chord + bright resolve chime
-  const n=ctx.createBufferSource(),b=ctx.createBuffer(1,ctx.sampleRate*2,ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;n.buffer=b;
-  const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.Q.value=2;bp.frequency.setValueAtTime(200,t);bp.frequency.exponentialRampToValueAtTime(5000,t+(short?.6:1.6));
-  const ng=ctx.createGain();ng.gain.setValueAtTime(0,t);ng.gain.linearRampToValueAtTime(.12,t+(short?.4:1.2));ng.gain.linearRampToValueAtTime(0,t+(short?.8:1.9));n.connect(bp);bp.connect(ng);ng.connect(master);n.start(t);n.stop(t+2);
-  const r=t+(short?.6:1.7);[220,277.2,329.6,440].forEach((f,i)=>tone(f,t+.2,(short?1:2.2),'triangle',.05));
-  [880,1318.5,1760].forEach((f,i)=>tone(f,r+i*.07,1.4,'sine',.09))}
 };return S})();

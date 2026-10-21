@@ -19,9 +19,9 @@ function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElemen
  document.body.classList.add('cintro');const tg=$('#tagline');
  const R=window.FEFCIntro.create({tv,tagline:tg});el.prepend(R.canvas);
  fetch('data/mosaic.json').then(r=>r.json()).then(m=>R.setTiles(m.map(x=>x.target||x.id))).catch(()=>{});
- if(!short)try{S.loadIntro()}catch(e){}
+ try{S.loadIntro()}catch(e){}
  const fr=P.get('introframe');if(fr!==null){document.body.classList.add('frozen');el.querySelector('.ihint').hidden=true;const draw=()=>R.frame(+fr);draw();[300,1000,2000,3500].forEach(t=>setTimeout(draw,t));return}
- let done=false,raf=0,ia=null;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';sndHint(false);if(skipped){S.introStop();if(ia){try{ia.pause()}catch(e){}}S.bell()}
+ let done=false,raf=0,ia=null;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';sndHint(false);if(skipped){S.introStop();if(ia){try{ia.pause()}catch(e){}}}
   tg.style.opacity='';tg.style.clipPath='';tg.style.visibility='';document.body.classList.remove('cintro');el.classList.add('done');document.body.classList.add('intro-done');window.__ie=Date.now();$('#home').classList.add('enter');setTimeout(()=>{S.ambience($('#player').hidden&&$('#details').hidden);el.remove()},skipped?600:1870)};
  let t0=performance.now(),last=0;const hint=el.querySelector('.ihint');let sndOn=false;
  const loop=now=>{const r=(now-t0)/1000,s=short?R.mapC(r):R.mapF(r);last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
@@ -30,7 +30,7 @@ function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElemen
  function sndHint(on){hEl.classList.toggle('on',!!on)}
  const muted=()=>{try{return !!S.muted}catch(e){return false}};
  // (a) HTMLAudioElement path: may be allowed by media-engagement even when the AudioContext is suspended
- const tryEl=()=>{if(short||sndOn||done)return Promise.resolve(false);if(!ia){ia=window.__ia=new Audio('assets/intro.mp3');ia.preload='auto';}ia.muted=muted();try{ia.currentTime=Math.max(0,off())}catch(e){}
+ const tryEl=()=>{if(short||sndOn||done)return Promise.resolve(false);if(!ia){ia=window.__ia=new Audio(S.INTRO_MP3||'assets/intro.mp3');ia.preload='auto';}ia.muted=muted();try{ia.currentTime=Math.max(0,off())}catch(e){}
   const pr=ia.play();return (pr&&pr.then?pr:Promise.resolve()).then(()=>{if(sndOn&&sndOn!=='el'){ia.pause();return false}if(done){ia.pause();return false}sndOn='el';try{ia.currentTime=Math.max(0,off())}catch(e){}sndHint(false);return true},()=>false)};
  let st='suspended';try{S.unlock();st=S.state()}catch(e){}
  const go=()=>{if(sndOn||done)return;let s2='suspended';try{S.unlock();s2=S.state()}catch(e){}if(s2==='running'){if(ia&&!ia.paused)return;sndOn='ctx';sndHint(false);try{S.introSeq(short,Math.max(0,(performance.now()-t0)/1000-.05),()=>(performance.now()-t0)/1000)}catch(e){}}};
@@ -59,7 +59,7 @@ const cache=JSON.parse(localStorage.fefcCache||'{}');const save=()=>localStorage
 async function tmdbFind(q,year){if(!C.TMDB_API_KEY)return null;const k='t:'+q+year;if(k in cache)return cache[k];
  try{const j=await(await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${C.TMDB_API_KEY}&query=${encodeURIComponent(q)}${year?'&year='+year:''}`)).json();cache[k]=(j.results||[]).find(x=>x.poster_path)||null}catch(e){cache[k]=null}save();return cache[k]}
 function artBg(f){const h=HUES[hash(parse(f.name).series||f.name)%8];return `radial-gradient(circle at 75% 20%,hsl(${h} 90% 60% / .85),hsl(${h} 70% 25%) 45%,#050a14 100%)`}
-function tile(f,live_){const fold=isFolder(f),p=parse(f.name),vid=!fold&&isVid(f),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';const ad=cls==='doc'&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);return `<button class="ol-tile ${cls}${ad?' ad':''} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}">${vid?`<div class="ptitle">${esc(p.raw)}</div>`:''}</div><span class="kind">${live_?'NEW':pp?(pp.role==='director'?'DIRECTOR':'ACTOR'):fold?'COLLECTION':vid?'FAN EDIT':'DOCUMENT'}</span>${(fold||vid)?`<span class="star${window.UD&&UD.isStarred(f.id)?' on':''}" data-star="${f.id}" role="button" aria-label="Star" title="Star (S)">★</span>`:''}<div class="nm">${esc(fold?f.name:p.raw)}${!fold&&f.size?`<br><small style="opacity:.6">${sz(f.size)}</small>`:''}</div></button>`}
+function tile(f,live_){const fold=isFolder(f),p=parse(f.name),vid=!fold&&isVid(f),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';const ad=cls==='doc'&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);return `<button class="ol-tile ${cls}${ad?' ad':''} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}">${vid?`<div class="ptitle">${esc(p.raw)}</div>`:''}</div><span class="kind">${live_?'NEW':pp?(pp.role==='director'?'DIRECTOR':'ACTOR'):fold?'COLLECTION':vid?'FAN EDIT':'DOCUMENT'}</span>${(fold||vid)?`<span class="star${window.UD&&UD.isStarred(f.id)?' on':''}" data-star="${f.id}" role="button" aria-label="Star" title="Star (S)">★</span>`:''}${vid?`<div class="pcap ${(()=>{const n=p.raw.length;return n>90?'c4':n>55?'c3':n>30?'c2':'c1'})()}">${esc(p.raw)}${f.size?`<small>${sz(f.size)}</small>`:''}</div>`:''}<div class="nm">${esc(fold?f.name:p.raw)}${!fold&&f.size?`<br><small style="opacity:.6">${sz(f.size)}</small>`:''}</div></button>`}
 async function art(el,f){let src=null;const p=parse(f.name);
  if(isFolder(f)&&people[target(f)])src=people[target(f)].url;else if(!isFolder(f)&&isVid(f)){const ps=posters[f.id]||posters[target(f)];if(!ps)return;src=ps.url;el.classList.add('has-poster')}else
  if(isFolder(f)){const fid=target(f);let t=fthumbs[fid];if(!t){let q=[fid];for(let d=0;d<3&&!t&&q.length;d++){const nq=[];for(const id of q){const ks=kids.get(id)||[],v=ks.find(x=>!isFolder(x)&&isVid(x));if(v){t=target(v);break}ks.forEach(x=>{if(isFolder(x))nq.push(target(x))})}q=nq.slice(0,40)}}if(t)src=t.startsWith('assets/')?t:'https://drive.google.com/thumbnail?sz=w640&id='+t}
@@ -90,14 +90,30 @@ function cnt(id){const k=kids.get(id);return k?k.length:0}
 function hub(){if(document.body.classList.contains('genres-mode')&&window.FEFCGenres&&FEFCGenres.hub)return FEFCGenres.hub();const newN=NA.newCount(vids());
  const T=[['readfirst','Read First',''],['arena','New Arrivals',newN?newN+(newN===1?' New File':' New Files'):''],['support','Support Us','Patreon · PayPal · Venmo'],
   ['folder:'+FOLD.collections,'Fan Edit Collections',NA.plural((kids.get(FOLD.collections)||[]).filter(isFolder).length,'Collection')],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',NA.plural(NA.deep(FOLD.tbc,kids,isFolder),'Unorganized File')],
-  ['people','Actors & Directors',NA.plural(cnt(FOLD.actors)+cnt(FOLD.directors),'Collection')],['mylist','My List',(()=>{const n=window.UD?UD.stars().length:0;return n?n+' Starred':'Your bookmarks'})()],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
+  ['people','Actors\n&\nDirectors',NA.plural(cnt(FOLD.actors)+cnt(FOLD.directors),'Collection')],['mylist','My List','History & Starred'],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
  const keep=[].slice.call(document.querySelectorAll('#hub .mc'));$('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>`
-  :`<button class="hb" data-hub="${t[0]}"><span>${esc(t[1])}</span>${t[2]?`<small>${esc(t[2])}</small>`:''}</button>`).join('');keep.forEach(x=>$('#hub').appendChild(x))}
-function syncTag(){const hb=$('#hub'),sp=$('#tagline span');if(!hb||!sp)return;const w=hb.offsetWidth;if(w>0){sp.style.width=w+'px';sp.style.maxWidth='none'}placeHeader()}
-function placeHeader(){const tg=$('#tagline');if(!tg)return;const b=document.querySelector('#hub .hb');let top=null;
- if(b){const r=b.getBoundingClientRect();if(r.width)top=r.top}
- if(top===null){const W=innerWidth,H=innerHeight,small=matchMedia('(orientation:landscape) and (max-height:520px)').matches,tv=document.body.classList.contains('tv');const hh=small?.56*H:Math.min(.6*W/1.55,.58*H);top=H*.5+(small?.10:.07)*H-hh/2}
- const gap=Math.max(16,Math.min(24,innerHeight*.025)),h=tg.offsetHeight;if(!h)return;tg.style.top=Math.max(4,Math.round(top-gap-h))+'px'}
+  :`<button class="hb" data-hub="${t[0]}">${t[0]==='mylist'?'<i class="hb-star" aria-hidden="true">★</i>':''}<span>${esc(t[1]).replace(/\n/g,'<br>')}</span>${t[2]?`<small>${esc(t[2])}</small>`:''}</button>`).join('');keep.forEach(x=>$('#hub').appendChild(x))}
+function syncTag(){placeHeader()}
+/* Home/Genres header: one full row of 3 clip tiles above the text, text between that row and the 3x3 grid */
+function placeHeader(){const tg=$('#tagline'),hb=$('#hub'),sp=$('#tagline span'),wm=$('#wordmark');if(!tg||!hb||!sp)return;
+ const W=innerWidth,H=innerHeight;tg.style.fontSize='';if(wm)wm.style.height='';hb.style.width='';hb.style.top='';
+ let natW=hb.offsetWidth||W*.6;const cs=getComputedStyle(tg),base=parseFloat(cs.fontSize)||20,wmH=wm?wm.offsetHeight:0;
+ const g=parseFloat(getComputedStyle(hb).columnGap)||Math.min(W,H)*.014,s=Math.max(6,Math.min(14,H*.014)),top0=Math.max(4,H*.012);
+ const hi=$('#hints'),hr=hi&&hi.offsetHeight?hi.getBoundingClientRect():null,bot=(hr&&hr.top>H*.5?H-hr.top+Math.max(6,H*.01):H*.08)+H*.035;
+ const SW=w=>Math.round(H<520?Math.min(W*.9,Math.max(w,w*1.9)):w)+'px';let k=1,hw,h;for(let i=0;i<6;i++){sp.style.width=SW(hw||natW);sp.style.maxWidth='none';h=tg.offsetHeight;
+  const hh=(H-top0-bot-2*s-h+2*g/3)*3/4;hw=Math.min(natW,hh*1.55,W*.94);sp.style.width=SW(hw);h=tg.offsetHeight;
+  const hh2=(H-top0-bot-2*s-h+2*g/3)*3/4;hw=Math.min(natW,hh2*1.55,W*.94);if(hw>=natW*.86||k<=.62)break;
+  k-=.08;tg.style.fontSize=(base*k).toFixed(1)+'px';if(wm&&wmH)wm.style.height=(wmH*k).toFixed(1)+'px'}
+ sp.style.width=SW(hw);h=tg.offsetHeight;const hh=hw/1.55,th=(hh-2*g)/3,HR=$('#home').hidden?{top:0}:$('#home').getBoundingClientRect();
+ const D=2*s+h;hb.style.width=Math.round(hw)+'px';hb.style.top=Math.round(top0+th+D+hh/2-HR.top)+'px';hb._hdr={D,s,h,top0};
+ tg.style.top=Math.round(top0+th+s)+'px';fitHeader()}
+/* correct for the 3D tilt: measure the real top-row bottom and grid top, keep the text centred between them */
+function fitHeader(){const tg=$('#tagline'),hb=$('#hub');if(!tg||!hb||!hb._hdr)return;const row=[].slice.call(hb.querySelectorAll('.mc.toprow')),b=hb.querySelector('.hb');
+ if(!row.length||!b||$('#home').hidden)return;const H=hb._hdr;let rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom)),gt=b.getBoundingClientRect().top,h=tg.offsetHeight;
+ const need=h+2*Math.max(6,H.s*.7)-(gt-rb);if(need>1){H.D+=need*1.15;row.forEach(c=>c.style.top=c._top(H.D));rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom))}
+ tg.style.top=Math.round((rb+gt)/2-h/2)+'px';
+ const sp=$('#tagline span'),wm=$('#wordmark'),tr=[];if(wm&&wm.offsetWidth)tr.push(wm.getBoundingClientRect());if(sp){const rg=document.createRange();rg.selectNodeContents(sp);[].forEach.call(rg.getClientRects(),r=>r.width&&tr.push(r))}
+ [].forEach.call(hb.querySelectorAll('.mc:not(.toprow)'),c=>{const r=c.getBoundingClientRect();c.style.visibility=tr.some(t=>r.left<t.right+8&&r.right>t.left-8&&r.top<t.bottom+4&&r.bottom>t.top-4)?'hidden':''})}
 addEventListener('resize',()=>requestAnimationFrame(placeHeader));
 addEventListener('resize',syncTag);
 function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classList.contains('tv');
@@ -113,16 +129,17 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
  const cols=Math.ceil(hx/(tw+g))+1,rows=Math.ceil(hy/(th+g))+1;let budget=tv?40:90;
  for(let r=-rows;r<3+rows&&budget>0;r++)for(let c=-cols;c<3+cols&&budget>0;c++){
   const x=hx+c*(tw+g)+(c<0?-g:c>2?g:0),y=hy+r*(th+g)+(r<0?-g:r>2?g:0),box={l:x,t:y,r:x+tw,b:y+th};
-  if(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub)||(tb&&ov(box,tb)))continue;
+  const toprow=r===-1&&c>=0&&c<=2;if(r<0&&c>=0&&c<=2&&!toprow)continue;if(!toprow&&(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub)||(tb&&ov(box,tb))))continue;
   const el=document.createElement('div');el.className='mc';const ex=(c<0?-g:c>2?g:0),ey=(r<0?-g:r>2?g:0);
   el.style.cssText=`left:calc(${c} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ex}px);top:calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px);width:calc((100% - ${2*g}px) / 3);height:calc((100% - ${2*g}px) / 3)`;
+  if(toprow){el.classList.add('toprow');el._top=D=>`calc(-1 * ((100% - ${2*g}px) / 3) - ${D}px)`;el.style.top=el._top((hb._hdr&&hb._hdr.D)||g)}
   el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);budget--}
  const pick=()=>pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
  const set=(c,first)=>{const v=pick(),layers=c.children,on=c._on?0:1;c._on=!c._on;const L=layers[on];
   if(v){L.src='https://drive.google.com/thumbnail?sz=w480&id='+v.target;c.dataset.id=v.id}else{c.style.background='radial-gradient(circle at 60% 30%,hsl('+(Math.random()*360|0)+' 70% 45%),#050a14 80%)'}
   L.style.animationName='none';void L.offsetWidth;L.style.animationName='';L.className=(on?'mi2':'mi1')+' kb'+(Math.random()*4|0);
   layers[on].style.opacity=1;layers[1-on].style.opacity=0};
- cells.forEach(c=>set(c,true));clearInterval(mosaicTimer);
+ cells.forEach(c=>set(c,true));requestAnimationFrame(fitHeader);clearInterval(mosaicTimer);
  mosaicTimer=setInterval(()=>{if($('#home').hidden||document.hidden)return;const k=tv?1:2;for(let j=0;j<k;j++)set(cells[Math.random()*cells.length|0])},tv?3500:1800)}
 let mosT;if(window.ResizeObserver)new ResizeObserver(()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},150)}).observe(document.getElementById('hub'));addEventListener('resize',()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},250)});
 function showHome(gm){document.body.classList.toggle('genres-mode',!!gm);view=gm?'genres':'home';cur=ROOT;$('#home').hidden=false;document.body.classList.add('at-home');$('#main').hidden=true;$('#bar').hidden=true;hub();const lay=()=>{const r=$('#hub').getBoundingClientRect(),k=Math.round(r.left)+'x'+Math.round(r.top)+'x'+Math.round(r.width);if($('#mosaic')._k!==k){$('#mosaic')._k=k;mosaic()}};requestAnimationFrame(lay);setTimeout(lay,500);setTimeout(lay,1500);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(lay);
@@ -136,9 +153,9 @@ function peoplePage(){const A=(kids.get(FOLD.actors)||[]).filter(isFolder).sort(
 let mlSort=localStorage.fefcStarSort||'date';
 function myListPage(){const U=window.UD;if(!U)return;const H=U.history(50).map(r=>items.get(r.id)).filter(Boolean);
  let St=U.stars().map(r=>({r,f:items.get(r.id)})).filter(x=>x.f);St.sort(mlSort==='az'?(a,b)=>a.f.name.localeCompare(b.f.name):(a,b)=>b.r.starredAt-a.r.starredAt);St=St.map(x=>x.f);
- pageShell('My List',`${NA.plural(St.length,'Starred')} · ${H.length} recently watched`.replace('Starreds','Starred'));const g=$('#grid');g.className='sectioned mylist';
+ pageShell('My List',`${NA.plural(St.length,'Starred')} · ${H.length} in history`.replace('Starreds','Starred'));const g=$('#grid');g.className='sectioned mylist';
  const vids_=a=>a.filter(f=>!isFolder(f)),fold_=a=>a.filter(isFolder);
- g.innerHTML='<div id="ml-sync"></div>'+secHTML('vids','CONTINUE WATCHING / RECENTLY WATCHED',H,H.length?'<button class="mi ml-btn" data-ml="clear">Clear history</button>':'')+(H.length?'':'<p class="ml-empty">Fan edits you open in the player show up here.</p>')
+ g.innerHTML='<div id="ml-sync"></div>'+secHTML('vids','HISTORY',H,H.length?'<button class="mi ml-btn" data-ml="clear">Clear history</button>':'')+(H.length?'':'<p class="ml-empty">Fan edits you open in the player show up here.</p>')
   +`<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn${mlSort==='date'?' on':''}" data-ml="date">Date starred</button><button class="mi ml-btn${mlSort==='az'?' on':''}" data-ml="az">A–Z</button><b>${St.length}</b></div>`
   +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>';if(window.FEFCSync){const c=$('#ml-sync');c&&FEFCSync.subscribe&&0}
  g.querySelectorAll('.ol-tile').forEach(lazyArt)}
@@ -340,7 +357,7 @@ showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))rout
  document.getElementById('ins-no').onclick=()=>{localStorage.fefcInstallSnooze=Date.now()+7*864e5;box.hidden=true};
  const t=setInterval(()=>{if(document.body.classList.contains('intro-done')){clearInterval(t);setTimeout(show,1200)}},400)})();
 addEventListener('load',()=>{const s=document.createElement('script');s.src='clips.js?v='+(document.querySelector('script[src*="app.js?v="]')||{src:''}).src.split('v=')[1];s.async=true;document.body.appendChild(s)}); // moving edge clips (src/clips.js)
-;(function(){const sync=()=>document.body.classList.toggle('overlay',!document.getElementById('details').hidden||!document.getElementById('player').hidden);const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden']}));sync()})();
+;(function(){const sync=()=>{const d=!document.getElementById('details').hidden&&document.getElementById('player').hidden;document.body.classList.toggle('overlay',!document.getElementById('details').hidden||!document.getElementById('player').hidden);document.body.classList.toggle('details-open',d);if(d){const b=document.getElementById('bar');document.documentElement.style.setProperty('--barh',(b.offsetHeight||56)+'px');if(window.NA&&NA.menuHTML)try{menu()}catch(e){}}};const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden']}));sync()})();
 addEventListener('load',()=>{const w=document.getElementById('wordmark');if(w)window.dispatchEvent(new Event('resize'))});
 
 (()=>{const h=document.getElementById('hints'),pl=document.getElementById('player'),rf=document.getElementById('rfpanel'),up=()=>{if(h)h.style.display=(pl&&!pl.hidden)||(rf&&!rf.hidden)?'none':''};if(window.MutationObserver)[pl,rf].forEach(x=>x&&new MutationObserver(up).observe(x,{attributes:true,attributeFilter:['hidden']}));up()})(); // one sound/legend control on every page, hidden in the player

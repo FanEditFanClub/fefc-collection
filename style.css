@@ -372,3 +372,29 @@ body.tv .ol-tile .star{width:3.6vh;height:3.6vh;font-size:2.2vh}
 .sync-card b{display:block;font-size:17px}.sync-card span{color:#9fb6cf;font-size:14px}.sync-card.on{border-left-color:#3fbf6f}
 .sync-go{background:#ff9c00!important;color:#000!important;border-color:#ff9c00!important;font-weight:700}
 .ml-foot{margin:26px 0 8px;text-align:center;color:#6d7c8f;font-size:13px}.ml-foot a{color:#9fb6cf}
+/* My List star centred above the label; Actors / & / Directors on three lines */
+#hub .hb[data-hub="mylist"]:after{content:none}
+#hub .hb .hb-star{font-style:normal;color:#ff9c00;font-size:1.25em;line-height:.9;text-shadow:0 0 14px #ff9c0088;margin-bottom:-.1em}
+#hub .hb[data-hub="people"]{gap:.15em}#hub .hb[data-hub="people"] span{line-height:.98;text-align:center;font-size:.86em}
+/* Poster tiles: full natural brightness, name overlaid on a bottom scrim (never clipped) */
+.ol-tile.has-poster:before,.ol-tile.has-poster:after,.ol-tile.has-poster .art:after{content:none!important;background:none!important}
+.ol-tile.has-poster img{filter:none!important;opacity:1!important}
+.ol-tile.has-poster:hover img,.ol-tile.has-poster:focus img{filter:brightness(1.08)!important}
+.ol-tile .pcap{display:none}
+.ol-tile.has-poster .pcap{display:block;position:absolute;left:0;right:0;bottom:0;z-index:2;padding:2.2em 7px 7px;background:linear-gradient(0deg,#000d 0,#000b 45%,#0000 100%);color:#fff;font:700 15px/1.18 'Source Sans 3','Segoe UI',system-ui,sans-serif;text-align:center;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:normal;overflow:visible;overflow-wrap:anywhere;pointer-events:none;border-radius:0 0 inherit inherit}
+.ol-tile.has-poster .pcap.c2{font-size:13px}.ol-tile.has-poster .pcap.c3{font-size:11.5px}.ol-tile.has-poster .pcap.c4{font-size:10.5px;line-height:1.14}
+.ol-tile.has-poster .pcap small{display:block;font-weight:600;font-size:.8em;opacity:.75;margin-top:2px}
+.ol-tile.vid.has-poster>.nm,.sgrid.vids .ol-tile.vid.has-poster .nm{display:none!important}
+body.tv .ol-tile.has-poster .pcap{font-size:19px}body.tv .ol-tile.has-poster .pcap.c2{font-size:17px}body.tv .ol-tile.has-poster .pcap.c3{font-size:15px}body.tv .ol-tile.has-poster .pcap.c4{font-size:13.5px}
+/* Top menu: one line (>=1280px), horizontal scroll on narrow screens, never wraps */
+#bar{flex-wrap:nowrap!important}
+#menu{flex-wrap:nowrap!important;justify-content:flex-start;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;min-width:0;flex:1 1 auto}
+#menu::-webkit-scrollbar{display:none}
+#menu>.mi:first-child{margin-left:auto}#menu>.mi:last-child{margin-right:auto}
+.mi{flex:none}
+@media (min-width:1280px){#bar{gap:8px;padding-left:12px;padding-right:12px}.mi{padding:6px clamp(5px,.5vw,12px);font-size:clamp(12px,.9vw,16px);letter-spacing:.01em}#q{width:clamp(96px,8.5vw,190px);padding:0 12px}}
+@media (max-width:1279px){#bar{flex-wrap:nowrap!important}#menu{order:0;flex:1 1 auto}#q{flex:none;width:clamp(80px,14vw,160px)}}
+body.tv .mi{padding:0 .45vw;font-size:1.45vh;letter-spacing:0}body.tv #q{width:10vw}body.tv #bar{gap:.6vw}
+/* Same top bar on the details page (shared layout only; details view untouched) */
+body.details-open #bar,body.details-open #bar[hidden]{display:flex!important;position:fixed;left:0;right:0;top:0;z-index:30}
+body.details-open #details{top:var(--barh,56px)}

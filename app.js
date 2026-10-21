@@ -67,7 +67,7 @@ var __spreadValues = (a, b) => {
     el.prepend(R.canvas);
     fetch("data/mosaic.json").then((r) => r.json()).then((m) => R.setTiles(m.map((x) => x.target || x.id))).catch(() => {
     });
-    if (!short) try {
+    try {
       S.loadIntro();
     } catch (e) {
     }
@@ -95,7 +95,6 @@ var __spreadValues = (a, b) => {
           } catch (e) {
           }
         }
-        S.bell();
       }
       tg.style.opacity = "";
       tg.style.clipPath = "";
@@ -138,7 +137,7 @@ var __spreadValues = (a, b) => {
     const tryEl = () => {
       if (short || sndOn || done) return Promise.resolve(false);
       if (!ia) {
-        ia = window.__ia = new Audio("assets/intro.mp3");
+        ia = window.__ia = new Audio(S.INTRO_MP3 || "assets/intro.mp3");
         ia.preload = "auto";
       }
       ia.muted = muted();
@@ -313,7 +312,10 @@ var __spreadValues = (a, b) => {
     const fold = isFolder(f), p = parse(f.name), vid = !fold && isVid(f), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
-    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? '<span class="star'.concat(window.UD && UD.isStarred(f.id) ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-label="Star" title="Star (S)">\u2605</span>') : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
+    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? '<span class="star'.concat(window.UD && UD.isStarred(f.id) ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-label="Star" title="Star (S)">\u2605</span>') : "").concat(vid ? '<div class="pcap '.concat((() => {
+      const n = p.raw.length;
+      return n > 90 ? "c4" : n > 55 ? "c3" : n > 30 ? "c2" : "c1";
+    })(), '">').concat(esc(p.raw)).concat(f.size ? "<small>".concat(sz(f.size), "</small>") : "", "</div>") : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw)).concat(!fold && f.size ? '<br><small style="opacity:.6">'.concat(sz(f.size), "</small>") : "", "</div></button>");
   }
   async function art(el, f) {
     let src = null;
@@ -443,11 +445,8 @@ var __spreadValues = (a, b) => {
       ["folder:" + FOLD.collections, "Fan Edit Collections", NA.plural((kids.get(FOLD.collections) || []).filter(isFolder).length, "Collection")],
       ["main", "", ""],
       ["folder:" + FOLD.tbc, "To Be Catalogued", NA.plural(NA.deep(FOLD.tbc, kids, isFolder), "Unorganized File")],
-      ["people", "Actors & Directors", NA.plural(cnt(FOLD.actors) + cnt(FOLD.directors), "Collection")],
-      ["mylist", "My List", (() => {
-        const n = window.UD ? UD.stars().length : 0;
-        return n ? n + " Starred" : "Your bookmarks";
-      })()],
+      ["people", "Actors\n&\nDirectors", NA.plural(cnt(FOLD.actors) + cnt(FOLD.directors), "Collection")],
+      ["mylist", "My List", "History & Starred"],
       ["genres", "Genres", (() => {
         const h = {};
         Object.keys(genreMap).forEach((x) => genreMap[x].genres.forEach((g) => h[g] = 1));
@@ -456,36 +455,76 @@ var __spreadValues = (a, b) => {
       })()]
     ];
     const keep = [].slice.call(document.querySelectorAll("#hub .mc"));
-    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '"><span>').concat(esc(t[1]), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
+    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '">').concat(t[0] === "mylist" ? '<i class="hb-star" aria-hidden="true">\u2605</i>' : "", "<span>").concat(esc(t[1]).replace(/\n/g, "<br>"), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
     keep.forEach((x) => $("#hub").appendChild(x));
   }
   function syncTag() {
-    const hb = $("#hub"), sp = $("#tagline span");
-    if (!hb || !sp) return;
-    const w = hb.offsetWidth;
-    if (w > 0) {
-      sp.style.width = w + "px";
-      sp.style.maxWidth = "none";
-    }
     placeHeader();
   }
   function placeHeader() {
-    const tg = $("#tagline");
-    if (!tg) return;
-    const b = document.querySelector("#hub .hb");
-    let top = null;
-    if (b) {
-      const r = b.getBoundingClientRect();
-      if (r.width) top = r.top;
+    const tg = $("#tagline"), hb = $("#hub"), sp = $("#tagline span"), wm = $("#wordmark");
+    if (!tg || !hb || !sp) return;
+    const W = innerWidth, H = innerHeight;
+    tg.style.fontSize = "";
+    if (wm) wm.style.height = "";
+    hb.style.width = "";
+    hb.style.top = "";
+    let natW = hb.offsetWidth || W * 0.6;
+    const cs = getComputedStyle(tg), base = parseFloat(cs.fontSize) || 20, wmH = wm ? wm.offsetHeight : 0;
+    const g = parseFloat(getComputedStyle(hb).columnGap) || Math.min(W, H) * 0.014, s = Math.max(6, Math.min(14, H * 0.014)), top0 = Math.max(4, H * 0.012);
+    const hi = $("#hints"), hr = hi && hi.offsetHeight ? hi.getBoundingClientRect() : null, bot = (hr && hr.top > H * 0.5 ? H - hr.top + Math.max(6, H * 0.01) : H * 0.08) + H * 0.035;
+    const SW = (w) => Math.round(H < 520 ? Math.min(W * 0.9, Math.max(w, w * 1.9)) : w) + "px";
+    let k = 1, hw, h;
+    for (let i = 0; i < 6; i++) {
+      sp.style.width = SW(hw || natW);
+      sp.style.maxWidth = "none";
+      h = tg.offsetHeight;
+      const hh2 = (H - top0 - bot - 2 * s - h + 2 * g / 3) * 3 / 4;
+      hw = Math.min(natW, hh2 * 1.55, W * 0.94);
+      sp.style.width = SW(hw);
+      h = tg.offsetHeight;
+      const hh22 = (H - top0 - bot - 2 * s - h + 2 * g / 3) * 3 / 4;
+      hw = Math.min(natW, hh22 * 1.55, W * 0.94);
+      if (hw >= natW * 0.86 || k <= 0.62) break;
+      k -= 0.08;
+      tg.style.fontSize = (base * k).toFixed(1) + "px";
+      if (wm && wmH) wm.style.height = (wmH * k).toFixed(1) + "px";
     }
-    if (top === null) {
-      const W = innerWidth, H = innerHeight, small = matchMedia("(orientation:landscape) and (max-height:520px)").matches, tv = document.body.classList.contains("tv");
-      const hh = small ? 0.56 * H : Math.min(0.6 * W / 1.55, 0.58 * H);
-      top = H * 0.5 + (small ? 0.1 : 0.07) * H - hh / 2;
+    sp.style.width = SW(hw);
+    h = tg.offsetHeight;
+    const hh = hw / 1.55, th = (hh - 2 * g) / 3, HR = $("#home").hidden ? { top: 0 } : $("#home").getBoundingClientRect();
+    const D = 2 * s + h;
+    hb.style.width = Math.round(hw) + "px";
+    hb.style.top = Math.round(top0 + th + D + hh / 2 - HR.top) + "px";
+    hb._hdr = { D, s, h, top0 };
+    tg.style.top = Math.round(top0 + th + s) + "px";
+    fitHeader();
+  }
+  function fitHeader() {
+    const tg = $("#tagline"), hb = $("#hub");
+    if (!tg || !hb || !hb._hdr) return;
+    const row = [].slice.call(hb.querySelectorAll(".mc.toprow")), b = hb.querySelector(".hb");
+    if (!row.length || !b || $("#home").hidden) return;
+    const H = hb._hdr;
+    let rb = Math.max(...row.map((c) => c.getBoundingClientRect().bottom)), gt = b.getBoundingClientRect().top, h = tg.offsetHeight;
+    const need = h + 2 * Math.max(6, H.s * 0.7) - (gt - rb);
+    if (need > 1) {
+      H.D += need * 1.15;
+      row.forEach((c) => c.style.top = c._top(H.D));
+      rb = Math.max(...row.map((c) => c.getBoundingClientRect().bottom));
     }
-    const gap = Math.max(16, Math.min(24, innerHeight * 0.025)), h = tg.offsetHeight;
-    if (!h) return;
-    tg.style.top = Math.max(4, Math.round(top - gap - h)) + "px";
+    tg.style.top = Math.round((rb + gt) / 2 - h / 2) + "px";
+    const sp = $("#tagline span"), wm = $("#wordmark"), tr = [];
+    if (wm && wm.offsetWidth) tr.push(wm.getBoundingClientRect());
+    if (sp) {
+      const rg = document.createRange();
+      rg.selectNodeContents(sp);
+      [].forEach.call(rg.getClientRects(), (r) => r.width && tr.push(r));
+    }
+    [].forEach.call(hb.querySelectorAll(".mc:not(.toprow)"), (c) => {
+      const r = c.getBoundingClientRect();
+      c.style.visibility = tr.some((t) => r.left < t.right + 8 && r.right > t.left - 8 && r.top < t.bottom + 4 && r.bottom > t.top - 4) ? "hidden" : "";
+    });
   }
   addEventListener("resize", () => requestAnimationFrame(placeHeader));
   addEventListener("resize", syncTag);
@@ -524,11 +563,18 @@ var __spreadValues = (a, b) => {
     let budget = tv ? 40 : 90;
     for (let r = -rows; r < 3 + rows && budget > 0; r++) for (let c = -cols; c < 3 + cols && budget > 0; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
-      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || tb && ov(box, tb)) continue;
+      const toprow = r === -1 && c >= 0 && c <= 2;
+      if (r < 0 && c >= 0 && c <= 2 && !toprow) continue;
+      if (!toprow && (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || tb && ov(box, tb))) continue;
       const el = document.createElement("div");
       el.className = "mc";
       const ex = c < 0 ? -g : c > 2 ? g : 0, ey = r < 0 ? -g : r > 2 ? g : 0;
       el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);top:calc(").concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px);width:calc((100% - ").concat(2 * g, "px) / 3);height:calc((100% - ").concat(2 * g, "px) / 3)");
+      if (toprow) {
+        el.classList.add("toprow");
+        el._top = (D) => "calc(-1 * ((100% - ".concat(2 * g, "px) / 3) - ").concat(D, "px)");
+        el.style.top = el._top(hb._hdr && hb._hdr.D || g);
+      }
       el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
       hb.appendChild(el);
       cells.push(el);
@@ -553,6 +599,7 @@ var __spreadValues = (a, b) => {
       layers[1 - on].style.opacity = 0;
     };
     cells.forEach((c) => set(c, true));
+    requestAnimationFrame(fitHeader);
     clearInterval(mosaicTimer);
     mosaicTimer = setInterval(() => {
       if ($("#home").hidden || document.hidden) return;
@@ -623,7 +670,7 @@ var __spreadValues = (a, b) => {
     $("#arena").innerHTML = "";
     $("#sec2").textContent = sub || "";
     status("");
-    menu();
+    menu2();
     $("#main").scrollTop = 0;
   }
   function peoplePage() {
@@ -642,11 +689,11 @@ var __spreadValues = (a, b) => {
     let St = U.stars().map((r) => ({ r, f: items.get(r.id) })).filter((x) => x.f);
     St.sort(mlSort === "az" ? (a, b) => a.f.name.localeCompare(b.f.name) : (a, b) => b.r.starredAt - a.r.starredAt);
     St = St.map((x) => x.f);
-    pageShell("My List", "".concat(NA.plural(St.length, "Starred"), " \xB7 ").concat(H.length, " recently watched").replace("Starreds", "Starred"));
+    pageShell("My List", "".concat(NA.plural(St.length, "Starred"), " \xB7 ").concat(H.length, " in history").replace("Starreds", "Starred"));
     const g = $("#grid");
     g.className = "sectioned mylist";
     const vids_ = (a) => a.filter((f) => !isFolder(f)), fold_ = (a) => a.filter(isFolder);
-    g.innerHTML = '<div id="ml-sync"></div>' + secHTML("vids", "CONTINUE WATCHING / RECENTLY WATCHED", H, H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "") + (H.length ? "" : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
+    g.innerHTML = '<div id="ml-sync"></div>' + secHTML("vids", "HISTORY", H, H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "") + (H.length ? "" : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
     if (window.FEFCSync) {
       const c = $("#ml-sync");
       c && FEFCSync.subscribe && 0;
@@ -732,7 +779,7 @@ var __spreadValues = (a, b) => {
       $("#grid").className = "support-grid";
       $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link sup sup-'.concat(s.name.toLowerCase(), '" href="').concat(s.url, '" target="_blank" rel="noopener" aria-label="').concat(s.name, ' (opens in a new tab)"><span class="sup-logo">').concat(s.logo, '</span><span class="sup-nm">').concat(s.name, "</span><small>").concat(s.sub, "</small></a>")).join("");
       status("");
-      menu();
+      menu2();
     }
   }
   const HUBH = { main: "#/all", arena: "#/newarrivals", readfirst: "#/readfirst", genres: "#/genres", support: "#/supportus", people: "#/people", mylist: "#/mylist", search: "#/search" };
@@ -971,7 +1018,7 @@ var __spreadValues = (a, b) => {
   function status(t) {
     $("#status").textContent = t;
   }
-  function menu() {
+  function menu2() {
     $("#menu").innerHTML = NA.menuHTML(FOLD, cur !== ROOT);
     const o = $("#menu .mi.on");
     o && o.scrollIntoView && o.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -1100,7 +1147,7 @@ var __spreadValues = (a, b) => {
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach(lazyArt);
     if (mode !== "arena") drain(Q, isNew);
     status(all.length ? "" : live ? "Empty" : "Nothing here yet");
-    menu();
+    menu2();
     restoreScroll();
   }
   async function open(id, mode = "home") {
@@ -1519,7 +1566,19 @@ addEventListener("load", () => {
 });
 ;
 (function() {
-  const sync = () => document.body.classList.toggle("overlay", !document.getElementById("details").hidden || !document.getElementById("player").hidden);
+  const sync = () => {
+    const d = !document.getElementById("details").hidden && document.getElementById("player").hidden;
+    document.body.classList.toggle("overlay", !document.getElementById("details").hidden || !document.getElementById("player").hidden);
+    document.body.classList.toggle("details-open", d);
+    if (d) {
+      const b = document.getElementById("bar");
+      document.documentElement.style.setProperty("--barh", (b.offsetHeight || 56) + "px");
+      if (window.NA && NA.menuHTML) try {
+        menu();
+      } catch (e) {
+      }
+    }
+  };
   const mo = new MutationObserver(sync);
   ["details", "player"].forEach((i) => mo.observe(document.getElementById(i), { attributes: true, attributeFilter: ["hidden"] }));
   sync();
