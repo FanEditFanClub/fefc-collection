@@ -243,9 +243,9 @@ html.no3d #home{perspective:none}html.no3d #hub{-webkit-transform:translate(-50%
 .sgrid.folds,.sgrid.docs{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .sgrid.vids{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
 .ol-tile.fold,.ol-tile.doc,#arena .ol-tile{aspect-ratio:16/9}
-.ol-tile.vid,.ol-tile.person{aspect-ratio:2/3}
+.ol-tile.vid{aspect-ratio:2/3}.ol-tile.person{aspect-ratio:16/9}
 #arena .ol-tile.vid{aspect-ratio:16/9}
-.ol-tile.person img{object-position:50% 18%}
+.ol-tile.person img{object-position:50% 10%}.ol-tile.person:before{height:34%}.ol-tile.person .art:after{background:linear-gradient(0deg,#000c 0,#0000 30%)}
 .ol-tile .ptitle{position:absolute;inset:14% 10% 30%;display:flex;align-items:center;justify-content:center;text-align:center;font:700 17px/1.2 system-ui,sans-serif;color:#fff;text-shadow:0 2px 8px #000;border-top:2px solid #ff9c00aa;border-bottom:2px solid #ff9c00aa;overflow:hidden}
 .ol-tile.has-poster .ptitle,#arena .ptitle{display:none}
 .ol-tile.vid.has-poster .nm{font-size:12px;-webkit-line-clamp:2}
