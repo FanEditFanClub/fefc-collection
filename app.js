@@ -46,10 +46,12 @@ var __spreadValues = (a, b) => {
     const el = $("#intro");
     if (P.get("nointro")) {
       el.remove();
+      document.body.classList.add("intro-done", "no-intro");
       return;
     }
     const seen = localStorage.fefcSeen === "1", d = seen ? 1.4 : 3.2;
     el.style.setProperty("--d", d + "s");
+    document.documentElement.style.setProperty("--d", d + "s");
     const sun = el.querySelector(".sun");
     for (let i = 0; i < 24; i++) {
       const t = document.createElement("i"), a = i / 24 * 360, r = i % 2 ? 24 : 19;
@@ -58,6 +60,8 @@ var __spreadValues = (a, b) => {
       sun.appendChild(t);
     }
     if (P.get("introframe")) {
+      document.body.classList.add("frozen");
+      document.documentElement.style.setProperty("--tf", -P.get("introframe") + "s");
       el.querySelectorAll("*").forEach((e) => {
         e.style.animationPlayState = "paused";
         e.style.animationDelay = -P.get("introframe") + "s";
@@ -71,6 +75,8 @@ var __spreadValues = (a, b) => {
       done = true;
       localStorage.fefcSeen = "1";
       el.classList.add("done");
+      document.body.classList.add("intro-done");
+      $("#home").classList.add("enter");
       S.ambience(view !== "player");
     };
     try {
@@ -283,6 +289,7 @@ var __spreadValues = (a, b) => {
     view = "home";
     cur = ROOT;
     $("#home").hidden = false;
+    document.body.classList.add("at-home");
     $("#main").hidden = true;
     $("#bar").hidden = true;
     hub();
@@ -292,6 +299,7 @@ var __spreadValues = (a, b) => {
     }, 30);
   }
   function hideHome() {
+    document.body.classList.remove("at-home");
     $("#home").hidden = true;
     $("#main").hidden = false;
     $("#bar").hidden = false;
@@ -308,7 +316,7 @@ var __spreadValues = (a, b) => {
     S.click();
     if (k === "main") return hideHome(), open(ROOT, "all");
     if (k === "arena" || k === "collections") return hideHome(), open(ROOT, k);
-    if (k === "readfirst") return hideHome(), open(FOLD.readFirst);
+    if (k === "readfirst") return readFirst();
     if (k.indexOf("folder:") === 0) return hideHome(), open(k.slice(7));
     if (k === "actors") return virtual([items.get(FOLD.actors) || { id: FOLD.actors, name: "Actors", mimeType: FOLDER }, items.get(FOLD.directors) || { id: FOLD.directors, name: "Directors", mimeType: FOLDER }], "Actors & Directors");
     if (k === "search") {
@@ -387,6 +395,30 @@ var __spreadValues = (a, b) => {
       doMute();
     }
   });
+  const RF_DOC = "https://docs.google.com/document/d/1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk/preview";
+  function readFirst() {
+    const p = $("#rfpanel");
+    if (!$("#rfframe").src || $("#rfframe").src === "about:blank") $("#rfframe").src = RF_DOC;
+    p.hidden = false;
+    void p.offsetWidth;
+    p.classList.add("open");
+    S.open();
+    history.pushState({ rf: 1 }, "");
+    setTimeout(() => focusEl($("#rfclose")), 60);
+  }
+  function closeRF() {
+    const p = $("#rfpanel");
+    if (p.hidden) return false;
+    p.classList.remove("open");
+    S.click();
+    setTimeout(() => {
+      p.hidden = true;
+      const t = document.querySelector('[data-hub="readfirst"]');
+      if (t) focusEl(t);
+    }, 350);
+    return true;
+  }
+  $("#rfclose").onclick = () => history.back();
   function status(t) {
     $("#status").textContent = t;
   }
@@ -486,6 +518,7 @@ var __spreadValues = (a, b) => {
   addEventListener("resize", () => {
   });
   addEventListener("popstate", () => {
+    if (closeRF()) return;
     if (!$("#player").hidden) {
       $("#player").hidden = true;
       $("#pframe").src = "about:blank";
@@ -577,12 +610,13 @@ var __spreadValues = (a, b) => {
   };
   setTimeout(sm2, 0);
   $("#auth").onclick = signIn;
-  const FOC = ".hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
+  const FOC = "#rfclose,#rfframe,.hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
   }
   function layer() {
+    if (!$("#rfpanel").hidden) return $("#rfpanel");
     if (!$("#player").hidden) return $("#player");
     if (!$("#details").hidden) return $("#details");
     return $("#app");
@@ -613,6 +647,10 @@ var __spreadValues = (a, b) => {
     if (e.scrollIntoView) e.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   function goBack() {
+    if (!$("#rfpanel").hidden) {
+      history.back();
+      return;
+    }
     if (!$("#player").hidden || !$("#details").hidden) {
       history.back();
       return;
@@ -630,6 +668,12 @@ var __spreadValues = (a, b) => {
   document.addEventListener("keydown", (e) => {
     const k = e.keyCode, inInput = e.target === $("#q");
     const dir = { 37: "left", 38: "up", 39: "right", 40: "down" }[k];
+    if (dir && !$("#rfpanel").hidden && (k === 38 || k === 40)) {
+      e.preventDefault();
+      const w = $(".rf-scroll");
+      if (w) w.scrollBy(0, k === 40 ? 220 : -220);
+      return;
+    }
     if (dir && !(inInput && (k === 37 || k === 39))) {
       e.preventDefault();
       S.unlock();
@@ -673,25 +717,33 @@ var __spreadValues = (a, b) => {
     live = true;
     $("#auth").textContent = "Sign in";
   }
-  fetch("data/genres.json").then((r) => r.json()).then((g) => {
+  tmo("data/genres.json", 1e4).then((g) => {
     genreMap = g;
     if (!$("#home").hidden) hub();
   }).catch(() => {
   });
-  fetch("data/mosaic.json").then((r) => r.json()).then((m) => {
+  tmo("data/mosaic.json", 1e4).then((m) => {
     mosaicList = m;
     if (!$("#home").hidden) mosaic();
   }).catch(() => {
   });
-  Promise.all([fetch("data/index.json").then((r) => r.json()), fetch("data/metadata.json").then((r) => r.json()).catch(() => ({}))]).then(([d, md]) => {
-    meta = md;
+  const tmo = (u, ms) => Promise.race([fetch(u).then((r) => {
+    if (!r.ok) throw Error(r.status);
+    return r.json();
+  }), new Promise((_, rj) => setTimeout(() => rj(Error("timeout " + u)), ms))]);
+  tmo("data/metadata.json", 8e3).then((m) => meta = m).catch((e) => console.warn(e));
+  tmo("data/index.json", 15e3).then((d) => {
     window._idx = d.items;
     if (!live) add(d.items);
+  }).catch((e) => {
+    console.warn(e);
+    status("Saved index unavailable");
+  }).then(() => {
     open(ROOT);
     if (P.get("focus")) {
       setTimeout(() => {
         document.body.classList.add("kbd");
-        const t = document.querySelectorAll(".ol-tile")[+P.get("focus")];
+        const t = document.querySelectorAll(".ol-tile,.hb")[+P.get("focus")];
         if (t) focusEl(t);
       }, 300);
     }
@@ -699,5 +751,7 @@ var __spreadValues = (a, b) => {
     if (e && items.get(e)) details(items.get(e), false);
     const pp = P.get("play");
     if (pp && items.get(pp)) play(items.get(pp));
-  }).catch(() => status("No saved index \u2014 sign in"));
+    if (P.get("readfirst")) readFirst();
+  });
+  showHome();
 })();

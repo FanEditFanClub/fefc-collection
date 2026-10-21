@@ -165,3 +165,28 @@ body.tv #hub{width:calc(66vh*1.55)}body.tv .mc>img{transition-duration:1.6s;anim
 .g-s{background:radial-gradient(circle at 40% 35%,#bfe3ff,#3a8fd6)}.g-m{background:radial-gradient(circle at 40% 35%,#d9f7c9,#4caf50)}
 @media (orientation:landscape) and (max-height:520px){#hub{top:46%}.hint-btn kbd{display:none}#hints{gap:1.2vmin}}
 @media (orientation:portrait){.hint-btn kbd{display:none}#hints{flex-wrap:wrap;justify-content:center;max-width:94vw}}
+/* ---------- TAGLINE (shared by intro + dashboard; fixed position = no jump) ---------- */
+#tagline{position:fixed;left:0;right:0;top:calc(2.2vh + env(safe-area-inset-top));margin:0;z-index:60;text-align:center;pointer-events:none;
+ font:400 clamp(14px,2.3vmin,34px) 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:.04em;color:#e8f1ff;text-shadow:0 0 14px #2fa8ff99,0 2px 4px #000;padding:0 4vw;visibility:hidden}
+#tagline span{display:inline-block;padding:.35em 1.1em;border-radius:3px;background:linear-gradient(180deg,#0b0f16cc,#05070bcc);border:1px solid #6d7c8f88;box-shadow:inset 0 1px 0 #ffffff22}
+/* in intro: reveal after logo resolves (~72% of --d) */
+body:not(.intro-done) #tagline{visibility:visible;animation:tagin var(--d,3.2s) ease-out both}
+@keyframes tagin{0%,70%{opacity:0;clip-path:inset(0 100% 0 0)}92%{opacity:1;clip-path:inset(0 0 0 0)}100%{opacity:1;clip-path:inset(0 0 0 0)}}
+body.frozen #tagline{animation-play-state:paused;animation-delay:var(--tf)}
+body.intro-done.at-home #tagline{visibility:visible;opacity:1}
+body.intro-done:not(.at-home) #tagline{visibility:hidden}
+#intro img{position:relative;top:0}
+/* grid + mosaic animate in around the tagline */
+#home.enter #hub{animation:hubin .6s ease-out both}#home.enter #mosaic{animation:mosin .9s ease-out both}#home.enter #hints{animation:mosin .8s .2s ease-out both}
+@keyframes hubin{from{opacity:0;transform:translate(-50%,-50%) scale(.85)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes mosin{from{opacity:0}to{opacity:1}}
+#hub{top:calc(50% + 2vh)}
+/* ---------- READ FIRST PANEL ---------- */
+#rfpanel{position:fixed;inset:0;z-index:40;background:#000a;display:flex;justify-content:flex-end}
+.rf-in{width:min(860px,92vw);height:100%;background:linear-gradient(180deg,#2c333e,#0b0e13 60px,#0b0e13);border-left:2px solid #ffb02e;box-shadow:-10px 0 40px #000;display:flex;flex-direction:column;transform:translateX(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+#rfpanel.open .rf-in{transform:none}
+.rf-top{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;font:600 clamp(18px,2.6vmin,36px) 'Source Sans 3',sans-serif;border-bottom:1px solid #6d7c8f}
+.rf-x{border:1px solid #6d7c8f;border-radius:4px;padding:0 12px;font-size:clamp(14px,1.8vmin,26px)}
+.rf-scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;background:#fff}
+#rfframe{width:100%;height:3000px;border:0;display:block;background:#fff}
+#rfframe:focus{outline:4px solid #ffb02e;outline-offset:-4px}
