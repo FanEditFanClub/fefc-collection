@@ -463,8 +463,19 @@ var __spreadValues = (a, b) => {
     const z = t.size || f.size;
     return z ? "s:" + z : target(f);
   }
+  const _ut = {};
+  function underTBC(t) {
+    if (t in _ut) return _ut[t];
+    let x = items.get(t), h = 0, r = t === FOLD.tbc;
+    while (!r && x && h++ < 60) {
+      if (x.parent === FOLD.tbc) r = true;
+      else x = items.get(x.parent);
+    }
+    return _ut[t] = r;
+  }
   function deepCounts(id) {
     if (_dc[id] && _dc[id].k === items.size && _dc[id].d === !!NA.dates) return _dc[id];
+    const noT = id === ROOT;
     let c = 0, n = 0, sz2 = 0, nw = "";
     const seen = {}, fs = {}, qd = {}, st = [id];
     while (st.length) {
@@ -472,6 +483,7 @@ var __spreadValues = (a, b) => {
       if (seen[x]) continue;
       seen[x] = 1;
       (kids.get(x) || []).forEach((f) => {
+        if (noT && underTBC(target(f))) return;
         if (isFolder(f)) {
           const t = target(f);
           if (id !== ROOT && t !== id && (t === ROOT || Object.values(FOLD).includes(t))) return;
