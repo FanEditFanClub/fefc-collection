@@ -570,3 +570,6 @@ body.touch .epnav{gap:10px}
  body.touch #bar .top-inst{display:none!important}
 }
 @media (max-height:500px) and (max-width:900px){#bar .ai-btn{font-size:0!important;padding:2px 4px!important;min-width:36px}#bar .ai-btn img{margin:0}}
+/* intro perf: nothing behind the full-screen intro canvas gets painted/composited (tagline stays for its fade-in) */
+body.cintro #hub,body.cintro #main,body.cintro #bar,body.cintro #hints,body.cintro #genres{visibility:hidden}
+#intro canvas{transform:translateZ(0)}

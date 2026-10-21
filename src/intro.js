@@ -8,7 +8,8 @@ const mapC=r=>{for(const s of SEG)if(r<=s[1])return lerp(s[2],s[3],(r-s[0])/(s[1
 const FULL=26.15,SEGF=[[0,5.75,0,2.6],[5.75,6.75,2.6,4.8],[6.75,7.6,4.8,6.6],[7.6,10.07,6.6,8.3],[10.07,12.05,8.3,11.95],[12.05,24.75,11.95,24.2]];
 const mapF=r=>{for(const s of SEGF)if(r<=s[1])return lerp(s[2],s[3],(r-s[0])/(s[1]-s[0]));return 24.2};
 function create(opt){
- const tv=opt.tv,cv=document.createElement('canvas'),c=cv.getContext('2d'),dpr=Math.min(window.devicePixelRatio||1,tv?1:1.5);
+ // lo = low-cost path (TV, iOS/WebKit, reduced motion, <=4 cores): same timeline/look, no canvas blur/shadowBlur, dpr 1, coarser ground strips, fewer stars
+ let tv=opt.tv||opt.lite;const cv=document.createElement('canvas'),c=cv.getContext('2d',{alpha:false});let dpr=Math.min(window.devicePixelRatio||1,tv?1:1.5);
  let W=0,H=0;const size=()=>{W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px'};size();addEventListener('resize',size);
  const buf=document.createElement('canvas'),bc=buf.getContext('2d');
  // logo + orange tinted logo
@@ -42,7 +43,7 @@ function create(opt){
  const gcv=document.createElement('canvas'),gx=gcv.getContext('2d');
  function ground(hy,cam,camX){ // mode-7 style perspective strips into gcv (screen space, unrotated)
   ensure();if(gcv.width!==cv.width||gcv.height!==cv.height){gcv.width=cv.width;gcv.height=cv.height}
-  const f=H*.9,h=10,band=tv?4:2,P=gx.createPattern(atlas,'repeat');gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,gcv.width,gcv.height);gx.fillStyle=P;
+  const f=H*.9,h=10,band=opt.lite||(tv&&!opt.tv)?6:tv?4:2,P=gx.createPattern(atlas,'repeat');gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,gcv.width,gcv.height);gx.fillStyle=P;
   for(let y=Math.max(Math.floor(hy)+1,-H);y<H*1.3;y+=band){const d=y-hy;if(d<=0)continue;const z=f*h/d,k=f/(z*AT),ky=f*h/(z*z*AT),tx=W/2-camX*AT*k,ty=y-(z+cam)*AT*ky;
    gx.setTransform(k*dpr,0,0,ky*dpr,tx*dpr,ty*dpr);gx.fillRect(-tx/k,(y-ty)/ky,W/k,band/ky*1.5)}
   gx.setTransform(1,0,0,1,0,0)}
@@ -78,6 +79,8 @@ function create(opt){
   const fl=s<12.6?sm(11.7,11.95,s)*(1-sm(11.95,12.6,s)):0;if(fl>0){c.globalAlpha=fl;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1}
   const sn=sm(23.7,24.05,s);if(sn>0){c.globalAlpha=sn*(1-sm(24.05,24.2,s));c.fillStyle='#ffffff';c.fillRect(0,0,W,H);c.globalAlpha=1}
   // tagline: fades in at its exact dashboard position (real DOM element)
-  const tg=opt.tagline;if(tg){const a=sm(17.4,18.6,s);tg.style.visibility='visible';tg.style.opacity=a;tg.style.clipPath=`inset(0 ${(100-100*eo(cl((s-17.4)/1.4))).toFixed(1)}% 0 0)`}}
- return {canvas:cv,frame,mapC,mapF,FULL,setTiles}}
+  const tg=opt.tagline;if(tg){const a=+sm(17.4,18.6,s).toFixed(3),cp=`inset(0 ${(100-100*eo(cl((s-17.4)/1.4))).toFixed(1)}% 0 0)`;if(tg._a!==a){tg._a=a;tg.style.opacity=a}if(tg._cp!==cp){tg._cp=cp;tg.style.clipPath=cp}if(!tg._v){tg._v=1;tg.style.visibility='visible'}}}
+ // adaptive: if the device can't hold frame rate, drop to the low-cost path mid-intro (same timeline)
+ const degrade=()=>{if(tv)return false;tv=true;dpr=1;size();return true};
+ return {canvas:cv,frame,mapC,mapF,FULL,setTiles,degrade}}
 return {create,mapC,mapF,FULL}})();

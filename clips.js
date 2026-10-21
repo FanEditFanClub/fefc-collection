@@ -3,10 +3,11 @@ let clips = null, loading = false, timers = [], active = [];
 const home = () => document.getElementById("home");
 const atHome = () => {
   const h = home();
-  return h && !h.hidden && !document.hidden;
+  return h && !h.hidden && !document.hidden && !document.body.classList.contains("cintro");
 };
 const tv = () => document.body.classList.contains("tv");
-const cap = () => tv() ? 12 : 48;
+const lite = () => document.body.classList.contains("lite");
+const cap = () => tv() ? 12 : lite() ? 6 : 48;
 function load() {
   if (clips || loading) return;
   loading = true;
@@ -141,6 +142,12 @@ function kick() {
     } else stop();
   }, 400);
 }
+let _ic = 0;
+new MutationObserver(() => {
+  const c = document.body.classList.contains("cintro");
+  if (_ic && !c) kick();
+  _ic = c;
+}).observe(document.body, { attributes: true, attributeFilter: ["class"] });
 function init() {
   const h = home(), hub = document.getElementById("hub");
   if (!h || !hub) return setTimeout(init, 500);

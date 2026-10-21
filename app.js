@@ -63,7 +63,9 @@ var __spreadValues = (a, b) => {
     const short = !!P.get("shortintro"), tv = document.body.classList.contains("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
     document.body.classList.add("cintro");
     const tg = $("#tagline");
-    const R = window.FEFCIntro.create({ tv, tagline: tg });
+    const lite = !tv && (/iPhone|iPad|iPod/.test(navigator.userAgent) || /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1 || matchMedia("(prefers-reduced-motion: reduce)").matches || (navigator.hardwareConcurrency || 8) <= 4 || !!P.get("lite"));
+    if (lite) document.body.classList.add("lite");
+    const R = window.FEFCIntro.create({ tv, lite, tagline: tg });
     el.prepend(R.canvas);
     fetch("data/mosaic.json").then((r) => r.json()).then((m) => R.setTiles(m.map((x) => x.target || x.id))).catch(() => {
     });
@@ -112,7 +114,21 @@ var __spreadValues = (a, b) => {
     let t0 = performance.now(), last = 0;
     const hint = el.querySelector(".ihint");
     let sndOn = false;
+    const fd = [];
+    let pn = 0, dg = 0;
     const loop = (now) => {
+      if (pn && !dg) {
+        fd.push(now - pn);
+        if (fd.length > 12) fd.shift();
+        if (fd.length >= 3) {
+          const m = fd.slice().sort((a, b) => a - b)[fd.length >> 1];
+          if (m > 26 && R.degrade) {
+            dg = 1;
+            if (R.degrade()) document.body.classList.add("lite");
+          }
+        }
+      }
+      pn = now;
       const r = (now - t0) / 1e3, s = short ? R.mapC(r) : R.mapF(r);
       last = r;
       R.frame(s);

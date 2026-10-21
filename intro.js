@@ -14,7 +14,9 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     return 24.2;
   };
   function create(opt) {
-    const tv = opt.tv, cv = document.createElement("canvas"), c = cv.getContext("2d"), dpr = Math.min(window.devicePixelRatio || 1, tv ? 1 : 1.5);
+    let tv = opt.tv || opt.lite;
+    const cv = document.createElement("canvas"), c = cv.getContext("2d", { alpha: false });
+    let dpr = Math.min(window.devicePixelRatio || 1, tv ? 1 : 1.5);
     let W = 0, H = 0;
     const size = () => {
       W = innerWidth;
@@ -201,7 +203,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
         gcv.width = cv.width;
         gcv.height = cv.height;
       }
-      const f = H * 0.9, h = 10, band = tv ? 4 : 2, P = gx.createPattern(atlas, "repeat");
+      const f = H * 0.9, h = 10, band = opt.lite || tv && !opt.tv ? 6 : tv ? 4 : 2, P = gx.createPattern(atlas, "repeat");
       gx.setTransform(1, 0, 0, 1, 0, 0);
       gx.clearRect(0, 0, gcv.width, gcv.height);
       gx.fillStyle = P;
@@ -389,13 +391,29 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       }
       const tg = opt.tagline;
       if (tg) {
-        const a = sm(17.4, 18.6, s);
-        tg.style.visibility = "visible";
-        tg.style.opacity = a;
-        tg.style.clipPath = "inset(0 ".concat((100 - 100 * eo(cl((s - 17.4) / 1.4))).toFixed(1), "% 0 0)");
+        const a = +sm(17.4, 18.6, s).toFixed(3), cp = "inset(0 ".concat((100 - 100 * eo(cl((s - 17.4) / 1.4))).toFixed(1), "% 0 0)");
+        if (tg._a !== a) {
+          tg._a = a;
+          tg.style.opacity = a;
+        }
+        if (tg._cp !== cp) {
+          tg._cp = cp;
+          tg.style.clipPath = cp;
+        }
+        if (!tg._v) {
+          tg._v = 1;
+          tg.style.visibility = "visible";
+        }
       }
     }
-    return { canvas: cv, frame, mapC, mapF, FULL, setTiles };
+    const degrade = () => {
+      if (tv) return false;
+      tv = true;
+      dpr = 1;
+      size();
+      return true;
+    };
+    return { canvas: cv, frame, mapC, mapF, FULL, setTiles, degrade };
   }
   return { create, mapC, mapF, FULL };
 })();

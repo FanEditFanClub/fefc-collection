@@ -17,14 +17,15 @@ const sz=b=>b?(b/1e9).toFixed(2)+' GB':'';
 function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElementById('wordmark');if(wmi&&!wmi.complete)wmi.addEventListener('load',placeHeader);const el=$('#intro');if(P.get('nointro')){el.remove();document.body.classList.add('intro-done','no-intro');return}
  const short=!!P.get('shortintro'),tv=document.body.classList.contains('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
  document.body.classList.add('cintro');const tg=$('#tagline');
- const R=window.FEFCIntro.create({tv,tagline:tg});el.prepend(R.canvas);
+ const lite=!tv&&(/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1)||matchMedia('(prefers-reduced-motion: reduce)').matches||(navigator.hardwareConcurrency||8)<=4||!!P.get('lite'));if(lite)document.body.classList.add('lite');
+ const R=window.FEFCIntro.create({tv,lite,tagline:tg});el.prepend(R.canvas);
  fetch('data/mosaic.json').then(r=>r.json()).then(m=>R.setTiles(m.map(x=>x.target||x.id))).catch(()=>{});
  try{S.loadIntro()}catch(e){}
  const fr=P.get('introframe');if(fr!==null){document.body.classList.add('frozen');el.querySelector('.ihint').hidden=true;const draw=()=>R.frame(+fr);draw();[300,1000,2000,3500].forEach(t=>setTimeout(draw,t));return}
  let done=false,raf=0,ia=null;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';sndHint(false);if(skipped){S.introStop();if(ia){try{ia.pause()}catch(e){}}}
   tg.style.opacity='';tg.style.clipPath='';tg.style.visibility='';document.body.classList.remove('cintro');el.classList.add('done');document.body.classList.add('intro-done');window.__ie=Date.now();$('#home').classList.add('enter');setTimeout(()=>{S.ambience($('#player').hidden&&$('#details').hidden);el.remove()},skipped?600:1870)};
  let t0=performance.now(),last=0;const hint=el.querySelector('.ihint');let sndOn=false;
- const loop=now=>{const r=(now-t0)/1000,s=short?R.mapC(r):R.mapF(r);last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
+ const fd=[];let pn=0,dg=0;const loop=now=>{if(pn&&!dg){fd.push(now-pn);if(fd.length>12)fd.shift();if(fd.length>=3){const m=fd.slice().sort((a,b)=>a-b)[fd.length>>1];if(m>26&&R.degrade){dg=1;if(R.degrade())document.body.classList.add('lite')}}}pn=now;const r=(now-t0)/1000,s=short?R.mapC(r):R.mapF(r);last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
  const off=()=>(performance.now()-t0)/1000;
  const hEl=document.createElement('div');hEl.className='isnd';hEl.textContent='Click or press any key for sound';el.appendChild(hEl);
  function sndHint(on){hEl.classList.toggle('on',!!on)}

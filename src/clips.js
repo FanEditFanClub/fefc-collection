@@ -3,9 +3,10 @@
 const SWAP=[6000,11000];
 let clips=null,loading=false,timers=[],active=[];
 const home=()=>document.getElementById('home');
-const atHome=()=>{const h=home();return h&&!h.hidden&&!document.hidden};
+const atHome=()=>{const h=home();return h&&!h.hidden&&!document.hidden&&!document.body.classList.contains('cintro')}; // no clip decoding while the intro runs
 const tv=()=>document.body.classList.contains('tv');
-const cap=()=>tv()?12:48;
+const lite=()=>document.body.classList.contains('lite');
+const cap=()=>tv()?12:lite()?6:48; // iOS/WebKit struggles with many inline decoders
 function load(){if(clips||loading)return;loading=true;
  fetch('data/clips.json').then(r=>r.json()).then(j=>{clips=j;schedule()}).catch(()=>{clips=[]})}
 function pick(){const used=active.map(c=>c._clip&&c._clip.src);let c,i=0;do{c=clips[Math.random()*clips.length|0]}while(++i<8&&used.indexOf(c.src)>=0);return c}
@@ -29,6 +30,7 @@ function schedule(){stop();if(!clips||!clips.length||!atHome())return;
    timers.push(setTimeout(loop,SWAP[0]+Math.random()*(SWAP[1]-SWAP[0])))};
   timers.push(setTimeout(loop,80*i+Math.random()*300))})}
 let deb;function kick(){clearTimeout(deb);if(!atHome()){stop();return}deb=setTimeout(()=>{if(atHome()){load();schedule()}else stop()},400)}
+let _ic=0;new MutationObserver(()=>{const c=document.body.classList.contains('cintro');if(_ic&&!c)kick();_ic=c}).observe(document.body,{attributes:true,attributeFilter:['class']});
 function init(){const h=home(),hub=document.getElementById('hub');if(!h||!hub)return setTimeout(init,500);
  new MutationObserver(kick).observe(hub,{childList:true});
  new MutationObserver(kick).observe(h,{attributes:true,attributeFilter:['hidden']});
