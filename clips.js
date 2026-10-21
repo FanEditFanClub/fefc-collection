@@ -6,7 +6,7 @@ const atHome = () => {
   return h && !h.hidden && !document.hidden;
 };
 const tv = () => document.body.classList.contains("tv");
-const cap = () => tv() ? 8 : 35;
+const cap = () => tv() ? 12 : 48;
 function load() {
   if (clips || loading) return;
   loading = true;
@@ -65,6 +65,7 @@ function play(cell) {
   cell._clip = c;
   if (c.id) cell.dataset.id = c.id;
   const go = () => {
+    if (!atHome()) return;
     v.src = c.src;
     const r = v.play();
     if (r && r.catch) r.catch(() => {
@@ -102,6 +103,10 @@ function schedule() {
   if (!clips || !clips.length || !atHome()) return;
   const cells = [].slice.call(document.querySelectorAll("#hub .mc")).filter(visible);
   cells.sort(() => Math.random() - 0.5);
+  if (tv()) {
+    const hb = document.querySelector("#hub .hb"), ht = hb ? hb.getBoundingClientRect().top : 0;
+    cells.sort((a, b) => (a.getBoundingClientRect().bottom < ht ? 0 : 1) - (b.getBoundingClientRect().bottom < ht ? 0 : 1));
+  }
   active = cells.slice(0, cap());
   active.forEach((c, i) => {
     let first = true;
@@ -124,6 +129,10 @@ function schedule() {
 let deb;
 function kick() {
   clearTimeout(deb);
+  if (!atHome()) {
+    stop();
+    return;
+  }
   deb = setTimeout(() => {
     if (atHome()) {
       load();

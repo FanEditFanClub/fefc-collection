@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """Fetch the public Read First Google Doc (export?format=html) and write a clean, themable
 HTML fragment to data/readfirst.html. Run before `npm run build` whenever the doc changes."""
-import re, html, urllib.request, urllib.parse, pathlib
-DOC='1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk'
+import re, html, urllib.request, urllib.parse, pathlib, sys
+# usage: readfirst_doc.py [DOC_ID] [OUT]  (default: Read First -> data/readfirst.html)
+# Support shortcuts in Drive point at the same Read First doc: readfirst_doc.py 1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk data/support-doc.html
+DOC=sys.argv[1] if len(sys.argv)>1 else '1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk'
+OUT=sys.argv[2] if len(sys.argv)>2 else 'data/readfirst.html'
 src=urllib.request.urlopen(f'https://docs.google.com/document/d/{DOC}/export?format=html',timeout=30).read().decode('utf8')
 css=re.search(r'<style[^>]*>(.*?)</style>',src,re.S).group(1)
 cls={}
@@ -28,5 +31,5 @@ body=re.sub(r'<a [^>]*href="([^"]*)"[^>]*>',link,body)
 body=re.sub(r'<a (?![^>]*href)[^>]*>(.*?)</a>',r'\1',body,flags=re.S)
 body=re.sub(r'<p[^>]*>',r'<p>',body)
 body=re.sub(r'(<p>\s*</p>\s*)+','',body)
-pathlib.Path(__file__).resolve().parent.parent.joinpath('data/readfirst.html').write_text(body.strip()+'\n')
+pathlib.Path(__file__).resolve().parent.parent.joinpath(OUT).write_text(body.strip()+'\n')
 print('ok',len(body))

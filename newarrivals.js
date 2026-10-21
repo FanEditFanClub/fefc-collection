@@ -10,12 +10,33 @@
       var t = new Date(s.length <= 10 ? s + "T12:00:00" : s);
       return isNaN(t) ? "" : "Added " + t.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
     },
+    CAP: 500,
+    _tk: null,
+    _top: null,
+    top: function(list) {
+      var k = list.length + ":" + Object.keys(NA.dates).length;
+      if (NA._tk === k) return NA._top;
+      var seen = {}, out = [];
+      NA.sort(list).forEach(function(f) {
+        var t = f.targetId || f.id;
+        if (out.length >= NA.CAP || seen[t] || !NA.d(f)) return;
+        seen[t] = 1;
+        out.push(f);
+      });
+      NA._tk = k;
+      NA._top = out;
+      NA._set = {};
+      out.forEach(function(f) {
+        NA._set[f.id] = 1;
+        NA._set[f.targetId || f.id] = 1;
+      });
+      return out;
+    },
+    isNew: function(f) {
+      return !!(NA._set && (NA._set[f.id] || NA._set[f.targetId || f.id]));
+    },
     newCount: function(list) {
-      var now = Date.now();
-      return list.filter(function(f) {
-        var s = NA.d(f);
-        return s && now - Date.parse(s) < 30 * 864e5;
-      }).length;
+      return NA.top(list).length;
     },
     sort: function(list) {
       return list.slice().sort(function(a, b) {
@@ -53,7 +74,7 @@
       return n;
     },
     render: function(all, tile, art, get) {
-      var list = NA.sort(all), shown = 0, g = document.getElementById("grid");
+      var list = NA.top(all), shown = 0, g = document.getElementById("grid");
       g.className = "sectioned";
       g.innerHTML = '<div class="sgrid vids" id="na-list"></div><div style="text-align:center;padding:24px"><button class="mi" id="na-more" style="font-size:18px">More</button></div>';
       var box = document.getElementById("na-list"), more = document.getElementById("na-more");

@@ -3,7 +3,10 @@
 var NA=window.NA={dates:{},
  d:function(f){var x=NA.dates[f.id]||NA.dates[f.targetId];return (x&&(x.c||x.m))||f.modified||''},
  fmt:function(s){if(!s)return'';var t=new Date(s.length<=10?s+'T12:00:00':s);return isNaN(t)?'':'Added '+t.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})},
- newCount:function(list){var now=Date.now();return list.filter(function(f){var s=NA.d(f);return s&&now-Date.parse(s)<30*864e5}).length},
+ CAP:500,_tk:null,_top:null,
+ top:function(list){var k=list.length+':'+Object.keys(NA.dates).length;if(NA._tk===k)return NA._top;var seen={},out=[];NA.sort(list).forEach(function(f){var t=f.targetId||f.id;if(out.length>=NA.CAP||seen[t]||!NA.d(f))return;seen[t]=1;out.push(f)});NA._tk=k;NA._top=out;NA._set={};out.forEach(function(f){NA._set[f.id]=1;NA._set[f.targetId||f.id]=1});return out},
+ isNew:function(f){return !!(NA._set&&(NA._set[f.id]||NA._set[f.targetId||f.id]))},
+ newCount:function(list){return NA.top(list).length},
  sort:function(list){return list.slice().sort(function(a,b){var x=NA.d(a),y=NA.d(b);return x<y?1:x>y?-1:a.name.localeCompare(b.name)})},
  MENU:function(F){return [['#/','Home'],['#/readfirst','Read First'],['#/newarrivals','New Arrivals'],['#/support','Support Us'],['#/folder/'+F.collections,'Fan Edit Collections'],['#/all','Main Collection'],['#/folder/'+F.tbc,'To Be Catalogued'],['#/folder/'+F.actors,'Actors'],['#/folder/'+F.directors,'Directors'],['#/genres','Genres']]},
  menuHTML:function(F,back){var h=location.hash||'#/';if(h==='#/arena')h='#/newarrivals';if(/^#\/genre\//.test(h))h='#/genres';
@@ -11,7 +14,7 @@ var NA=window.NA={dates:{},
  PAGE:60,
  plural:function(n,w){return n?n+' '+w+(n===1?'':'s'):''},
  deep:function(id,kids,isF){var n=0,seen={},st=[id];while(st.length){var c=st.pop();if(seen[c])continue;seen[c]=1;(kids.get(c)||[]).forEach(function(f){if(isF(f))st.push(f.targetId||f.id);else n++})}return n},
- render:function(all,tile,art,get){var list=NA.sort(all),shown=0,g=document.getElementById('grid');g.className='sectioned';g.innerHTML='<div class="sgrid vids" id="na-list"></div><div style="text-align:center;padding:24px"><button class="mi" id="na-more" style="font-size:18px">More</button></div>';
+ render:function(all,tile,art,get){var list=NA.top(all),shown=0,g=document.getElementById('grid');g.className='sectioned';g.innerHTML='<div class="sgrid vids" id="na-list"></div><div style="text-align:center;padding:24px"><button class="mi" id="na-more" style="font-size:18px">More</button></div>';
   var box=document.getElementById('na-list'),more=document.getElementById('na-more');
   function page(){var chunk=list.slice(shown,shown+NA.PAGE);shown+=chunk.length;var t=document.createElement('div');
    t.innerHTML=chunk.map(function(f){return tile(f).replace('</button>','<div class="na-date">'+NA.fmt(NA.d(f))+'</div></button>')}).join('');

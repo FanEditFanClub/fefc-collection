@@ -334,21 +334,34 @@ var __spreadValues = (a, b) => {
     S.click();
     go("#/genre/" + encodeURIComponent(g.dataset.genre));
   });
+  const allVids = () => vids();
+  let _vc = null, _vk = -1;
   function vids() {
-    return Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f));
+    if (_vk !== items.size) {
+      _vk = items.size;
+      _vc = Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f));
+    }
+    return _vc;
   }
+  const DOCX = /\.(pdf|docx?|txt|xlsx?|pptx?|url|html?|rtf|csv|md|webloc|lnk|json|xml|zip|rar|7z|jpe?g|png|gif|mp3|flac|wav|srt)$/i;
   function isVid(f, d) {
     if (!f) return false;
-    if (/^video\//.test(f.mimeType) || /\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name)) return true;
+    const m = f.mimeType || "";
+    if (/^application\/vnd\.google-apps\.(?!shortcut)/.test(m) || /^(text|image|audio)\/|pdf|html|url/.test(m) || DOCX.test(f.name)) return false;
+    if (/^video\//.test(m) || /\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name)) return true;
     const t = f.targetId;
-    if (t && t !== f.id && (d | 0) < 3 && isVid(items.get(t), (d | 0) + 1)) return true;
-    return (!f.mimeType || f.mimeType === "application/octet-stream") && /fan ?edit|\bcut\b/i.test(f.name);
+    if (t && t !== f.id && (d | 0) < 3) {
+      const x = items.get(t);
+      if (x) return isVid(x, (d | 0) + 1);
+    }
+    return (!m || m === "application/octet-stream") && !/\.[a-z0-9]{2,4}$/i.test(f.name) && (f.size > 5e7 || !!f.videoMediaMetadata) && /fan ?edit|\bcut\b/i.test(f.name);
   }
   function cnt(id) {
     const k = kids.get(id);
     return k ? k.length : 0;
   }
   function hub() {
+    if (document.body.classList.contains("genres-mode") && window.FEFCGenres && FEFCGenres.hub) return FEFCGenres.hub();
     const newN = NA.newCount(vids());
     const T = [
       ["readfirst", "Read First", ""],
@@ -395,8 +408,20 @@ var __spreadValues = (a, b) => {
     const W = H.clientWidth, Ht = H.clientHeight, HR = H.getBoundingClientRect(), BR = hb.getBoundingClientRect(), hw = BR.width, hh = BR.height;
     const hx = BR.left - HR.left, hy = BR.top - HR.top, g = parseFloat(getComputedStyle(hb).columnGap) || 8;
     const tw = (hw - 2 * g) / 3, th = (hh - 2 * g) / 3;
-    const tg = $("#tagline"), tr = tg ? tg.getBoundingClientRect() : null, hr = H.getBoundingClientRect();
-    const tb = tr && tr.height ? { l: -1e9, t: -1e9, r: 1e9, b: tr.bottom - hr.top + g } : null;
+    const hr = H.getBoundingClientRect(), tr = (() => {
+      const sp = $("#tagline span"), wm = $("#wordmark"), a = [];
+      if (wm) a.push(wm.getBoundingClientRect());
+      if (sp && document.createRange) {
+        const rg = document.createRange();
+        rg.selectNodeContents(sp);
+        [].forEach.call(rg.getClientRects(), (r) => a.push(r));
+      } else if (sp) a.push(sp.getBoundingClientRect());
+      a.splice(0, a.length, ...a.filter((r) => r.width));
+      if (!a.length) return null;
+      const px = Math.max(16, innerWidth * 0.02);
+      return { left: Math.min(...a.map((r) => r.left)) - px, right: Math.max(...a.map((r) => r.right)) + px, top: -1e9, bottom: Math.max(...a.map((r) => r.bottom)) + 6, height: 1 };
+    })();
+    const tb = tr ? { l: tr.left - hr.left, t: -1e9, r: tr.right - hr.left, b: tr.bottom - hr.top } : null;
     hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 1;
@@ -452,8 +477,9 @@ var __spreadValues = (a, b) => {
       if (!$("#home").hidden) mosaic();
     }, 250);
   });
-  function showHome() {
-    view = "home";
+  function showHome(gm) {
+    document.body.classList.toggle("genres-mode", !!gm);
+    view = gm ? "genres" : "home";
     cur = ROOT;
     $("#home").hidden = false;
     document.body.classList.add("at-home");
@@ -472,7 +498,10 @@ var __spreadValues = (a, b) => {
     setTimeout(lay, 1500);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(lay);
     setTimeout(() => {
-      if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) focusEl($(".hb-logo"));
+      if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) {
+        const t = $(".hb-logo") || $("#hub .hb:not(.gempty)");
+        if (t) focusEl(t);
+      }
     }, 30);
   }
   function hideHome() {
@@ -503,19 +532,8 @@ var __spreadValues = (a, b) => {
       return;
     }
     if (k === "genres") {
-      hideHome();
-      cur = "virtual";
-      view = "folder";
-      const have = {};
-      Object.keys(genreMap).forEach((x) => genreMap[x].genres.forEach((g) => have[g] = (have[g] || 0) + 1));
-      $("#crumb").textContent = "Genres";
-      $("#arena").innerHTML = "";
-      $("#sec2").textContent = "";
-      if (window.FEFCGenres) FEFCGenres.render({ genreMap, order: GORDER, kids, items, isFolder, isVid, esc });
-      status("");
-      menu();
-      const t = document.querySelector("#grid .ol-tile");
-      if (t && document.body.classList.contains("kbd")) focusEl(t);
+      showHome(true);
+      if (window.FEFCGenres && FEFCGenres.hub) FEFCGenres.hub({ genreMap, order: GORDER, items, isVid, esc });
       return;
     }
     if (k === "support") {
@@ -578,6 +596,14 @@ var __spreadValues = (a, b) => {
   const RF_DOC = "https://docs.google.com/document/d/1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk/preview";
   function readFirst() {
     const p = $("#rfpanel"), d = $("#rfdoc");
+    {
+      const sp = p.querySelector(".rf-top span");
+      if (sp) sp.textContent = "Read First";
+    }
+    if (d && d.dataset.src && d.dataset.src !== "data/readfirst.html") {
+      delete d.dataset.ok;
+      d.dataset.src = "data/readfirst.html";
+    }
     if (d && !d.dataset.ok) {
       d.dataset.ok = 1;
       fetch("data/readfirst.html").then((r) => {
@@ -605,7 +631,48 @@ var __spreadValues = (a, b) => {
     });
     return true;
   }
-  $("#rfclose").onclick = () => back("#/");
+  $("#rfclose").onclick = () => rfDismiss();
+  let rfInPlace = false;
+  function rfDismiss() {
+    if (rfInPlace) {
+      rfInPlace = false;
+      closeRF();
+    } else back("#/");
+  }
+  $("#rfpanel").addEventListener("click", (e) => {
+    if (!e.target.closest(".rf-in")) rfDismiss();
+  });
+  const RF_IDS = { "1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk": 1 };
+  function rfKind(f) {
+    if (!f || isFolder(f) || isVid(f)) return null;
+    const t = target(f);
+    if (/support patreon|paypal\/venmo/i.test(f.name)) return "support";
+    if (RF_IDS[t] || /^\W*\w{0,3}\W*read (first|me)\b/i.test(f.name)) return "readfirst";
+    return null;
+  }
+  function openDocTile(f) {
+    const k = rfKind(f), p = $("#rfpanel"), d = $("#rfdoc"), src = k === "support" ? "data/support-doc.html" : "data/readfirst.html", ttl = k === "support" ? "Support Us" : "Read First";
+    const sp = p.querySelector(".rf-top span");
+    if (sp) sp.textContent = ttl;
+    if (d.dataset.src !== src) {
+      d.dataset.src = src;
+      d.dataset.ok = 1;
+      d.innerHTML = "";
+      fetch(src).then((r) => {
+        if (!r.ok) throw 0;
+        return r.text();
+      }).catch(() => fetch("data/readfirst.html").then((r) => r.text())).then((h) => {
+        d.innerHTML = h;
+      }).catch(() => {
+      });
+    }
+    rfInPlace = true;
+    S.click();
+    p.hidden = false;
+    void p.offsetWidth;
+    RFX.open(p);
+    setTimeout(() => focusEl($("#rfclose")), 60);
+  }
   function go(h) {
     if (location.hash === h) return route();
     history.pushState({ fefc: 1 }, "", h);
@@ -704,17 +771,59 @@ var __spreadValues = (a, b) => {
     const o = $("#menu .mi.on");
     o && o.scrollIntoView && o.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
+  const FIRST_TILES = 36;
+  let drainGen = 0, artIO = null;
+  function lazyArt(el) {
+    if (!window.IntersectionObserver) return art(el, items.get(el.dataset.id));
+    if (!artIO) artIO = new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) {
+        artIO.unobserve(e.target);
+        art(e.target, items.get(e.target.dataset.id));
+      }
+    }), { root: null, rootMargin: "800px 0px" });
+    artIO.observe(el);
+  }
+  function drain(Q, isNew) {
+    const gen = ++drainGen, idle = window.requestIdleCallback ? (cb) => requestIdleCallback(cb, { timeout: 400 }) : (cb) => setTimeout(cb, 30);
+    let qi = 0;
+    const step = () => {
+      if (gen !== drainGen) return;
+      while (qi < Q.length && !Q[qi].length) qi++;
+      if (qi >= Q.length) return;
+      const box = document.querySelector('#grid .sgrid[data-q="' + qi + '"]');
+      if (!box) {
+        qi++;
+        return idle(step);
+      }
+      const part = Q[qi].splice(0, 60), t = document.createElement("div");
+      t.innerHTML = part.map((f) => tile(f, isNew[f.id])).join("");
+      const fr = document.createDocumentFragment();
+      const els = [].slice.call(t.children);
+      els.forEach((e) => fr.appendChild(e));
+      box.appendChild(fr);
+      els.forEach(lazyArt);
+      idle(step);
+    };
+    setTimeout(() => idle(step), 700);
+  }
   function render(list, title, mode) {
     const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
-    const recent = NA.sort(vids2).slice(0, 4);
     $("#crumb").textContent = title;
     hideHome();
     $("#arena").innerHTML = "";
+    NA.top(allVids());
     const isNew = {};
-    if (mode !== "collections") recent.forEach((f) => isNew[f.id] = 1);
+    if (mode !== "collections") list.forEach((f) => {
+      if (NA.isNew(f)) isNew[f.id] = 1;
+    });
     const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
     $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
-    const docs = vids2.filter((f) => !isVid(f)), evs = vids2.filter(isVid), sec = (k, l, a) => a.length ? '<div class="ol-div"><span>'.concat(l, "</span><i></i><b>").concat(a.length, '</b></div><div class="sgrid ').concat(k, '">').concat(a.map((f) => tile(f, isNew[f.id])).join(""), "</div>") : "";
+    const docs = vids2.filter((f) => !isVid(f)), evs = vids2.filter(isVid), Q = [], sec = (k, l, a) => {
+      if (!a.length) return "";
+      const qi = Q.length;
+      Q.push(a.slice(FIRST_TILES));
+      return '<div class="ol-div"><span>'.concat(l, "</span><i></i><b>").concat(a.length, '</b></div><div class="sgrid ').concat(k, '" data-q="').concat(qi, '">').concat(a.slice(0, FIRST_TILES).map((f) => tile(f, isNew[f.id])).join(""), "</div>");
+    };
     const g = $("#grid");
     if (mode === "arena") {
       $("#arena").innerHTML = "";
@@ -723,7 +832,8 @@ var __spreadValues = (a, b) => {
       g.className = "sectioned";
       g.innerHTML = sec("folds", "COLLECTIONS", fold.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fold.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
-    document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach((el) => art(el, items.get(el.dataset.id)));
+    document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach(lazyArt);
+    if (mode !== "arena") drain(Q, isNew);
     status(all.length ? "" : live ? "Empty" : "Nothing here yet");
     menu();
     $("#main").scrollTop = 0;
@@ -840,6 +950,8 @@ var __spreadValues = (a, b) => {
       if (isFolder(f)) {
         S.click();
         go("#/folder/" + target(f));
+      } else if (rfKind(f)) {
+        openDocTile(f);
       } else if (!isVid(f)) {
         S.click();
         window.open("https://drive.google.com/file/d/" + target(f) + "/view", "_blank");
@@ -919,6 +1031,7 @@ var __spreadValues = (a, b) => {
     if (e.scrollIntoView) e.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   function goBack() {
+    if (!$("#rfpanel").hidden) return rfDismiss();
     S.click();
     back(parentHash());
   }
@@ -1013,6 +1126,7 @@ var __spreadValues = (a, b) => {
   });
   tmo("data/dates.json", 15e3).then((m) => {
     NA.dates = m;
+    (window.requestIdleCallback || setTimeout)(() => NA.top(vids()));
     if (!$("#home").hidden) hub();
     else if (/^#\/(newarrivals|arena|folder)/.test(location.hash)) route();
   }).catch((e) => console.warn(e));
@@ -1134,9 +1248,9 @@ addEventListener("load", () => {
   if (w) window.dispatchEvent(new Event("resize"));
 });
 (() => {
-  const h = document.getElementById("hints"), pl = document.getElementById("player"), up = () => {
-    if (h) h.style.display = pl && !pl.hidden ? "none" : "";
+  const h = document.getElementById("hints"), pl = document.getElementById("player"), rf = document.getElementById("rfpanel"), up = () => {
+    if (h) h.style.display = pl && !pl.hidden || rf && !rf.hidden ? "none" : "";
   };
-  if (pl && window.MutationObserver) new MutationObserver(up).observe(pl, { attributes: true, attributeFilter: ["hidden"] });
+  if (window.MutationObserver) [pl, rf].forEach((x) => x && new MutationObserver(up).observe(x, { attributes: true, attributeFilter: ["hidden"] }));
   up();
 })();

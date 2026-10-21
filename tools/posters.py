@@ -25,10 +25,11 @@ while q:
     q=n
 VEXT=('.mkv','.mp4','.avi','.m4v','.mov','.webm','.wmv','.mpg','.ts')
 def isvid(x,dd=0):
+    if re.match(r'application/vnd\.google-apps\.(?!shortcut)|text/|image/|audio/',x['mimeType']) or re.search(r'\.(pdf|docx?|txt|xlsx?|url|html?)$',x['name'],re.I): return False
     if x['mimeType'].startswith('video') or x['name'].lower().endswith(VEXT+('.m2ts','.mts','.mpeg','.flv','.3gp','.ogv','.vob','.divx')): return True
     t=x.get('targetId')
     if t and t!=x['id'] and t in by and dd<3 and isvid(by[t],dd+1): return True
-    return x['mimeType'] in ('application/octet-stream','') and bool(re.search(r'fan ?edit|\bcut\b',x['name'],re.I))
+    return x['mimeType'] in ('application/octet-stream','') and not re.search(r'\.[A-Za-z0-9]{2,4}$',x['name']) and (x.get('size') or 0)>5e7 and bool(re.search(r'fan ?edit|\bcut\b',x['name'],re.I))
 vids=[x for x in by.values() if x['mimeType']!=FOLD and isvid(x) and not x['name'].startswith('._')]
 if os.environ.get('ONLY'):
     _only=set(json.load(open(os.environ['ONLY']))); vids=[x for x in vids if x['id'] in _only]

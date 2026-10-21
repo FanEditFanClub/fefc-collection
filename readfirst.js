@@ -1,11 +1,13 @@
 (function() {
-  var from = null, RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var from = null, fromEl = null, RM = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   function tileEl() {
-    return document.querySelector('[data-hub="readfirst"]');
+    return fromEl && document.body.contains(fromEl) && fromEl.getBoundingClientRect().width ? fromEl : document.querySelector('[data-hub="readfirst"]');
   }
   document.addEventListener("click", function(e) {
-    var t = e.target.closest && e.target.closest('[data-hub="readfirst"]');
+    var t = e.target.closest && e.target.closest('[data-hub="readfirst"],.ol-tile.doc');
+    if (t && t.closest("#rfpanel")) return;
     from = t ? t.getBoundingClientRect() : null;
+    fromEl = t;
   }, true);
   function sfx(out) {
     try {
@@ -58,7 +60,7 @@
     if (!z) {
       z = document.createElement("div");
       z.id = "rfzoom";
-      z.innerHTML = "<span>Read First</span><i></i>";
+      z.innerHTML = "<span></span><i></i>";
       document.getElementById("rfpanel").appendChild(z);
     }
     return z;
@@ -80,6 +82,8 @@
       }
       sfx();
       var z = box();
+      var tt = p.querySelector(".rf-top span");
+      z.firstChild.textContent = tt ? tt.textContent : "Read First";
       p.classList.add("zoom");
       z.style.transition = "none";
       z.style.opacity = 1;
