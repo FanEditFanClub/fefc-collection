@@ -30,7 +30,7 @@ function schedule(){stop();if(!clips||!clips.length||!atHome())return;
    timers.push(setTimeout(loop,SWAP[0]+Math.random()*(SWAP[1]-SWAP[0])))};
   timers.push(setTimeout(loop,80*i+Math.random()*300))})}
 let deb;function kick(){clearTimeout(deb);if(!atHome()){stop();return}deb=setTimeout(()=>{if(atHome()){load();schedule()}else stop()},400)}
-let _ic=0;new MutationObserver(()=>{const c=document.body.classList.contains('cintro');if(_ic&&!c)kick();_ic=c}).observe(document.body,{attributes:true,attributeFilter:['class']});
+let _ic=document.body.classList.contains('cintro');new MutationObserver(()=>{const c=document.body.classList.contains('cintro');if(_ic&&!c)kick();_ic=c}).observe(document.body,{attributes:true,attributeFilter:['class']});
 function init(){const h=home(),hub=document.getElementById('hub');if(!h||!hub)return setTimeout(init,500);
  new MutationObserver(kick).observe(hub,{childList:true});
  new MutationObserver(kick).observe(h,{attributes:true,attributeFilter:['hidden']});

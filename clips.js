@@ -142,7 +142,7 @@ function kick() {
     } else stop();
   }, 400);
 }
-let _ic = 0;
+let _ic = document.body.classList.contains("cintro");
 new MutationObserver(() => {
   const c = document.body.classList.contains("cintro");
   if (_ic && !c) kick();
