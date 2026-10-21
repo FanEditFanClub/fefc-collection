@@ -15,6 +15,10 @@ var __spreadValues = (a, b) => {
   return a;
 };
 (() => {
+  const tmo = (u, ms) => Promise.race([fetch(u).then((r) => {
+    if (!r.ok) throw Error(r.status);
+    return r.json();
+  }), new Promise((_, rj) => setTimeout(() => rj(Error("timeout " + u)), ms))]);
   const C = window.FEFC_CONFIG || {}, ROOT = C.ROOT_ID, FOLDER = "application/vnd.google-apps.folder", SC = "application/vnd.google-apps.shortcut", S = window.SFX;
   const $ = (s) => document.querySelector(s), P = new URLSearchParams(location.search);
   const HUES = [205, 190, 220, 265, 30, 160, 340, 15];
@@ -727,10 +731,6 @@ var __spreadValues = (a, b) => {
     if (!$("#home").hidden) mosaic();
   }).catch(() => {
   });
-  const tmo = (u, ms) => Promise.race([fetch(u).then((r) => {
-    if (!r.ok) throw Error(r.status);
-    return r.json();
-  }), new Promise((_, rj) => setTimeout(() => rj(Error("timeout " + u)), ms))]);
   tmo("data/metadata.json", 8e3).then((m) => meta = m).catch((e) => console.warn(e));
   tmo("data/index.json", 15e3).then((d) => {
     window._idx = d.items;

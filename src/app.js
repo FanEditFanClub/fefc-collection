@@ -1,4 +1,5 @@
 (()=>{
+const tmo=(u,ms)=>Promise.race([fetch(u).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),new Promise((_,rj)=>setTimeout(()=>rj(Error('timeout '+u)),ms))]);
 const C=window.FEFC_CONFIG||{},ROOT=C.ROOT_ID,FOLDER='application/vnd.google-apps.folder',SC='application/vnd.google-apps.shortcut',S=window.SFX;
 const $=s=>document.querySelector(s),P=new URLSearchParams(location.search);
 const HUES=[205,190,220,265,30,160,340,15];
@@ -191,7 +192,6 @@ document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once
 intro();if(C.GOOGLE_API_KEY){live=true;$('#auth').textContent='Sign in';}
 tmo('data/genres.json',10000).then(g=>{genreMap=g;if(!$('#home').hidden)hub()}).catch(()=>{});
 tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});
-const tmo=(u,ms)=>Promise.race([fetch(u).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),new Promise((_,rj)=>setTimeout(()=>rj(Error('timeout '+u)),ms))]);
 tmo('data/metadata.json',8000).then(m=>meta=m).catch(e=>console.warn(e));
 tmo('data/index.json',15000).then(d=>{window._idx=d.items;if(!live)add(d.items)}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{open(ROOT);
  if(P.get('focus')){setTimeout(()=>{document.body.classList.add('kbd');const t=document.querySelectorAll('.ol-tile,.hb')[+P.get('focus')];if(t)focusEl(t)},300)}
