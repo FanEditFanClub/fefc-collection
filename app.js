@@ -455,6 +455,28 @@ var __spreadValues = (a, b) => {
     const D = NA.dates || {}, r = D[f.id] || D[f.targetId || ""] || D[target(f)];
     return r && r.m || f.modified || "";
   };
+  let _vcm = null, _vck = -1;
+  const vkey = (f) => {
+    const t = items.get(target(f)) || f, z = t.size || f.size;
+    return z ? String(t.name || f.name || "").toLowerCase().replace(/\.[^.]*$/, "").replace(/\W+/g, "") + "|" + z : null;
+  };
+  function vcanon(f) {
+    if (_vck !== items.size) {
+      _vck = items.size;
+      _vcm = /* @__PURE__ */ new Map();
+      items.forEach((x) => {
+        if (!isFolder(x) && x.kind === "video") {
+          const k2 = vkey(x);
+          if (k2 && x.md5) _vcm.set("m:" + x.md5, _vcm.get("m:" + x.md5) || target(x));
+          if (k2 && !_vcm.has(k2)) _vcm.set(k2, target(x));
+        }
+      });
+    }
+    const T = items.get(target(f)) || f;
+    if (T.md5 && _vcm.has("m:" + T.md5)) return _vcm.get("m:" + T.md5);
+    const k = vkey(f);
+    return k && _vcm.has(k) ? _vcm.get(k) : target(f);
+  }
   function deepCounts(id) {
     if (_dc[id] && _dc[id].k === items.size && _dc[id].d === !!NA.dates) return _dc[id];
     let c = 0, n = 0, sz2 = 0, nw = "";
@@ -472,8 +494,11 @@ var __spreadValues = (a, b) => {
             c++;
             st.push(t);
           }
-        } else if (!JUNK.test(f.name || "") && !fs[target(f)]) {
+        } else if (!JUNK.test(f.name || "") && isVid(f) && !fs[target(f)]) {
           fs[target(f)] = 1;
+          const ck = vcanon(f);
+          if (fs["c:" + ck]) return;
+          fs["c:" + ck] = 1;
           n++;
           sz2 += f.size || 0;
           const m = mdate(f);
