@@ -77,8 +77,8 @@
         (by[g] = by[g] || []).push(fid);
       });
     });
-    var gs = o.order.filter(function(x) {
-      return by[x];
+    var gs = Object.keys(by).sort(function(a, b) {
+      return (a === "Uncategorized") - (b === "Uncategorized") || a.localeCompare(b);
     });
     var sets = {};
     gs.forEach(function(g) {

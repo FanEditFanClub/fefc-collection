@@ -1,8 +1,8 @@
 {
  "Horror": {
-  "folder": "Bride of Frankenstein (1935) - raymix - Fan Edit.mkv",
-  "img": "assets/genres/horror.jpg",
-  "src0": "assets/posters/bride-of-frankenstein-raymix-the.webp"
+  "img": "assets/genres/horror.jpg?v=2",
+  "src0": "assets/posters/bride-of-frankenstein-raymix-the.webp",
+  "credit": "Boris Karloff as the Monster, Frankenstein (1931) publicity still, public domain, Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Frankenstein%27s_monster_(Boris_Karloff).jpg"
  },
  "Sci-Fi": {
   "folder": "The Avengers - Hybrid AR Cut - Fan Edit",
@@ -31,13 +31,15 @@
  },
  "Adventure": {
   "folder": "Lost - In The Detail - Part 100 - Day 92-93 - Chronological Fan Edit.avi",
-  "img": "assets/genres/adventure.jpg",
-  "src0": "assets/clips/38.jpg"
+  "img": "assets/genres/adventure.jpg?v=2",
+  "src0": "assets/clips/38.jpg",
+  "credit": "TMDB backdrop, Raiders of the Lost Ark (1981), Indy and the golden idol (https://www.themoviedb.org/movie/85), image https://image.tmdb.org/t/p/original/1ogqaFQCafWNY9TZmZYTtdc4Uj3.jpg"
  },
  "Thriller": {
   "folder": "The Defenders Mini-Series - Season 1 - Part 3 - Fan Edit",
-  "img": "assets/genres/thriller.jpg",
-  "src0": "assets/clips/94.jpg"
+  "img": "assets/genres/thriller.jpg?v=2",
+  "src0": "assets/clips/94.jpg",
+  "credit": "TMDB backdrop, North by Northwest (1959), crop-duster scene (https://www.themoviedb.org/movie/213), image https://image.tmdb.org/t/p/original/4epZ5uclCBEdIpVYUFpK3JUHsp.jpg"
  },
  "Comedy": {
   "folder": "S1E03 The Reporter (Extended)",
@@ -51,8 +53,9 @@
  },
  "Animation": {
   "folder": "Naruto - Ocean Cut - Womp Rat Remix - Part 1 - Hell - Fan Edit.mp4",
-  "img": "assets/genres/animation.jpg",
-  "src0": "https://upload.wikimedia.org/wikipedia/en/9/94/NarutoCoverTankobon1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled"
+  "img": "assets/genres/animation.jpg?v=2",
+  "src0": "https://upload.wikimedia.org/wikipedia/en/9/94/NarutoCoverTankobon1.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+  "credit": "TMDB backdrop, Toy Story (1995), Pixar/Disney press still (https://www.themoviedb.org/movie/862), image https://image.tmdb.org/t/p/original/3Rfvhy1Nl6sSGJwyjb0QiZzZYlB.jpg"
  },
  "Western": {
   "folder": "Firefly - The Serenity Chronicles I - Firefly - Movie Fan Edit.mp4",
@@ -61,12 +64,12 @@
  },
  "Documentary": {
   "folder": "",
-  "img": "assets/fefc-logo.png",
-  "brand": true
+  "img": "assets/genres/documentary.jpg?v=2",
+  "credit": "TMDB backdrop, Free Solo (2018) (https://www.themoviedb.org/movie/515042), image https://image.tmdb.org/t/p/original/bgeSOUfhzzKv10cAe0SAIZVDTa7.jpg"
  },
  "Uncategorized": {
   "folder": "",
-  "img": "assets/fefc-logo.png",
-  "brand": true
+  "img": "assets/genres/uncategorized.jpg?v=2",
+  "credit": "TMDB backdrop, Cinema Paradiso (1988), cinema auditorium (https://www.themoviedb.org/movie/11216), image https://image.tmdb.org/t/p/original/2eMsXKIProSvj7vgi7GLaQK254O.jpg"
  }
 }

@@ -86,13 +86,25 @@ function isVid(f,d){if(!f)return false;if(f.kind)return f.kind==='video';/* reso
  const t=f.targetId;if(t&&t!==f.id&&(d|0)<3){const x=items.get(t);if(x)return isVid(x,(d|0)+1)}
  const m=f.mimeType||'';if(/^\._|^\./.test(f.name||''))return false;if(/^application\/vnd\.google-apps\.(?!shortcut)/.test(m)||/^(text|image|audio)\/|pdf|html|url/.test(m)||DOCX.test(f.name))return false;
  return /^video\//.test(m)||/\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name)}
+const JUNK=/^\.|^thumbs\.db$|^desktop\.ini$/i,_dc={};
+const mdate=f=>{const D=NA.dates||{},r=D[f.id]||D[f.targetId||'']||D[target(f)];return (r&&r.m)||f.modified||''};
+function deepCounts(id){if(_dc[id]&&_dc[id].k===items.size&&_dc[id].d===!!NA.dates)return _dc[id];let c=0,n=0,sz=0,nw='';const seen={},st=[id];while(st.length){const x=st.pop();if(seen[x])continue;seen[x]=1;(kids.get(x)||[]).forEach(f=>{if(isFolder(f)){const t=target(f);if(id!==ROOT&&t!==id&&(t===ROOT||Object.values(FOLD).includes(t)))return;if(!seen[t]){c++;st.push(t)}}else if(!JUNK.test(f.name||'')){n++;sz+=f.size||0;const m=mdate(f);if(m>nw)nw=m}})}return _dc[id]={k:items.size,d:!!NA.dates,c,n,sz,nw}}
+/* per-folder stats for sorting: own subtree only (real subfolders; folder shortcuts are not followed, so cross-links can't inflate counts) */
+const _sc={};function sortCounts(id){const c=_sc[id];if(c&&c.k===items.size&&c.d===!!NA.dates)return c;let n=0,sz=0,nw='';const seen={},st=[id];while(st.length){const x=st.pop();if(seen[x])continue;seen[x]=1;(kids.get(x)||[]).forEach(f=>{if(isFolder(f)){const t=target(f);if(t===f.id&&!f.targetId&&(items.get(t)||f).parent===x&&t!==ROOT&&!Object.values(FOLD).includes(t))st.push(t)}else if(!JUNK.test(f.name||'')){n++;sz+=f.size||0;const m=mdate(f);if(m>nw)nw=m}})}return _sc[id]={k:items.size,d:!!NA.dates,n,sz,nw}}
+const fmtN=n=>n.toLocaleString('en-US');
+function countsLine(id){const d=deepCounts(id);return fmtN(d.c)+(d.c===1?' collection':' collections')+' · '+fmtN(d.n)+(d.n===1?' file':' files')}
+/* Any Drive file link (details "Open in Drive" etc.) counts as opening the file: record it in History like Play */
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href*="drive.google.com"],a[href*="docs.google.com"]');if(!a||!window.UD)return;
+ const m=a.href.match(/\/(?:file|document|spreadsheets|presentation)\/d\/([\w-]{20,})/)||a.href.match(/[?&]id=([\w-]{20,})/);if(!m)return;
+ const id=m[1],f=[...(items.get(id)?[items.get(id)]:[])][0]||[...items.values()].find(x=>x.targetId===id),did=$('#details')&&!$('#details').hidden?$('#details').dataset.id:null,rec=(did&&(did===id||target(items.get(did)||{id:did})===id))?items.get(did):f;
+ try{UD.opened(rec?rec.id:id,rec?rec.name:(a.title||a.textContent||'Drive file'))}catch(err){}},true);
 function cnt(id){const k=kids.get(id);return k?k.length:0}
 function hub(){if(document.body.classList.contains('genres-mode')&&window.FEFCGenres&&FEFCGenres.hub)return FEFCGenres.hub();const newN=NA.newCount(vids());
  const T=[['readfirst','Read First',''],['arena','New Arrivals',newN?newN+(newN===1?' New File':' New Files'):''],['support','Support Us','Patreon · PayPal · Venmo'],
-  ['folder:'+FOLD.collections,'Fan Edit Collections',NA.plural((kids.get(FOLD.collections)||[]).filter(isFolder).length,'Collection')],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',NA.plural(NA.deep(FOLD.tbc,kids,isFolder),'Unorganized File')],
-  ['people','Actors\n&\nDirectors',NA.plural(cnt(FOLD.actors)+cnt(FOLD.directors),'Collection')],['mylist','My List','History & Starred'],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
- const keep=[].slice.call(document.querySelectorAll('#hub .mc'));$('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>`
-  :`<button class="hb" data-hub="${t[0]}">${t[0]==='mylist'?'<i class="hb-star" aria-hidden="true">★</i>':''}<span>${esc(t[1]).replace(/\n/g,'<br>')}</span>${t[2]?`<small>${esc(t[2])}</small>`:''}</button>`).join('');keep.forEach(x=>$('#hub').appendChild(x))}
+  ['folder:'+FOLD.collections,'Fan Edit Collections',countsLine(FOLD.collections)],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',countsLine(FOLD.tbc)],
+  ['people','Actors\n&\nDirectors',NA.plural(peopleList().length,'Collection')],['mylist','My List','History & Starred'],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
+ const keep=[].slice.call(document.querySelectorAll('#hub .mc'));$('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small><small class="hb-cnt">${countsLine(ROOT)}</small></button>`
+  :`<button class="hb" data-hub="${t[0]}">${t[0]==='mylist'?'<i class="hb-star" aria-hidden="true">★</i>':''}<span>${esc(t[1]).replace(/\n&amp;\n/,'<br><i class="amp">&amp;</i><br>').replace(/\n/g,'<br>')}</span>${t[2]?`<small>${esc(t[2])}</small>`:''}</button>`).join('');keep.forEach(x=>$('#hub').appendChild(x))}
 function syncTag(){placeHeader()}
 /* Home/Genres header: one full row of 3 clip tiles above the text, text between that row and the 3x3 grid */
 function placeHeader(){const tg=$('#tagline'),hb=$('#hub'),sp=$('#tagline span'),wm=$('#wordmark');if(!tg||!hb||!sp)return;
@@ -110,9 +122,9 @@ function placeHeader(){const tg=$('#tagline'),hb=$('#hub'),sp=$('#tagline span')
 /* correct for the 3D tilt: measure the real top-row bottom and grid top, keep the text centred between them */
 function fitHeader(){const tg=$('#tagline'),hb=$('#hub');if(!tg||!hb||!hb._hdr)return;const row=[].slice.call(hb.querySelectorAll('.mc.toprow')),b=hb.querySelector('.hb');
  if(!row.length||!b||$('#home').hidden)return;const H=hb._hdr;let rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom)),gt=b.getBoundingClientRect().top,h=tg.offsetHeight;
- const need=h+2*Math.max(6,H.s*.7)-(gt-rb);if(need>1){H.D+=need*1.15;row.forEach(c=>c.style.top=c._top(H.D));rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom))}
+ const need=h+2*Math.max(6,H.s*.7)-(gt-rb);if(need>1){H.D+=need*1.15;[].forEach.call(hb.querySelectorAll('.mc.above'),c=>c.style.top=c._top(H.D));rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom))}
  tg.style.top=Math.round((rb+gt)/2-h/2)+'px';
- const sp=$('#tagline span'),wm=$('#wordmark'),tr=[];if(wm&&wm.offsetWidth)tr.push(wm.getBoundingClientRect());if(sp){const rg=document.createRange();rg.selectNodeContents(sp);[].forEach.call(rg.getClientRects(),r=>r.width&&tr.push(r))}
+ const sp=$('#tagline span'),wm=$('#wordmark'),tr=[];if(wm&&wm.offsetWidth)tr.push(wm.getBoundingClientRect());const gt2=document.querySelector('#tagline .gtitle');if(gt2&&gt2.offsetWidth)tr.push(gt2.getBoundingClientRect());if(sp){const rg=document.createRange();rg.selectNodeContents(sp);[].forEach.call(rg.getClientRects(),r=>r.width&&tr.push(r))}
  [].forEach.call(hb.querySelectorAll('.mc:not(.toprow)'),c=>{const r=c.getBoundingClientRect();c.style.visibility=tr.some(t=>r.left<t.right+8&&r.right>t.left-8&&r.top<t.bottom+4&&r.bottom>t.top-4)?'hidden':''})}
 addEventListener('resize',()=>requestAnimationFrame(placeHeader));
 addEventListener('resize',syncTag);
@@ -126,13 +138,13 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
  const tw=(hw-2*g)/3,th=(hh-2*g)/3;const hr=H.getBoundingClientRect(),tr=(()=>{const sp=$('#tagline span'),wm=$('#wordmark'),a=[];if(wm)a.push(wm.getBoundingClientRect());if(sp&&document.createRange){const rg=document.createRange();rg.selectNodeContents(sp);[].forEach.call(rg.getClientRects(),r=>a.push(r))}else if(sp)a.push(sp.getBoundingClientRect());a.splice(0,a.length,...a.filter(r=>r.width));if(!a.length)return null;const px=Math.max(16,innerWidth*.02);return {left:Math.min(...a.map(r=>r.left))-px,right:Math.max(...a.map(r=>r.right))+px,top:-1e9,bottom:Math.max(...a.map(r=>r.bottom))+6,height:1}})();
  const tb=tr?{l:tr.left-hr.left,t:-1e9,r:tr.right-hr.left,b:tr.bottom-hr.top}:null;
  hb.style.transform=_tf;const ov=(a,b)=>a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t,hub={l:hx-g/2,t:hy-g/2,r:hx+hw+g/2,b:hy+hh+g/2};
- const cols=Math.ceil(hx/(tw+g))+1,rows=Math.ceil(hy/(th+g))+1;let budget=tv?40:90;
+ const cols=Math.ceil(hx/(tw+g))+1,rows=Math.ceil(hy/(th+g))+2;let budget=tv?40:90;
  for(let r=-rows;r<3+rows&&budget>0;r++)for(let c=-cols;c<3+cols&&budget>0;c++){
   const x=hx+c*(tw+g)+(c<0?-g:c>2?g:0),y=hy+r*(th+g)+(r<0?-g:r>2?g:0),box={l:x,t:y,r:x+tw,b:y+th};
-  const toprow=r===-1&&c>=0&&c<=2;if(r<0&&c>=0&&c<=2&&!toprow)continue;if(!toprow&&(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub)||(tb&&ov(box,tb))))continue;
+  const toprow=r===-1&&c>=0&&c<=2,above=r<0,sh=above&&hb._hdr?Math.max(0,hb._hdr.D-2*g):0;if(above){box.t-=sh;box.b-=sh}if(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub)||(!above&&tb&&ov(box,tb)))continue;
   const el=document.createElement('div');el.className='mc';const ex=(c<0?-g:c>2?g:0),ey=(r<0?-g:r>2?g:0);
   el.style.cssText=`left:calc(${c} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ex}px);top:calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px);width:calc((100% - ${2*g}px) / 3);height:calc((100% - ${2*g}px) / 3)`;
-  if(toprow){el.classList.add('toprow');el._top=D=>`calc(-1 * ((100% - ${2*g}px) / 3) - ${D}px)`;el.style.top=el._top((hb._hdr&&hb._hdr.D)||g)}
+  if(above){if(toprow)el.classList.add('toprow');el.classList.add('above');el._top=D=>`calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px - ${Math.max(0,D-2*g)}px)`;el.style.top=el._top((hb._hdr&&hb._hdr.D)||2*g)}
   el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);budget--}
  const pick=()=>pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
  const set=(c,first)=>{const v=pick(),layers=c.children,on=c._on?0:1;c._on=!c._on;const L=layers[on];
@@ -148,8 +160,11 @@ function hideHome(){document.body.classList.remove('at-home');$('#home').hidden=
 function virtual(list,title){hideHome();cur='virtual';view='folder';render(list,title,'home')}
 function secHTML(k,l,a,extra){return `<div class="ol-div"><span>${l}</span><i></i>${extra||''}<b>${a.length}</b></div>`+(a.length?`<div class="sgrid ${k}">${a.map(f=>tile(f)).join('')}</div>`:'')}
 function pageShell(title,sub){hideHome();cur='virtual';view='folder';$('#crumb').textContent=title;$('#arena').innerHTML='';$('#sec2').textContent=sub||'';status('');menu();$('#main').scrollTop=0}
-function peoplePage(){const A=(kids.get(FOLD.actors)||[]).filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),D=(kids.get(FOLD.directors)||[]).filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name));
- pageShell('Actors & Directors',NA.plural(A.length+D.length,'Collection'));const g=$('#grid');g.className='sectioned';g.innerHTML=secHTML('folds','ACTORS',A)+secHTML('folds','DIRECTORS',D);g.querySelectorAll('.ol-tile').forEach(lazyArt)}
+function peopleList(){const box=new Set([...Object.values(FOLD),ROOT]),seen=new Set(),out=[];
+ [FOLD.actors,FOLD.directors].forEach(p=>(kids.get(p)||[]).filter(isFolder).forEach(f=>{const t=target(f);if(box.has(t)||/^(actors?|directors?|actors\s*&\s*directors|people|\d+\s*-\s*read first)$/i.test(f.name.trim())||seen.has(t))return;seen.add(t);out.push(f)}));
+ return out.sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'}))}
+function peoplePage(){const L=peopleList();
+ pageShell('Actors & Directors',NA.plural(L.length,'Collection'));const g=$('#grid');g.className='sectioned';g.innerHTML=secHTML('folds','ACTORS & DIRECTORS',L);g.querySelectorAll('.ol-tile').forEach(lazyArt)}
 let mlSort=localStorage.fefcStarSort||'date';
 function myListPage(){const U=window.UD;if(!U)return;const H=U.history(50).map(r=>items.get(r.id)).filter(Boolean);
  let St=U.stars().map(r=>({r,f:items.get(r.id)})).filter(x=>x.f);St.sort(mlSort==='az'?(a,b)=>a.f.name.localeCompare(b.f.name):(a,b)=>b.r.starredAt-a.r.starredAt);St=St.map(x=>x.f);
@@ -246,13 +261,21 @@ function restoreScroll(){const m=$('#main');if(!m)return;let rec=null;if(navBack
  let guard=0;while(need()&&guard++<400){if(drainOne())continue;const more=document.getElementById('na-more');if(more&&!more.hidden&&more.offsetParent){more.onclick&&NA&&more.click();continue}break}
  const prev=m.style.scrollBehavior;m.style.scrollBehavior='auto';m.scrollTop=rec.y;m.style.scrollBehavior=prev;
  if(rec.id){const t=document.querySelector('#grid [data-id="'+rec.id+'"]');if(t){try{t.focus({preventScroll:true})}catch(e){t.focus()}if(document.body.classList.contains('kbd')||document.body.classList.contains('tv'))t.classList.add('ret')}}}
+const CSORTS=[['az','Name A–Z'],['za','Name Z–A'],['added','Recently Added'],['updated','Recently Updated'],['files','Most Files'],['size','Largest']];
+const csortGet=id=>{try{const v=localStorage.getItem('fefcSort:'+id);return CSORTS.some(x=>x[0]===v)?v:'az'}catch(e){return 'az'}};
+function csortFn(k){const nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),dc=f=>isFolder(f)?sortCounts(target(f)):{n:1,sz:f.size||0,nw:mdate(f)},own=mdate;
+ const by=g=>(a,b)=>{const x=g(a),y=g(b);return x<y?1:x>y?-1:nat(a,b)};
+ return k==='za'?(a,b)=>nat(b,a):k==='added'?by(f=>dc(f).nw||own(f)):k==='updated'?by(own):k==='files'?by(f=>dc(f).n):k==='size'?by(f=>dc(f).sz):nat}
+/* sort a list but keep support-ad tiles in their A–Z slots */
+function csortList(a,k,isAd){const az=a.slice().sort(csortFn('az'));if(k==='az')return az;const rest=az.filter(f=>!isAd(f)).sort(csortFn(k));return az.map(f=>isAd(f)?f:rest.shift())}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-csort]');if(!b)return;try{localStorage.setItem('fefcSort:'+b.closest('.sortbar').dataset.for,b.dataset.csort)}catch(_){}S.click&&S.click();const keep=b.dataset.csort;const sy=$('#main').scrollTop;open(cur,view==='folder'?'folder':view).then(()=>{$('#main').scrollTop=sy;const n=document.querySelector(`[data-csort="${keep}"]`);if(n&&document.body.classList.contains('tv'))focusEl(n)})});
 function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));
  $('#crumb').textContent=title;hideHome();
  $('#arena').innerHTML='';NA.top(allVids());const isNew={};if(mode!=='collections')list.forEach(f=>{if(NA.isNew(f))isNew[f.id]=1});
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
- $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':`${fold.length} collections · ${vids.length} fan edits`;
- const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),evs=vids.filter(f=>isVid(f)||isAd(f)).sort(nat),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
- const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else{g.className='sectioned';g.innerHTML=sec('folds','COLLECTIONS',fold.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fold.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
+ $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':(cur===ROOT||cur===FOLD.collections||cur===FOLD.tbc)?countsLine(cur):`${fold.length} collections · ${vids.length} fan edits`;
+ const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),ck=mode==='arena'?'az':csortGet(cur),evs=csortList(vids.filter(f=>isVid(f)||isAd(f)),ck,isAd),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
+ const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else{g.className='sectioned';const sb=list.length>1?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
  document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena')drain(Q,isNew);
  status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll()}
 async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){live=false;status('');add(window._idx||[])}}
@@ -295,6 +318,17 @@ document.addEventListener('click',e=>{const nav=e.target.closest('[data-nav]');i
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isVid(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
 document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi'))S.move()});
+/* ---------- AI search (server-side Gemini via /api/ai-search; key never in the browser) ---------- */
+let aiSeq=0;
+async function aiSearch(q){q=(q||'').trim();if(!q)return;const my=++aiSeq;pageShell('Ask AI','Looking for: “'+q+'”');const g=$('#grid');g.className='sectioned';g.innerHTML='<div class="ai-wait">✦ Searching the collection…</div>';
+ try{const r=await fetch('/api/ai-search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q:q.slice(0,200)})});if(!r.ok)throw 0;const j=await r.json();if(my!==aiSeq)return;
+  const res=(j.results||[]).map(x=>({f:items.get(x.id),why:x.reason})).filter(x=>x.f);if(!res.length)throw 0;
+  $('#sec2').textContent=res.length+' AI matches for “'+q+'”';
+  g.innerHTML=`<div class="ol-div"><span>AI MATCHES</span><i></i><b>${res.length}</b></div><div class="sgrid vids ai-res">${res.map(x=>`<div class="ai-cell">${tile(x.f)}<p class="ai-why">${esc(x.why)}</p></div>`).join('')}</div>`;g.querySelectorAll('.ol-tile').forEach(lazyArt)}
+ catch(e){if(my!==aiSeq)return;open(ROOT,'all').then(()=>{$('#q').value=q;$('#q').dispatchEvent(new Event('input'))})}}
+const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
+$('#aiq').addEventListener('click',()=>{const q=$('#q').value.trim();if(q)aiSearch(q);else{$('#q').focus();$('#q').placeholder='Describe a fan edit, then Ask AI'}});
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'){const q=e.target.value.trim();if(q&&looksLikeQuestion(q)){e.preventDefault();clearTimeout(qt);aiSearch(q)}}});
 let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(async()=>{const q=e.target.value.trim().toLowerCase();if(!q)return open(cur);
  let res=[...items.values()].filter(f=>f.name.toLowerCase().includes(q));
  if(live){try{const s=q.replace(/'/g,"\\'");const r=await api(`name contains '${s}' and trashed=false and (mimeType contains 'video/' or mimeType='${SC}')`);r.files.map(f=>norm(f)).forEach(f=>{if(!items.has(f.id)){items.set(f.id,f);res.push(f)}})}catch(e){}}
@@ -319,6 +353,38 @@ document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('
  if(dir&&!(inInput&&(k===37||k===39))){e.preventDefault();S.unlock();move(dir);return}
  if(k===10009||k===461||k===27||(k===8&&!inInput)||e.key==='GoBack'||e.key==='BrowserBack'){e.preventDefault();goBack();return}
  if(k===13&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href]')){e.preventDefault();S.unlock();document.activeElement.click()}});
+/* ---------- Top menu bar D-pad navigation (TV / keyboard) ---------- */
+let lastTile=null;
+const barItems=()=>[].slice.call(document.querySelectorAll('#bar .mi,#bar #tvq,#bar #q,#bar #aiq')).filter(x=>x.offsetParent&&!x.hidden&&getComputedStyle(x).display!=='none');
+const menuCurrent=()=>{const L=barItems();return document.querySelector('#menu .mi.on')||L.find(x=>x.closest('#menu'))||L[0]};
+const inBar=el=>el&&el.closest&&el.closest('#bar');
+const pageVisible=()=>$('#home').hidden&&$('#player').hidden&&$('#bar').offsetHeight>0;
+function toMenu(){const m=menuCurrent();if(m){focusEl(m);m.scrollIntoView({block:'nearest',inline:'center'});return true}return false}
+function toGrid(){const t=(lastTile&&document.contains(lastTile)&&lastTile.offsetParent)?lastTile:document.querySelector('#details:not([hidden]) [data-act],#arena .ol-tile,#grid .ol-tile');if(t){focusEl(t);return true}return false}
+addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=document.activeElement,tv=document.body.classList.contains('tv');
+ const back=k===10009||k===461||k===27||e.key==='GoBack'||e.key==='BrowserBack';
+ if(a&&a.id==='q'){if(k===40||back){e.preventDefault();e.stopImmediatePropagation();a.blur();if(k===40)toGrid();else toMenu()}return}
+ if(inBar(a)){const L=barItems(),i=L.indexOf(a);
+  if(k===37||k===39){e.preventDefault();e.stopImmediatePropagation();const n=L[Math.max(0,Math.min(L.length-1,i+(k===39?1:-1)))];if(n){focusEl(n);n.scrollIntoView({block:'nearest',inline:'nearest'})}return}
+  if(k===40){e.preventDefault();e.stopImmediatePropagation();toGrid();return}
+  if(k===38){e.preventDefault();e.stopImmediatePropagation();return}
+  if(k===13&&a.matches('button')){e.preventDefault();e.stopImmediatePropagation();S.unlock();a.click();return}
+  return}
+ const tile=a&&a.closest&&a.closest('.ol-tile');if(tile)lastTile=tile;
+ if(k===38&&tile){const r=tile.getBoundingClientRect(),above=[].slice.call(document.querySelectorAll('#arena .ol-tile,#grid .ol-tile,#grid .sortpill')).some(x=>x!==tile&&x.offsetParent&&x.getBoundingClientRect().bottom<=r.top+4&&x.getBoundingClientRect().bottom>r.top-r.height*1.6);
+  if(!above){e.preventDefault();e.stopImmediatePropagation();toMenu();return}}
+ if(back&&tv&&$('#details').hidden&&$('#rfpanel').hidden&&tile){e.preventDefault();e.stopImmediatePropagation();toMenu()}},true);
+document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('.ol-tile');if(t)lastTile=t});
+/* TV: search input becomes a 'Search' button that opens an on-screen search overlay */
+(function(){const b=document.createElement('button');b.id='tvq';b.type='button';b.className='mi tv-only';b.textContent='⌕ Search';$('#bar').insertBefore(b,$('#q'));
+ const ov=document.createElement('div');ov.id='tvsearch';ov.hidden=true;ov.innerHTML='<div class="tvs-box"><label>Search the collection</label><input id="tvs-in" type="search" autocomplete="off" placeholder="Title, or describe a fan edit…"><div class="tvs-row"><button type="button" class="mi" data-tvs="find">Search</button><button type="button" class="mi ai-btn" data-tvs="ai">✦ Ask AI</button><button type="button" class="mi" data-tvs="close">Close</button></div></div>';document.body.appendChild(ov);
+ const inp=ov.querySelector('#tvs-in'),close=()=>{ov.hidden=true;focusEl(b)},run=ai=>{const q=inp.value.trim();ov.hidden=true;if(!q)return focusEl(b);if(ai||looksLikeQuestion(q))aiSearch(q);else go('#/search/'+encodeURIComponent(q))};
+ b.onclick=()=>{ov.hidden=false;inp.value='';setTimeout(()=>inp.focus(),30)};
+ ov.addEventListener('click',e=>{const x=e.target.closest('[data-tvs]');if(!x)return;x.dataset.tvs==='close'?close():run(x.dataset.tvs==='ai')});
+ ov.addEventListener('keydown',e=>{const k=e.keyCode;e.stopPropagation();const btns=[].slice.call(ov.querySelectorAll('button')),i=btns.indexOf(document.activeElement);
+  if(k===27||k===10009||k===461||e.key==='GoBack'){e.preventDefault();close();return}
+  if(e.target===inp){if(k===13){e.preventDefault();run(false)}else if(k===40){e.preventDefault();btns[0].focus()}return}
+  if(k===37||k===39){e.preventDefault();(btns[i+(k===39?1:-1)]||btns[i]).focus()}else if(k===38){e.preventDefault();inp.focus()}else if(k===13){e.preventDefault();document.activeElement.click()}},true)})();
 // focus first item after views open
 const _render=render;render=function(){_render.apply(this,arguments);if(document.body.classList.contains('tv')){const t=document.querySelector('#arena .ol-tile,#grid .ol-tile');if(t)focusEl(t)}};
 const _details=details;details=async function(){await _details.apply(this,arguments);const p=document.querySelector('#details [data-act="play"]');if(p){const id=$('#details').dataset.id;if(id&&window.UD&&!p.parentNode.querySelector('.star-btn')){const on=UD.isStarred(id);p.insertAdjacentHTML('afterend',`<button class="pill p4 star-btn${on?' on':''}" data-star="${id}">${on?'★ Starred':'☆ Star'}</button>`)}focusEl(p)}};
@@ -341,6 +407,17 @@ $('#back').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();g
 showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))route();
 })();
 
+/* ---------- INSTALL BUTTONS (legend + mobile top bar) ---------- */
+(function(){const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+ const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+ const mk=(id,cls)=>{const b=document.createElement('button');b.id=id;b.type='button';b.className=cls;b.hidden=true;b.innerHTML='<i class="g g-inst">⤓</i>Install App';b.onclick=doInstall;return b};
+ const hb=mk('hinstall','hint-btn inst-btn'),tb=mk('tinstall','mi inst-btn top-inst');
+ const hints=document.getElementById('hints');if(hints)hints.appendChild(hb);const bar=document.getElementById('bar');if(bar)bar.insertBefore(tb,document.getElementById('q'));
+ const upd=()=>{const ok=!isStandalone()&&(!!window.__bip||(ios&&!localStorage.fefcIosTipDone));hb.hidden=tb.hidden=!ok};
+ function doInstall(){if(window.__bip){const e=window.__bip;e.prompt();e.userChoice.then(c=>{if(c&&c.outcome==='accepted')window.__bip=null;upd()}).catch(()=>{});return}
+  if(ios){const t=document.createElement('div');t.className='ios-tip';t.innerHTML='To install: tap <b>Share</b> <span class="ios-share">⬆︎</span> then <b>Add to Home Screen</b>.<button type="button">OK</button>';document.body.appendChild(t);t.querySelector('button').onclick=()=>t.remove();localStorage.fefcIosTipDone='1';upd()}}
+ addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.__bip=e;upd()});
+ addEventListener('appinstalled',()=>{window.__bip=null;upd()});matchMedia('(display-mode: standalone)').addEventListener&&matchMedia('(display-mode: standalone)').addEventListener('change',upd);upd()})();
 /* ---------- INSTALL (PWA) ---------- */
 (function(){const ua=navigator.userAgent,standalone=matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
  const isTV=document.body.classList.contains('tv'),mobile=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/.test(ua)&&'ontouchend' in document);

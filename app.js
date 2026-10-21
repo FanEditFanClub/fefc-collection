@@ -431,6 +431,77 @@ var __spreadValues = (a, b) => {
     if (/^application\/vnd\.google-apps\.(?!shortcut)/.test(m) || /^(text|image|audio)\/|pdf|html|url/.test(m) || DOCX.test(f.name)) return false;
     return /^video\//.test(m) || /\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name);
   }
+  const JUNK = /^\.|^thumbs\.db$|^desktop\.ini$/i, _dc = {};
+  const mdate = (f) => {
+    const D = NA.dates || {}, r = D[f.id] || D[f.targetId || ""] || D[target(f)];
+    return r && r.m || f.modified || "";
+  };
+  function deepCounts(id) {
+    if (_dc[id] && _dc[id].k === items.size && _dc[id].d === !!NA.dates) return _dc[id];
+    let c = 0, n = 0, sz2 = 0, nw = "";
+    const seen = {}, st = [id];
+    while (st.length) {
+      const x = st.pop();
+      if (seen[x]) continue;
+      seen[x] = 1;
+      (kids.get(x) || []).forEach((f) => {
+        if (isFolder(f)) {
+          const t = target(f);
+          if (id !== ROOT && t !== id && (t === ROOT || Object.values(FOLD).includes(t))) return;
+          if (!seen[t]) {
+            c++;
+            st.push(t);
+          }
+        } else if (!JUNK.test(f.name || "")) {
+          n++;
+          sz2 += f.size || 0;
+          const m = mdate(f);
+          if (m > nw) nw = m;
+        }
+      });
+    }
+    return _dc[id] = { k: items.size, d: !!NA.dates, c, n, sz: sz2, nw };
+  }
+  const _sc = {};
+  function sortCounts(id) {
+    const c = _sc[id];
+    if (c && c.k === items.size && c.d === !!NA.dates) return c;
+    let n = 0, sz2 = 0, nw = "";
+    const seen = {}, st = [id];
+    while (st.length) {
+      const x = st.pop();
+      if (seen[x]) continue;
+      seen[x] = 1;
+      (kids.get(x) || []).forEach((f) => {
+        if (isFolder(f)) {
+          const t = target(f);
+          if (t === f.id && !f.targetId && (items.get(t) || f).parent === x && t !== ROOT && !Object.values(FOLD).includes(t)) st.push(t);
+        } else if (!JUNK.test(f.name || "")) {
+          n++;
+          sz2 += f.size || 0;
+          const m = mdate(f);
+          if (m > nw) nw = m;
+        }
+      });
+    }
+    return _sc[id] = { k: items.size, d: !!NA.dates, n, sz: sz2, nw };
+  }
+  const fmtN = (n) => n.toLocaleString("en-US");
+  function countsLine(id) {
+    const d = deepCounts(id);
+    return fmtN(d.c) + (d.c === 1 ? " collection" : " collections") + " \xB7 " + fmtN(d.n) + (d.n === 1 ? " file" : " files");
+  }
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest('a[href*="drive.google.com"],a[href*="docs.google.com"]');
+    if (!a || !window.UD) return;
+    const m = a.href.match(/\/(?:file|document|spreadsheets|presentation)\/d\/([\w-]{20,})/) || a.href.match(/[?&]id=([\w-]{20,})/);
+    if (!m) return;
+    const id = m[1], f = [...items.get(id) ? [items.get(id)] : []][0] || [...items.values()].find((x) => x.targetId === id), did = $("#details") && !$("#details").hidden ? $("#details").dataset.id : null, rec = did && (did === id || target(items.get(did) || { id: did }) === id) ? items.get(did) : f;
+    try {
+      UD.opened(rec ? rec.id : id, rec ? rec.name : a.title || a.textContent || "Drive file");
+    } catch (err) {
+    }
+  }, true);
   function cnt(id) {
     const k = kids.get(id);
     return k ? k.length : 0;
@@ -442,10 +513,10 @@ var __spreadValues = (a, b) => {
       ["readfirst", "Read First", ""],
       ["arena", "New Arrivals", newN ? newN + (newN === 1 ? " New File" : " New Files") : ""],
       ["support", "Support Us", "Patreon \xB7 PayPal \xB7 Venmo"],
-      ["folder:" + FOLD.collections, "Fan Edit Collections", NA.plural((kids.get(FOLD.collections) || []).filter(isFolder).length, "Collection")],
+      ["folder:" + FOLD.collections, "Fan Edit Collections", countsLine(FOLD.collections)],
       ["main", "", ""],
-      ["folder:" + FOLD.tbc, "To Be Catalogued", NA.plural(NA.deep(FOLD.tbc, kids, isFolder), "Unorganized File")],
-      ["people", "Actors\n&\nDirectors", NA.plural(cnt(FOLD.actors) + cnt(FOLD.directors), "Collection")],
+      ["folder:" + FOLD.tbc, "To Be Catalogued", countsLine(FOLD.tbc)],
+      ["people", "Actors\n&\nDirectors", NA.plural(peopleList().length, "Collection")],
       ["mylist", "My List", "History & Starred"],
       ["genres", "Genres", (() => {
         const h = {};
@@ -455,7 +526,7 @@ var __spreadValues = (a, b) => {
       })()]
     ];
     const keep = [].slice.call(document.querySelectorAll("#hub .mc"));
-    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '">').concat(t[0] === "mylist" ? '<i class="hb-star" aria-hidden="true">\u2605</i>' : "", "<span>").concat(esc(t[1]).replace(/\n/g, "<br>"), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
+    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small><small class="hb-cnt">'.concat(countsLine(ROOT), "</small></button>") : '<button class="hb" data-hub="'.concat(t[0], '">').concat(t[0] === "mylist" ? '<i class="hb-star" aria-hidden="true">\u2605</i>' : "", "<span>").concat(esc(t[1]).replace(/\n&amp;\n/, '<br><i class="amp">&amp;</i><br>').replace(/\n/g, "<br>"), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
     keep.forEach((x) => $("#hub").appendChild(x));
   }
   function syncTag() {
@@ -510,12 +581,14 @@ var __spreadValues = (a, b) => {
     const need = h + 2 * Math.max(6, H.s * 0.7) - (gt - rb);
     if (need > 1) {
       H.D += need * 1.15;
-      row.forEach((c) => c.style.top = c._top(H.D));
+      [].forEach.call(hb.querySelectorAll(".mc.above"), (c) => c.style.top = c._top(H.D));
       rb = Math.max(...row.map((c) => c.getBoundingClientRect().bottom));
     }
     tg.style.top = Math.round((rb + gt) / 2 - h / 2) + "px";
     const sp = $("#tagline span"), wm = $("#wordmark"), tr = [];
     if (wm && wm.offsetWidth) tr.push(wm.getBoundingClientRect());
+    const gt2 = document.querySelector("#tagline .gtitle");
+    if (gt2 && gt2.offsetWidth) tr.push(gt2.getBoundingClientRect());
     if (sp) {
       const rg = document.createRange();
       rg.selectNodeContents(sp);
@@ -559,21 +632,25 @@ var __spreadValues = (a, b) => {
     const tb = tr ? { l: tr.left - hr.left, t: -1e9, r: tr.right - hr.left, b: tr.bottom - hr.top } : null;
     hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
-    const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 1;
+    const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 2;
     let budget = tv ? 40 : 90;
     for (let r = -rows; r < 3 + rows && budget > 0; r++) for (let c = -cols; c < 3 + cols && budget > 0; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
-      const toprow = r === -1 && c >= 0 && c <= 2;
-      if (r < 0 && c >= 0 && c <= 2 && !toprow) continue;
-      if (!toprow && (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || tb && ov(box, tb))) continue;
+      const toprow = r === -1 && c >= 0 && c <= 2, above = r < 0, sh = above && hb._hdr ? Math.max(0, hb._hdr.D - 2 * g) : 0;
+      if (above) {
+        box.t -= sh;
+        box.b -= sh;
+      }
+      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || !above && tb && ov(box, tb)) continue;
       const el = document.createElement("div");
       el.className = "mc";
       const ex = c < 0 ? -g : c > 2 ? g : 0, ey = r < 0 ? -g : r > 2 ? g : 0;
       el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);top:calc(").concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px);width:calc((100% - ").concat(2 * g, "px) / 3);height:calc((100% - ").concat(2 * g, "px) / 3)");
-      if (toprow) {
-        el.classList.add("toprow");
-        el._top = (D) => "calc(-1 * ((100% - ".concat(2 * g, "px) / 3) - ").concat(D, "px)");
-        el.style.top = el._top(hb._hdr && hb._hdr.D || g);
+      if (above) {
+        if (toprow) el.classList.add("toprow");
+        el.classList.add("above");
+        el._top = (D) => "calc(".concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px - ").concat(Math.max(0, D - 2 * g), "px)");
+        el.style.top = el._top(hb._hdr && hb._hdr.D || 2 * g);
       }
       el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
       hb.appendChild(el);
@@ -673,12 +750,22 @@ var __spreadValues = (a, b) => {
     menu2();
     $("#main").scrollTop = 0;
   }
+  function peopleList() {
+    const box = /* @__PURE__ */ new Set([...Object.values(FOLD), ROOT]), seen = /* @__PURE__ */ new Set(), out = [];
+    [FOLD.actors, FOLD.directors].forEach((p) => (kids.get(p) || []).filter(isFolder).forEach((f) => {
+      const t = target(f);
+      if (box.has(t) || /^(actors?|directors?|actors\s*&\s*directors|people|\d+\s*-\s*read first)$/i.test(f.name.trim()) || seen.has(t)) return;
+      seen.add(t);
+      out.push(f);
+    }));
+    return out.sort((a, b) => a.name.localeCompare(b.name, void 0, { sensitivity: "base" }));
+  }
   function peoplePage() {
-    const A = (kids.get(FOLD.actors) || []).filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), D = (kids.get(FOLD.directors) || []).filter(isFolder).sort((a, b) => a.name.localeCompare(b.name));
-    pageShell("Actors & Directors", NA.plural(A.length + D.length, "Collection"));
+    const L = peopleList();
+    pageShell("Actors & Directors", NA.plural(L.length, "Collection"));
     const g = $("#grid");
     g.className = "sectioned";
-    g.innerHTML = secHTML("folds", "ACTORS", A) + secHTML("folds", "DIRECTORS", D);
+    g.innerHTML = secHTML("folds", "ACTORS & DIRECTORS", L);
     g.querySelectorAll(".ol-tile").forEach(lazyArt);
   }
   let mlSort = localStorage.fefcStarSort || "date";
@@ -1118,6 +1205,45 @@ var __spreadValues = (a, b) => {
       }
     }
   }
+  const CSORTS = [["az", "Name A\u2013Z"], ["za", "Name Z\u2013A"], ["added", "Recently Added"], ["updated", "Recently Updated"], ["files", "Most Files"], ["size", "Largest"]];
+  const csortGet = (id) => {
+    try {
+      const v = localStorage.getItem("fefcSort:" + id);
+      return CSORTS.some((x) => x[0] === v) ? v : "az";
+    } catch (e) {
+      return "az";
+    }
+  };
+  function csortFn(k) {
+    const nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), dc = (f) => isFolder(f) ? sortCounts(target(f)) : { n: 1, sz: f.size || 0, nw: mdate(f) }, own = mdate;
+    const by = (g) => (a, b) => {
+      const x = g(a), y = g(b);
+      return x < y ? 1 : x > y ? -1 : nat(a, b);
+    };
+    return k === "za" ? (a, b) => nat(b, a) : k === "added" ? by((f) => dc(f).nw || own(f)) : k === "updated" ? by(own) : k === "files" ? by((f) => dc(f).n) : k === "size" ? by((f) => dc(f).sz) : nat;
+  }
+  function csortList(a, k, isAd) {
+    const az = a.slice().sort(csortFn("az"));
+    if (k === "az") return az;
+    const rest = az.filter((f) => !isAd(f)).sort(csortFn(k));
+    return az.map((f) => isAd(f) ? f : rest.shift());
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-csort]");
+    if (!b) return;
+    try {
+      localStorage.setItem("fefcSort:" + b.closest(".sortbar").dataset.for, b.dataset.csort);
+    } catch (_) {
+    }
+    S.click && S.click();
+    const keep = b.dataset.csort;
+    const sy = $("#main").scrollTop;
+    open(cur, view === "folder" ? "folder" : view).then(() => {
+      $("#main").scrollTop = sy;
+      const n = document.querySelector('[data-csort="'.concat(keep, '"]'));
+      if (n && document.body.classList.contains("tv")) focusEl(n);
+    });
+  });
   function render(list, title, mode) {
     const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
     $("#crumb").textContent = title;
@@ -1129,8 +1255,8 @@ var __spreadValues = (a, b) => {
       if (NA.isNew(f)) isNew[f.id] = 1;
     });
     const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
-    $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
-    const isAd = (f) => !isVid(f) && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name), nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), docs = vids2.filter((f) => !isVid(f) && !isAd(f)), evs = vids2.filter((f) => isVid(f) || isAd(f)).sort(nat), Q = [], sec = (k, l, a) => {
+    $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : cur === ROOT || cur === FOLD.collections || cur === FOLD.tbc ? countsLine(cur) : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
+    const isAd = (f) => !isVid(f) && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name), nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), docs = vids2.filter((f) => !isVid(f) && !isAd(f)), ck = mode === "arena" ? "az" : csortGet(cur), evs = csortList(vids2.filter((f) => isVid(f) || isAd(f)), ck, isAd), Q = [], sec = (k, l, a) => {
       if (!a.length) return "";
       const qi = Q.length;
       Q.push(a.slice(FIRST_TILES));
@@ -1142,7 +1268,9 @@ var __spreadValues = (a, b) => {
       NA.render(window._idx ? Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f)) : all, tile, art, (i) => items.get(i));
     } else {
       g.className = "sectioned";
-      g.innerHTML = sec("folds", "COLLECTIONS", fold.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fold.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
+      const sb = list.length > 1 ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
+      const fsorted = csortList(fold, ck, isAd);
+      g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach(lazyArt);
     if (mode !== "arena") drain(Q, isNew);
@@ -1285,6 +1413,52 @@ var __spreadValues = (a, b) => {
   document.addEventListener("focusin", (e) => {
     if (e.target.matches(".ol-tile,.mi")) S.move();
   });
+  let aiSeq = 0;
+  async function aiSearch(q) {
+    q = (q || "").trim();
+    if (!q) return;
+    const my = ++aiSeq;
+    pageShell("Ask AI", "Looking for: \u201C" + q + "\u201D");
+    const g = $("#grid");
+    g.className = "sectioned";
+    g.innerHTML = '<div class="ai-wait">\u2726 Searching the collection\u2026</div>';
+    try {
+      const r = await fetch("/api/ai-search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q: q.slice(0, 200) }) });
+      if (!r.ok) throw 0;
+      const j = await r.json();
+      if (my !== aiSeq) return;
+      const res = (j.results || []).map((x) => ({ f: items.get(x.id), why: x.reason })).filter((x) => x.f);
+      if (!res.length) throw 0;
+      $("#sec2").textContent = res.length + " AI matches for \u201C" + q + "\u201D";
+      g.innerHTML = '<div class="ol-div"><span>AI MATCHES</span><i></i><b>'.concat(res.length, '</b></div><div class="sgrid vids ai-res">').concat(res.map((x) => '<div class="ai-cell">'.concat(tile(x.f), '<p class="ai-why">').concat(esc(x.why), "</p></div>")).join(""), "</div>");
+      g.querySelectorAll(".ol-tile").forEach(lazyArt);
+    } catch (e) {
+      if (my !== aiSeq) return;
+      open(ROOT, "all").then(() => {
+        $("#q").value = q;
+        $("#q").dispatchEvent(new Event("input"));
+      });
+    }
+  }
+  const looksLikeQuestion = (q) => /\?$/.test(q) || q.trim().split(/\s+/).length >= 3;
+  $("#aiq").addEventListener("click", () => {
+    const q = $("#q").value.trim();
+    if (q) aiSearch(q);
+    else {
+      $("#q").focus();
+      $("#q").placeholder = "Describe a fan edit, then Ask AI";
+    }
+  });
+  $("#q").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const q = e.target.value.trim();
+      if (q && looksLikeQuestion(q)) {
+        e.preventDefault();
+        clearTimeout(qt);
+        aiSearch(q);
+      }
+    }
+  });
   let qt;
   $("#q").addEventListener("input", (e) => {
     clearTimeout(qt);
@@ -1381,6 +1555,161 @@ var __spreadValues = (a, b) => {
       document.activeElement.click();
     }
   });
+  let lastTile = null;
+  const barItems = () => [].slice.call(document.querySelectorAll("#bar .mi,#bar #tvq,#bar #q,#bar #aiq")).filter((x) => x.offsetParent && !x.hidden && getComputedStyle(x).display !== "none");
+  const menuCurrent = () => {
+    const L = barItems();
+    return document.querySelector("#menu .mi.on") || L.find((x) => x.closest("#menu")) || L[0];
+  };
+  const inBar = (el) => el && el.closest && el.closest("#bar");
+  const pageVisible = () => $("#home").hidden && $("#player").hidden && $("#bar").offsetHeight > 0;
+  function toMenu() {
+    const m = menuCurrent();
+    if (m) {
+      focusEl(m);
+      m.scrollIntoView({ block: "nearest", inline: "center" });
+      return true;
+    }
+    return false;
+  }
+  function toGrid() {
+    const t = lastTile && document.contains(lastTile) && lastTile.offsetParent ? lastTile : document.querySelector("#details:not([hidden]) [data-act],#arena .ol-tile,#grid .ol-tile");
+    if (t) {
+      focusEl(t);
+      return true;
+    }
+    return false;
+  }
+  addEventListener("keydown", (e) => {
+    if (!pageVisible()) return;
+    const k = e.keyCode, a = document.activeElement, tv = document.body.classList.contains("tv");
+    const back2 = k === 10009 || k === 461 || k === 27 || e.key === "GoBack" || e.key === "BrowserBack";
+    if (a && a.id === "q") {
+      if (k === 40 || back2) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        a.blur();
+        if (k === 40) toGrid();
+        else toMenu();
+      }
+      return;
+    }
+    if (inBar(a)) {
+      const L = barItems(), i = L.indexOf(a);
+      if (k === 37 || k === 39) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const n = L[Math.max(0, Math.min(L.length - 1, i + (k === 39 ? 1 : -1)))];
+        if (n) {
+          focusEl(n);
+          n.scrollIntoView({ block: "nearest", inline: "nearest" });
+        }
+        return;
+      }
+      if (k === 40) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        toGrid();
+        return;
+      }
+      if (k === 38) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return;
+      }
+      if (k === 13 && a.matches("button")) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        S.unlock();
+        a.click();
+        return;
+      }
+      return;
+    }
+    const tile2 = a && a.closest && a.closest(".ol-tile");
+    if (tile2) lastTile = tile2;
+    if (k === 38 && tile2) {
+      const r = tile2.getBoundingClientRect(), above = [].slice.call(document.querySelectorAll("#arena .ol-tile,#grid .ol-tile,#grid .sortpill")).some((x) => x !== tile2 && x.offsetParent && x.getBoundingClientRect().bottom <= r.top + 4 && x.getBoundingClientRect().bottom > r.top - r.height * 1.6);
+      if (!above) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        toMenu();
+        return;
+      }
+    }
+    if (back2 && tv && $("#details").hidden && $("#rfpanel").hidden && tile2) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      toMenu();
+    }
+  }, true);
+  document.addEventListener("focusin", (e) => {
+    const t = e.target.closest && e.target.closest(".ol-tile");
+    if (t) lastTile = t;
+  });
+  (function() {
+    const b = document.createElement("button");
+    b.id = "tvq";
+    b.type = "button";
+    b.className = "mi tv-only";
+    b.textContent = "\u2315 Search";
+    $("#bar").insertBefore(b, $("#q"));
+    const ov = document.createElement("div");
+    ov.id = "tvsearch";
+    ov.hidden = true;
+    ov.innerHTML = '<div class="tvs-box"><label>Search the collection</label><input id="tvs-in" type="search" autocomplete="off" placeholder="Title, or describe a fan edit\u2026"><div class="tvs-row"><button type="button" class="mi" data-tvs="find">Search</button><button type="button" class="mi ai-btn" data-tvs="ai">\u2726 Ask AI</button><button type="button" class="mi" data-tvs="close">Close</button></div></div>';
+    document.body.appendChild(ov);
+    const inp = ov.querySelector("#tvs-in"), close = () => {
+      ov.hidden = true;
+      focusEl(b);
+    }, run = (ai) => {
+      const q = inp.value.trim();
+      ov.hidden = true;
+      if (!q) return focusEl(b);
+      if (ai || looksLikeQuestion(q)) aiSearch(q);
+      else go("#/search/" + encodeURIComponent(q));
+    };
+    b.onclick = () => {
+      ov.hidden = false;
+      inp.value = "";
+      setTimeout(() => inp.focus(), 30);
+    };
+    ov.addEventListener("click", (e) => {
+      const x = e.target.closest("[data-tvs]");
+      if (!x) return;
+      x.dataset.tvs === "close" ? close() : run(x.dataset.tvs === "ai");
+    });
+    ov.addEventListener("keydown", (e) => {
+      const k = e.keyCode;
+      e.stopPropagation();
+      const btns = [].slice.call(ov.querySelectorAll("button")), i = btns.indexOf(document.activeElement);
+      if (k === 27 || k === 10009 || k === 461 || e.key === "GoBack") {
+        e.preventDefault();
+        close();
+        return;
+      }
+      if (e.target === inp) {
+        if (k === 13) {
+          e.preventDefault();
+          run(false);
+        } else if (k === 40) {
+          e.preventDefault();
+          btns[0].focus();
+        }
+        return;
+      }
+      if (k === 37 || k === 39) {
+        e.preventDefault();
+        (btns[i + (k === 39 ? 1 : -1)] || btns[i]).focus();
+      } else if (k === 38) {
+        e.preventDefault();
+        inp.focus();
+      } else if (k === 13) {
+        e.preventDefault();
+        document.activeElement.click();
+      }
+    }, true);
+  })();
   const _render = render;
   render = function() {
     _render.apply(this, arguments);
@@ -1505,6 +1834,61 @@ var __spreadValues = (a, b) => {
   });
   showHome();
   if (/^#\/(genres|supportus|support|mylist)\b/.test(location.hash)) route();
+})();
+(function() {
+  const isStandalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
+  const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/i.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  const mk = (id, cls) => {
+    const b = document.createElement("button");
+    b.id = id;
+    b.type = "button";
+    b.className = cls;
+    b.hidden = true;
+    b.innerHTML = '<i class="g g-inst">\u2913</i>Install App';
+    b.onclick = doInstall;
+    return b;
+  };
+  const hb = mk("hinstall", "hint-btn inst-btn"), tb = mk("tinstall", "mi inst-btn top-inst");
+  const hints = document.getElementById("hints");
+  if (hints) hints.appendChild(hb);
+  const bar = document.getElementById("bar");
+  if (bar) bar.insertBefore(tb, document.getElementById("q"));
+  const upd = () => {
+    const ok = !isStandalone() && (!!window.__bip || ios && !localStorage.fefcIosTipDone);
+    hb.hidden = tb.hidden = !ok;
+  };
+  function doInstall() {
+    if (window.__bip) {
+      const e = window.__bip;
+      e.prompt();
+      e.userChoice.then((c) => {
+        if (c && c.outcome === "accepted") window.__bip = null;
+        upd();
+      }).catch(() => {
+      });
+      return;
+    }
+    if (ios) {
+      const t = document.createElement("div");
+      t.className = "ios-tip";
+      t.innerHTML = 'To install: tap <b>Share</b> <span class="ios-share">\u2B06\uFE0E</span> then <b>Add to Home Screen</b>.<button type="button">OK</button>';
+      document.body.appendChild(t);
+      t.querySelector("button").onclick = () => t.remove();
+      localStorage.fefcIosTipDone = "1";
+      upd();
+    }
+  }
+  addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    window.__bip = e;
+    upd();
+  });
+  addEventListener("appinstalled", () => {
+    window.__bip = null;
+    upd();
+  });
+  matchMedia("(display-mode: standalone)").addEventListener && matchMedia("(display-mode: standalone)").addEventListener("change", upd);
+  upd();
 })();
 (function() {
   const ua = navigator.userAgent, standalone = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;

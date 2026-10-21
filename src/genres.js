@@ -44,7 +44,7 @@ document.head.appendChild(css);
 function pl(n,w){return n+' '+w+(n===1?'':'s')}
 function list(o){if(st.list&&st.key===o.items.size+':'+Object.keys(o.genreMap).length)return st.list;
  var by={};Object.keys(o.genreMap).forEach(function(fid){o.genreMap[fid].genres.forEach(function(g){(by[g]=by[g]||[]).push(fid)})});
- var gs=o.order.filter(function(x){return by[x]});var sets={};gs.forEach(function(g){sets[g]={};by[g].forEach(function(i){sets[g][i]=1})});var cnt={};gs.forEach(function(g){cnt[g]=0});
+ var gs=Object.keys(by).sort(function(a,b){return (a==='Uncategorized')-(b==='Uncategorized')||a.localeCompare(b)});var sets={};gs.forEach(function(g){sets[g]={};by[g].forEach(function(i){sets[g][i]=1})});var cnt={};gs.forEach(function(g){cnt[g]=0});
  o.items.forEach(function(f){if(!o.isVid(f))return;var p=f.parent,k=0,hit={};while(p&&k++<30){gs.forEach(function(g){if(sets[g][p]&&!hit[g]){hit[g]=1;cnt[g]++}});var x=o.items.get(p);p=x&&x.parent}});
  st.key=o.items.size+':'+Object.keys(o.genreMap).length;st.list=gs.map(function(g){return {g:g,c:by[g].length,m:cnt[g]}});return st.list}
 function art(g){var a=(window.FEFCGenres&&FEFCGenres._art)||{};return a[g]||a.Uncategorized||{img:'assets/fefc-logo.png',brand:1}}
