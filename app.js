@@ -91,7 +91,7 @@ var __spreadValues = (a, b) => {
       document.body.classList.add("intro-done");
       $("#home").classList.add("enter");
       setTimeout(() => {
-        S.ambience(view !== "player");
+        S.ambience($("#player").hidden && $("#details").hidden);
         el.remove();
       }, skipped ? 600 : 1800);
     };
@@ -315,8 +315,8 @@ var __spreadValues = (a, b) => {
       ["folder:" + FOLD.collections, "Fan Edit Collections", ""],
       ["main", "", ""],
       ["folder:" + FOLD.tbc, "To Be Catalogued", ""],
-      ["folder:" + FOLD.actors, "Actors", cnt(FOLD.actors) ? cnt(FOLD.actors) + " folders" : ""],
-      ["folder:" + FOLD.directors, "Directors", cnt(FOLD.directors) ? cnt(FOLD.directors) + " folders" : ""],
+      ["folder:" + FOLD.actors, "Actors", cnt(FOLD.actors) ? cnt(FOLD.actors) + (cnt(FOLD.actors) === 1 ? " folder" : " folders") : ""],
+      ["folder:" + FOLD.directors, "Directors", cnt(FOLD.directors) ? cnt(FOLD.directors) + (cnt(FOLD.directors) === 1 ? " folder" : " folders") : ""],
       ["genres", "Genres", Object.keys(genreMap).length ? "Browse by genre" : ""]
     ];
     const keep = [].slice.call(document.querySelectorAll("#hub .mc"));
@@ -538,22 +538,28 @@ var __spreadValues = (a, b) => {
     }, 350);
     return true;
   }
-  $("#rfclose").onclick = () => back2("#/");
+  $("#rfclose").onclick = () => back("#/");
   function go(h) {
     if (location.hash === h) return route();
     history.pushState({ fefc: 1 }, "", h);
     route();
   }
-  function back2(fallback) {
-    if (history.state && history.state.fefc) history.back();
-    else {
+  function back(fallback) {
+    const h = location.hash, fb = () => {
       history.replaceState(null, "", fallback || "#/");
       route();
-    }
+    };
+    if (history.state && history.state.fefc) {
+      history.back();
+      setTimeout(() => {
+        if (location.hash === h) fb();
+      }, 450);
+    } else fb();
   }
   function parentHash() {
     const r = parseH();
-    if (r[0] === "edit" || r[0] === "play" || r[0] === "readfirst") return "#/";
+    if (r[0] === "play") return r[1] ? "#/edit/" + encodeURIComponent(r[1]) : "#/";
+    if (r[0] === "edit" || r[0] === "readfirst") return "#/";
     if (r[0] === "folder") {
       const f = items.get(r[1]);
       return f && f.parent && f.parent !== ROOT && items.has(f.parent) ? "#/folder/" + f.parent : f && f.parent === ROOT ? "#/all" : "#/";
@@ -572,7 +578,8 @@ var __spreadValues = (a, b) => {
     const r = parseH(), k = r[0] || "";
     if (k !== "play" && !$("#player").hidden) {
       $("#player").hidden = true;
-      $("#pframe").src = "about:blank";
+      killFrame();
+      if (started()) S.ambience(true);
     }
     if (k !== "edit" && k !== "play" && !$("#details").hidden) {
       $("#details").hidden = true;
@@ -706,12 +713,28 @@ var __spreadValues = (a, b) => {
     let n = 0;
     $("#details").querySelectorAll(".pill,.rt a").forEach((el) => el.addEventListener("pointerenter", () => S.chirp(n++)));
   }
+  function killFrame() {
+    const o = $("#pframe");
+    if (o) {
+      const n = o.cloneNode(false);
+      n.removeAttribute("src");
+      o.replaceWith(n);
+    }
+  }
+  function newFrame(u) {
+    const o = $("#pframe"), n = o.cloneNode(false);
+    n.src = u;
+    o.replaceWith(n);
+  }
+  function started() {
+    return !!window._u && document.body.classList.contains("intro-done");
+  }
   function play(f) {
     const id = target(f);
     S.ambience(false);
     S.click();
     $("#ptitle").textContent = parse(f.name).raw;
-    $("#pframe").src = "https://drive.google.com/file/d/".concat(id, "/preview");
+    newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
     $("#player").hidden = false;
   }
@@ -720,14 +743,14 @@ var __spreadValues = (a, b) => {
     if (nav) {
       S.click();
       const k = nav.dataset.nav;
-      if (k === "up") return back2(parentHash());
+      if (k === "up") return back(parentHash());
       return go(k === "home" ? "#/" : "#/" + k);
     }
     const act = e.target.closest("[data-act]");
     if (act) {
       S.chirp(1);
       const f = items.get($("#details").dataset.id);
-      if (act.dataset.act === "back") back2("#/");
+      if (act.dataset.act === "back") back("#/");
       else go("#/play/" + f.id);
       return;
     }
@@ -828,7 +851,7 @@ var __spreadValues = (a, b) => {
   }
   function goBack() {
     S.click();
-    back2(parentHash());
+    back(parentHash());
   }
   document.addEventListener("keydown", (e) => {
     const k = e.keyCode, inInput = e.target === $("#q");
@@ -940,9 +963,13 @@ var __spreadValues = (a, b) => {
     if (pp) go("#/play/" + pp);
     if (P.get("readfirst")) go("#/readfirst");
   });
+  $("#back").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    goBack();
+  });
   showHome();
 })();
-document.getElementById("back").onclick = () => back("#/");
 (function() {
   const ua = navigator.userAgent, standalone = matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
   const isTV = document.body.classList.contains("tv"), mobile = /Android|iPhone|iPad|iPod/i.test(ua) || navigator.maxTouchPoints > 1 && /Macintosh/.test(ua) && "ontouchend" in document;

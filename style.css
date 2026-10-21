@@ -226,3 +226,10 @@ body.cintro #tagline{animation:none!important;opacity:0;visibility:hidden}
  #hub .hb{-webkit-backface-visibility:hidden;backface-visibility:hidden}
 }
 html.no3d #home{perspective:none}html.no3d #hub{-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%)}
+/* OnLive-style big tile labels */
+#hub .hb:not(.hb-logo){align-items:flex-start;justify-content:flex-end;padding:.35em .4em .3em;gap:.1em;text-align:left;font-weight:700;font-size:clamp(18px,5vmin,72px);line-height:.98;letter-spacing:-.01em;container-type:size}
+#hub .hb:not(.hb-logo) span{font-size:1em;max-width:100%;overflow-wrap:break-word}
+#hub .hb:not(.hb-logo) small{font-size:.36em;font-weight:600}
+@supports (font-size:1cqh){#hub .hb:not(.hb-logo) span{font-size:clamp(16px,min(30cqh,18.5cqw),130px)}#hub .hb:not(.hb-logo) small{font-size:clamp(10px,min(9cqh,5.5cqw),36px)}}
+#hub .hb-logo img{width:40%}
+
