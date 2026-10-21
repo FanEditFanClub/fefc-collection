@@ -406,7 +406,7 @@ var __spreadValues = (a, b) => {
     const g = e.target.closest("[data-genre]");
     if (!g) return;
     S.click();
-    go("#/genre/" + encodeURIComponent(g.dataset.genre));
+    go("#/genres/" + encodeURIComponent(g.dataset.genre));
   });
   const allVids = () => vids();
   let _vc = null, _vk = -1;
@@ -439,7 +439,7 @@ var __spreadValues = (a, b) => {
   function deepCounts(id) {
     if (_dc[id] && _dc[id].k === items.size && _dc[id].d === !!NA.dates) return _dc[id];
     let c = 0, n = 0, sz2 = 0, nw = "";
-    const seen = {}, st = [id];
+    const seen = {}, fs = {}, qd = {}, st = [id];
     while (st.length) {
       const x = st.pop();
       if (seen[x]) continue;
@@ -448,11 +448,13 @@ var __spreadValues = (a, b) => {
         if (isFolder(f)) {
           const t = target(f);
           if (id !== ROOT && t !== id && (t === ROOT || Object.values(FOLD).includes(t))) return;
-          if (!seen[t]) {
+          if (!seen[t] && !qd[t]) {
+            qd[t] = 1;
             c++;
             st.push(t);
           }
-        } else if (!JUNK.test(f.name || "")) {
+        } else if (!JUNK.test(f.name || "") && !fs[target(f)]) {
+          fs[target(f)] = 1;
           n++;
           sz2 += f.size || 0;
           const m = mdate(f);
@@ -467,7 +469,7 @@ var __spreadValues = (a, b) => {
     const c = _sc[id];
     if (c && c.k === items.size && c.d === !!NA.dates) return c;
     let n = 0, sz2 = 0, nw = "";
-    const seen = {}, st = [id];
+    const seen = {}, fs = {}, st = [id];
     while (st.length) {
       const x = st.pop();
       if (seen[x]) continue;
@@ -476,7 +478,8 @@ var __spreadValues = (a, b) => {
         if (isFolder(f)) {
           const t = target(f);
           if (t === f.id && !f.targetId && (items.get(t) || f).parent === x && t !== ROOT && !Object.values(FOLD).includes(t)) st.push(t);
-        } else if (!JUNK.test(f.name || "")) {
+        } else if (!JUNK.test(f.name || "") && !fs[target(f)]) {
+          fs[target(f)] = 1;
           n++;
           sz2 += f.size || 0;
           const m = mdate(f);
@@ -1026,6 +1029,8 @@ var __spreadValues = (a, b) => {
       return f && f.parent && f.parent !== ROOT && items.has(f.parent) ? "#/folder/" + f.parent : f && f.parent === ROOT ? "#/all" : "#/";
     }
     if (r[0] === "genre") return "#/genres";
+    if (r[0] === "genres" && r[2]) return "#/genres/" + encodeURIComponent(r[1]);
+    if (r[0] === "genres" && r[1]) return "#/genres";
     return "#/";
   }
   function parseH() {
@@ -1076,14 +1081,15 @@ var __spreadValues = (a, b) => {
       history.replaceState(history.state, "", "#/supportus");
       return hubGo("support");
     }
+    if (k === "genres" && r[1]) return genrePage(r[1], r[2]);
     if (k === "genres" || k === "supportus") return hubGo(k === "supportus" ? "support" : k);
     if (k === "people" || k === "actors" || k === "directors") {
       if (k !== "people") history.replaceState(history.state, "", "#/people");
       return peoplePage();
     }
     if (k === "mylist") return myListPage();
-    if (k === "genre") {
-      window.__gscope = r[1];
+    if (k === "genre") return genrePage(r[1]);
+    if (0) {
       const G = r[1], list = genreList(G), folders = Object.keys(genreMap).filter((x) => genreMap[x].genres.indexOf(G) >= 0).map((x) => items.get(x) || { id: x, name: genreMap[x].folder, mimeType: FOLDER, parent: ROOT });
       return virtual(list.length ? list : folders, G);
     }
@@ -1246,6 +1252,86 @@ var __spreadValues = (a, b) => {
       if (n && document.body.classList.contains("tv")) focusEl(n);
     });
   });
+  let GC = {};
+  const _cv = {};
+  function genreColls(G) {
+    return GC[G] || [];
+  }
+  function collVids(c) {
+    const k = c.slug + "|" + items.size;
+    if (_cv[k]) return _cv[k];
+    const fs = {}, seen = {};
+    c.folders.forEach((x) => fs[x] = 1);
+    const out = [];
+    vids().forEach((f) => {
+      const t = target(f);
+      if (!seen[t] && fs[topFolder(f)]) {
+        seen[t] = 1;
+        out.push(f);
+      }
+    });
+    (c.extra || []).forEach((id) => {
+      const f = items.get(id);
+      if (f && !seen[target(f)]) {
+        seen[target(f)] = 1;
+        out.push(f);
+      }
+    });
+    return _cv[k] = out;
+  }
+  function genrePage(G, slug) {
+    hideHome();
+    cur = "virtual";
+    view = "folder";
+    const C2 = genreColls(G);
+    if (slug) {
+      const c = C2.find((x) => x.slug === slug);
+      if (!c) {
+        if (!Object.keys(GC).length) return status("Loading\u2026");
+        return go("#/genres/" + encodeURIComponent(G));
+      }
+      window.__gscope = "gc:" + G + "/" + slug;
+      window.__gtitle = c.name;
+      const fl = c.folders.map((x) => items.get(x)).filter(Boolean), vs = collVids(c).filter((f) => c.folders.indexOf(topFolder(f)) < 0);
+      virtual(fl.concat(vs), c.name);
+      const n = collVids(c).length;
+      $("#sec2").textContent = G + " \xB7 " + NA.plural(c.folders.length, "folder") + " \xB7 " + fmtN(n) + " fan edit" + (n === 1 ? "" : "s");
+      return;
+    }
+    window.__gscope = G;
+    window.__gtitle = G;
+    $("#crumb").textContent = G;
+    $("#arena").innerHTML = "";
+    const inColl = {}, big = C2.filter((c) => collVids(c).length >= 2);
+    big.forEach((c) => collVids(c).forEach((f) => inColl[target(f)] = 1));
+    const seen = {}, loose = genreList(G).filter((f) => {
+      const t = target(f);
+      if (inColl[t] || seen[t]) return false;
+      return seen[t] = 1;
+    }).sort((a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }));
+    const ctile = (c) => {
+      const fid = c.folders[0], n = collVids(c).length;
+      return tile({ id: fid, targetId: fid, name: c.name, mimeType: FOLDER, parent: ROOT }).replace(/data-id="/, 'data-gc="#/genres/'.concat(encodeURIComponent(G), "/").concat(c.slug, '" data-id="')).replace("COLLECTION", c.folders.length > 1 || (c.extra || []).length ? "FRANCHISE \xB7 " + fmtN(n) : "COLLECTION \xB7 " + fmtN(n));
+    };
+    const Q = [loose.slice(FIRST_TILES)];
+    $("#sec2").textContent = NA.plural(big.length, "collection") + " \xB7 " + fmtN(loose.length + Object.keys(inColl).length) + " fan edits";
+    const g = $("#grid");
+    g.className = "sectioned";
+    g.innerHTML = (big.length || loose.length ? '<div class="sortbar csort" role="toolbar">'.concat(shufBtn(G), "</div>") : "") + (big.length ? '<div class="ol-div"><span>COLLECTIONS</span><i></i><b>'.concat(big.length, '</b></div><div class="sgrid folds gcolls">').concat(big.map(ctile).join(""), "</div>") : "") + (loose.length ? '<div class="ol-div"><span>FAN EDITS</span><i></i><b>'.concat(fmtN(loose.length), '</b></div><div class="sgrid vids" data-q="0">').concat(loose.slice(0, FIRST_TILES).map((f) => tile(f)).join(""), "</div>") : "");
+    g.querySelectorAll(".ol-tile").forEach(lazyArt);
+    drain(Q, {});
+    status(big.length || loose.length ? "" : "Nothing here yet");
+    menu2();
+    restoreScroll();
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-gc]");
+    if (!t || e.target.closest("[data-star]")) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    S.click();
+    go(t.dataset.gc);
+  }, true);
   let SHUF = null;
   tmo("data/shuffle.json", 15e3).then((d) => {
     SHUF = new Set(d.ids);
@@ -1256,10 +1342,16 @@ var __spreadValues = (a, b) => {
   function shufPool(scope) {
     if (!SHUF) return [];
     const seen = {};
+    let gcs = null;
+    if (/^gc:/.test(scope || "")) {
+      const m = scope.slice(3), i = m.indexOf("/"), c = genreColls(m.slice(0, i)).find((x) => x.slug === m.slice(i + 1));
+      gcs = {};
+      if (c) collVids(c).forEach((f) => gcs[target(f)] = 1);
+    }
     return vids().filter((f) => {
       const t = target(f);
       if (seen[t] || !SHUF.has(t)) return false;
-      if (scope && scope !== "all" && genresOf(f).indexOf(scope) < 0) return false;
+      if (scope && scope !== "all" && (gcs ? !gcs[t] : genresOf(f).indexOf(scope) < 0)) return false;
       return seen[t] = 1;
     });
   }
@@ -1328,7 +1420,7 @@ var __spreadValues = (a, b) => {
       sortedAll(fold, vids2, g, typeof shufBtn === "function" ? shufBtn("all") : "");
     } else {
       g.className = "sectioned";
-      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === "virtual" && window.__gscope && title === window.__gscope ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
+      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
       g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
@@ -2072,8 +2164,11 @@ var __spreadValues = (a, b) => {
   }).catch(() => {
   });
   tmo("data/genres.json", 1e4).then((g) => {
+    GC = g.__collections || {};
+    delete g.__collections;
     genreMap = g;
     if (!$("#home").hidden) hub();
+    else if (/^#\/genres?\/./.test(location.hash)) route();
   }).catch(() => {
   });
   tmo("data/mosaic.json", 1e4).then((m) => {

@@ -79,7 +79,7 @@ function genresOf(f){const t=topFolder(f),g=t&&genreMap[t];return g?g.genres:['U
 function genreList(g){return vids().filter(f=>genresOf(f).indexOf(g)>=0)}
 function genreStrip(){const have={};Object.keys(genreMap).forEach(k=>genreMap[k].genres.forEach(g=>have[g]=1));have.Uncategorized=1;
  $('#genres').innerHTML='<span class="glab">Genres</span>'+GORDER.filter(g=>have[g]).map(g=>`<button class="gt" data-genre="${g}">${g}</button>`).join('')}
-document.addEventListener('click',e=>{const g=e.target.closest('[data-genre]');if(!g)return;S.click();go('#/genre/'+encodeURIComponent(g.dataset.genre))});
+document.addEventListener('click',e=>{const g=e.target.closest('[data-genre]');if(!g)return;S.click();go('#/genres/'+encodeURIComponent(g.dataset.genre))});
 const allVids=()=>vids();let _vc=null,_vk=-1;function vids(){if(_vk!==items.size){_vk=items.size;_vc=Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f))}return _vc}
 const DOCX=/\.(pdf|docx?|txt|xlsx?|pptx?|url|html?|rtf|csv|md|webloc|lnk|json|xml|zip|rar|7z|jpe?g|png|gif|mp3|flac|wav|srt)$/i;
 function isVid(f,d){if(!f)return false;if(f.kind)return f.kind==='video';/* resolved type stored by tools/classify.py */
@@ -88,9 +88,9 @@ function isVid(f,d){if(!f)return false;if(f.kind)return f.kind==='video';/* reso
  return /^video\//.test(m)||/\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name)}
 const JUNK=/^\.|^thumbs\.db$|^desktop\.ini$/i,_dc={};
 const mdate=f=>{const D=NA.dates||{},r=D[f.id]||D[f.targetId||'']||D[target(f)];return (r&&r.m)||f.modified||''};
-function deepCounts(id){if(_dc[id]&&_dc[id].k===items.size&&_dc[id].d===!!NA.dates)return _dc[id];let c=0,n=0,sz=0,nw='';const seen={},st=[id];while(st.length){const x=st.pop();if(seen[x])continue;seen[x]=1;(kids.get(x)||[]).forEach(f=>{if(isFolder(f)){const t=target(f);if(id!==ROOT&&t!==id&&(t===ROOT||Object.values(FOLD).includes(t)))return;if(!seen[t]){c++;st.push(t)}}else if(!JUNK.test(f.name||'')){n++;sz+=f.size||0;const m=mdate(f);if(m>nw)nw=m}})}return _dc[id]={k:items.size,d:!!NA.dates,c,n,sz,nw}}
+function deepCounts(id){if(_dc[id]&&_dc[id].k===items.size&&_dc[id].d===!!NA.dates)return _dc[id];let c=0,n=0,sz=0,nw='';const seen={},fs={},qd={},st=[id];while(st.length){const x=st.pop();if(seen[x])continue;seen[x]=1;(kids.get(x)||[]).forEach(f=>{if(isFolder(f)){const t=target(f);if(id!==ROOT&&t!==id&&(t===ROOT||Object.values(FOLD).includes(t)))return;if(!seen[t]&&!qd[t]){qd[t]=1;c++;st.push(t)}}else if(!JUNK.test(f.name||'')&&!fs[target(f)]){fs[target(f)]=1;n++;sz+=f.size||0;const m=mdate(f);if(m>nw)nw=m}})}return _dc[id]={k:items.size,d:!!NA.dates,c,n,sz,nw}}
 /* per-folder stats for sorting: own subtree only (real subfolders; folder shortcuts are not followed, so cross-links can't inflate counts) */
-const _sc={};function sortCounts(id){const c=_sc[id];if(c&&c.k===items.size&&c.d===!!NA.dates)return c;let n=0,sz=0,nw='';const seen={},st=[id];while(st.length){const x=st.pop();if(seen[x])continue;seen[x]=1;(kids.get(x)||[]).forEach(f=>{if(isFolder(f)){const t=target(f);if(t===f.id&&!f.targetId&&(items.get(t)||f).parent===x&&t!==ROOT&&!Object.values(FOLD).includes(t))st.push(t)}else if(!JUNK.test(f.name||'')){n++;sz+=f.size||0;const m=mdate(f);if(m>nw)nw=m}})}return _sc[id]={k:items.size,d:!!NA.dates,n,sz,nw}}
+const _sc={};function sortCounts(id){const c=_sc[id];if(c&&c.k===items.size&&c.d===!!NA.dates)return c;let n=0,sz=0,nw='';const seen={},fs={},st=[id];while(st.length){const x=st.pop();if(seen[x])continue;seen[x]=1;(kids.get(x)||[]).forEach(f=>{if(isFolder(f)){const t=target(f);if(t===f.id&&!f.targetId&&(items.get(t)||f).parent===x&&t!==ROOT&&!Object.values(FOLD).includes(t))st.push(t)}else if(!JUNK.test(f.name||'')&&!fs[target(f)]){fs[target(f)]=1;n++;sz+=f.size||0;const m=mdate(f);if(m>nw)nw=m}})}return _sc[id]={k:items.size,d:!!NA.dates,n,sz,nw}}
 const fmtN=n=>n.toLocaleString('en-US');
 function countsLine(id){const d=deepCounts(id);return fmtN(d.c)+(d.c===1?' collection':' collections')+' · '+fmtN(d.n)+(d.n===1?' file':' files')}
 /* Any Drive file link (details "Open in Drive" etc.) counts as opening the file: record it in History like Play */
@@ -214,7 +214,7 @@ function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supp
 /* ---------- HASH ROUTER ---------- */
 function go(h){if(location.hash===h)return route();history.pushState({fefc:1},'',h);route()}
 function back(fallback){navBack=true;const h=location.hash,fb=()=>{history.replaceState(null,'',fallback||'#/');route()};if(history.state&&history.state.fefc){history.back();setTimeout(()=>{if(location.hash===h)fb()},450)}else fb()}
-function parentHash(){const r=parseH();if(r[0]==='play')return r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/';if(r[0]==='edit'||r[0]==='readfirst')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';return '#/'}
+function parentHash(){const r=parseH();if(r[0]==='play')return r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/';if(r[0]==='edit'||r[0]==='readfirst')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';if(r[0]==='genres'&&r[2])return '#/genres/'+encodeURIComponent(r[1]);if(r[0]==='genres'&&r[1])return '#/genres';return '#/'}
 function parseH(){if(/^#\/arena/.test(location.hash))history.replaceState(history.state,'','#/newarrivals');return (location.hash.replace(/^#\/?newarrivals/,'#/arena').replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent)}
 function itemOr(id){return items.get(id)||{id:id,name:'Fan edit',mimeType:'video/mp4'}}
 let baseKey=null;
@@ -233,10 +233,11 @@ function renderBase(h){baseKey=h;const r=(h.replace(/^#\/?/,'').replace(/\?.*$/,
  if(k==='arena')return hideHome(),open(ROOT,'arena');
  if(k==='folder')return hideHome(),open(r[1]);
  if(k==='support'){history.replaceState(history.state,'','#/supportus');return hubGo('support')}
+ if(k==='genres'&&r[1])return genrePage(r[1],r[2]);
  if(k==='genres'||k==='supportus')return hubGo(k==='supportus'?'support':k);
  if(k==='people'||k==='actors'||k==='directors'){if(k!=='people')history.replaceState(history.state,'','#/people');return peoplePage()}
  if(k==='mylist')return myListPage();
- if(k==='genre'){window.__gscope=r[1];const G=r[1],list=genreList(G),folders=Object.keys(genreMap).filter(x=>genreMap[x].genres.indexOf(G)>=0).map(x=>items.get(x)||{id:x,name:genreMap[x].folder,mimeType:FOLDER,parent:ROOT});return virtual(list.length?list:folders,G)}
+ if(k==='genre')return genrePage(r[1]);if(0){const G=r[1],list=genreList(G),folders=Object.keys(genreMap).filter(x=>genreMap[x].genres.indexOf(G)>=0).map(x=>items.get(x)||{id:x,name:genreMap[x].folder,mimeType:FOLDER,parent:ROOT});return virtual(list.length?list:folders,G)}
  if(k==='search'){hideHome();open(ROOT,'all');setTimeout(()=>{$('#q').value=r[1]||'';$('#q').focus();if(r[1])$('#q').dispatchEvent(new Event('input'))},60);return}
  showHome()}
 window.addEventListener('popstate',()=>{navBack=true;route()});
@@ -270,10 +271,30 @@ function csortFn(k){const nat=(a,b)=>a.name.localeCompare(b.name,undefined,{nume
 /* sort a list but keep support-ad tiles in their A–Z slots */
 function csortList(a,k,isAd){const az=a.slice().sort(csortFn('az'));if(k==='az')return az;const rest=az.filter(f=>!isAd(f)).sort(csortFn(k));return az.map(f=>isAd(f)?f:rest.shift())}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-csort]');if(!b)return;try{localStorage.setItem('fefcSort:'+b.closest('.sortbar').dataset.for,b.dataset.csort)}catch(_){}S.click&&S.click();const keep=b.dataset.csort;const sy=$('#main').scrollTop;open(cur,view==='folder'?'folder':view).then(()=>{$('#main').scrollTop=sy;const n=document.querySelector(`[data-csort="${keep}"]`);if(n&&document.body.classList.contains('tv'))focusEl(n)})});
+/* ---------- GENRE PAGES: collection folders/franchises first, then loose edits (#/genres/<genre>[/<collection>]) ---------- */
+let GC={};const _cv={};
+function genreColls(G){return GC[G]||[]}
+function collVids(c){const k=c.slug+'|'+items.size;if(_cv[k])return _cv[k];const fs={},seen={};c.folders.forEach(x=>fs[x]=1);const out=[];
+ vids().forEach(f=>{const t=target(f);if(!seen[t]&&fs[topFolder(f)]){seen[t]=1;out.push(f)}});(c.extra||[]).forEach(id=>{const f=items.get(id);if(f&&!seen[target(f)]){seen[target(f)]=1;out.push(f)}});return _cv[k]=out}
+function genrePage(G,slug){hideHome();cur='virtual';view='folder';const C=genreColls(G);
+ if(slug){const c=C.find(x=>x.slug===slug);if(!c){if(!Object.keys(GC).length)return status('Loading…');return go('#/genres/'+encodeURIComponent(G))}
+  window.__gscope='gc:'+G+'/'+slug;window.__gtitle=c.name;const fl=c.folders.map(x=>items.get(x)).filter(Boolean),vs=collVids(c).filter(f=>c.folders.indexOf(topFolder(f))<0);
+  virtual(fl.concat(vs),c.name);const n=collVids(c).length;$('#sec2').textContent=G+' · '+NA.plural(c.folders.length,'folder')+' · '+fmtN(n)+' fan edit'+(n===1?'':'s');return}
+ window.__gscope=G;window.__gtitle=G;$('#crumb').textContent=G;$('#arena').innerHTML='';
+ const inColl={},big=C.filter(c=>collVids(c).length>=2);big.forEach(c=>collVids(c).forEach(f=>inColl[target(f)]=1));
+ const seen={},loose=genreList(G).filter(f=>{const t=target(f);if(inColl[t]||seen[t])return false;return seen[t]=1}).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+ const ctile=c=>{const fid=c.folders[0],n=collVids(c).length;return tile({id:fid,targetId:fid,name:c.name,mimeType:FOLDER,parent:ROOT}).replace(/data-id="/,`data-gc="#/genres/${encodeURIComponent(G)}/${c.slug}" data-id="`).replace('COLLECTION',c.folders.length>1||(c.extra||[]).length?'FRANCHISE · '+fmtN(n):'COLLECTION · '+fmtN(n))};
+ const Q=[loose.slice(FIRST_TILES)];
+ $('#sec2').textContent=NA.plural(big.length,'collection')+' · '+fmtN(loose.length+Object.keys(inColl).length)+' fan edits';
+ const g=$('#grid');g.className='sectioned';g.innerHTML=(big.length||loose.length?`<div class="sortbar csort" role="toolbar">${shufBtn(G)}</div>`:'')+
+  (big.length?`<div class="ol-div"><span>COLLECTIONS</span><i></i><b>${big.length}</b></div><div class="sgrid folds gcolls">${big.map(ctile).join('')}</div>`:'')+
+  (loose.length?`<div class="ol-div"><span>FAN EDITS</span><i></i><b>${fmtN(loose.length)}</b></div><div class="sgrid vids" data-q="0">${loose.slice(0,FIRST_TILES).map(f=>tile(f)).join('')}</div>`:'');
+ g.querySelectorAll('.ol-tile').forEach(lazyArt);drain(Q,{});status(big.length||loose.length?'':'Nothing here yet');menu();restoreScroll()}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-gc]');if(!t||e.target.closest('[data-star]'))return;e.preventDefault();e.stopImmediatePropagation();S.click();go(t.dataset.gc)},true);
 /* ---------- SHUFFLE PLAY ---------- */
 let SHUF=null;tmo('data/shuffle.json',15000).then(d=>{SHUF=new Set(d.ids)}).catch(()=>{SHUF=new Set()});
 const SHUF_ICON='<svg class="shuf-ic" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3l4 4-4 4V8h-2.6l-2.2 2.7-1.3-1.6L13.4 6H17V3zM3 6h4.6l8 10H17v-3l4 4-4 4v-3h-2.6l-8-10H3V6zm0 10h3.4l2.1-2.6 1.3 1.6L7.6 18H3v-2z"/></svg>';
-function shufPool(scope){if(!SHUF)return [];const seen={};return vids().filter(f=>{const t=target(f);if(seen[t]||!SHUF.has(t))return false;if(scope&&scope!=='all'&&genresOf(f).indexOf(scope)<0)return false;return seen[t]=1})}
+function shufPool(scope){if(!SHUF)return [];const seen={};let gcs=null;if(/^gc:/.test(scope||'')){const m=scope.slice(3),i=m.indexOf('/'),c=genreColls(m.slice(0,i)).find(x=>x.slug===m.slice(i+1));gcs={};if(c)collVids(c).forEach(f=>gcs[target(f)]=1)}return vids().filter(f=>{const t=target(f);if(seen[t]||!SHUF.has(t))return false;if(scope&&scope!=='all'&&(gcs?!gcs[t]:genresOf(f).indexOf(scope)<0))return false;return seen[t]=1})}
 function shufPick(scope){const pool=shufPool(scope);if(!pool.length)return null;let rec=[];try{rec=JSON.parse(localStorage.fefcShufRecent||'[]')}catch(e){}
  const fresh=pool.filter(f=>rec.indexOf(target(f))<0),from=fresh.length?fresh:pool,f=from[Math.floor(Math.random()*from.length)];
  rec.push(target(f));rec=rec.slice(-20);try{localStorage.fefcShufRecent=JSON.stringify(rec)}catch(e){}return f}
@@ -286,7 +307,7 @@ function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
  $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':(cur===ROOT||cur===FOLD.collections||cur===FOLD.tbc)?countsLine(cur):`${fold.length} collections · ${vids.length} fan edits`;
  const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),ck=mode==='arena'?'az':csortGet(cur),evs=csortList(vids.filter(f=>isVid(f)||isAd(f)),ck,isAd),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
- const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':cur==='virtual'&&window.__gscope&&title===window.__gscope?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
+ const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':cur==='virtual'&&window.__gscope&&title===window.__gtitle?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
  document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena'&&!(mode==='all'&&cur===ROOT))drain(Q,isNew);
  status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll()}
 async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){live=false;status('');add(window._idx||[])}}
@@ -464,7 +485,7 @@ intro();if(C.GOOGLE_API_KEY){live=true;}
 tmo('data/folderthumbs.json',10000).then(m=>{fthumbs=m;document.querySelectorAll('#grid .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&isFolder(f)&&!el.querySelector('img'))art(el,f)})}).catch(()=>{});
 const reArt=()=>document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&!el.querySelector('img')){if(isFolder(f)&&people[target(f)]){el.outerHTML=tile(f);const n=document.querySelector('[data-id="'+f.id+'"]');n&&art(n,f)}else art(el,f)}});
 tmo('data/posters.json',15000).then(m=>{posters=m;reArt()}).catch(()=>{});tmo('data/people.json',10000).then(m=>{people=m;reArt()}).catch(()=>{});
-tmo('data/genres.json',10000).then(g=>{genreMap=g;if(!$('#home').hidden)hub()}).catch(()=>{});
+tmo('data/genres.json',10000).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;if(!$('#home').hidden)hub();else if(/^#\/genres?\/./.test(location.hash))route()}).catch(()=>{});
 tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});
 tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(vids()));if(!$('#home').hidden)hub();else if(/^#\/(newarrivals|arena|folder)/.test(location.hash))route()}).catch(e=>console.warn(e));
 tmo('data/metadata.json',8000).then(m=>meta=m).catch(e=>console.warn(e));
