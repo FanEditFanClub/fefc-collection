@@ -1,0 +1,1 @@
+{"name":"fefc-collection","private":true,"scripts":{"build":"esbuild src/app.js src/audio.js --outdir=. --target=es2017,chrome56,safari11 --minify=false"},"devDependencies":{"esbuild":"^0.24.0"}}

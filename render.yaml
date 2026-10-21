@@ -1,0 +1,7 @@
+services:
+  - type: web
+    runtime: static
+    name: fefc-collection
+    buildCommand: "echo static"
+    staticPublishPath: .
+    domains: [collection.faneditfanclub.com]
