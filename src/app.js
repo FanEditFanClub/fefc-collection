@@ -227,7 +227,7 @@ function route(){const r=parseH(),k=r[0]||'';
  if(k==='play'){if(baseKey===null)renderBase('');play(itemOr(r[1]));return}
  if(k==='readfirst'){if(baseKey===null||baseKey!=='')renderBase('');readFirst();return}
  renderBase(location.hash);if(view==='home'||k==='')S.ambience(true)}
-function renderBase(h){baseKey=h;const r=(h.replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent),k=(r[0]==='newarrivals'?'arena':r[0])||'';
+function renderBase(h){baseKey=h;const r=(h.replace(/^#\/?/,'').replace(/\?.*$/,'')||'').split('/').map(decodeURIComponent),k=(r[0]==='newarrivals'?'arena':r[0])||'';
  if(k==='')return showHome();
  if(k==='all')return hideHome(),open(ROOT,'all');
  if(k==='arena')return hideHome(),open(ROOT,'arena');
@@ -240,6 +240,7 @@ function renderBase(h){baseKey=h;const r=(h.replace(/^#\/?/,'')||'').split('/').
  if(k==='search'){hideHome();open(ROOT,'all');setTimeout(()=>{$('#q').value=r[1]||'';$('#q').focus();if(r[1])$('#q').dispatchEvent(new Event('input'))},60);return}
  showHome()}
 window.addEventListener('popstate',()=>{navBack=true;route()});
+if(P.get('debug'))window._fefc={items,kids,episodes:i=>episodes(items.get(i))};
 /* ---------- DASHBOARD ---------- */
 function status(t){$('#status').textContent=t}
 function menu(){$('#menu').innerHTML=NA.menuHTML(FOLD,cur!==ROOT);const o=$('#menu .mi.on');o&&o.scrollIntoView&&o.scrollIntoView({block:'nearest',inline:'nearest'})}
@@ -285,45 +286,102 @@ function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
  $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':(cur===ROOT||cur===FOLD.collections||cur===FOLD.tbc)?countsLine(cur):`${fold.length} collections · ${vids.length} fan edits`;
  const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),ck=mode==='arena'?'az':csortGet(cur),evs=csortList(vids.filter(f=>isVid(f)||isAd(f)),ck,isAd),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
- const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':cur==='virtual'&&window.__gscope&&title===window.__gscope?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
- document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena')drain(Q,isNew);
+ const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':cur==='virtual'&&window.__gscope&&title===window.__gscope?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
+ document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena'&&!(mode==='all'&&cur===ROOT))drain(Q,isNew);
  status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll()}
 async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){live=false;status('');add(window._idx||[])}}
  const f=items.get(id);if(id===ROOT&&mode==='home')return showHome();render(kids.get(id)||[],id===ROOT?{home:'The Fan Edit Fan Club Collection',all:'The Fan Edit Fan Club Collection',arena:'New Arrivals',collections:'Collections'}[mode]:f.name,id===ROOT?mode:'home')}
+/* ---------- SORT (#/all) ---------- */
+const SORTS=[['az','A–Z'],['za','Z–A'],['newest','Newest'],['oldest','Oldest'],['film','Source Film'],['genre','Genre'],['size','Largest']];
+function curSort(){const m=location.hash.match(/[?&]sort=([a-z]+)/);return m&&SORTS.some(s=>s[0]===m[1])?m[1]:'az'}
+let sortJob=0;
+function sortedAll(fold,vids,g,extra){const k=curSort(),list=[...fold,...vids],nm=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
+ const dt=f=>NA.d(f)||'',film=f=>{const mm=meta.map&&meta.films&&meta.films[meta.map[f.id]||meta.map[target(f)]];return (mm&&mm.title)||(isFolder(f)?f.name.replace(/^\s*\d+[A-Z]?\s*-\s*/,''):parse(f.name).film)||f.name},gen=f=>{const x=isFolder(f)?(genreMap[target(f)]||{}).genres:genresOf(f);return x&&x[0]||'Uncategorized'};
+ let groups;
+ if(k==='az')groups=[['',list.sort(nm)]];else if(k==='za')groups=[['',list.sort((a,b)=>nm(b,a))]];
+ else if(k==='newest'||k==='oldest'){const s=k==='newest'?-1:1;groups=[['',list.sort((a,b)=>(dt(a)<dt(b)?-s:dt(a)>dt(b)?s:0)||nm(a,b))]]}
+ else if(k==='size')groups=[['',list.sort((a,b)=>(+b.size||0)-(+a.size||0)||nm(a,b))]];
+ else{const by=new Map(),key=k==='film'?film:gen;list.forEach(f=>{const x=key(f);if(!by.has(x))by.set(x,[]);by.get(x).push(f)});
+  groups=[...by.entries()].sort((a,b)=>(a[0]==='Uncategorized')-(b[0]==='Uncategorized')||a[0].localeCompare(b[0],undefined,{sensitivity:'base'})).map(([x,a])=>[x,a.sort(nm)])}
+ const bar=`<div class="sortbar" role="toolbar" aria-label="Sort">${extra||''}${SORTS.map(([v,l])=>`<button class="sortpill${v===k?' on':''}" data-sort="${v}" aria-pressed="${v===k}">${l}</button>`).join('')}</div>`;
+ g.innerHTML=bar+groups.map(([x,a],n)=>(x?`<div class="ol-div"><span>${esc(x)}</span><i></i><b>${a.length}</b></div>`:'')+`<div class="sgrid folds" data-g="${n}f"></div><div class="sgrid vids" data-g="${n}v"></div>`).join('');
+ const job=++sortJob,q=[];groups.forEach(([x,a],n)=>{[['f',a.filter(f=>!isVid(f))],['v',a.filter(f=>isVid(f))]].forEach(([t,b])=>{const el=g.querySelector(`[data-g="${n}${t}"]`);if(!b.length)el.remove();for(let i=0;i<b.length;i+=60)q.push([el,b.slice(i,i+60)])})});
+ const step=()=>{if(job!==sortJob||!q.length)return;const t=Date.now();while(q.length&&Date.now()-t<12){const[el,a]=q.shift();el.insertAdjacentHTML('beforeend',a.map(f=>tile(f)).join(''));el.querySelectorAll('.ol-tile:not([data-arted])').forEach(e=>{e.dataset.arted=1;lazyArt(e)})}if(q.length)requestAnimationFrame(step)};
+ const first=q.shift();if(first){first[0].insertAdjacentHTML('beforeend',first[1].map(f=>tile(f)).join(''));first[0].querySelectorAll('.ol-tile').forEach(e=>{e.dataset.arted=1;lazyArt(e)})}requestAnimationFrame(step)}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-sort]');if(!b)return;S.click();const h='#/all'+(b.dataset.sort==='az'?'':'?sort='+b.dataset.sort);if(location.hash!==h){history.pushState({fefc:1},'',h);route()}setTimeout(()=>{const n=document.querySelector(`[data-sort="${b.dataset.sort}"]`);if(n)focusEl(n)},30)});
 /* ---------- DETAILS (LCARS) ---------- */
 async function omdb(title,year){if(!C.OMDB_API_KEY)return null;try{const j=await(await fetch(`https://www.omdbapi.com/?apikey=${C.OMDB_API_KEY}&t=${encodeURIComponent(title)}${year?'&y='+year:''}`)).json();return j.Response==='True'?j:null}catch(e){return null}}
 async function ytTrailer(q){if(!C.YOUTUBE_API_KEY)return null;try{const j=await(await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=${encodeURIComponent(q)}&key=${C.YOUTUBE_API_KEY}`)).json();const v=j.items?.[0];return v?{youtubeId:v.id.videoId,title:v.snippet.title,auto:true}:null}catch(e){return null}}
-async function details(f,push=true){S.open();S.ambience(false);const p=parse(f.name),m=meta[f.id]||meta[target(f)]||{};let film=m.sourceFilm||{title:p.film,year:p.year};
- let ratings=[...(m.ratings||[])],cast=m.cast||[],desc=m.description,trailer=m.trailer;
- if(!m.ratings){const o=await omdb(film.title,film.year);if(o){film={title:o.Title,year:o.Year,director:o.Director};cast=o.Actors?o.Actors.split(', ').map(n=>({name:n})):[];
-   if(o.imdbRating&&o.imdbRating!=='N/A')ratings.push({source:'IMDb',value:o.imdbRating+'/10',url:`https://www.imdb.com/title/${o.imdbID}/`});
-   (o.Ratings||[]).filter(r=>r.Source==='Rotten Tomatoes').forEach(r=>ratings.push({source:'Rotten Tomatoes',value:r.Value,url:`https://www.rottentomatoes.com/search?search=${encodeURIComponent(o.Title)}`}));
-   desc=desc||null;m.filmPlot=o.Plot}}
- if(!trailer)trailer=await ytTrailer(p.raw+' fan edit trailer');
- const need=['IMDb','Rotten Tomatoes','FanEdit.org','Movies Remastered'].filter(s=>!ratings.some(r=>r.source.startsWith(s)));
- const rt=ratings.map(r=>r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.source)}<b>${r.value?esc(r.value):'VIEW ›'}</b></a>`:`<span class="na">${esc(r.source)}<span>${esc(r.note||'Not available')}</span></span>`).join('')+need.map(s=>`<span class="na">${s}<span>No data</span></span>`).join('');
- const id=target(f);
- $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-title${(m.title||p.raw).length>34?' long':''}" title="${esc(m.title||p.raw)}">${esc(m.title||p.raw)}</div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
- <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play">▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a><div class="pill p2 lab">FEFC ${String(hash(f.id)%9000+1000)}</div><div class="pill p5 lab">${esc(sz(f.size)||'—')}</div><div class="grow"></div></div>
- <div class="lc-body"><div>
-  <h3 class="lc-h">Description</h3>${desc?`<p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:`<p class="src">No fan-edit description available.</p>`}
-  ${m.filmPlot?`<p class="src">Source film plot (OMDb): ${esc(m.filmPlot)}</p>`:''}
-  <h3 class="lc-h l">Source film</h3><p>${esc(film.title||'Unknown')}${film.year?' ('+esc(film.year)+')':''}${film.director?' · Dir. '+esc(film.director):''}${m.editor?'<br><span class="src">Fan edit by '+esc(m.editor)+'</span>':''}</p>
-  <h3 class="lc-h p">Cast</h3>${cast.length?`<div class="cast">${cast.map(c=>`<span>${esc(c.name)}</span>`).join('')}</div>${m.castSource?`<p class="src">Source: <a href="${esc(m.castSource.url)}" target="_blank" rel="noopener">${esc(m.castSource.name)}</a></p>`:''}`:'<p class="src">No cast data.</p>'}
+const ICO={
+ imdb:'<svg viewBox="0 0 64 32" class="ico"><rect width="64" height="32" rx="5" fill="#F5C518"/><text x="32" y="23" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="18" text-anchor="middle" fill="#000">IMDb</text></svg>',
+ rt:'<svg viewBox="0 0 32 32" class="ico"><circle cx="16" cy="18" r="12" fill="#FA320A"/><path d="M13 6c1-3 5-3 6 0-2-1-4-1-6 0zM16 6l-3-4M16 6l4-3" stroke="#00912D" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>',
+ fe:'<svg viewBox="0 0 32 32" class="ico"><rect width="32" height="32" rx="6" fill="#1d3f6e"/><text x="16" y="21" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="12" text-anchor="middle" fill="#fff">FE</text></svg>',
+ mr:'<svg viewBox="0 0 32 32" class="ico"><rect width="32" height="32" rx="6" fill="#6b1d6e"/><text x="16" y="21" font-family="Arial Black,Arial,sans-serif" font-weight="900" font-size="12" text-anchor="middle" fill="#fff">MR</text></svg>'};
+const fmtV=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?Math.round(n/1e3)+'K':String(n);
+/* ---------- EPISODES ---------- */
+function epInfo(n){n=n.replace(/\.[a-z0-9]{2,4}$/i,'');let m=n.match(/\bS(\d{1,2})\s*E(\d{1,3})\b/i)||null,s=null,e=null,at=-1;const lead=n.match(/^(\d{1,4})[.)]\s+(\S.*)$/);if(lead&&!m)return{s:null,e:+lead[1],key:'',title:lead[2]};
+ if(m){s=+m[1];e=+m[2];at=m.index}else{const ms=n.match(/\b(?:Season|Series|Book)\s*(\d+)/i),me=n.match(/\b(?:Episode|Ep\.?|Part|Chapter|Chapitre|Vol(?:ume)?\.?)\s*(\d+)/i);if(ms){s=+ms[1];at=ms.index}if(me){e=+me[1];if(at<0||me.index<at)at=me.index}}
+ if(e==null)return null;const key=n.slice(0,at).replace(/[\s\-–:|,]+$/,'').toLowerCase();
+ const rest=n.slice(at).replace(/^(?:S\d+\s*E\d+|(?:Season|Series|Book)\s*\d+[\s\-–:,]*(?:(?:Episode|Ep\.?|Part|Chapter)\s*\d+)?|(?:Episode|Ep\.?|Part|Chapter|Chapitre|Vol(?:ume)?\.?)\s*\d+)/i,'').split(/\s+[-–|]\s+/).map(x=>x.trim()).filter(x=>x&&!/fan ?edit|^\(?\d{4}\)?$/i.test(x));
+ return{s,e,key,title:rest[0]||''}}
+function realParent(f){const t=items.get(target(f));return (t&&t.parent)||f.parent}
+function episodes(f){const me=epInfo(f.name);if(!me)return null;const par=realParent(f),seen=new Set();
+ const pool=[...(kids.get(par)||[]),...(f.parent!==par?kids.get(f.parent)||[]:[])].filter(x=>!isFolder(x)&&isVid(x)&&!seen.has(target(x))&&seen.add(target(x)));
+ const T=items.get(target(f)),meT=T&&T!==f?epInfo(T.name):null,real=(kids.get(par)||[]).filter(x=>!isFolder(x)&&isVid(x)).map(x=>({f:x,i:epInfo(x.name)})),ded=par!==ROOT&&meT&&real.filter(o=>o.i).length>=real.length*.5&&real.some(o=>target(o.f)===target(f));const all=ded?real.filter(o=>o.i):pool.map(x=>({f:x,i:epInfo(x.name)})).filter(o=>o.i&&o.i.key===me.key);const me2=ded?meT:me;
+ const pf=items.get(par),gp=pf&&pf.parent;let seasons=[];const sn=x=>{const m=x.name.match(/\b(?:Season|Series|Book)\s*(\d+)/i);return m?+m[1]:null};
+ if(pf&&sn(pf)!=null)seasons=(kids.get(gp)||[]).filter(x=>isFolder(x)&&sn(x)!=null).map(x=>({n:sn(x),id:x.id,folder:1,cur:target(x)===par||x.id===par}));
+ else{const by={};all.forEach(o=>{if(o.i.s!=null&&!(o.i.s in by))by[o.i.s]=o});const ss=Object.keys(by);if(ss.length>1)seasons=ss.map(k=>({n:+k,id:by[k].f.id,cur:+k===me2.s}))}
+ seasons.sort((a,b)=>a.n-b.n);
+ const eps=all.filter(o=>me2.s==null||o.i.s==null||o.i.s===me2.s||(pf&&sn(pf)!=null)).sort((a,b)=>(a.i.s||0)-(b.i.s||0)||a.i.e-b.i.e||a.f.name.localeCompare(b.f.name));
+ const idx=eps.findIndex(o=>target(o.f)===target(f));return eps.length>1||seasons.length>1?{me:me2,seasons,eps,idx}:null}
+function epHTML(E,showAll){if(!E)return'';const{eps,idx,seasons,me}=E,lo=showAll?0:Math.max(0,Math.min(idx-3,eps.length-7)),hi=showAll?eps.length:Math.min(eps.length,lo+7);
+ const lab=o=>(o.i.s!=null?'S'+o.i.s+' · ':'')+(/part/i.test(o.f.name)&&!/episode/i.test(o.f.name)?'Part ':'Ep ')+o.i.e;
+ return (seasons.length>1?`<h3 class="lc-h l">Seasons</h3><div class="seas">${seasons.map(x=>`<button class="ol-tile seat${x.cur?' cur':''}" data-id="${esc(x.id)}" data-ep="1"><b>SEASON</b><span>${x.n}</span></button>`).join('')}</div>`:'')
+ +(eps.length>1?`<h3 class="lc-h p">Episodes <small>${idx+1} of ${eps.length}</small></h3><div class="epnav"><button class="pill p4 epbtn" data-epgo="${idx>0?esc(eps[idx-1].f.id):''}" ${idx>0?'':'disabled'}>◀ Previous</button><button class="pill p2 epbtn" data-epall="1">${showAll?'Show fewer':'Show all '+eps.length}</button><button class="pill p4 epbtn" data-epgo="${idx<eps.length-1?esc(eps[idx+1].f.id):''}" ${idx<eps.length-1?'':'disabled'}>Next ▶</button></div><div class="eps${showAll?' all':''}">${eps.slice(lo,hi).map((o,k)=>`<button class="ol-tile ept${lo+k===idx?' cur':''}" data-id="${esc(o.f.id)}" data-ep="1"><b>${esc(lab(o))}</b><span>${esc(o.i.title||parse(o.f.name).raw)}</span></button>`).join('')}</div>`:'')}
+function epWire(f,E){const box=$('#lc-eps');if(!box||!E)return;let all=false;const draw=()=>{box.innerHTML=epHTML(E,all)};draw();
+ box.addEventListener('click',e=>{const a=e.target.closest('[data-epall]'),g=e.target.closest('[data-epgo]');if(a){S.chirp(3);all=!all;draw();const n=box.querySelector('[data-epall]');if(n)focusEl(n);const c=box.querySelector('.ept.cur');if(c)c.scrollIntoView({block:'nearest'})}else if(g&&g.dataset.epgo){S.click();go('#/edit/'+g.dataset.epgo)}})}
+function fileChips(f){const t=items.get(target(f))||f,g=k=>f[k]!=null?f[k]:t[k];let ext=g('ext');const mt=g('mimeType')||'';
+ if(!ext){const m=(t.name||f.name).match(/\.([a-z0-9]{2,4})$/i);ext=m?m[1]:({'video/mp4':'mp4','video/x-matroska':'mkv','video/x-msvideo':'avi','video/quicktime':'mov','video/webm':'webm','video/mp2t':'ts','video/x-m4v':'m4v','video/mpeg':'mpg','video/x-ms-wmv':'wmv'}[mt]||(/^video\/(?:x-)?([a-z0-9]+)$/.exec(mt)||[])[1])}
+ const size=+g('size')||0,hs=size?(size>=1e9?(size/1e9).toFixed(1)+' GB':(size/1e6).toFixed(0)+' MB'):'';
+ const rm=(f.name+' '+(t.name||'')).match(/\b(4K|2160p|1080p|720p|576p|480p|360p|UHD)\b/i),res=rm?(/2160|uhd/i.test(rm[1])?'4K':rm[1].toUpperCase().replace('P','p')):'';
+ const dur=g('duration')||g('durationMillis');const ds=dur?(()=>{const m=Math.round(+dur/(dur>1e5?6e4:60));return m>=60?Math.floor(m/60)+'h '+(m%60)+'m':m+'m'})():'';
+ const c=[ext&&ext.toUpperCase(),hs,res,ds].filter(Boolean);return c.length?`<div class="fchips" aria-label="File info"><span class="fl">FILE</span>${c.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:''}
+async function details(f,push=true){S.open();S.ambience(false);const p=parse(f.name),id=target(f),m=meta[f.id]||meta[id]||{};
+ const F=(meta.films&&meta.map&&meta.films[meta.map[f.id]||meta.map[id]])||null;
+ const film=F?{title:F.title,year:F.year,director:(F.director||[]).join(', ')}:(m.sourceFilm||{title:p.film,year:p.year});
+ const cast=m.cast&&m.cast.length?m.cast:(F&&F.cast||[]).map(n=>({name:n})),desc=m.description,plot=F&&F.plot;
+ const old=m.ratings||[],R=[];
+ const imdbId=F&&F.imdb||((old.find(r=>/^IMDb/.test(r.source))||{}).url||'').replace(/.*title\/(tt\d+).*/,'$1')||null;
+ if(imdbId||F&&F.imdbRating)R.push({ico:'imdb',name:'IMDb',val:F&&F.imdbRating?F.imdbRating+'/10':'VIEW ›',sub:F&&F.imdbVotes?fmtV(F.imdbVotes)+' votes':'',url:imdbId?`https://www.imdb.com/title/${imdbId}/`:null});
+ const rto=old.find(r=>/Tomatometer/.test(r.source));const rtUrl=F&&F.rt?'https://www.rottentomatoes.com/'+F.rt:rto&&rto.url;const rts=F&&F.rtScore!=null?F.rtScore+'%':rto&&rto.value;
+ if(rtUrl)R.push({ico:'rt',name:'Rotten Tomatoes',val:rts||'VIEW ›',sub:rts?'Tomatometer'+(F&&F.rtAudience!=null?' · Audience '+F.rtAudience+'%':''):'',url:rtUrl});
+ const ifdb=(meta.ifdb||{})[f.id]||(meta.ifdb||{})[id]||((old.find(r=>/FanEdit/.test(r.source))||{}).url);
+ if(ifdb)R.push({ico:'fe',name:'FanEdit.org',val:'IFDB ›',sub:'Fan edit database entry',url:ifdb});
+ const mr=old.find(r=>/Movies Remastered/.test(r.source)&&(r.url||r.value));if(mr)R.push({ico:'mr',name:'Movies Remastered',val:mr.value||'VIEW ›',sub:'',url:mr.url});
+ const tr=m.trailer&&m.trailer.youtubeId?{id:m.trailer.youtubeId}:F&&F.trailer;
+ const rt=R.map(r=>`<a ${r.url?`href="${esc(r.url)}" target="_blank" rel="noopener"`:''} class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')||'<p class="src">No ratings found for the source film.</p>';
+ const T=m.title||p.raw,meta1=[film.year,F&&F.runtime?F.runtime+' min':'',F&&F.tv?'TV series':''].filter(Boolean).join(' · ');
+ $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
+ <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play">▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${R.length?'<button class="pill p4" data-jump="ratings">Ratings</button>':''}<div class="grow"></div></div>
+ <div class="lc-body"><div class="lc-head"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div><div>
+  ${desc?`<h3 class="lc-h">Fan edit</h3><p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
+  <h3 class="lc-h l">Source ${F&&F.tv?'series':'film'}</h3><p><b>${esc(film.title||'Unknown')}</b>${film.year?' ('+esc(film.year)+')':''}${film.director?'<br>Directed by '+esc(film.director):''}${F&&F.genres?'<br><span class="src">'+esc(F.genres.join(' · '))+'</span>':''}${m.editor?'<br><span class="src">Fan edit by '+esc(m.editor)+'</span>':''}</p>
+  ${plot?`<p>${esc(plot)}</p>${F.wiki?`<p class="src">Plot: <a href="${esc(F.wiki)}" target="_blank" rel="noopener">Wikipedia</a></p>`:''}`:''}
+  <div id="lc-eps"></div>
+  ${cast.length?`<h3 class="lc-h p">Cast</h3><div class="cast">${cast.map(c=>`<span>${esc(c.name)}</span>`).join('')}</div>`:''}
  </div><div>
-  <h3 class="lc-h b">Ratings</h3><div class="rt">${rt}</div>
-  <h3 class="lc-h p" style="margin-top:14px">Trailer</h3><div class="trailer">${trailer?.youtubeId?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(trailer.youtubeId)}" allowfullscreen allow="encrypted-media"></iframe>`:`<span>No trailer found for this fan edit.<br><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(p.raw+' fan edit trailer')}" target="_blank" rel="noopener">Search YouTube ›</a></span>`}</div>
-  ${trailer?.auto?'<p class="src">Trailer is the top YouTube search result — may not be official.</p>':''}
-  <p class="lc-num">LCARS ACCESS ${new Date().getFullYear()}.${String(hash(f.name)%999).padStart(3,'0')} · STARDATE ${(Date.now()/864e5).toFixed(1)}</p>
+  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">${rt}</div>
+  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer${film.title?' · '+esc(film.title):''}</h3><div class="trailer">${tr?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(tr.id)}" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>`:`<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query=${encodeURIComponent((film.title||p.raw)+' '+(film.year||'')+' official trailer')}" target="_blank" rel="noopener">Search YouTube ›</a></span>`}</div>
  </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>`;
- $('#details').hidden=false;$('#details').dataset.id=f.id;
- let n=0;$('#details').querySelectorAll('.pill,.rt a').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)))}
+ $('#details').hidden=false;$('#details').dataset.id=f.id;const E=episodes(f);epWire(f,E);$('#details').scrollTop=0;const lb=$('#details .lc-body');if(lb)lb.scrollTop=0;
+ $('#details').querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>{S.chirp(2);const t=$('#lc-'+b.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}));
+ let n=0;$('#details').querySelectorAll('.pill,.rt a,.bigplay').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)))}
 function killFrame(){const o=$('#pframe');if(o){const n=o.cloneNode(false);n.removeAttribute('src');o.replaceWith(n)}}
 function newFrame(u){const o=$('#pframe'),n=o.cloneNode(false);n.src=u;o.replaceWith(n)}
 function started(){return !!window._u&&document.body.classList.contains('intro-done')}
-function play(f){const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();$('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false}
+function play(f){const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();$('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false}
 /* ---------- EVENTS ---------- */
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-nav]');if(nav){S.click();const k=nav.dataset.nav;if(k==='up')return back(parentHash());return go(k==='home'?'#/':'#/'+k)}
+document.addEventListener('click',e=>{const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){S.click();const k=nav.dataset.nav;if(k==='up')return back(parentHash());return go(k==='home'?'#/':'#/'+k)}
  const act=e.target.closest('[data-act]');if(act){S.chirp(1);const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')back('#/');else go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isVid(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
@@ -345,7 +403,7 @@ let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(async
  view='search';render(res,'Search: '+q,'home')},250)});
 setTimeout(sm2,0);
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-const FOC='#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,.sortpill,#details .pill:not(.lab),#details a,#player .pill,#pframe';
+const FOC='.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#pframe';
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
 function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).filter(visible),a=document.activeElement;
@@ -397,7 +455,7 @@ document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.close
   if(k===37||k===39){e.preventDefault();(btns[i+(k===39?1:-1)]||btns[i]).focus()}else if(k===38){e.preventDefault();inp.focus()}else if(k===13){e.preventDefault();document.activeElement.click()}},true)})();
 // focus first item after views open
 const _render=render;render=function(){_render.apply(this,arguments);if(document.body.classList.contains('tv')){const t=document.querySelector('#arena .ol-tile,#grid .ol-tile');if(t)focusEl(t)}};
-const _details=details;details=async function(){await _details.apply(this,arguments);const p=document.querySelector('#details [data-act="play"]');if(p){const id=$('#details').dataset.id;if(id&&window.UD&&!p.parentNode.querySelector('.star-btn')){const on=UD.isStarred(id);p.insertAdjacentHTML('afterend',`<button class="pill p4 star-btn${on?' on':''}" data-star="${id}">${on?'★ Starred':'☆ Star'}</button>`)}focusEl(p)}};
+const _details=details;details=async function(){await _details.apply(this,arguments);const p=document.querySelector('#details .bigplay')||document.querySelector('#details [data-act="play"]');if(p){const id=$('#details').dataset.id;if(id&&window.UD&&!p.parentNode.querySelector('.star-btn')){const on=UD.isStarred(id);p.insertAdjacentHTML('afterend',`<button class="pill p4 star-btn${on?' on':''}" data-star="${id}">${on?'★ Starred':'☆ Star'}</button>`)}focusEl(p)}};
 const _play=play;play=function(f){_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>focusEl($('#back')),50)};
 if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
 document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once:true});
