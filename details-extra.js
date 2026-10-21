@@ -75,6 +75,14 @@
         p.before(o);
       }
     }
+    if (F && F.game && srcH) {
+      const pp = srcH.nextElementSibling;
+      const kv = [["Developer", (F.developer || []).join(", ")], ["Platforms", (F.platforms || []).join(", ")], ["Released", F.year], ["Genre", (F.genres || []).join(", ")]].filter((x) => x[1]);
+      if (pp && kv.length) {
+        pp.innerHTML = "<b>".concat(esc(F.title), "</b>");
+        pp.insertAdjacentHTML("afterend", '<dl class="fx-kv">'.concat(kv.map((x) => "<dt>".concat(x[0], "</dt><dd>").concat(esc(x[1]), "</dd>")).join(""), "</dl>"));
+      }
+    }
     if (F && F.low && srcH) srcH.insertAdjacentHTML("beforeend", ' <small class="fx-low">low-confidence match</small>');
     const cH = [...L.querySelectorAll(".lc-h")].find((x) => /^Cast$/.test(x.textContent));
     const dirs = F && F.director || [];

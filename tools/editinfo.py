@@ -10,7 +10,7 @@ import json,re,os,time,html,gzip,urllib.request,urllib.parse,concurrent.futures 
 os.chdir(os.path.dirname(os.path.abspath(__file__))+'/..')
 UA={'User-Agent':'FEFCCollection/1.0 (faneditfanclub.com metadata indexer; faneditfanclub@gmail.com)'}
 BUA={'User-Agent':'Mozilla/5.0 (FEFCCollection metadata indexer)'}
-def get(u,h=UA,t=30):
+def get(u,h=UA,t=20):
     for i in range(3):
         try: return urllib.request.urlopen(urllib.request.Request(u,headers=h),timeout=t).read().decode('utf8','replace')
         except Exception as e:
@@ -24,8 +24,11 @@ def jget(u):
 CP='tools/cache/editinfo_cache.json';C=json.load(open(CP)) if os.path.exists(CP) else {}
 for k in('wp','page','cand','ent','lab','plot','img','yt','imdbq'): C.setdefault(k,{})
 LK=threading.Lock()
+SL=threading.Lock()
 def save():
-    with LK: json.dump(C,open(CP,'w'))
+    with SL:
+        with LK: s=json.dumps(C)
+        open(CP+'.tmp','w').write(s);os.replace(CP+'.tmp',CP)
 d=json.load(open('data/index.json'));by={}
 for x in d['items']: by.setdefault(x['id'],x)
 M=json.load(open('data/metadata.json'));OV=json.load(open('data/source-overrides.json'))
@@ -54,6 +57,7 @@ FL=re.compile(r'jrFieldLabel[^>]*>(.*?)</div>\s*<div class="jrFieldValue[^"]*"[^
 def txt(h): return html.unescape(re.sub(r'<[^>]+>','',re.sub(r'<br\s*/?>','\n',h))).strip()
 def ifdb_page(u):
     if u in C['page']: return C['page'][u]
+    if time.time()>DEADLINE+300: return None
     s=get(u,BUA);r=None
     if s and 'Faneditor Name' in s:
         F={}
@@ -73,8 +77,10 @@ def ifdb_page(u):
         r={k:v for k,v in r.items() if v}
     with LK: C['page'][u]=r
     return r
+DEADLINE=time.time()+float(os.environ.get('IFDB_MINUTES','1e9'))*60
 def ifdb_search(q):
     if q in C['wp']: return C['wp'][q]
+    if time.time()>DEADLINE: return []
     r=jget('https://fanedit.org/wp-json/wp/v2/posts?'+urllib.parse.urlencode({'search':q,'per_page':8,'_fields':'title,link'})) or []
     out=[(html.unescape(p['title']['rendered']),p['link']) for p in r if not re.search(r'^(Week of|FEOTM|Poll)',html.unescape(p['title']['rendered']))]
     with LK: C['wp'][q]=out
@@ -118,16 +124,26 @@ def ents(ids):
             dur=[x for x in g('P2047') if isinstance(x,dict)]
             with LK: C['ent'][q]=dict(label=e.get('labels',{}).get('en',{}).get('value'),desc=e.get('descriptions',{}).get('en',{}).get('value',''),wiki=e.get('sitelinks',{}).get('enwiki',{}).get('title'),
                 p31=I('P31'),imdb=(g('P345') or [None])[0],year=min(dates) if dates else None,dir=I('P57')[:3]+I('P170')[:2],cast=I('P161')[:10],genre=I('P136')[:4],
-                runtime=int(float(dur[0]['amount'])) if dur else None,yt=(g('P1651') or [None])[-1],series=I('P179')[:2])
+                runtime=int(float(dur[0]['amount'])) if dur else None,yt=(g('P1651') or [None])[-1],series=I('P179')[:2],dev=I('P178')[:3],plat=I('P400')[:6])
     return [C['ent'].get(i) for i in ids]
 def cands(title):
     k=norm(title)
     if k in C['cand']: return C['cand'][k]
     r=jget(WD+urllib.parse.urlencode(dict(action='wbsearchentities',format='json',search=title,language='en',type='item',limit=12))) or {}
     ids=[x['id'] for x in r.get('search',[]) if norm(x.get('label',''))==k or norm(re.sub(r'\(.*?\)','',x.get('label','')))==k]
-    ents(ids);ok=[i for i in ids if C['ent'].get(i) and C['ent'][i]['imdb'] and KINDS.search(C['ent'][i]['desc'] or '')]
+    ents(ids);ok=[i for i in ids if C['ent'].get(i) and (C['ent'][i]['imdb'] or 'video game' in (C['ent'][i]['desc'] or '')) and KINDS.search(C['ent'][i]['desc'] or '')]
     with LK: C['cand'][k]=ok
     return ok
+def by_wiki(t):
+    k='wiki:'+t
+    if k in C['imdbq']: return C['imdbq'][k]
+    r=jget(WD+urllib.parse.urlencode(dict(action='wbgetentities',format='json',sites='enwiki',titles=t,props='info'))) or {}
+    q=next((q for q in r.get('entities',{}) if q.startswith('Q')),None)
+    with LK: C['imdbq'][k]=q
+    return q
+def resolve(o): return by_imdb(o) if o.startswith('tt') else by_wiki(o[5:]) if o.startswith('wiki:') else o
+GAME=re.compile(r'(N64|Nintendo|SNES|NES|PS[1-5]|PSX|PlayStation|Xbox|Sega|Genesis|Dreamcast|Game ?Cube|Wii|PC game|video ?game|game)',re.I)
+isgame=lambda q:'video game' in ((C['ent'].get(q) or {}).get('desc') or '')
 def by_imdb(tt):
     if tt in C['imdbq']: return C['imdbq'][tt]
     r=jget(WD+urllib.parse.urlencode(dict(action='query',format='json',list='search',srsearch=f'haswbstatement:P345={tt}',srlimit=1))) or {}
@@ -144,7 +160,12 @@ for ln in gzip.open('/tmp/ratings.tsv.gz','rt'):
 votes=lambda q:IR.get((C['ent'].get(q) or {}).get('imdb'),(0,0))[1]
 # ---------- run ----------
 print('videos',len(vids),flush=True)
-with cf.ThreadPoolExecutor(6) as ex: IF=dict(zip([v['id'] for v in vids],ex.map(ifdb_for,vids)))
+_n=[0]
+def _ifdb(v):
+    r=ifdb_for(v);_n[0]+=1
+    if _n[0]%400==0: save();print('ifdb progress',_n[0],flush=True)
+    return r
+with cf.ThreadPoolExecutor(24) as ex: IF=dict(zip([v['id'] for v in vids],ex.map(_ifdb,vids)))
 save();print('ifdb matched',sum(1 for a,b in IF.values() if a),flush=True)
 overrides=[(k,v) for k,v in OV.items() if not k.startswith('_')]
 def ov(v):
@@ -152,24 +173,36 @@ def ov(v):
         if k==v['id'] or k==v.get('targetId') or (not re.fullmatch(r'[\w-]{25,}',k) and re.search(k,v['name'],re.I)): return q
 CUR=M['map'];newmap={};conf={};why={};changes=[]
 titles=collections.defaultdict(list)
+KIDS=collections.defaultdict(list)
+for x in by.values(): KIDS[x.get('parent')].append(x['id'])
 for v in vids:
     base,cut,yr=parse(v['name'])
     if EPI.search(v['name']) and not CUR.get(v['id']): continue
     titles[norm(base)].append(v)
 alltitles=sorted(titles);print('titles',len(alltitles),flush=True)
-with cf.ThreadPoolExecutor(4) as ex: CA=dict(zip(alltitles,ex.map(lambda t:cands(parse(titles[t][0]['name'])[0]),alltitles)))
+_m=[0]
+def _cand(t):
+    r=cands(parse(titles[t][0]['name'])[0]);_m[0]+=1
+    if _m[0]%200==0: save();print('cands',_m[0],flush=True)
+    return r
+with cf.ThreadPoolExecutor(8) as ex: CA=dict(zip(alltitles,ex.map(_cand,alltitles)))
 save()
 ents(sorted({q for v in CUR.values() for q in [v]}))
 for t,vs in titles.items():
     cs=CA.get(t) or []
     for v in vs:
         cur=CUR.get(v['id']);base,cut,yr=parse(v['name']);P=path(v);ptxt=norm(' '.join(P[:4]))
-        sib=norm(' '.join(by[s]['name'] for s in [x['id'] for x in by.values() if x.get('parent')==v.get('parent')][:40])) if len(cs)>1 else ''
+        sib=norm(' '.join(by[s]['name'] for s in KIDS.get(v.get('parent'),[])[:40])) if len(cs)>1 else ''
         pick=None;reason=None
         o=ov(v)
-        if o: pick=by_imdb(o) if o.startswith('tt') else o;reason='override'
+        if o: pick=resolve(o);reason='override'
         p=IF[v['id']][0] if IF.get(v['id']) else None
         if not pick and p and p.get('imdb'): pick=by_imdb(p['imdb']);reason='fanedit.org IMDb link'
+        gs=bool(GAME.search(v['name']+' '+' '.join(P[:2])))
+        if not pick and gs:
+            g=[c for c in cs+(cands(cut) if cut else []) if isgame(c)]
+            if g: pick=max(g,key=lambda c:(cut and tok(cut)<=tok(C['ent'][c]['label'] or ''),votes(c)));reason='game signal'
+            elif cur and not isgame(cur): conf[v['id']]='low'
         if not pick and len(cs)>1:
             pool=cs[:]
             ys=[yr] if yr else []
@@ -194,8 +227,11 @@ for t,vs in titles.items():
             newmap[v['id']]=pick;why[v['id']]=reason
             if cur: changes.append((v['name'],(C['ent'].get(cur) or {}).get('label'),(C['ent'].get(cur) or {}).get('year'),C['ent'][pick]['label'] if pick in C['ent'] else pick,(C['ent'].get(pick) or {}).get('year'),reason))
         elif cur and len(cs)>1 and conf.get(v['id'])=='low': pass
-need=sorted(set(newmap.values()));ents(need)
-labs=sorted({x for q in need for k in('dir','cast','genre','series') for x in (C['ent'].get(q) or {}).get(k,[])}-set(C['lab']))
+need=sorted(set(newmap.values()))
+for q in need:
+    if q in C['ent'] and 'dev' not in C['ent'][q]: del C['ent'][q]
+ents(need)
+labs=sorted({x for q in need for k in('dir','cast','genre','series','dev','plat') for x in (C['ent'].get(q) or {}).get(k,[])}-set(C['lab']))
 for i in range(0,len(labs),50):
     r=jget(WD+urllib.parse.urlencode(dict(action='wbgetentities',format='json',ids='|'.join(labs[i:i+50]),props='labels',languages='en'))) or {}
     for q,e in r.get('entities',{}).items(): C['lab'][q]=e.get('labels',{}).get('en',{}).get('value')
@@ -223,7 +259,8 @@ for q in need:
     L=lambda xs:[C['lab'].get(x) for x in xs if C['lab'].get(x)]
     f=dict(title=e['label'],year=int(e['year']) if e['year'] else None,wiki=e['wiki'] and 'https://en.wikipedia.org/wiki/'+urllib.parse.quote(e['wiki'].replace(' ','_')),
         plot=C['plot'].get(e['wiki']),director=L(e['dir']),cast=L(e['cast']),genres=L(e['genre']),runtime=e['runtime'],imdb=e['imdb'],
-        tv=bool(re.search('series',e['desc'] or '',re.I)),game=bool(re.search('video game',e['desc'] or '',re.I)),poster=C['img'].get(e['wiki']))
+        tv=bool(re.search('series',e['desc'] or '',re.I)),game=bool(re.search('video game',e['desc'] or '',re.I)),developer=L(e.get('dev',[])),platforms=L(e.get('plat',[])),poster=C['img'].get(e['wiki']))
+    if f['game']: f['tv']=False;f['cast']=[];f['director']=[]
     if e['imdb'] in IR: f['imdbRating'],f['imdbVotes']=IR[e['imdb']]
     yt=e['yt'] or C['yt'].get(q)
     if yt: f['trailer']=dict(id=yt,src='wikidata' if e['yt'] else 'youtube')

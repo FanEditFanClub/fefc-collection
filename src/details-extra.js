@@ -34,6 +34,7 @@ function enhance(f,ctx,F){const D=document.getElementById('details');if(!D||D.da
  // Overview heading for the source plot; Cast & Crew with directors
  const srcH=[...L.querySelectorAll('.lc-h')].find(x=>/^Source /.test(x.textContent));if(srcH&&F&&F.game)srcH.textContent='Source game';
  if(F&&F.plot&&srcH){const p=[...L.querySelectorAll('p')].find(x=>x.textContent===F.plot);if(p){const o=document.createElement('h3');o.className='lc-h l fx-sec';o.textContent='Overview';p.before(o)}}
+ if(F&&F.game&&srcH){const pp=srcH.nextElementSibling;const kv=[['Developer',(F.developer||[]).join(', ')],['Platforms',(F.platforms||[]).join(', ')],['Released',F.year],['Genre',(F.genres||[]).join(', ')]].filter(x=>x[1]);if(pp&&kv.length){pp.innerHTML=`<b>${esc(F.title)}</b>`;pp.insertAdjacentHTML('afterend',`<dl class="fx-kv">${kv.map(x=>`<dt>${x[0]}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>`)}}
  if(F&&F.low&&srcH)srcH.insertAdjacentHTML('beforeend',' <small class="fx-low">low-confidence match</small>');
  const cH=[...L.querySelectorAll('.lc-h')].find(x=>/^Cast$/.test(x.textContent));const dirs=F&&F.director||[];
  if(cH){cH.textContent='Cast & Crew';const box=cH.nextElementSibling;if(box&&dirs.length)box.insertAdjacentHTML('afterbegin',dirs.map(d=>`<span class="crew">${esc(d)} · Director</span>`).join(''))}
