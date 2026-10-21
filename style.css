@@ -703,3 +703,4 @@ body.tv .ol-tile.fecc .fecc-t{font-size:3.4vh}body.tv .ol-tile.fecc .fecc-c{font
 @keyframes opshrug{0%,100%{transform:translateX(-50%) rotate(0)}50%{transform:translateX(-50%) translateY(2%) rotate(-6deg)}}
 body.tv .op-cue{font-size:3vh}
 @media (prefers-reduced-motion:reduce){.op-ph *{animation:none!important}}
+.ol-tile.fecc>img,.ol-tile.fecc .art{display:none!important}

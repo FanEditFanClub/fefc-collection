@@ -354,6 +354,7 @@ var __spreadValues = (a, b) => {
     })(), '">').concat(esc(p.raw), "</div>") : "").concat(fold && typeof isDenied === "function" && isDenied(target(f)) ? '<span class="lockb" title="Private library" aria-label="Private">\u{1F512}</span>' : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
   }
   async function art(el, f) {
+    if (el.dataset && el.dataset.fecc) return;
     if (!f || el.classList.contains("sup") || el.classList.contains("mainc")) return;
     let src = null;
     const p = parse(f.name);
