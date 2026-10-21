@@ -512,3 +512,4 @@ body.tv #details .ept span{font-size:1.6vh}body.tv #details .ept b,body.tv #deta
 body.tv .lc-poster{width:20vh}
 @media (max-width:800px),(max-height:520px){.lc-head.has-poster{flex-direction:column}.lc-poster{width:auto;height:min(62vh,300px)}}
 .lc-poster img.wide{object-fit:contain;background:#111}
+@media (max-width:800px),(max-height:520px){.lc-poster{height:min(52vh,300px)}}

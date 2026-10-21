@@ -2143,7 +2143,16 @@ var __spreadValues = (a, b) => {
         const on = UD.isStarred(id);
         p.insertAdjacentHTML("afterend", '<button class="pill p4 star-btn'.concat(on ? " on" : "", '" data-star="').concat(id, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>"));
       }
-      focusEl(p);
+      const B = document.body.classList, D = $("#details");
+      if (B.contains("tv") || B.contains("kbd")) {
+        try {
+          p.focus({ preventScroll: true });
+        } catch (e) {
+          p.focus();
+        }
+      } else if (document.activeElement && D.contains(document.activeElement)) document.activeElement.blur();
+      D.scrollTop = 0;
+      D.querySelectorAll(".lc-body").forEach((x) => x.scrollTop = 0);
     }
   };
   const _play = play;
