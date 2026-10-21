@@ -11,7 +11,9 @@ function create(opt){
  // lo = low-cost path (TV, iOS/WebKit, reduced motion, <=4 cores): same timeline/look, no canvas blur/shadowBlur, dpr 1, coarser ground strips, fewer stars
  let tv=opt.tv||opt.lite;const cv=document.createElement('canvas'),c=cv.getContext('2d',{alpha:false});let dpr=Math.min(window.devicePixelRatio||1,tv?1:1.5);
  let W=0,H=0;const size=()=>{W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px'};size();addEventListener('resize',size);
- const buf=document.createElement('canvas'),bc=buf.getContext('2d');
+ const buf=document.createElement('canvas'),bc=buf.getContext('2d'),sbuf=document.createElement('canvas'),sbc=sbuf.getContext('2d');
+ // white flashes: a pre-sized DOM layer animated with opacity only (compositor), so the canvas never repaints a full white frame
+ let fx=null,fxa=-1;const flashA=a=>{a=a>.995?1:a<.005?0:+a.toFixed(3);if(!fx&&cv.parentNode){fx=document.createElement('div');fx.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;background:#fff;opacity:0;pointer-events:none;will-change:opacity;transform:translateZ(0);z-index:1';cv.parentNode.insertBefore(fx,cv.nextSibling)}if(fx&&a!==fxa){fxa=a;fx.style.opacity=a}};
  // logo + orange tinted logo
  const logo=new Image();logo.src='assets/fefc-logo-carson.png';let tint=null;
  logo.onload=()=>{const t=document.createElement('canvas');t.width=t.height=512;const x=t.getContext('2d');x.drawImage(logo,0,0,512,512);x.globalCompositeOperation='source-in';const g=x.createLinearGradient(0,0,512,512);g.addColorStop(0,'#ffb347');g.addColorStop(.45,'#ff8a1a');g.addColorStop(1,'#c24d00');x.fillStyle=g;x.fillRect(0,0,512,512);tint=t};
@@ -34,16 +36,19 @@ function create(opt){
   c.filter='none';c.restore()}
  function sheen(s){const t=(s-3.8)/1;if(t<0||t>1||!logo.complete)return;const L=H*.46;c.save();c.beginPath();c.rect(W/2-L/2,H/2-L/2,L,L);c.clip();c.globalCompositeOperation='lighter';const x=W/2-L+t*2*L,g=c.createLinearGradient(x-L*.15,0,x+L*.15,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.globalCompositeOperation='source-atop';c.restore();
   // apply sheen only on the logo pixels using buf
-  buf.width=L|0;buf.height=L|0;bc.clearRect(0,0,L,L);bc.drawImage(logo,0,0,L,L);bc.globalCompositeOperation='source-in';const g2=bc.createLinearGradient(t*2*L-L*.65,0,t*2*L-L*.35,0);g2.addColorStop(0,'rgba(255,255,255,0)');g2.addColorStop(.5,'rgba(235,240,250,.9)');g2.addColorStop(1,'rgba(255,255,255,0)');bc.fillStyle=g2;bc.fillRect(0,0,L,L);bc.globalCompositeOperation='source-over';
-  c.save();c.globalCompositeOperation='lighter';c.drawImage(buf,W/2-L/2,H/2-L/2);c.restore()}
+  if(sbuf.width!==(L|0)||sbuf.height!==(L|0)){sbuf.width=L|0;sbuf.height=L|0}const bc=sbc;bc.globalCompositeOperation='source-over';bc.clearRect(0,0,L,L);bc.drawImage(logo,0,0,L,L);bc.globalCompositeOperation='source-in';const g2=bc.createLinearGradient(t*2*L-L*.65,0,t*2*L-L*.35,0);g2.addColorStop(0,'rgba(255,255,255,0)');g2.addColorStop(.5,'rgba(235,240,250,.9)');g2.addColorStop(1,'rgba(255,255,255,0)');bc.fillStyle=g2;bc.fillRect(0,0,L,L);bc.globalCompositeOperation='source-over';
+  c.save();c.globalCompositeOperation='lighter';c.drawImage(sbuf,W/2-L/2,H/2-L/2);c.restore()}
  // tile atlas (mosaic thumbnails, rebuilt as they arrive) used as a repeating ground texture
- const AT=tv?32:64,AN=16,atlas=document.createElement('canvas');atlas.width=atlas.height=AT*AN;const ax=atlas.getContext('2d');let pat=null,dirty=1,lastB=0;
- function buildAtlas(){ax.fillStyle='#0c0e12';ax.fillRect(0,0,AT*AN,AT*AN);const gp=Math.max(2,AT*.09);for(let j=0;j<AN;j++)for(let i=0;i<AN;i++){const k=hash(i,j),im=imgs.length?imgs[k%imgs.length]:null,x=i*AT+gp/2,y=j*AT+gp/2,w=AT-gp;if(im&&im.ok)ax.drawImage(im,x,y,w,w*.82),ax.fillStyle='rgba(0,0,0,.15)',ax.fillRect(x,y+w*.82,w,w*.18);else{ax.fillStyle=hues[k%64];ax.fillRect(x,y,w,w*.82)}}pat=c.createPattern(atlas,'repeat');dirty=0}
- const ensure=()=>{const n=imgs.filter(i=>i.ok).length,now=Date.now();if(!pat||(n!==lastB&&now-(ensure.t||0)>400)){lastB=n;ensure.t=now;buildAtlas()}};
+ const AT=tv?32:64,AN=16,atlas=document.createElement('canvas');atlas.width=atlas.height=AT*AN;const ax=atlas.getContext('2d');let pat=null,gpat=null,dirty=1,lastB=0,curS=0;
+ function buildAtlas(){ax.fillStyle='#0c0e12';ax.fillRect(0,0,AT*AN,AT*AN);const gp=Math.max(2,AT*.09);for(let j=0;j<AN;j++)for(let i=0;i<AN;i++){const k=hash(i,j),im=imgs.length?imgs[k%imgs.length]:null,x=i*AT+gp/2,y=j*AT+gp/2,w=AT-gp;if(im&&im.ok)ax.drawImage(im,x,y,w,w*.82),ax.fillStyle='rgba(0,0,0,.15)',ax.fillRect(x,y+w*.82,w,w*.18);else{ax.fillStyle=hues[k%64];ax.fillRect(x,y,w,w*.82)}}pat=c.createPattern(atlas,'repeat');gpat=gx.createPattern(atlas,'repeat');dirty=0}
+ const quiet=()=>(curS>11.2&&curS<13.2)||curS>21.8; // never rebuild the atlas around the flashes / dive
+ const ensure=()=>{if(pat&&quiet())return;const n=imgs.filter(i=>i.ok).length,now=Date.now();if(!pat||(n!==lastB&&now-(ensure.t||0)>400)){lastB=n;ensure.t=now;buildAtlas()}};
  const gcv=document.createElement('canvas'),gx=gcv.getContext('2d');
+ const sizeG=()=>{if(gcv.width!==cv.width||gcv.height!==cv.height){gcv.width=cv.width;gcv.height=cv.height}};
+ let warmed=0;const warm=()=>{warmed=1;flashA(0);sizeG();lastB=-1;ensure.t=0;buildAtlas();lastB=imgs.filter(i=>i.ok).length;gx.fillStyle=gpat;gx.fillRect(0,0,1,1);if(!tv&&(buf.width!==cv.width||buf.height!==cv.height)){buf.width=cv.width;buf.height=cv.height}};
  function ground(hy,cam,camX){ // mode-7 style perspective strips into gcv (screen space, unrotated)
-  ensure();if(gcv.width!==cv.width||gcv.height!==cv.height){gcv.width=cv.width;gcv.height=cv.height}
-  const f=H*.9,h=10,band=opt.lite||(tv&&!opt.tv)?6:tv?4:2,P=gx.createPattern(atlas,'repeat');gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,gcv.width,gcv.height);gx.fillStyle=P;
+  ensure();sizeG()
+  const f=H*.9,h=10,band=opt.lite||(tv&&!opt.tv)?6:tv?4:2;gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,gcv.width,gcv.height);gx.fillStyle=gpat;
   for(let y=Math.max(Math.floor(hy)+1,-H);y<H*1.3;y+=band){const d=y-hy;if(d<=0)continue;const z=f*h/d,k=f/(z*AT),ky=f*h/(z*z*AT),tx=W/2-camX*AT*k,ty=y-(z+cam)*AT*ky;
    gx.setTransform(k*dpr,0,0,ky*dpr,tx*dpr,ty*dpr);gx.fillRect(-tx/k,(y-ty)/ky,W/k,band/ky*1.5)}
   gx.setTransform(1,0,0,1,0,0)}
@@ -58,11 +63,13 @@ function create(opt){
   const fog=c.createLinearGradient(0,hy,0,hy+H*.24);fog.addColorStop(0,'rgba(175,195,215,.95)');fog.addColorStop(.35,'rgba(130,145,160,.45)');fog.addColorStop(1,'rgba(90,100,110,0)');c.fillStyle=fog;c.fillRect(-D,hy-2,W+2*D,H*.24);c.restore();
   c.beginPath();c.arc(cx,cy,R,0,Math.PI*2);c.strokeStyle='rgba(170,220,255,.95)';c.lineWidth=Math.max(2,H*.006);if(!tv){c.shadowColor='#4aa8ff';c.shadowBlur=30}c.stroke();c.restore()}
  function topdown(s){ // 22-24.2: look straight down at the tile grid and dive into the orange centre tile
-  const a=sm(22.1,22.9,s);if(a<=0)return;ensure();const e=cl((s-22.1)/2),k=Math.exp(Math.log(48)*e*e*e),ts=H/42*k,sc=ts/AT,rot=lerp(.35,0,eo(e));
-  c.save();c.globalAlpha=a;c.fillStyle='#0a0c10';c.fillRect(0,0,W,H);c.translate(W/2,H/2);c.rotate(rot);c.scale(sc,sc);c.translate(-AT/2-AT*AN*4,-AT/2-AT*AN*4);c.fillStyle=pat;const big=Math.hypot(W,H)/sc;c.fillRect(AT*AN*4-big,AT*AN*4-big,big*2,big*2);c.restore();
+  const a=s>=22.95?1:sm(22.1,22.9,s);if(a<=0)return;ensure();const e=cl((s-22.1)/2),k=Math.exp(Math.log(48)*e*e*e),ts=H/42*k,sc=ts/AT,rot=lerp(.35,0,eo(e));
+  c.save();c.globalAlpha=a;c.fillStyle='#0a0c10';c.fillRect(0,0,W,H);c.translate(W/2,H/2);c.rotate(rot);c.scale(sc,sc);c.translate(-AT/2,-AT/2);const big=Math.hypot(W,H)/2/sc+AT,S=AT*AN,i0=Math.floor((AT/2-big)/S),i1=Math.floor((AT/2+big)/S);for(let j=i0;j<=i1;j++)for(let i=i0;i<=i1;i++)c.drawImage(atlas,i*S,j*S);c.restore();
   c.save();c.globalAlpha=a;c.translate(W/2,H/2);c.rotate(rot);const g=ts*.09;c.fillStyle='#ff8a1a';if(!tv){c.shadowColor='#ff8a1a';c.shadowBlur=30}c.fillRect(-ts/2-g*.3,-ts/2-g*.3,ts+g*.6,ts+g*.6);c.shadowBlur=0;c.fillStyle='#14171d';c.fillRect(-ts/2+g*.4,-ts/2+g*.4,ts-g*.8,ts-g*.8);if(logo.complete)c.drawImage(logo,-ts*.3,-ts*.34,ts*.6,ts*.6);c.restore();
-  if(!tv&&s>22.6){const b=sm(22.6,23.6,s)*.3;buf.width=cv.width;buf.height=cv.height;bc.drawImage(cv,0,0);c.save();c.setTransform(1,0,0,1,0,0);for(const q of [1.04,1.09,1.15]){c.globalAlpha=b;const w=cv.width*q,h=cv.height*q;c.drawImage(buf,(cv.width-w)/2,(cv.height-h)/2,w,h)}c.restore();c.setTransform(dpr,0,0,dpr,0,0)}}
- function frame(s){c.setTransform(dpr,0,0,dpr,0,0);c.globalAlpha=1;c.globalCompositeOperation='source-over';c.shadowBlur=0;c.fillStyle='#000';c.fillRect(0,0,W,H);
+  if(!tv&&s>22.6){const b=sm(22.6,23.6,s)*.3;if(buf.width!==cv.width||buf.height!==cv.height){buf.width=cv.width;buf.height=cv.height}bc.drawImage(cv,0,0);c.save();c.setTransform(1,0,0,1,0,0);for(const q of [1.04,1.09,1.15]){c.globalAlpha=b;const w=cv.width*q,h=cv.height*q;c.drawImage(buf,(cv.width-w)/2,(cv.height-h)/2,w,h)}c.restore();c.setTransform(dpr,0,0,dpr,0,0)}}
+ function frame(s){curS=s;if(!warmed&&s>5.5&&s<11)warm();
+  const fl=s<12.6?sm(11.7,11.95,s)*(1-sm(11.95,12.6,s)):0,sn=sm(23.7,24.05,s)*(1-sm(24.05,24.2,s)),fa=Math.max(fl,sn);flashA(fa);if(fa>=.995&&fx)return;
+  c.setTransform(dpr,0,0,dpr,0,0);c.globalAlpha=1;c.globalCompositeOperation='source-over';c.shadowBlur=0;c.fillStyle='#000';c.fillRect(0,0,W,H);
   if(s<12.2){
    ribbon(s);
    const la=sm(2.5,3.6,s)*(1-sm(8.2,10,s)*.62),sc=s<5?lerp(2.4,1,eo((s-2.4)/2.2)):1,rot=s<5?lerp(.4,0,eo((s-2.4)/2.4)):0,dy=-H*.09*sm(5,5.7,s)*(1-sm(8,9,s));
@@ -74,13 +81,12 @@ function create(opt){
    const wa=sm(5.6,6.6,s)*(1-sm(8,8.6,s));if(wa>0){c.save();c.globalAlpha=wa;c.fillStyle='#f2f2f2';c.font=`600 ${Math.round(H*.065)}px 'Source Sans 3',sans-serif`;c.textAlign='center';c.textBaseline='middle';if(c.letterSpacing!==undefined)c.letterSpacing=Math.round(H*.006)+'px';c.fillText('The Fan Edit Fan Club',W/2,H/2+H*.24);c.restore()}
    if(s>11.4){const st=sm(11.4,11.8,s)*(1-sm(11.9,12.2,s));c.save();c.globalCompositeOperation='lighter';const g=c.createLinearGradient(0,0,W,0);g.addColorStop(0,'rgba(60,140,255,0)');g.addColorStop(.5,'rgba(190,230,255,1)');g.addColorStop(1,'rgba(60,140,255,0)');c.fillStyle=g;c.globalAlpha=st;const hh=H*lerp(.004,.05,st);c.fillRect(0,H*.56-hh/2,W,hh);c.restore()}
   }
-  if(s>=11.95)planet(s);
+  if(s>=11.95&&s<22.95)planet(s); // topdown is fully opaque from 22.9
   if(s>22.1)topdown(s);
-  const fl=s<12.6?sm(11.7,11.95,s)*(1-sm(11.95,12.6,s)):0;if(fl>0){c.globalAlpha=fl;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1}
-  const sn=sm(23.7,24.05,s);if(sn>0){c.globalAlpha=sn*(1-sm(24.05,24.2,s));c.fillStyle='#ffffff';c.fillRect(0,0,W,H);c.globalAlpha=1}
+  if(fa>0&&!fx){c.globalAlpha=fa;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1}
   // tagline: fades in at its exact dashboard position (real DOM element)
   const tg=opt.tagline;if(tg){const a=+sm(17.4,18.6,s).toFixed(3),cp=`inset(0 ${(100-100*eo(cl((s-17.4)/1.4))).toFixed(1)}% 0 0)`;if(tg._a!==a){tg._a=a;tg.style.opacity=a}if(tg._cp!==cp){tg._cp=cp;tg.style.clipPath=cp}if(!tg._v){tg._v=1;tg.style.visibility='visible'}}}
  // adaptive: if the device can't hold frame rate, drop to the low-cost path mid-intro (same timeline)
- const degrade=()=>{if(tv)return false;tv=true;dpr=1;size();return true};
+ const degrade=()=>{if(tv)return false;tv=true;dpr=1;size();if(warmed)warm();return true};
  return {canvas:cv,frame,mapC,mapF,FULL,setTiles,degrade}}
 return {create,mapC,mapF,FULL}})();

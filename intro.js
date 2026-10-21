@@ -28,7 +28,20 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     };
     size();
     addEventListener("resize", size);
-    const buf = document.createElement("canvas"), bc = buf.getContext("2d");
+    const buf = document.createElement("canvas"), bc = buf.getContext("2d"), sbuf = document.createElement("canvas"), sbc = sbuf.getContext("2d");
+    let fx = null, fxa = -1;
+    const flashA = (a) => {
+      a = a > 0.995 ? 1 : a < 5e-3 ? 0 : +a.toFixed(3);
+      if (!fx && cv.parentNode) {
+        fx = document.createElement("div");
+        fx.style.cssText = "position:absolute;left:0;top:0;width:100%;height:100%;background:#fff;opacity:0;pointer-events:none;will-change:opacity;transform:translateZ(0);z-index:1";
+        cv.parentNode.insertBefore(fx, cv.nextSibling);
+      }
+      if (fx && a !== fxa) {
+        fxa = a;
+        fx.style.opacity = a;
+      }
+    };
     const logo = new Image();
     logo.src = "assets/fefc-logo-carson.png";
     let tint = null;
@@ -152,27 +165,31 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       c.fillStyle = g;
       c.globalCompositeOperation = "source-atop";
       c.restore();
-      buf.width = L | 0;
-      buf.height = L | 0;
-      bc.clearRect(0, 0, L, L);
-      bc.drawImage(logo, 0, 0, L, L);
-      bc.globalCompositeOperation = "source-in";
-      const g2 = bc.createLinearGradient(t * 2 * L - L * 0.65, 0, t * 2 * L - L * 0.35, 0);
+      if (sbuf.width !== (L | 0) || sbuf.height !== (L | 0)) {
+        sbuf.width = L | 0;
+        sbuf.height = L | 0;
+      }
+      const bc2 = sbc;
+      bc2.globalCompositeOperation = "source-over";
+      bc2.clearRect(0, 0, L, L);
+      bc2.drawImage(logo, 0, 0, L, L);
+      bc2.globalCompositeOperation = "source-in";
+      const g2 = bc2.createLinearGradient(t * 2 * L - L * 0.65, 0, t * 2 * L - L * 0.35, 0);
       g2.addColorStop(0, "rgba(255,255,255,0)");
       g2.addColorStop(0.5, "rgba(235,240,250,.9)");
       g2.addColorStop(1, "rgba(255,255,255,0)");
-      bc.fillStyle = g2;
-      bc.fillRect(0, 0, L, L);
-      bc.globalCompositeOperation = "source-over";
+      bc2.fillStyle = g2;
+      bc2.fillRect(0, 0, L, L);
+      bc2.globalCompositeOperation = "source-over";
       c.save();
       c.globalCompositeOperation = "lighter";
-      c.drawImage(buf, W / 2 - L / 2, H / 2 - L / 2);
+      c.drawImage(sbuf, W / 2 - L / 2, H / 2 - L / 2);
       c.restore();
     }
     const AT = tv ? 32 : 64, AN = 16, atlas = document.createElement("canvas");
     atlas.width = atlas.height = AT * AN;
     const ax = atlas.getContext("2d");
-    let pat = null, dirty = 1, lastB = 0;
+    let pat = null, gpat = null, dirty = 1, lastB = 0, curS = 0;
     function buildAtlas() {
       ax.fillStyle = "#0c0e12";
       ax.fillRect(0, 0, AT * AN, AT * AN);
@@ -186,9 +203,12 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
         }
       }
       pat = c.createPattern(atlas, "repeat");
+      gpat = gx.createPattern(atlas, "repeat");
       dirty = 0;
     }
+    const quiet = () => curS > 11.2 && curS < 13.2 || curS > 21.8;
     const ensure = () => {
+      if (pat && quiet()) return;
       const n = imgs.filter((i) => i.ok).length, now = Date.now();
       if (!pat || n !== lastB && now - (ensure.t || 0) > 400) {
         lastB = n;
@@ -197,16 +217,35 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       }
     };
     const gcv = document.createElement("canvas"), gx = gcv.getContext("2d");
-    function ground(hy, cam, camX) {
-      ensure();
+    const sizeG = () => {
       if (gcv.width !== cv.width || gcv.height !== cv.height) {
         gcv.width = cv.width;
         gcv.height = cv.height;
       }
-      const f = H * 0.9, h = 10, band = opt.lite || tv && !opt.tv ? 6 : tv ? 4 : 2, P = gx.createPattern(atlas, "repeat");
+    };
+    let warmed = 0;
+    const warm = () => {
+      warmed = 1;
+      flashA(0);
+      sizeG();
+      lastB = -1;
+      ensure.t = 0;
+      buildAtlas();
+      lastB = imgs.filter((i) => i.ok).length;
+      gx.fillStyle = gpat;
+      gx.fillRect(0, 0, 1, 1);
+      if (!tv && (buf.width !== cv.width || buf.height !== cv.height)) {
+        buf.width = cv.width;
+        buf.height = cv.height;
+      }
+    };
+    function ground(hy, cam, camX) {
+      ensure();
+      sizeG();
+      const f = H * 0.9, h = 10, band = opt.lite || tv && !opt.tv ? 6 : tv ? 4 : 2;
       gx.setTransform(1, 0, 0, 1, 0, 0);
       gx.clearRect(0, 0, gcv.width, gcv.height);
-      gx.fillStyle = P;
+      gx.fillStyle = gpat;
       for (let y = Math.max(Math.floor(hy) + 1, -H); y < H * 1.3; y += band) {
         const d = y - hy;
         if (d <= 0) continue;
@@ -264,7 +303,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       c.restore();
     }
     function topdown(s) {
-      const a = sm(22.1, 22.9, s);
+      const a = s >= 22.95 ? 1 : sm(22.1, 22.9, s);
       if (a <= 0) return;
       ensure();
       const e = cl((s - 22.1) / 2), k = Math.exp(Math.log(48) * e * e * e), ts = H / 42 * k, sc = ts / AT, rot = lerp(0.35, 0, eo(e));
@@ -275,10 +314,9 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       c.translate(W / 2, H / 2);
       c.rotate(rot);
       c.scale(sc, sc);
-      c.translate(-AT / 2 - AT * AN * 4, -AT / 2 - AT * AN * 4);
-      c.fillStyle = pat;
-      const big = Math.hypot(W, H) / sc;
-      c.fillRect(AT * AN * 4 - big, AT * AN * 4 - big, big * 2, big * 2);
+      c.translate(-AT / 2, -AT / 2);
+      const big = Math.hypot(W, H) / 2 / sc + AT, S = AT * AN, i0 = Math.floor((AT / 2 - big) / S), i1 = Math.floor((AT / 2 + big) / S);
+      for (let j = i0; j <= i1; j++) for (let i = i0; i <= i1; i++) c.drawImage(atlas, i * S, j * S);
       c.restore();
       c.save();
       c.globalAlpha = a;
@@ -298,8 +336,10 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       c.restore();
       if (!tv && s > 22.6) {
         const b = sm(22.6, 23.6, s) * 0.3;
-        buf.width = cv.width;
-        buf.height = cv.height;
+        if (buf.width !== cv.width || buf.height !== cv.height) {
+          buf.width = cv.width;
+          buf.height = cv.height;
+        }
         bc.drawImage(cv, 0, 0);
         c.save();
         c.setTransform(1, 0, 0, 1, 0, 0);
@@ -313,6 +353,11 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       }
     }
     function frame(s) {
+      curS = s;
+      if (!warmed && s > 5.5 && s < 11) warm();
+      const fl = s < 12.6 ? sm(11.7, 11.95, s) * (1 - sm(11.95, 12.6, s)) : 0, sn = sm(23.7, 24.05, s) * (1 - sm(24.05, 24.2, s)), fa = Math.max(fl, sn);
+      flashA(fa);
+      if (fa >= 0.995 && fx) return;
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
       c.globalAlpha = 1;
       c.globalCompositeOperation = "source-over";
@@ -373,19 +418,11 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
           c.restore();
         }
       }
-      if (s >= 11.95) planet(s);
+      if (s >= 11.95 && s < 22.95) planet(s);
       if (s > 22.1) topdown(s);
-      const fl = s < 12.6 ? sm(11.7, 11.95, s) * (1 - sm(11.95, 12.6, s)) : 0;
-      if (fl > 0) {
-        c.globalAlpha = fl;
+      if (fa > 0 && !fx) {
+        c.globalAlpha = fa;
         c.fillStyle = "#fff";
-        c.fillRect(0, 0, W, H);
-        c.globalAlpha = 1;
-      }
-      const sn = sm(23.7, 24.05, s);
-      if (sn > 0) {
-        c.globalAlpha = sn * (1 - sm(24.05, 24.2, s));
-        c.fillStyle = "#ffffff";
         c.fillRect(0, 0, W, H);
         c.globalAlpha = 1;
       }
@@ -411,6 +448,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       tv = true;
       dpr = 1;
       size();
+      if (warmed) warm();
       return true;
     };
     return { canvas: cv, frame, mapC, mapF, FULL, setTiles, degrade };
