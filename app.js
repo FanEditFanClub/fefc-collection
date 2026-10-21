@@ -1657,6 +1657,51 @@ var __spreadValues = (a, b) => {
     const c = [ext && ext.toUpperCase(), hs, res, ds].filter(Boolean);
     return c.length ? '<div class="fchips" aria-label="File info"><span class="fl">FILE</span>'.concat(c.map((x) => "<span>".concat(esc(x), "</span>")).join(""), "</div>") : "";
   }
+  function detCover(f) {
+    let x = items.get(target(f)) || f, g = 0;
+    const ids = [];
+    while (x && x.parent && g++ < 30) {
+      ids.push(x.parent);
+      x = items.get(x.parent);
+    }
+    if (f.parent) ids.unshift(f.parent);
+    for (const p of ids) {
+      if (p === ROOT) break;
+      const t = fthumbs[p];
+      if (t) return t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=w640&id=" + t;
+    }
+    return null;
+  }
+  function detBackdrop(f, pu) {
+    const d = $("#details");
+    let c = d.querySelector("canvas.lc-bg");
+    if (!c) {
+      c = document.createElement("canvas");
+      c.className = "lc-bg";
+      c.width = 40;
+      c.height = 24;
+      d.prepend(c);
+    }
+    const x = c.getContext("2d");
+    x.clearRect(0, 0, 40, 24);
+    c.classList.remove("on");
+    const src = detCover(f) || pu;
+    if (!src) return;
+    const im = new Image(), want = f.id;
+    im.onload = () => {
+      if (d.dataset.id !== want) return;
+      const r = Math.max(40 / im.width, 24 / im.height), w = im.width * r, h = im.height * r;
+      x.drawImage(im, (40 - w) / 2, (24 - h) / 2, w, h);
+      c.classList.add("on");
+    };
+    im.onerror = () => {
+      if (pu && src !== pu && !im.dataset.fb) {
+        im.dataset.fb = 1;
+        im.src = pu;
+      }
+    };
+    im.src = src;
+  }
   async function details(f, push = true) {
     S.open();
     S.ambience(false);
@@ -1678,9 +1723,11 @@ var __spreadValues = (a, b) => {
     const tr = m.trailer && m.trailer.youtubeId ? { id: m.trailer.youtubeId } : F2 && F2.trailer;
     const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source film.</p>';
     const T = m.title || p.raw, meta1 = [film.year, F2 && F2.runtime ? F2.runtime + " min" : "", F2 && F2.tv ? "TV series" : ""].filter(Boolean).join(" \xB7 ");
-    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat(R.length ? '<button class="pill p4" data-jump="ratings">Ratings</button>' : "", '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    const PS = posters[f.id] || posters[id], PU = PS && PS.url;
+    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat(R.length ? '<button class="pill p4" data-jump="ratings">Ratings</button>' : "", '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     $("#details").hidden = false;
     $("#details").dataset.id = f.id;
+    detBackdrop(f, PU);
     const E = episodes(f);
     epWire(f, E);
     $("#details").scrollTop = 0;

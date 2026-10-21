@@ -367,6 +367,12 @@ function fileChips(f){const t=items.get(target(f))||f,g=k=>f[k]!=null?f[k]:t[k];
  const rm=(f.name+' '+(t.name||'')).match(/\b(4K|2160p|1080p|720p|576p|480p|360p|UHD)\b/i),res=rm?(/2160|uhd/i.test(rm[1])?'4K':rm[1].toUpperCase().replace('P','p')):'';
  const dur=g('duration')||g('durationMillis');const ds=dur?(()=>{const m=Math.round(+dur/(dur>1e5?6e4:60));return m>=60?Math.floor(m/60)+'h '+(m%60)+'m':m+'m'})():'';
  const c=[ext&&ext.toUpperCase(),hs,res,ds].filter(Boolean);return c.length?`<div class="fchips" aria-label="File info"><span class="fl">FILE</span>${c.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:''}
+/* blurred backdrop: low-res canvas upscaled by the browser (no CSS blur filter; cheap on iOS) */
+function detCover(f){let x=items.get(target(f))||f,g=0;const ids=[];while(x&&x.parent&&g++<30){ids.push(x.parent);x=items.get(x.parent)}if(f.parent)ids.unshift(f.parent);
+ for(const p of ids){if(p===ROOT)break;const t=fthumbs[p];if(t)return t.startsWith('assets/')?t:'https://drive.google.com/thumbnail?sz=w640&id='+t}return null}
+function detBackdrop(f,pu){const d=$('#details');let c=d.querySelector('canvas.lc-bg');if(!c){c=document.createElement('canvas');c.className='lc-bg';c.width=40;c.height=24;d.prepend(c)}
+ const x=c.getContext('2d');x.clearRect(0,0,40,24);c.classList.remove('on');const src=detCover(f)||pu;if(!src)return;const im=new Image(),want=f.id;
+ im.onload=()=>{if(d.dataset.id!==want)return;const r=Math.max(40/im.width,24/im.height),w=im.width*r,h=im.height*r;x.drawImage(im,(40-w)/2,(24-h)/2,w,h);c.classList.add('on')};im.onerror=()=>{if(pu&&src!==pu&&!im.dataset.fb){im.dataset.fb=1;im.src=pu}};im.src=src}
 async function details(f,push=true){S.open();S.ambience(false);const p=parse(f.name),id=target(f),m=meta[f.id]||meta[id]||{};
  const F=(meta.films&&meta.map&&meta.films[meta.map[f.id]||meta.map[id]])||null;
  const film=F?{title:F.title,year:F.year,director:(F.director||[]).join(', ')}:(m.sourceFilm||{title:p.film,year:p.year});
@@ -382,9 +388,10 @@ async function details(f,push=true){S.open();S.ambience(false);const p=parse(f.n
  const tr=m.trailer&&m.trailer.youtubeId?{id:m.trailer.youtubeId}:F&&F.trailer;
  const rt=R.map(r=>`<a ${r.url?`href="${esc(r.url)}" target="_blank" rel="noopener"`:''} class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')||'<p class="src">No ratings found for the source film.</p>';
  const T=m.title||p.raw,meta1=[film.year,F&&F.runtime?F.runtime+' min':'',F&&F.tv?'TV series':''].filter(Boolean).join(' · ');
+ const PS=posters[f.id]||posters[id],PU=PS&&PS.url;
  $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
  <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play">▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${R.length?'<button class="pill p4" data-jump="ratings">Ratings</button>':''}<div class="grow"></div></div>
- <div class="lc-body"><div class="lc-head"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div><div>
+ <div class="lc-body"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
   ${desc?`<h3 class="lc-h">Fan edit</h3><p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
   <h3 class="lc-h l">Source ${F&&F.tv?'series':'film'}</h3><p><b>${esc(film.title||'Unknown')}</b>${film.year?' ('+esc(film.year)+')':''}${film.director?'<br>Directed by '+esc(film.director):''}${F&&F.genres?'<br><span class="src">'+esc(F.genres.join(' · '))+'</span>':''}${m.editor?'<br><span class="src">Fan edit by '+esc(m.editor)+'</span>':''}</p>
   ${plot?`<p>${esc(plot)}</p>${F.wiki?`<p class="src">Plot: <a href="${esc(F.wiki)}" target="_blank" rel="noopener">Wikipedia</a></p>`:''}`:''}
@@ -394,7 +401,7 @@ async function details(f,push=true){S.open();S.ambience(false);const p=parse(f.n
   <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">${rt}</div>
   <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer${film.title?' · '+esc(film.title):''}</h3><div class="trailer">${tr?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(tr.id)}" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>`:`<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query=${encodeURIComponent((film.title||p.raw)+' '+(film.year||'')+' official trailer')}" target="_blank" rel="noopener">Search YouTube ›</a></span>`}</div>
  </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>`;
- $('#details').hidden=false;$('#details').dataset.id=f.id;const E=episodes(f);epWire(f,E);$('#details').scrollTop=0;const lb=$('#details .lc-body');if(lb)lb.scrollTop=0;
+ $('#details').hidden=false;$('#details').dataset.id=f.id;detBackdrop(f,PU);const E=episodes(f);epWire(f,E);$('#details').scrollTop=0;const lb=$('#details .lc-body');if(lb)lb.scrollTop=0;
  $('#details').querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>{S.chirp(2);const t=$('#lc-'+b.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}));
  let n=0;$('#details').querySelectorAll('.pill,.rt a,.bigplay').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)))}
 function killFrame(){const o=$('#pframe');if(o){const n=o.cloneNode(false);n.removeAttribute('src');o.replaceWith(n)}}
