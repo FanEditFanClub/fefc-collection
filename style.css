@@ -675,3 +675,5 @@ body.tv .ol-tile.mainc .mc-l{font-size:2vh}body.tv .ol-tile.mainc .mc-c{font-siz
 .priv-box small{display:block;margin-top:14px;color:#8fa2b8}
 body.tv .priv-box h2{font-size:4vh}body.tv .priv-box p{font-size:2.2vh}body.tv .priv-req{font-size:2.6vh!important}
 .ol-tile .lockb{position:absolute;right:8px;bottom:34px;z-index:4;font-size:16px;background:#000a;border:1px solid #ff9c00aa;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+/* Optimus popcorn bowl: shown while he watches */
+.o-pop{transition:opacity .3s ease}.sp-opt:not(.m-idle) .o-pop{opacity:0}
