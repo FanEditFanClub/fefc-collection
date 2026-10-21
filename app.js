@@ -1200,15 +1200,17 @@ var __spreadValues = (a, b) => {
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
     if (!L && f && Array.isArray(FSFX._rules)) {
-      const names = [];
+      const names = [], ids = [];
       let c = f, n = 0;
       while (c && n++ < 30) {
         names.push((c.name || "").toLowerCase());
+        ids.push(c.id, c.targetId || "");
         c = items.get(c.parent);
       }
       const sc = [...items.values()].find((x) => x.targetId === id && x.id !== id);
       if (sc) names.push((sc.name || "").toLowerCase());
       const r = FSFX._rules.find((r2) => {
+        if (r2.ids && r2.ids.some((x) => x === id || r2.path !== false && ids.indexOf(x) >= 0)) return true;
         const q = (r2.match || "").toLowerCase();
         return q && (r2.path ? names : names.slice(0, 1).concat(sc ? [(sc.name || "").toLowerCase()] : [])).some((x) => x.includes(q));
       });

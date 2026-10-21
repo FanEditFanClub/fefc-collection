@@ -29,6 +29,261 @@
     "assets/sfx/star-wars.mp3",
     "assets/sfx/star-wars.wav"
    ]
+  },
+  {
+   "files": [
+    "assets/sfx/harry-potter.m4a",
+    "assets/sfx/harry-potter.mp3",
+    "assets/sfx/harry-potter.wav"
+   ],
+   "path": true,
+   "source": "Carson-supplied",
+   "match": "harry potter"
+  },
+  {
+   "files": [
+    "assets/sfx/bruce-almighty-beautiful.m4a",
+    "assets/sfx/bruce-almighty-beautiful.mp3"
+   ],
+   "path": true,
+   "source": "myinstants b-e-a-utiful_Gu8pD2O.mp3",
+   "match": "jim carrey",
+   "ids": [
+    "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ"
+   ]
+  },
+  {
+   "files": [
+    "assets/sfx/director-action.m4a",
+    "assets/sfx/director-action.mp3"
+   ],
+   "path": true,
+   "source": "myinstants action_3GPexhe.mp3",
+   "ids": [
+    "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP",
+    "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4",
+    "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v",
+    "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2",
+    "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg",
+    "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o",
+    "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF",
+    "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el",
+    "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t",
+    "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC"
+   ]
+  },
+  {
+   "files": [
+    "assets/sfx/indy-snakes.m4a",
+    "assets/sfx/indy-snakes.mp3"
+   ],
+   "path": true,
+   "source": "myinstants snakes-why.mp3",
+   "match": "indiana jones"
+  },
+  {
+   "files": [
+    "assets/sfx/ill-be-back.m4a",
+    "assets/sfx/ill-be-back.mp3"
+   ],
+   "path": true,
+   "source": "myinstants ill-be-back_T7Tkygy.mp3",
+   "match": "terminator"
+  },
+  {
+   "files": [
+    "assets/sfx/ill-be-back.m4a",
+    "assets/sfx/ill-be-back.mp3"
+   ],
+   "path": true,
+   "source": "myinstants ill-be-back_T7Tkygy.mp3",
+   "match": "schwarzenegger",
+   "ids": [
+    "1PP8yo_d48WTwbehk3BoAGvDXZssfaDBp"
+   ]
+  },
+  {
+   "files": [
+    "assets/sfx/predator-choppa.m4a",
+    "assets/sfx/predator-choppa.mp3"
+   ],
+   "path": true,
+   "source": "myinstants get-to-the-chopper.mp3",
+   "match": "predator"
+  },
+  {
+   "files": [
+    "assets/sfx/great-scott.m4a",
+    "assets/sfx/great-scott.mp3"
+   ],
+   "path": true,
+   "source": "myinstants greatscott2.mp3",
+   "match": "back to the future"
+  },
+  {
+   "files": [
+    "assets/sfx/trex-roar.m4a",
+    "assets/sfx/trex-roar.mp3"
+   ],
+   "path": true,
+   "source": "myinstants jurassic-park-t-rex-roar_lb9FQOm.mp3",
+   "match": "jurassic"
+  },
+  {
+   "files": [
+    "assets/sfx/star-trek-communicator.m4a",
+    "assets/sfx/star-trek-communicator.mp3"
+   ],
+   "path": true,
+   "source": "myinstants communicator.mp3",
+   "match": "star trek"
+  },
+  {
+   "files": [
+    "assets/sfx/lotr-shall-not-pass.m4a",
+    "assets/sfx/lotr-shall-not-pass.mp3"
+   ],
+   "path": true,
+   "source": "myinstants the-lord-of-the-rings-you-shall-not-pass-hd-mp3cut.mp3",
+   "match": "lord of the rings"
+  },
+  {
+   "files": [
+    "assets/sfx/lotr-shall-not-pass.m4a",
+    "assets/sfx/lotr-shall-not-pass.mp3"
+   ],
+   "path": true,
+   "source": "myinstants (same)",
+   "match": "hobbit"
+  },
+  {
+   "files": [
+    "assets/sfx/im-batman.m4a",
+    "assets/sfx/im-batman.mp3"
+   ],
+   "path": true,
+   "source": "myinstants im-batman.mp3",
+   "match": "batman"
+  },
+  {
+   "files": [
+    "assets/sfx/die-hard-yippee.m4a",
+    "assets/sfx/die-hard-yippee.mp3"
+   ],
+   "path": true,
+   "source": "myinstants johnmcclanejapanese.mp3",
+   "match": "die hard"
+  },
+  {
+   "files": [
+    "assets/sfx/pirates-rum.m4a",
+    "assets/sfx/pirates-rum.mp3"
+   ],
+   "path": true,
+   "source": "myinstants but-why-is-the-rum-gone.mp3",
+   "match": "pirates of the caribbean"
+  },
+  {
+   "files": [
+    "assets/sfx/toy-story-infinity.m4a",
+    "assets/sfx/toy-story-infinity.mp3"
+   ],
+   "path": true,
+   "source": "myinstants to-infinity-and-beyond.mp3",
+   "match": "toy story"
+  },
+  {
+   "files": [
+    "assets/sfx/cage-not-the-bees.m4a",
+    "assets/sfx/cage-not-the-bees.mp3"
+   ],
+   "path": true,
+   "source": "myinstants not-the-bees.mp3",
+   "match": "nicolas cage",
+   "ids": [
+    "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq"
+   ]
+  },
+  {
+   "files": [
+    "assets/sfx/godzilla-roar.m4a",
+    "assets/sfx/godzilla-roar.mp3"
+   ],
+   "path": true,
+   "source": "myinstants godzilla_2.mp3",
+   "match": "godzilla"
+  },
+  {
+   "files": [
+    "assets/sfx/friday13-kikimama.m4a",
+    "assets/sfx/friday13-kikimama.mp3"
+   ],
+   "path": true,
+   "source": "myinstants jason-sound-effect.mp3",
+   "match": "friday the 13th"
+  },
+  {
+   "files": [
+    "assets/sfx/freddy-one-two.m4a",
+    "assets/sfx/freddy-one-two.mp3"
+   ],
+   "path": true,
+   "source": "myinstants freddy-krueger-laugh.mp3",
+   "match": "nightmare on elm"
+  },
+  {
+   "files": [
+    "assets/sfx/home-alone-filthy.m4a",
+    "assets/sfx/home-alone-filthy.mp3"
+   ],
+   "path": true,
+   "source": "myinstants keep-the-change.mp3",
+   "match": "home alone"
+  },
+  {
+   "files": [
+    "assets/sfx/robocop-dead-or-alive.m4a",
+    "assets/sfx/robocop-dead-or-alive.mp3"
+   ],
+   "path": true,
+   "source": "myinstants ed-209-20-second-to-comply.mp3",
+   "match": "robocop"
+  },
+  {
+   "files": [
+    "assets/sfx/got-winter.m4a",
+    "assets/sfx/got-winter.mp3"
+   ],
+   "path": true,
+   "source": "myinstants winter-is-coming-eddard-stark-lord-of-winterfell.mp3",
+   "match": "game of thrones"
+  },
+  {
+   "files": [
+    "assets/sfx/matrix-whoa.m4a",
+    "assets/sfx/matrix-whoa.mp3"
+   ],
+   "path": true,
+   "source": "myinstants there-is-no-spoon.mp3",
+   "match": "matrix"
+  },
+  {
+   "files": [
+    "assets/sfx/jaws-theme.m4a",
+    "assets/sfx/jaws-theme.mp3"
+   ],
+   "path": true,
+   "source": "myinstants jaws-theme_TDORPKA.mp3",
+   "match": "jaws"
+  },
+  {
+   "files": [
+    "assets/sfx/alien-hiss.m4a",
+    "assets/sfx/alien-hiss.mp3"
+   ],
+   "path": true,
+   "source": "myinstants xenomorph-screech.mp3",
+   "match": "alien"
   }
  ]
 }
