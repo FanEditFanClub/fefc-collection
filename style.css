@@ -513,3 +513,12 @@ body.tv .lc-poster{width:20vh}
 @media (max-width:800px),(max-height:520px){.lc-head.has-poster{flex-direction:column}.lc-poster{width:auto;height:min(62vh,300px)}}
 .lc-poster img.wide{object-fit:contain;background:#111}
 @media (max-width:800px),(max-height:520px){.lc-poster{height:min(52vh,300px)}}
+/* star toggle: aria-pressed is the source of truth; no sticky hover gold on touch */
+.ol-tile .star:hover{color:inherit;border-color:#fff5}
+.ol-tile .star[aria-pressed="false"]{color:#fff;border-color:#fff5;text-shadow:none}
+.ol-tile .star[aria-pressed="true"]{opacity:1;transform:none;color:#ff9c00;border-color:#ff9c00;text-shadow:0 0 8px #ff9c00aa}
+@media (hover:hover) and (pointer:fine){.ol-tile .star[aria-pressed="false"]:hover{color:#fff;border-color:#ffb02e;background:#000d}}
+.ol-tile .star.pop{animation:starpop .32s ease-out}@keyframes starpop{40%{transform:scale(1.35)}}
+#details .star-btn[aria-pressed="false"]{background:var(--p);color:#000}#details .star-btn[aria-pressed="true"]{background:#ff9c00;color:#000}
+#startoast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:200;padding:10px 20px;border-radius:22px;background:#111e;border:1px solid #ff9c00;color:#fff;font:600 15px 'Source Sans 3',sans-serif;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;box-shadow:0 6px 24px #000a}
+#startoast.show{opacity:1;transform:translate(-50%,0)}

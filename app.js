@@ -312,7 +312,10 @@ var __spreadValues = (a, b) => {
     const fold = isFolder(f), p = parse(f.name), vid = !fold && isVid(f), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
-    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? '<span class="star'.concat(window.UD && UD.isStarred(f.id) ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-label="Star" title="Star (S)">\u2605</span>') : "").concat(vid ? '<div class="pcap '.concat((() => {
+    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '">').concat(vid ? '<div class="ptitle">'.concat(esc(p.raw), "</div>") : "", '</div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
+      const on = !!(window.UD && UD.isStarred(f.id));
+      return '<span class="star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-pressed="').concat(on, '" aria-label="').concat(on ? "Remove from My List" : "Add to My List", '" title="').concat(on ? "Starred" : "Star", ' (S)">').concat(on ? "\u2605" : "\u2606", "</span>");
+    })() : "").concat(vid ? '<div class="pcap '.concat((() => {
       const n = p.raw.length;
       return n > 90 ? "c4" : n > 55 ? "c3" : n > 30 ? "c2" : "c1";
     })(), '">').concat(esc(p.raw), "</div>") : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
@@ -802,19 +805,50 @@ var __spreadValues = (a, b) => {
     }
     myListPage();
   });
-  function toggleStarFor(id) {
-    if (!window.UD || !id) return;
-    const f = items.get(id), on = UD.toggleStar(id, f && f.name);
-    S.chirp && S.chirp(on ? 1 : 0);
+  let starLast = {};
+  if (window.UD && UD.subscribe) UD.subscribe(() => requestAnimationFrame(() => document.querySelectorAll("[data-star]").forEach((x) => {
+    const on = UD.isStarred(x.dataset.star);
+    if (x.getAttribute("aria-pressed") === "true" !== on) paintStars(x.dataset.star, on);
+  })));
+  function starToast(t) {
+    let el = $("#startoast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "startoast";
+      el.setAttribute("role", "status");
+      el.setAttribute("aria-live", "polite");
+      document.body.appendChild(el);
+    }
+    el.textContent = t;
+    el.classList.remove("show");
+    void el.offsetWidth;
+    el.classList.add("show");
+    clearTimeout(el._t);
+    el._t = setTimeout(() => el.classList.remove("show"), 1600);
+  }
+  function paintStars(id, on) {
     document.querySelectorAll('[data-star="' + id + '"]').forEach((x) => {
       x.classList.toggle("on", on);
-      x.setAttribute("aria-pressed", on);
+      x.setAttribute("aria-pressed", String(on));
+      if (x.classList.contains("star")) {
+        x.textContent = on ? "\u2605" : "\u2606";
+        x.setAttribute("aria-label", on ? "Remove from My List" : "Add to My List");
+        x.title = (on ? "Starred" : "Star") + " (S)";
+        x.classList.remove("pop");
+        void x.offsetWidth;
+        x.classList.add("pop");
+      } else if (x.classList.contains("star-btn")) x.textContent = on ? "\u2605 Starred" : "\u2606 Star";
     });
-    const db = document.querySelector("#details .star-btn");
-    if (db && db.dataset.star === id) {
-      db.classList.toggle("on", on);
-      db.textContent = on ? "\u2605 Starred" : "\u2606 Star";
-    }
+  }
+  function toggleStarFor(id) {
+    if (!window.UD || !id) return;
+    const t = Date.now();
+    if (starLast[id] && t - starLast[id] < 250) return;
+    starLast[id] = t;
+    const f = items.get(id), on = UD.toggleStar(id, f && f.name);
+    S.chirp && S.chirp(on ? 1 : 0);
+    paintStars(id, on);
+    starToast(on ? "Added to My List" : "Removed from My List");
     if (view !== "home" && parseH()[0] === "mylist" && !on) myListPage();
     if (!$("#home").hidden) hub();
   }
@@ -2141,7 +2175,7 @@ var __spreadValues = (a, b) => {
       const id = $("#details").dataset.id;
       if (id && window.UD && !p.parentNode.querySelector(".star-btn")) {
         const on = UD.isStarred(id);
-        p.insertAdjacentHTML("afterend", '<button class="pill p4 star-btn'.concat(on ? " on" : "", '" data-star="').concat(id, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>"));
+        p.insertAdjacentHTML("afterend", '<button class="pill p4 star-btn'.concat(on ? " on" : "", '" data-star="').concat(id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>"));
       }
       const B = document.body.classList, D = $("#details");
       if (B.contains("tv") || B.contains("kbd")) {
