@@ -1032,3 +1032,9 @@ var __spreadValues = (a, b) => {
     }
   }, 400);
 })();
+addEventListener("load", () => {
+  const s = document.createElement("script");
+  s.src = "clips.js?v=" + (document.querySelector('script[src*="app.js?v="]') || { src: "" }).src.split("v=")[1];
+  s.async = true;
+  document.body.appendChild(s);
+});
