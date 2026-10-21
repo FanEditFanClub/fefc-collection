@@ -303,7 +303,7 @@ var __spreadValues = (a, b) => {
     go("#/genre/" + encodeURIComponent(g.dataset.genre));
   });
   function vids() {
-    return [].slice.call(items.values()).filter((f) => !isFolder(f) && isVid(f));
+    return Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f));
   }
   function isVid(f) {
     return /^video\//.test(f.mimeType) || /\.(mkv|mp4|m4v|avi|mov|webm)$/i.test(f.name);
@@ -313,16 +313,16 @@ var __spreadValues = (a, b) => {
     return k ? k.length : 0;
   }
   function hub() {
-    const now = Date.now(), newN = vids().filter((f) => f.modified && now - Date.parse(f.modified) < 30 * 864e5).length;
+    const newN = NA.newCount(vids());
     const T = [
-      ["readfirst", "Read First", cnt(FOLD.readFirst) ? cnt(FOLD.readFirst) + " docs" : ""],
+      ["readfirst", "Read First", ""],
       ["arena", "New Arrivals", newN ? newN + " new" : ""],
-      ["support", "Support", "Patreon \xB7 PayPal \xB7 Venmo"],
-      ["folder:" + FOLD.collections, "Fan Edit Collections", ""],
+      ["support", "Support Us", "Patreon \xB7 PayPal \xB7 Venmo"],
+      ["folder:" + FOLD.collections, "Fan Edit Collections", NA.plural((kids.get(FOLD.collections) || []).filter(isFolder).length, "Collection")],
       ["main", "", ""],
-      ["folder:" + FOLD.tbc, "To Be Catalogued", ""],
-      ["folder:" + FOLD.actors, "Actors", cnt(FOLD.actors) ? cnt(FOLD.actors) + (cnt(FOLD.actors) === 1 ? " folder" : " folders") : ""],
-      ["folder:" + FOLD.directors, "Directors", cnt(FOLD.directors) ? cnt(FOLD.directors) + (cnt(FOLD.directors) === 1 ? " folder" : " folders") : ""],
+      ["folder:" + FOLD.tbc, "To Be Catalogued", NA.plural(NA.deep(FOLD.tbc, kids, isFolder), "Unorganized File")],
+      ["folder:" + FOLD.actors, "Actors", NA.plural(cnt(FOLD.actors), "Collection")],
+      ["folder:" + FOLD.directors, "Directors", NA.plural(cnt(FOLD.directors), "Collection")],
       ["genres", "Genres", Object.keys(genreMap).length ? "Browse by genre" : ""]
     ];
     const keep = [].slice.call(document.querySelectorAll("#hub .mc"));
@@ -470,7 +470,7 @@ var __spreadValues = (a, b) => {
       hideHome();
       cur = "virtual";
       view = "folder";
-      $("#crumb").textContent = "Support Fan Edit Fan Club";
+      $("#crumb").textContent = "Support Us";
       $("#arena").innerHTML = "";
       $("#sec2").textContent = "Thank you for supporting the collection";
       $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link" href="'.concat(s.url, '" target="_blank" rel="noopener"><div class="art" style="background:radial-gradient(circle at 70% 20%,#ff9c00aa,#1a2233 60%,#05070b)"></div><div class="nm" style="font-size:20px">').concat(s.name, "</div></a>")).join("");
@@ -528,20 +528,18 @@ var __spreadValues = (a, b) => {
     if (!$("#rfframe").src || $("#rfframe").src === "about:blank") $("#rfframe").src = RF_DOC;
     p.hidden = false;
     void p.offsetWidth;
-    p.classList.add("open");
-    S.open();
+    RFX.open(p);
     setTimeout(() => focusEl($("#rfclose")), 60);
   }
   function closeRF() {
     const p = $("#rfpanel");
     if (p.hidden) return false;
-    p.classList.remove("open");
     S.click();
-    setTimeout(() => {
+    RFX.close(p, () => {
       p.hidden = true;
       const t = document.querySelector('[data-hub="readfirst"]');
       if (t) focusEl(t);
-    }, 350);
+    });
     return true;
   }
   $("#rfclose").onclick = () => back("#/");
@@ -612,7 +610,7 @@ var __spreadValues = (a, b) => {
   }
   function renderBase(h) {
     baseKey = h;
-    const r = (h.replace(/^#\/?/, "") || "").split("/").map(decodeURIComponent), k = r[0] || "";
+    const r = (h.replace(/^#\/?/, "") || "").split("/").map(decodeURIComponent), k = (r[0] === "newarrivals" ? "arena" : r[0]) || "";
     if (k === "") return showHome();
     if (k === "all") return hideHome(), open(ROOT, "all");
     if (k === "arena") return hideHome(), open(ROOT, "arena");
@@ -639,18 +637,26 @@ var __spreadValues = (a, b) => {
     $("#status").textContent = t;
   }
   function menu() {
-    const m = [["home", "Dashboard"], ["arena", "New Arrivals"]];
-    $("#menu").innerHTML = (cur !== ROOT ? '<button class="mi" data-nav="up">\u25C0 Back</button>' : "") + m.map(([k, l]) => '<button class="mi '.concat(view === k ? "on" : "", '" data-nav="').concat(k, '">').concat(l, "</button>")).join("");
+    $("#menu").innerHTML = NA.menuHTML(FOLD, cur !== ROOT);
+    const o = $("#menu .mi.on");
+    o && o.scrollIntoView && o.scrollIntoView({ block: "nearest", inline: "center" });
   }
   function render(list, title, mode) {
     const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
-    const recent = [...vids2].sort((a, b) => (b.modified || "").localeCompare(a.modified || "")).slice(0, 4);
+    const recent = NA.sort(vids2).slice(0, 4);
     $("#crumb").textContent = title;
     hideHome();
     $("#arena").innerHTML = mode !== "collections" ? recent.map((f) => tile(f, 1)).join("") : "";
-    const all = mode === "arena" ? [...vids2].sort((a, b) => (b.modified || "").localeCompare(a.modified || "")) : mode === "collections" ? fold : [...fold, ...vids2];
-    $("#sec2").textContent = mode === "arena" ? "All fan edits by date" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
-    $("#grid").innerHTML = all.map((f) => tile(f)).join("");
+    const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
+    $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
+    const g = $("#grid");
+    if (mode === "arena") {
+      $("#arena").innerHTML = "";
+      NA.render(window._idx ? Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f)) : all, tile, art, (i) => items.get(i));
+    } else {
+      g.className = "";
+      g.innerHTML = all.map((f) => tile(f)).join("");
+    }
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach((el) => art(el, items.get(el.dataset.id)));
     status(all.length ? "" : live ? "Empty" : "Not in saved index \u2014 sign in for live Drive");
     menu();
@@ -880,7 +886,7 @@ var __spreadValues = (a, b) => {
       goBack();
       return;
     }
-    if (k === 13 && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav]")) {
+    if (k === 13 && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav],[data-href]")) {
       e.preventDefault();
       S.unlock();
       document.activeElement.click();
@@ -930,6 +936,11 @@ var __spreadValues = (a, b) => {
     if (!$("#home").hidden) mosaic();
   }).catch(() => {
   });
+  tmo("data/dates.json", 15e3).then((m) => {
+    NA.dates = m;
+    if (!$("#home").hidden) hub();
+    else if (/^#\/(newarrivals|arena|folder)/.test(location.hash)) route();
+  }).catch((e) => console.warn(e));
   tmo("data/metadata.json", 8e3).then((m) => meta = m).catch((e) => console.warn(e));
   tmo("data/index.json", 15e3).then((d) => {
     window._idx = d.items;
@@ -944,6 +955,7 @@ var __spreadValues = (a, b) => {
         }
       }
       if (/^#\/(folder|all)/.test(location.hash)) route();
+      else if (!$("#home").hidden) hub();
     }).catch(() => {
     });
     if (d.partial !== false && !live) tmo("data/index.interim.json", 2e4).then((x) => {

@@ -235,3 +235,23 @@ html.no3d #home{perspective:none}html.no3d #hub{-webkit-transform:translate(-50%
 
 
 #intro .isnd{position:absolute;right:calc(3vw + 7.5em);bottom:4vh;font:600 clamp(13px,1.8vh,22px) 'Source Sans 3',sans-serif;color:#fffb;padding:.35em .9em;border:1px solid #fff4;border-radius:3px;background:#0006;z-index:3;cursor:pointer}#intro .isnd[hidden]{display:none}
+/* New Arrivals list */
+#grid.sectioned{display:block}#na-list{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}#na-list .ol-tile{aspect-ratio:2/3}body.tv #na-list{grid-template-columns:repeat(7,1fr);gap:2.2vh}
+.na-date{position:absolute;right:6px;top:6px;padding:2px 6px;border-radius:3px;background:#000c;font-size:11px;color:#ffb347;font-weight:700;z-index:3}
+/* bigger Home tagline (intro uses the same element, so sizes match at handoff) */
+#tagline{top:calc(2.4vh + env(safe-area-inset-top));font-size:clamp(18px,min(3.4vh,2.3vw),64px);line-height:1.25}
+#tagline span{max-width:min(70vw,34em)}
+@media (orientation:landscape) and (max-height:520px){#tagline{top:calc(1.4vh + env(safe-area-inset-top));font-size:clamp(13px,min(3.6vh,2.2vw),30px)}#tagline span{max-width:62vw;padding:.25em .9em}}
+/* Read First centered panel + zoom */
+#rfpanel{justify-content:center;align-items:center;background:transparent;transition:background .4s}
+#rfpanel.open{background:#000c}
+#rfpanel .rf-in{width:min(90vw,1100px);height:88vh;border:2px solid #ffb02e;border-radius:6px;box-shadow:0 0 40px #ff9c0066,0 10px 50px #000;transform:none;opacity:0;transition:opacity .3s ease-out}
+#rfpanel.fade.open .rf-in,#rfpanel.docin .rf-in{opacity:1}
+#rfzoom{position:absolute;left:50%;top:50%;width:min(90vw,1100px);height:88vh;margin:-44vh 0 0 calc(min(90vw,1100px)/-2);border-radius:6px;pointer-events:none;will-change:transform,opacity;opacity:0;
+ background:radial-gradient(circle at 50% 40%,#ffcf7a,#ff9c00 35%,#a04c00 75%,#2a1400);box-shadow:0 0 60px #ff9c00,inset 0 0 40px #fff6;display:flex;align-items:center;justify-content:center;transform-origin:50% 50%}
+#rfzoom span{font:600 clamp(20px,4vmin,60px) 'Source Sans 3',sans-serif;color:#fff;text-shadow:0 2px 8px #000}
+#rfzoom i{position:absolute;inset:0;background:#fff;opacity:0;transition:opacity .25s;border-radius:6px}
+#rfpanel.flash #rfzoom i{opacity:.85}
+@media (prefers-reduced-motion:reduce){#rfpanel .rf-in,#rfpanel{transition:opacity .15s}}
+.hb.hb-logo small{color:#ffa31a;font-size:.55em;font-weight:600;opacity:1}
+.hb.hb-logo small{font-size:.6em}
