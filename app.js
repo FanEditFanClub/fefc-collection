@@ -341,6 +341,7 @@ var __spreadValues = (a, b) => {
   function tile(f, live_) {
     const fold = isFolder(f), p = parse(f.name), aud = !fold && !isVid(f) && isAud(f), vid = !fold && (isVid(f) || aud), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
+    if (fold && target(f) === ROOT && f.parent === FOLD.collections) return '<button class="ol-tile mainc" data-id="'.concat(f.id, '" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">').concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
     if (!fold && !vid && isSupportDoc(f)) return '<button class="ol-tile sup" data-id="'.concat(f.id, '" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small></button>');
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
     return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
@@ -352,7 +353,7 @@ var __spreadValues = (a, b) => {
     })(), '">').concat(esc(p.raw), "</div>") : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
   }
   async function art(el, f) {
-    if (!f || el.classList.contains("sup")) return;
+    if (!f || el.classList.contains("sup") || el.classList.contains("mainc")) return;
     let src = null;
     const p = parse(f.name);
     if (isFolder(f) && people[target(f)]) src = people[target(f)].url;
@@ -2071,6 +2072,11 @@ var __spreadValues = (a, b) => {
       if (t.dataset.sup) {
         S.click();
         go("#/supportus");
+        return;
+      }
+      if (t.dataset.mainc) {
+        S.click();
+        go(HUBH.main);
         return;
       }
       const f = items.get(t.dataset.id);

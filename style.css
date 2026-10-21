@@ -654,3 +654,10 @@ body:not(.tv) #tvq{display:none!important}
  #brand{order:0}#q{order:1;flex:1 1 0!important;width:0!important;min-width:60px}#bar .top-inst{order:2}
  #menu{order:5;flex:1 1 100%!important;width:100%}
 }
+/* Fan Edit Collections: featured Main Collection tile (pinned first via grid order, spans 2 columns) */
+.ol-tile.mainc{order:-1;grid-column:span 2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3em;text-align:center;background:linear-gradient(180deg,#2c333e,#0b0e13);border:2px solid #9fb6cf;color:#fff;font-family:'Source Sans 3','Segoe UI','PT Sans',sans-serif;padding:12px;min-width:0;box-sizing:border-box;overflow:hidden}
+.ol-tile.mainc img{width:auto;height:46%;max-height:120px;max-width:60%;object-fit:contain;filter:drop-shadow(0 0 10px #9cf8);position:static}
+.ol-tile.mainc .mc-l{color:#ffa31a;font-weight:600;font-size:clamp(13px,1.1vw,20px)}
+.ol-tile.mainc .mc-c{color:#ffa31a;font-weight:600;font-size:clamp(11px,.85vw,16px);opacity:.95}
+body.tv .ol-tile.mainc .mc-l{font-size:2vh}body.tv .ol-tile.mainc .mc-c{font-size:1.6vh}
+@media (max-width:600px){.ol-tile.mainc{grid-column:1/-1}}
