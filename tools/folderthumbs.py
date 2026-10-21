@@ -1079,6 +1079,8 @@ COVER_PINS={
 "Lanterns"
 ]
 }
+# Manual still overrides (win over COVER_PINS on re-runs). James Bond: Dr. No (1962) gun barrel, en.wikipedia File:Dr_No_trailer.jpg
+COVER_MANUAL={"1DEWGPeFVQYiB-Yj6wYwAWv_jZ4j0fPAQ":"assets/covers/james-bond-gunbarrel.webp"}
 def covers(force=False):
     os.makedirs(os.path.join(D,'..','assets','covers'),exist_ok=True)
     out=json.load(open(os.path.join(D,'folderthumbs.json')))
@@ -1091,6 +1093,7 @@ def covers(force=False):
             w,h=im.size;ch=min(h,int(w*9/16));cw=int(ch*16/9);im=im.crop(((w-cw)//2,(h-ch)//2,(w-cw)//2+cw,(h-ch)//2+ch)).resize((960,540),Image.LANCZOS)
             im.save(p,quality=82,optimize=True)
         out[fid]='assets/covers/'+fid+'.jpg'
+    out.update(COVER_MANUAL)
     json.dump(out,open(os.path.join(D,'folderthumbs.json'),'w'));print('covers',len(COVER_PINS))
 
 import sys
