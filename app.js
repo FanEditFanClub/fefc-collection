@@ -96,7 +96,8 @@ var __spreadValues = (a, b) => {
       }, skipped ? 600 : 1800);
     };
     let t0 = performance.now(), last = 0;
-    const hint = el.querySelector(".ihint"), snd = el.querySelector(".isnd");
+    const hint = el.querySelector(".ihint");
+    let sndOn = false;
     const loop = (now) => {
       const r = (now - t0) / 1e3, s = short ? R.mapC(r) : r;
       last = r;
@@ -110,36 +111,43 @@ var __spreadValues = (a, b) => {
       st = S.state();
     } catch (e) {
     }
+    const go2 = () => {
+      if (sndOn || done) return;
+      let s2 = "suspended";
+      try {
+        S.unlock();
+        s2 = S.state();
+      } catch (e) {
+      }
+      if (s2 === "running") {
+        sndOn = true;
+        try {
+          S.introSeq(short, Math.max(0, (performance.now() - t0) / 1e3 - 0.05));
+        } catch (e) {
+        }
+      }
+    };
     if (st === "running") {
+      sndOn = true;
       try {
         S.introSeq(short);
       } catch (e) {
       }
-    } else if (snd) {
-      snd.hidden = false;
-      snd.addEventListener("pointerdown", (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        snd.hidden = true;
-        S.unlock();
-        setTimeout(() => {
-          try {
-            S.introSeq(short, (performance.now() - t0) / 1e3);
-          } catch (e2) {
-          }
-        }, 40);
-      });
+    } else {
+      const tick = setInterval(() => {
+        if (sndOn || done) return clearInterval(tick);
+        go2();
+      }, 250);
+      ["pointerdown", "touchstart", "keydown", "click"].forEach((ev) => addEventListener(ev, go2, { capture: true, passive: true }));
     }
     R.frame(0);
     raf = requestAnimationFrame(loop);
     const sk = (e) => {
       if (e.type === "keydown" && e.repeat) return;
-      if (e.target === snd) return;
       e.preventDefault && e.preventDefault();
       removeEventListener("keydown", sk, true);
       el.removeEventListener("pointerdown", sk);
       S.unlock();
-      if (snd) snd.hidden = true;
       end(true);
     };
     setTimeout(() => {
@@ -275,7 +283,7 @@ var __spreadValues = (a, b) => {
     }
   }
   const FOLD = { readFirst: "1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT", collections: "1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB", tbc: "1503Wl56hzRppaIFcQisvQksOaeYOEjnk", actors: "1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS", directors: "1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib" };
-  const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub" }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub" }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub" }];
+  const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<svg viewBox="0 0 24 24"><circle cx="15" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" fill="currentColor"/></svg>' }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub", sub: "One-time donation", logo: "<b>P</b>" }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: "<b>V</b>" }];
   let mosaicList = [], mosaicTimer = null, genreMap = {}, fthumbs = {};
   const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
   function topFolder(f) {
@@ -329,7 +337,18 @@ var __spreadValues = (a, b) => {
     $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>' : '<button class="hb" data-hub="'.concat(t[0], '"><span>').concat(esc(t[1]), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]), "</small>") : "", "</button>")).join("");
     keep.forEach((x) => $("#hub").appendChild(x));
   }
+  function syncTag() {
+    const hb = $("#hub"), sp = $("#tagline span");
+    if (!hb || !sp) return;
+    const w = hb.offsetWidth;
+    if (w > 0) {
+      sp.style.width = w + "px";
+      sp.style.maxWidth = "none";
+    }
+  }
+  addEventListener("resize", syncTag);
   function mosaic() {
+    syncTag();
     const M = $("#mosaic");
     const tv = document.body.classList.contains("tv");
     const n = tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
@@ -459,6 +478,7 @@ var __spreadValues = (a, b) => {
       $("#crumb").textContent = "Genres";
       $("#arena").innerHTML = "";
       $("#sec2").textContent = "Genres from Wikidata matches of each collection folder";
+      $("#grid").className = "";
       $("#grid").innerHTML = GORDER.filter((g) => have[g]).map((g) => '<button class="ol-tile genre" data-genre="'.concat(g, '"><div class="art" style="background:radial-gradient(circle at 70% 20%,hsl(').concat(HUES[hash(g) % 8], ' 80% 50% / .8),#141b27 60%,#05070b)"></div><div class="nm" style="font-size:20px">').concat(g, '<br><small style="opacity:.7">').concat(have[g], " collections</small></div></button>")).join("");
       status("");
       menu();
@@ -473,7 +493,8 @@ var __spreadValues = (a, b) => {
       $("#crumb").textContent = "Support Us";
       $("#arena").innerHTML = "";
       $("#sec2").textContent = "Thank you for supporting the collection";
-      $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link" href="'.concat(s.url, '" target="_blank" rel="noopener"><div class="art" style="background:radial-gradient(circle at 70% 20%,#ff9c00aa,#1a2233 60%,#05070b)"></div><div class="nm" style="font-size:20px">').concat(s.name, "</div></a>")).join("");
+      $("#grid").className = "support-grid";
+      $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link sup sup-'.concat(s.name.toLowerCase(), '" href="').concat(s.url, '" target="_blank" rel="noopener" aria-label="').concat(s.name, ' (opens in a new tab)"><span class="sup-logo">').concat(s.logo, '</span><span class="sup-nm">').concat(s.name, "</span><small>").concat(s.sub, "</small></a>")).join("");
       status("");
       menu();
     }
@@ -524,8 +545,18 @@ var __spreadValues = (a, b) => {
   });
   const RF_DOC = "https://docs.google.com/document/d/1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk/preview";
   function readFirst() {
-    const p = $("#rfpanel");
-    if (!$("#rfframe").src || $("#rfframe").src === "about:blank") $("#rfframe").src = RF_DOC;
+    const p = $("#rfpanel"), d = $("#rfdoc");
+    if (d && !d.dataset.ok) {
+      d.dataset.ok = 1;
+      fetch("data/readfirst.html").then((r) => {
+        if (!r.ok) throw 0;
+        return r.text();
+      }).then((h) => {
+        d.innerHTML = h;
+      }).catch(() => {
+        d.innerHTML = '<iframe src="' + RF_DOC + '" title="Read First" style="width:100%;height:80vh;border:0;background:#fff"></iframe>';
+      });
+    }
     p.hidden = false;
     void p.offsetWidth;
     RFX.open(p);
@@ -639,7 +670,7 @@ var __spreadValues = (a, b) => {
   function menu() {
     $("#menu").innerHTML = NA.menuHTML(FOLD, cur !== ROOT);
     const o = $("#menu .mi.on");
-    o && o.scrollIntoView && o.scrollIntoView({ block: "nearest", inline: "center" });
+    o && o.scrollIntoView && o.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   function render(list, title, mode) {
     const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
@@ -720,7 +751,7 @@ var __spreadValues = (a, b) => {
     const need = ["IMDb", "Rotten Tomatoes", "FanEdit.org", "Movies Remastered"].filter((s) => !ratings.some((r) => r.source.startsWith(s)));
     const rt = ratings.map((r) => r.url ? '<a href="'.concat(esc(r.url), '" target="_blank" rel="noopener">').concat(esc(r.source), "<b>").concat(r.value ? esc(r.value) : "VIEW \u203A", "</b></a>") : '<span class="na">'.concat(esc(r.source), "<span>").concat(esc(r.note || "Not available"), "</span></span>")).join("") + need.map((s) => '<span class="na">'.concat(s, "<span>No data</span></span>")).join("");
     const id = target(f);
-    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-title">'.concat(esc(m.title || p.raw), '</div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a><div class="pill p2 lab">FEFC ').concat(String(hash(f.id) % 9e3 + 1e3), '</div><div class="pill p5 lab">').concat(esc(sz(f.size) || "\u2014"), '</div><div class="grow"></div></div>\n <div class="lc-body"><div>\n  <h3 class="lc-h">Description</h3>').concat(desc ? "<p>".concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : '<p class="src">No fan-edit description available.</p>', "\n  ").concat(m.filmPlot ? '<p class="src">Source film plot (OMDb): '.concat(esc(m.filmPlot), "</p>") : "", '\n  <h3 class="lc-h l">Source film</h3><p>').concat(esc(film.title || "Unknown")).concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? " \xB7 Dir. " + esc(film.director) : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", '</p>\n  <h3 class="lc-h p">Cast</h3>').concat(cast.length ? '<div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>").concat(m.castSource ? '<p class="src">Source: <a href="'.concat(esc(m.castSource.url), '" target="_blank" rel="noopener">').concat(esc(m.castSource.name), "</a></p>") : "") : '<p class="src">No cast data.</p>', '\n </div><div>\n  <h3 class="lc-h b">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" style="margin-top:14px">Trailer</h3><div class="trailer">').concat((trailer == null ? void 0 : trailer.youtubeId) ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(trailer.youtubeId), '" allowfullscreen allow="encrypted-media"></iframe>') : '<span>No trailer found for this fan edit.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent(p.raw + " fan edit trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), "</div>\n  ").concat((trailer == null ? void 0 : trailer.auto) ? '<p class="src">Trailer is the top YouTube search result \u2014 may not be official.</p>' : "", '\n  <p class="lc-num">LCARS ACCESS ').concat((/* @__PURE__ */ new Date()).getFullYear(), ".").concat(String(hash(f.name) % 999).padStart(3, "0"), " \xB7 STARDATE ").concat((Date.now() / 864e5).toFixed(1), '</p>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-title'.concat((m.title || p.raw).length > 34 ? " long" : "", '" title="').concat(esc(m.title || p.raw), '">').concat(esc(m.title || p.raw), '</div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a><div class="pill p2 lab">FEFC ').concat(String(hash(f.id) % 9e3 + 1e3), '</div><div class="pill p5 lab">').concat(esc(sz(f.size) || "\u2014"), '</div><div class="grow"></div></div>\n <div class="lc-body"><div>\n  <h3 class="lc-h">Description</h3>').concat(desc ? "<p>".concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : '<p class="src">No fan-edit description available.</p>', "\n  ").concat(m.filmPlot ? '<p class="src">Source film plot (OMDb): '.concat(esc(m.filmPlot), "</p>") : "", '\n  <h3 class="lc-h l">Source film</h3><p>').concat(esc(film.title || "Unknown")).concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? " \xB7 Dir. " + esc(film.director) : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", '</p>\n  <h3 class="lc-h p">Cast</h3>').concat(cast.length ? '<div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>").concat(m.castSource ? '<p class="src">Source: <a href="'.concat(esc(m.castSource.url), '" target="_blank" rel="noopener">').concat(esc(m.castSource.name), "</a></p>") : "") : '<p class="src">No cast data.</p>', '\n </div><div>\n  <h3 class="lc-h b">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" style="margin-top:14px">Trailer</h3><div class="trailer">').concat((trailer == null ? void 0 : trailer.youtubeId) ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(trailer.youtubeId), '" allowfullscreen allow="encrypted-media"></iframe>') : '<span>No trailer found for this fan edit.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent(p.raw + " fan edit trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), "</div>\n  ").concat((trailer == null ? void 0 : trailer.auto) ? '<p class="src">Trailer is the top YouTube search result \u2014 may not be official.</p>' : "", '\n  <p class="lc-num">LCARS ACCESS ').concat((/* @__PURE__ */ new Date()).getFullYear(), ".").concat(String(hash(f.name) % 999).padStart(3, "0"), " \xB7 STARDATE ").concat((Date.now() / 864e5).toFixed(1), '</p>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     $("#details").hidden = false;
     $("#details").dataset.id = f.id;
     let n = 0;
@@ -826,7 +857,7 @@ var __spreadValues = (a, b) => {
   };
   setTimeout(sm2, 0);
   $("#auth").onclick = signIn;
-  const FOC = "#rfclose,#rfframe,.hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
+  const FOC = "#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -1038,3 +1069,10 @@ addEventListener("load", () => {
   s.async = true;
   document.body.appendChild(s);
 });
+;
+(function() {
+  const sync = () => document.body.classList.toggle("overlay", !document.getElementById("details").hidden || !document.getElementById("player").hidden);
+  const mo = new MutationObserver(sync);
+  ["details", "player"].forEach((i) => mo.observe(document.getElementById(i), { attributes: true, attributeFilter: ["hidden"] }));
+  sync();
+})();

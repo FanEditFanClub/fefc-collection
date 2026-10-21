@@ -255,3 +255,44 @@ html.no3d #home{perspective:none}html.no3d #hub{-webkit-transform:translate(-50%
 @media (prefers-reduced-motion:reduce){#rfpanel .rf-in,#rfpanel{transition:opacity .15s}}
 .hb.hb-logo small{color:#ffa31a;font-size:.55em;font-weight:600;opacity:1}
 .hb.hb-logo small{font-size:.6em}
+/* --- fixes r2 --- */
+body:not(.intro-done) #mute,body:not(.intro-done) #hints{visibility:hidden}
+#tagline span{box-sizing:border-box;text-align:center}
+.hb.hb-logo small{font-size:.78em;letter-spacing:.02em}
+/* top menu: never clip labels */
+#bar{flex-wrap:nowrap}
+#menu{flex-wrap:wrap;justify-content:center;overflow:visible;row-gap:2px;min-width:0}
+.mi{padding:6px clamp(6px,.8vw,16px);font-size:clamp(12px,1vw,17px);min-height:34px;letter-spacing:.02em}
+#q{width:clamp(90px,12vw,240px);flex:none}
+@media (max-width:1500px){#brand span{display:none}}
+body.tv .mi{font-size:1.7vh;min-height:4.6vh;padding:0 .9vw}
+/* LCARS title: full glyphs */
+.lc-title{line-height:1.2;padding:0 10px .08em;overflow:hidden;align-self:flex-end;margin-bottom:-.12em}
+.lc-title.long{font-size:24px}
+@media (max-height:520px),(max-width:800px){.lc-title{line-height:1.2}.lc-title.long{font-size:16px}}
+body.tv .lc-title.long{font-size:3.2vh}
+/* Read First local doc */
+.rf-scroll{background:#0b0e13;overscroll-behavior:contain}
+#rfdoc{display:block;max-width:46em;margin:0 auto;padding:clamp(16px,3vmin,48px) clamp(18px,4vw,56px) clamp(24px,4vmin,56px);font:400 clamp(16px,2.1vmin,28px)/1.6 'Source Sans 3','Segoe UI',sans-serif;color:#e6edf5;text-align:center}
+#rfdoc:focus{outline:3px solid #ffb02e;outline-offset:-3px}
+#rfdoc p{margin:0 0 1.1em}
+#rfdoc b{font-weight:600}
+#rfdoc a{color:#ffb02e;text-decoration:none;border-bottom:1px solid #ffb02e66}
+#rfdoc a:hover,#rfdoc a:focus{color:#fff;border-color:#fff}
+/* Support Us tiles */
+#grid.support-grid{display:flex;flex-wrap:wrap;justify-content:center;align-items:stretch;gap:clamp(14px,2.5vw,40px);padding:clamp(12px,4vh,60px) 2vw}
+#grid.support-grid .sup{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.4em;width:clamp(220px,26vw,520px);aspect-ratio:1.55;height:auto;padding:1em;border-radius:6px;color:#fff;text-decoration:none;overflow:hidden;border:2px solid #8fa0b4aa;background:linear-gradient(180deg,#2a313c,#0b0e13 55%,#05070b);box-shadow:inset 0 1px 0 #fff3,0 8px 30px #000a;font-size:clamp(16px,2vw,40px)}
+#grid.support-grid .sup:hover,#grid.support-grid .sup:focus{border-color:#ffa31a;box-shadow:0 0 0 3px #ffa31a,0 0 30px #ff9c0099;outline:0}
+.sup-logo{display:flex;align-items:center;justify-content:center;width:2.6em;height:2.6em;border-radius:22%;font:800 1.8em/1 Arial,sans-serif;color:#fff}
+.sup-logo svg{width:60%;height:60%}
+.sup-nm{font-weight:700;font-size:1.3em}
+.sup small{color:#ffa31a;font-weight:600;font-size:.6em}
+.sup-patreon .sup-logo{background:#ff424d}
+.sup-paypal .sup-logo{background:#003087;color:#009cde;font-style:italic}
+.sup-venmo .sup-logo{background:#008cff}
+body.overlay #tagline{visibility:hidden!important}
+#grid.support-grid .sup{opacity:1!important;filter:none!important;color:#fff!important;-webkit-box-reflect:none}
+#grid.support-grid .sup .sup-nm{color:#fff!important;text-shadow:0 2px 8px #000}
+#grid.support-grid .sup small{color:#ffa31a!important;opacity:1}
+#grid.support-grid .sup>*{position:relative;z-index:3}
+#grid.support-grid .sup{-webkit-box-reflect:none!important}

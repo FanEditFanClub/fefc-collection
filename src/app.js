@@ -22,13 +22,14 @@ function intro(){const el=$('#intro');if(P.get('nointro')){el.remove();document.
  const fr=P.get('introframe');if(fr!==null){document.body.classList.add('frozen');el.querySelector('.ihint').hidden=true;const draw=()=>R.frame(+fr);draw();[300,1000,2000,3500].forEach(t=>setTimeout(draw,t));return}
  let done=false,raf=0;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';if(skipped){S.introStop();S.bell()}
   tg.style.opacity='';tg.style.clipPath='';tg.style.visibility='';document.body.classList.remove('cintro');el.classList.add('done');document.body.classList.add('intro-done');$('#home').classList.add('enter');setTimeout(()=>{S.ambience($('#player').hidden&&$('#details').hidden);el.remove()},skipped?600:1800)};
- let t0=performance.now(),last=0;const hint=el.querySelector('.ihint'),snd=el.querySelector('.isnd');
+ let t0=performance.now(),last=0;const hint=el.querySelector('.ihint');let sndOn=false;
  const loop=now=>{const r=(now-t0)/1000,s=short?R.mapC(r):r;last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
  let st='suspended';try{S.unlock();st=S.state()}catch(e){}
- if(st==='running'){try{S.introSeq(short)}catch(e){}}
- else if(snd){snd.hidden=false;snd.addEventListener('pointerdown',e=>{e.stopPropagation();e.preventDefault();snd.hidden=true;S.unlock();setTimeout(()=>{try{S.introSeq(short,(performance.now()-t0)/1000)}catch(e){}},40)})}
+ const go=()=>{if(sndOn||done)return;let s2='suspended';try{S.unlock();s2=S.state()}catch(e){}if(s2==='running'){sndOn=true;try{S.introSeq(short,Math.max(0,(performance.now()-t0)/1000-.05))}catch(e){}}};
+ if(st==='running'){sndOn=true;try{S.introSeq(short)}catch(e){}}
+ else{const tick=setInterval(()=>{if(sndOn||done)return clearInterval(tick);go()},250);['pointerdown','touchstart','keydown','click'].forEach(ev=>addEventListener(ev,go,{capture:true,passive:true}))}
  R.frame(0);raf=requestAnimationFrame(loop);
- const sk=e=>{if(e.type==='keydown'&&e.repeat)return;if(e.target===snd)return;e.preventDefault&&e.preventDefault();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);S.unlock();if(snd)snd.hidden=true;end(true)};
+ const sk=e=>{if(e.type==='keydown'&&e.repeat)return;e.preventDefault&&e.preventDefault();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);S.unlock();end(true)};
  setTimeout(()=>{if(!done){addEventListener('keydown',sk,true);el.addEventListener('pointerdown',sk)}},250)}
 // first interaction anywhere unlocks audio (autoplay rules)
 addEventListener('pointerdown',()=>{const first=!window._u;window._u=1;S.unlock();if(first&&document.body.classList.contains('intro-done')&&$('#details').hidden&&$('#player').hidden)S.ambience(true)},{capture:true});
@@ -58,7 +59,7 @@ async function art(el,f){let src=null;const p=parse(f.name);
  if(src){const im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.onload=()=>{if(im.naturalWidth>40){const a=el.querySelector('.art');a?a.appendChild(im):el.insertBefore(im,el.firstChild)}};im.src=src}}
 /* ---------- ONLIVE HOME HUB ---------- */
 const FOLD={readFirst:'1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT',collections:'1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB',tbc:'1503Wl56hzRppaIFcQisvQksOaeYOEjnk',actors:'1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS',directors:'1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib'};
-const SUPPORT=[{name:'Patreon',url:'https://www.patreon.com/cw/FanEditFanClub'},{name:'PayPal',url:'https://www.paypal.biz/faneditfanclub'},{name:'Venmo',url:'https://venmo.com/u/FanEditFanClub'}];
+const SUPPORT=[{name:'Patreon',url:'https://www.patreon.com/cw/FanEditFanClub',sub:'From $1 / month',logo:'<svg viewBox="0 0 24 24"><circle cx="15" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" fill="currentColor"/></svg>'},{name:'PayPal',url:'https://www.paypal.biz/faneditfanclub',sub:'One-time donation',logo:'<b>P</b>'},{name:'Venmo',url:'https://venmo.com/u/FanEditFanClub',sub:'@FanEditFanClub',logo:'<b>V</b>'}];
 let mosaicList=[],mosaicTimer=null,genreMap={},fthumbs={};
 const GORDER=['Action','Sci-Fi','Horror','Comedy','Animation','Drama','Fantasy','Superhero','Thriller','Adventure','War','Western','Family','Musical','Documentary','Uncategorized'];
 function topFolder(f){let x=f,guard=0;while(x&&x.parent&&x.parent!==ROOT&&guard++<30)x=items.get(x.parent);return x&&x.parent===ROOT?x.id:null}
@@ -76,7 +77,9 @@ function hub(){const newN=NA.newCount(vids());
   ['folder:'+FOLD.actors,'Actors',NA.plural(cnt(FOLD.actors),'Collection')],['folder:'+FOLD.directors,'Directors',NA.plural(cnt(FOLD.directors),'Collection')],['genres','Genres',Object.keys(genreMap).length?'Browse by genre':'']];
  const keep=[].slice.call(document.querySelectorAll('#hub .mc'));$('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button>`
   :`<button class="hb" data-hub="${t[0]}"><span>${esc(t[1])}</span>${t[2]?`<small>${esc(t[2])}</small>`:''}</button>`).join('');keep.forEach(x=>$('#hub').appendChild(x))}
-function mosaic(){const M=$('#mosaic');const tv=document.body.classList.contains('tv');
+function syncTag(){const hb=$('#hub'),sp=$('#tagline span');if(!hb||!sp)return;const w=hb.offsetWidth;if(w>0){sp.style.width=w+'px';sp.style.maxWidth='none'}}
+addEventListener('resize',syncTag);
+function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classList.contains('tv');
  const n=tv?14:Math.max(10,Math.min(22,Math.round(innerWidth*innerHeight/60000)));
  let pool=mosaicList.length?mosaicList.slice():vids().slice(0,40).map(f=>({id:f.id,target:target(f),name:f.name}));
  M.innerHTML='';[].slice.call(document.querySelectorAll('#hub .mc')).forEach(x=>x.remove());const cells=[];
@@ -115,10 +118,10 @@ function hubGo(k){S.click();
  if(k==='search'){hideHome();open(ROOT,'all');setTimeout(()=>$('#q').focus(),50);return}
  if(k==='genres'){hideHome();cur='virtual';view='folder';const have={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>have[g]=(have[g]||0)+1));
   $('#crumb').textContent='Genres';$('#arena').innerHTML='';$('#sec2').textContent='Genres from Wikidata matches of each collection folder';
-  $('#grid').innerHTML=GORDER.filter(g=>have[g]).map(g=>`<button class="ol-tile genre" data-genre="${g}"><div class="art" style="background:radial-gradient(circle at 70% 20%,hsl(${HUES[hash(g)%8]} 80% 50% / .8),#141b27 60%,#05070b)"></div><div class="nm" style="font-size:20px">${g}<br><small style="opacity:.7">${have[g]} collections</small></div></button>`).join('');status('');menu();
+  $('#grid').className='';$('#grid').innerHTML=GORDER.filter(g=>have[g]).map(g=>`<button class="ol-tile genre" data-genre="${g}"><div class="art" style="background:radial-gradient(circle at 70% 20%,hsl(${HUES[hash(g)%8]} 80% 50% / .8),#141b27 60%,#05070b)"></div><div class="nm" style="font-size:20px">${g}<br><small style="opacity:.7">${have[g]} collections</small></div></button>`).join('');status('');menu();
   const t=document.querySelector('#grid .ol-tile');if(t&&document.body.classList.contains('kbd'))focusEl(t);return}
  if(k==='support'){hideHome();cur='virtual';view='folder';$('#crumb').textContent='Support Us';$('#arena').innerHTML='';$('#sec2').textContent='Thank you for supporting the collection';
-  $('#grid').innerHTML=SUPPORT.map(s=>`<a class="ol-tile link" href="${s.url}" target="_blank" rel="noopener"><div class="art" style="background:radial-gradient(circle at 70% 20%,#ff9c00aa,#1a2233 60%,#05070b)"></div><div class="nm" style="font-size:20px">${s.name}</div></a>`).join('');status('');menu()}}
+  $('#grid').className='support-grid';$('#grid').innerHTML=SUPPORT.map(s=>`<a class="ol-tile link sup sup-${s.name.toLowerCase()}" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} (opens in a new tab)"><span class="sup-logo">${s.logo}</span><span class="sup-nm">${s.name}</span><small>${s.sub}</small></a>`).join('');status('');menu()}}
 const HUBH={main:'#/all',arena:'#/newarrivals',readfirst:'#/readfirst',genres:'#/genres',support:'#/support',search:'#/search'};
 document.addEventListener('click',e=>{const h=e.target.closest('[data-hub]');if(!h)return;S.click();const k=h.dataset.hub;go(k.indexOf('folder:')===0?'#/folder/'+k.slice(7):HUBH[k]||'#/')});
 document.addEventListener('pointerover',e=>{const h=e.target.closest('.hb');if(h&&h!==lastHub){lastHub=h;S.move()}});let lastHub=null;
@@ -128,7 +131,7 @@ function sm2(){const l=$('#hmutel');if(l)l.textContent=S.muted?'Sound off':'Soun
 document.addEventListener('click',e=>{const h=e.target.closest('[data-hint]');if(!h)return;h.dataset.hint==='search'?doSearch():doMute()});
 document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;if(e.key==='/'||e.keyCode===403){e.preventDefault();doSearch()}else if(e.key==='m'||e.key==='M'||e.keyCode===404){doMute()}});
 const RF_DOC='https://docs.google.com/document/d/1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk/preview';
-function readFirst(){const p=$('#rfpanel');if(!$('#rfframe').src||$('#rfframe').src==='about:blank')$('#rfframe').src=RF_DOC;p.hidden=false;void p.offsetWidth;RFX.open(p);setTimeout(()=>focusEl($('#rfclose')),60)}
+function readFirst(){const p=$('#rfpanel'),d=$('#rfdoc');if(d&&!d.dataset.ok){d.dataset.ok=1;fetch('data/readfirst.html').then(r=>{if(!r.ok)throw 0;return r.text()}).then(h=>{d.innerHTML=h}).catch(()=>{d.innerHTML='<iframe src="'+RF_DOC+'" title="Read First" style="width:100%;height:80vh;border:0;background:#fff"></iframe>'})}p.hidden=false;void p.offsetWidth;RFX.open(p);setTimeout(()=>focusEl($('#rfclose')),60)}
 function closeRF(){const p=$('#rfpanel');if(p.hidden)return false;S.click();RFX.close(p,()=>{p.hidden=true;const t=document.querySelector('[data-hub="readfirst"]');if(t)focusEl(t)});return true}
 $('#rfclose').onclick=()=>back('#/');
 /* ---------- HASH ROUTER ---------- */
@@ -159,7 +162,7 @@ function renderBase(h){baseKey=h;const r=(h.replace(/^#\/?/,'')||'').split('/').
 window.addEventListener('popstate',route);
 /* ---------- DASHBOARD ---------- */
 function status(t){$('#status').textContent=t}
-function menu(){$('#menu').innerHTML=NA.menuHTML(FOLD,cur!==ROOT);const o=$('#menu .mi.on');o&&o.scrollIntoView&&o.scrollIntoView({block:'nearest',inline:'center'})}
+function menu(){$('#menu').innerHTML=NA.menuHTML(FOLD,cur!==ROOT);const o=$('#menu .mi.on');o&&o.scrollIntoView&&o.scrollIntoView({block:'nearest',inline:'nearest'})}
 function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));
  const recent=NA.sort(vids).slice(0,4);
  $('#crumb').textContent=title;hideHome();
@@ -184,7 +187,7 @@ async function details(f,push=true){S.open();S.ambience(false);const p=parse(f.n
  const need=['IMDb','Rotten Tomatoes','FanEdit.org','Movies Remastered'].filter(s=>!ratings.some(r=>r.source.startsWith(s)));
  const rt=ratings.map(r=>r.url?`<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.source)}<b>${r.value?esc(r.value):'VIEW ›'}</b></a>`:`<span class="na">${esc(r.source)}<span>${esc(r.note||'Not available')}</span></span>`).join('')+need.map(s=>`<span class="na">${s}<span>No data</span></span>`).join('');
  const id=target(f);
- $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-title">${esc(m.title||p.raw)}</div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
+ $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-title${(m.title||p.raw).length>34?' long':''}" title="${esc(m.title||p.raw)}">${esc(m.title||p.raw)}</div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
  <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play">▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a><div class="pill p2 lab">FEFC ${String(hash(f.id)%9000+1000)}</div><div class="pill p5 lab">${esc(sz(f.size)||'—')}</div><div class="grow"></div></div>
  <div class="lc-body"><div>
   <h3 class="lc-h">Description</h3>${desc?`<p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:`<p class="src">No fan-edit description available.</p>`}
@@ -215,7 +218,7 @@ let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(async
  view='search';render(res,'Search: '+q,'home')},250)});
 const mb=$('#mute');const sm=()=>mb.textContent=S.muted?'🔇':'🔊';sm();mb.onclick=()=>{S.unlock();S.toggle();sm();sm2()};setTimeout(sm2,0);$('#auth').onclick=signIn;
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-const FOC='#rfclose,#rfframe,.hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe';
+const FOC='#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,#mute,#auth,.ol-tile,#details .pill:not(.lab),#details a,#player .pill,#pframe';
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
 function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).filter(visible),a=document.activeElement;
@@ -269,3 +272,4 @@ showHome();
  document.getElementById('ins-no').onclick=()=>{localStorage.fefcInstallSnooze=Date.now()+7*864e5;box.hidden=true};
  const t=setInterval(()=>{if(document.body.classList.contains('intro-done')){clearInterval(t);setTimeout(show,1200)}},400)})();
 addEventListener('load',()=>{const s=document.createElement('script');s.src='clips.js?v='+(document.querySelector('script[src*="app.js?v="]')||{src:''}).src.split('v=')[1];s.async=true;document.body.appendChild(s)}); // moving edge clips (src/clips.js)
+;(function(){const sync=()=>document.body.classList.toggle('overlay',!document.getElementById('details').hidden||!document.getElementById('player').hidden);const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden']}));sync()})();
