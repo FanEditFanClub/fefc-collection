@@ -355,7 +355,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     function frame(s) {
       curS = s;
       if (!warmed && s > 5.5 && s < 11) warm();
-      const fl = s < 12.6 ? sm(11.7, 11.95, s) * (1 - sm(11.95, 12.6, s)) : 0, sn = sm(23.7, 24.05, s) * (1 - sm(24.05, 24.2, s)), fa = Math.max(fl, sn);
+      const fl = s < 12.6 ? sm(11.7, 11.95, s) * (1 - sm(11.95, 12.6, s)) : 0, sn = s > 23.6 ? sm(23.6, 24.15, s) : 0, fa = Math.max(fl, sn);
       flashA(fa);
       if (fa >= 0.995 && fx) return;
       c.setTransform(dpr, 0, 0, dpr, 0, 0);

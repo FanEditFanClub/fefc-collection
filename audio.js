@@ -20,49 +20,91 @@ window.SFX = (() => {
     o.start(t0);
     o.stop(t0 + d + 0.05);
   }
-  let ambWant = false;
+  let ambWant = false, ambBuf = null;
+  function getAmbBuf(ib) {
+    if (ambBuf) return ambBuf;
+    if (!ib || !ctx) return null;
+    try {
+      const sr = ib.sampleRate;
+      const t0 = Math.floor(Math.max(0, 24.65 * sr));
+      const t1 = Math.floor(Math.min(ib.duration - 0.03, 26.12) * sr);
+      const len = t1 - t0;
+      if (len <= sr * 0.4) return null;
+      const b = ctx.createBuffer(ib.numberOfChannels, len, sr);
+      const xf = Math.floor(Math.min(0.28 * sr, len * 0.25));
+      for (let ch = 0; ch < ib.numberOfChannels; ch++) {
+        const src = ib.getChannelData(ch), dst = b.getChannelData(ch);
+        for (let i = 0; i < len; i++) {
+          let v = src[t0 + i];
+          if (i < xf) {
+            const t = i / xf;
+            v = v * t + src[t1 - xf + i] * (1 - t);
+          }
+          dst[i] = v;
+        }
+      }
+      return ambBuf = b;
+    } catch (e) {
+      return null;
+    }
+  }
   function ambStart() {
     if (!ctx || amb || ctx.state !== "running") return;
     const t = ctx.currentTime, g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.075, t + 5);
+    g.gain.linearRampToValueAtTime(0.085, t + 3);
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 700;
-    lp.Q.value = 0.4;
+    lp.frequency.value = 850;
+    lp.Q.value = 0.5;
     lp.connect(g);
     g.connect(master);
+    const os = [];
+    const ab = S._ib && getAmbBuf(S._ib);
+    if (ab) {
+      const src = ctx.createBufferSource();
+      src.buffer = ab;
+      src.loop = true;
+      src.connect(lp);
+      src.start(t);
+      os.push(src);
+    } else {
+      S.loadIntro().then((b) => {
+        if (b && ambWant && amb && !amb.hasBuf) {
+          const ab2 = getAmbBuf(b);
+          if (ab2) {
+            const src = ctx.createBufferSource();
+            src.buffer = ab2;
+            src.loop = true;
+            src.connect(lp);
+            src.start();
+            amb.os.push(src);
+            amb.hasBuf = true;
+          }
+        }
+      });
+    }
     const lfo = ctx.createOscillator(), lg = ctx.createGain();
-    lfo.frequency.value = 0.05;
-    lg.gain.value = 260;
+    lfo.frequency.value = 0.04;
+    lg.gain.value = 180;
     lfo.connect(lg);
     lg.connect(lp.frequency);
     lfo.start();
-    const os = [];
-    [[65.41, "sine", 0.55], [98, "triangle", 0.22], [130.81, "sine", 0.28], [246.94, "triangle", 0.07], [369.99, "sine", 0.045], [392, "sine", 0.04]].forEach(([f, ty, v], i) => {
-      [-5, 5].forEach((dt) => {
+    [[55, "sine", 0.4], [164.81, "triangle", 0.2], [329.63, "sine", 0.16], [415.3, "sine", 0.12], [493.88, "sine", 0.09], [659.25, "sine", 0.06], [987.77, "sine", 0.03]].forEach(([f, ty, v], i) => {
+      [-4, 4].forEach((dt) => {
         const o = ctx.createOscillator();
         o.type = ty;
         o.frequency.value = f;
-        o.detune.value = dt + (i % 2 ? 2 : -2);
+        o.detune.value = dt + (i % 2 ? 1.5 : -1.5);
         const vg = ctx.createGain();
-        vg.gain.value = v / 2;
-        if (i >= 3) {
-          const tr = ctx.createOscillator(), tg = ctx.createGain();
-          tr.frequency.value = 0.08 + i * 0.031;
-          tg.gain.value = v / 2 * 0.8;
-          tr.connect(tg);
-          tg.connect(vg.gain);
-          tr.start();
-          os.push(tr);
-        }
+        vg.gain.value = v / 2.5;
         o.connect(vg);
         vg.connect(lp);
         o.start();
         os.push(o);
       });
     });
-    amb = { g, os: [...os, lfo] };
+    amb = { g, os: [...os, lfo], hasBuf: !!ab };
   }
   function ambStop() {
     if (!amb) return;
@@ -152,11 +194,21 @@ window.SFX = (() => {
       });
     },
     fx(list) {
-      if (muted) return;
+      if (muted || !list || !list.length) return;
       init();
-      if (ctx.state === "suspended") ctx.resume();
+      if (ctx && ctx.state === "suspended") ctx.resume();
       S.loadFx(list).then((b) => {
-        if (!b || muted) return;
+        if (!b) {
+          try {
+            const a = new Audio(list[0]);
+            a.volume = muted ? 0 : 0.8;
+            a.play().catch(() => {
+            });
+          } catch (_) {
+          }
+          return;
+        }
+        if (muted) return;
         const src = ctx.createBufferSource(), g = ctx.createGain();
         g.gain.value = 1;
         src.buffer = b;
@@ -171,6 +223,14 @@ window.SFX = (() => {
           amb.g.gain.linearRampToValueAtTime(0.075, t + b.duration + 2.5);
         }
         src.start(t);
+      }).catch(() => {
+        try {
+          const a = new Audio(list[0]);
+          a.volume = muted ? 0 : 0.8;
+          a.play().catch(() => {
+          });
+        } catch (_) {
+        }
       });
     },
     BACK: ["assets/sfx/ui-back.m4a", "assets/sfx/ui-back.mp3", "assets/sfx/ui-back.wav"],

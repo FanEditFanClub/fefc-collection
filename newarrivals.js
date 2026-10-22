@@ -52,7 +52,8 @@
       if (h === "#/arena") h = "#/newarrivals";
       if (h === "#/support") h = "#/supportus";
       if (/^#\/genre\//.test(h)) h = "#/genres";
-      return (back ? '<button class="mi" data-nav="up">\u25C0 Back</button>' : "") + NA.MENU(F).map(function(m) {
+      var isBack = !!back || /^#\/(edit|search|play|readfirst)\b/.test(h) || typeof document !== "undefined" && document.getElementById("details") && !document.getElementById("details").hidden;
+      return (isBack ? '<button class="mi" data-nav="up">\u25C0 Back</button>' : "") + NA.MENU(F).map(function(m) {
         var on = h === m[0] || m[0] === "#/" && h === "#" || m[0] !== "#/" && h.indexOf(m[0] + "/") === 0;
         return '<button class="mi' + (on ? " on" : "") + '" data-href="' + m[0] + '"' + (on ? ' aria-current="page"' : "") + ">" + m[1] + "</button>";
       }).join("");
@@ -74,10 +75,10 @@
       }
       return n;
     },
-    render: function(all, tile, art, get) {
+    render: function(all, tile, art, get, extra) {
       var list = NA.top(all), shown = 0, g = document.getElementById("grid");
       g.className = "sectioned";
-      g.innerHTML = '<div class="sgrid vids" id="na-list"></div><div style="text-align:center;padding:24px"><button class="mi" id="na-more" style="font-size:18px">More</button></div>';
+      g.innerHTML = (extra ? '<div class="sortbar csort" role="toolbar" style="margin-bottom:12px">' + extra + "</div>" : "") + '<div class="sgrid vids" id="na-list"></div><div style="text-align:center;padding:24px"><button class="mi" id="na-more" style="font-size:18px">More</button></div>';
       var box = document.getElementById("na-list"), more = document.getElementById("na-more");
       function page() {
         var chunk = list.slice(shown, shown + NA.PAGE);

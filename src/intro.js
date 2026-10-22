@@ -68,7 +68,7 @@ function create(opt){
   c.save();c.globalAlpha=a;c.translate(W/2,H/2);c.rotate(rot);const g=ts*.09;c.fillStyle='#ff8a1a';if(!tv){c.shadowColor='#ff8a1a';c.shadowBlur=30}c.fillRect(-ts/2-g*.3,-ts/2-g*.3,ts+g*.6,ts+g*.6);c.shadowBlur=0;c.fillStyle='#14171d';c.fillRect(-ts/2+g*.4,-ts/2+g*.4,ts-g*.8,ts-g*.8);if(logo.complete)c.drawImage(logo,-ts*.3,-ts*.34,ts*.6,ts*.6);c.restore();
   if(!tv&&s>22.6){const b=sm(22.6,23.6,s)*.3;if(buf.width!==cv.width||buf.height!==cv.height){buf.width=cv.width;buf.height=cv.height}bc.drawImage(cv,0,0);c.save();c.setTransform(1,0,0,1,0,0);for(const q of [1.04,1.09,1.15]){c.globalAlpha=b;const w=cv.width*q,h=cv.height*q;c.drawImage(buf,(cv.width-w)/2,(cv.height-h)/2,w,h)}c.restore();c.setTransform(dpr,0,0,dpr,0,0)}}
  function frame(s){curS=s;if(!warmed&&s>5.5&&s<11)warm();
-  const fl=s<12.6?sm(11.7,11.95,s)*(1-sm(11.95,12.6,s)):0,sn=sm(23.7,24.05,s)*(1-sm(24.05,24.2,s)),fa=Math.max(fl,sn);flashA(fa);if(fa>=.995&&fx)return;
+  const fl=s<12.6?sm(11.7,11.95,s)*(1-sm(11.95,12.6,s)):0,sn=s>23.6?sm(23.6,24.15,s):0,fa=Math.max(fl,sn);flashA(fa);if(fa>=.995&&fx)return;
   c.setTransform(dpr,0,0,dpr,0,0);c.globalAlpha=1;c.globalCompositeOperation='source-over';c.shadowBlur=0;c.fillStyle='#000';c.fillRect(0,0,W,H);
   if(s<12.2){
    ribbon(s);

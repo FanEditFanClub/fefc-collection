@@ -1108,8 +1108,8 @@ var __spreadValues = (a, b) => {
       doSearch();
       return;
     }
-    if (e.target.tagName === "INPUT") return;
-    if (e.key === "/" || e.keyCode === 403) {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403) {
       e.preventDefault();
       doSearch();
     } else if (e.key === "m" || e.key === "M" || e.keyCode === 404) {
@@ -1216,30 +1216,47 @@ var __spreadValues = (a, b) => {
   }).catch(() => {
   });
   let _lastSfxId = null, _lastSfxAt = 0, _sandlerLast = -1, _cruiseLast = -1;
+  const DIR_IDS = { "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP": 1, "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4": 1, "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v": 1, "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2": 1, "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg": 1, "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o": 1, "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF": 1, "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el": 1, "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t": 1, "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC": 1 };
   function folderSfx(id) {
     if (navBack || !id || id === ROOT) return;
     const now = Date.now();
     if (_lastSfxId === id && now - _lastSfxAt < 1200) return;
     _lastSfxId = id;
     _lastSfxAt = now;
+    if (window.S && S.unlock) try {
+      S.unlock();
+    } catch (e) {
+    }
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
     if (!L) {
       const p = people[id] || f && (people[f.id] || people[f.targetId]);
       const pName = (p ? p.name + " " + (p.folder || "") : f ? f.name : "").toLowerCase();
-      const isDir = p && p.role === "director" || f && f.parent === FOLD.directors || /^(abrams|bay|cameron|emmerich|nolan|ritchie|scott|snyder|spielberg|verhoeven)$/i.test(f ? f.name : "");
-      if (/carrey/i.test(pName)) {
-        L = ["assets/sfx/bruce-almighty-beautiful.m4a", "assets/sfx/bruce-almighty-beautiful.mp3"];
-      } else if (/cage/i.test(pName)) {
-        L = ["assets/sfx/cage-not-the-bees.m4a", "assets/sfx/cage-not-the-bees.mp3"];
-      } else if (/sandler/i.test(pName)) {
+      const isDir = DIR_IDS[id] || p && p.role === "director" || f && f.parent === FOLD.directors || /^(abrams|bay|cameron|emmerich|nolan|ritchie|scott|snyder|spielberg|verhoeven)$/i.test(f ? f.name : "");
+      let fullPath = pName;
+      if (f) {
+        let c = f, g = 0;
+        while (c && c.parent && g++ < 15) {
+          c = items.get(c.parent);
+          if (c && c.name) fullPath += " " + c.name.toLowerCase();
+        }
+      }
+      if (fullPath.includes("purassic")) {
+        L = ["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"];
+      } else if (fullPath.includes("jurassic")) {
+        L = ["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"];
+      } else if (/carrey/i.test(pName) || id === "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ") {
+        L = ["assets/sfx/bruce-almighty-beautiful.mp3"];
+      } else if (/cage/i.test(pName) || id === "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq") {
+        L = ["assets/sfx/cage-not-the-bees.mp3"];
+      } else if (/sandler/i.test(pName) || id === "1sBe2LolQsUBYKe-rFAg7eT44OMJjRJIO") {
         _sandlerLast = (_sandlerLast + 1) % 2;
         L = _sandlerLast === 0 ? ["assets/sfx/sandler-swan.mp3"] : ["assets/sfx/sandler-quote2.mp3"];
-      } else if (/cruise/i.test(pName)) {
+      } else if (/cruise/i.test(pName) || id === "1X1_iqdZJ9Nz62fGZSSvbzGuk_92Xespa") {
         _cruiseLast = (_cruiseLast + 1) % 2;
         L = _cruiseLast === 0 ? ["assets/sfx/cruise-money.mp3"] : ["assets/sfx/cruise-speed.mp3"];
       } else if (isDir) {
-        L = ["assets/sfx/director-action.m4a", "assets/sfx/director-action.mp3"];
+        L = ["assets/sfx/director-action.mp3"];
       }
     }
     if (!L && f && Array.isArray(FSFX._rules)) {
@@ -1305,7 +1322,7 @@ var __spreadValues = (a, b) => {
   function parentHash() {
     const r = parseH();
     if (r[0] === "play") return window.__shufPrevHash || (r[1] ? "#/edit/" + encodeURIComponent(r[1]) : "#/");
-    if (r[0] === "edit" || r[0] === "readfirst") return "#/";
+    if (r[0] === "edit" || r[0] === "readfirst" || r[0] === "search") return "#/";
     if (r[0] === "folder") {
       const f = items.get(r[1]);
       if (f && (f.parent === FOLD.actors || f.parent === FOLD.directors)) return "#/people";
@@ -1327,6 +1344,7 @@ var __spreadValues = (a, b) => {
   function route() {
     const r = parseH(), k = r[0] || "";
     if (k !== "play" && !$("#player").hidden) {
+      stopPlayerTimer();
       $("#player").hidden = true;
       killFrame();
       document.body.classList.remove("shuf-player");
@@ -1336,6 +1354,7 @@ var __spreadValues = (a, b) => {
     }
     if (k !== "edit" && k !== "play" && !$("#details").hidden) {
       $("#details").hidden = true;
+      document.body.classList.remove("details-open");
     }
     if (k !== "readfirst") closeRF();
     if (k === "edit") {
@@ -1380,13 +1399,11 @@ var __spreadValues = (a, b) => {
       return virtual(list.length ? list : folders, G);
     }
     if (k === "search") {
-      if (!$("#home").hidden && !r[1]) {
+      if (!r[1]) {
         openSpot("");
         return;
       }
-      hideHome();
-      open(ROOT, "all").then(() => openSpot(r[1] || ""));
-      return;
+      return searchPage(r[1]);
     }
     showHome();
   }
@@ -1406,7 +1423,7 @@ var __spreadValues = (a, b) => {
     $("#status").textContent = t;
   }
   function menu2() {
-    $("#menu").innerHTML = NA.menuHTML(FOLD, cur !== ROOT);
+    $("#menu").innerHTML = NA.menuHTML(FOLD, cur !== ROOT || !$("#details").hidden || parseH()[0] === "search" || parseH()[0] === "edit");
     const o = $("#menu .mi.on");
     o && o.scrollIntoView && o.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
@@ -1634,6 +1651,31 @@ var __spreadValues = (a, b) => {
   function shufPool(scope) {
     if (!SHUF) return [];
     const seen = {};
+    if (scope === "newarrivals") {
+      const top = window.NA && window.NA.top ? window.NA.top(rootVids()).filter(isVid) : [];
+      return top.filter((f) => {
+        const t = target(f);
+        if (seen[t] || !SHUF.has(t)) return false;
+        return seen[t] = 1;
+      });
+    }
+    if (scope === "collections") {
+      const collVids2 = [], seenFolders = {}, q = [FOLD.collections];
+      while (q.length) {
+        const fid = q.pop();
+        if (seenFolders[fid]) continue;
+        seenFolders[fid] = 1;
+        (kids.get(fid) || []).forEach((x) => {
+          if (isFolder(x)) q.push(target(x));
+          else if (isVid(x)) collVids2.push(x);
+        });
+      }
+      return collVids2.filter((f) => {
+        const t = target(f);
+        if (seen[t] || !SHUF.has(t)) return false;
+        return seen[t] = 1;
+      });
+    }
     let gcs = null;
     if (/^gc:/.test(scope || "")) {
       const m = scope.slice(3), i = m.indexOf("/"), c = genreColls(m.slice(0, i)).find((x) => x.slug === m.slice(i + 1));
@@ -1715,13 +1757,13 @@ var __spreadValues = (a, b) => {
     const g = $("#grid");
     if (mode === "arena") {
       $("#arena").innerHTML = "";
-      NA.render(rootVids(), tile, art, (i) => items.get(i));
+      NA.render(rootVids(), tile, art, (i) => items.get(i), typeof shufBtn === "function" ? shufBtn("newarrivals") : "");
     } else if (mode === "all" && cur === ROOT) {
       g.className = "sectioned";
       sortedAll(fold, vids2, g, typeof shufBtn === "function" ? shufBtn("all") : "");
     } else {
       g.className = "sectioned";
-      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
+      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
       g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
@@ -2051,9 +2093,142 @@ var __spreadValues = (a, b) => {
     };
     im.src = src;
   }
+  function timeAgo(ts) {
+    if (!ts) return "";
+    const diff = Math.max(0, Date.now() - ts), m = Math.floor(diff / 6e4), h = Math.floor(m / 60), d = Math.floor(h / 24);
+    if (m < 1) return "just now";
+    if (m < 60) return m + "m ago";
+    if (h < 24) return h + "h ago";
+    if (d === 1) return "yesterday";
+    if (d < 30) return d + "d ago";
+    return new Date(ts).toLocaleDateString();
+  }
+  let playTimerInterval = null, playSec = 0, playRunning = false, activePlayFile = null;
+  function stopPlayerTimer() {
+    clearInterval(playTimerInterval);
+    if (activePlayFile && playSec > 10 && window.UD) {
+      UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
+    }
+    playRunning = false;
+  }
+  function wirePlayerTimeControls() {
+    const bar = $("#ptime-bar");
+    if (!bar || bar._wired) return;
+    bar._wired = true;
+    const toggle = $("#pt-toggle"), clock = $("#pt-clock"), toast = $("#pt-toast");
+    const showToast = (msg) => {
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.hidden = false;
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => {
+        toast.hidden = true;
+      }, 3200);
+    };
+    if (toggle) toggle.addEventListener("click", () => {
+      S.click();
+      playRunning = !playRunning;
+      toggle.textContent = playRunning ? "\u23F8 PAUSE TIMER" : "\u25B6 RESUME TIMER";
+      toggle.classList.toggle("is-paused", !playRunning);
+      if (clock) clock.classList.toggle("paused", !playRunning);
+      if (!playRunning && activePlayFile && window.UD) {
+        UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
+        showToast("\u23F8 Timer paused at " + UD.formatTime(playSec));
+      }
+    });
+    bar.querySelectorAll(".pt-pill").forEach((btn) => btn.addEventListener("click", () => {
+      S.click();
+      const d = parseInt(btn.dataset.adj, 10) || 0;
+      playSec = Math.max(0, playSec + d);
+      if (clock && window.UD) clock.textContent = UD.formatTime(playSec);
+      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name);
+      showToast((d > 0 ? "+" : "") + d + "s \u2192 " + (window.UD ? UD.formatTime(playSec) : playSec));
+    }));
+    const setBtn = $("#pt-set");
+    if (setBtn) setBtn.addEventListener("click", () => {
+      S.click();
+      const curStr = window.UD ? UD.formatTime(playSec) : "00:00:00";
+      const ans = prompt("Set exact video playback time (e.g. 1:24:35 or 45:10):", curStr);
+      if (ans && window.UD) {
+        const s = UD.parseTime(ans);
+        playSec = s;
+        if (clock) clock.textContent = UD.formatTime(playSec);
+        if (activePlayFile) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name);
+        showToast("\u23F1\uFE0F Set to " + UD.formatTime(playSec));
+      }
+    });
+    if (clock) clock.addEventListener("click", () => {
+      if (setBtn) setBtn.click();
+    });
+    const copyBtn = $("#pt-copy");
+    if (copyBtn) copyBtn.addEventListener("click", () => {
+      S.click();
+      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
+      try {
+        navigator.clipboard.writeText(str);
+      } catch (_) {
+      }
+      showToast("\u{1F4CB} Copied " + str + "! Fast forward / seek to " + str + " in player");
+    });
+    const markBtn = $("#pt-mark");
+    if (markBtn) markBtn.addEventListener("click", () => {
+      S.click();
+      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
+      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
+      showToast("\u{1F4CC} Saved bookmark at " + str + " to watch history!");
+    });
+    const resetBtn = $("#pt-reset");
+    if (resetBtn) resetBtn.addEventListener("click", () => {
+      S.click();
+      playSec = 0;
+      if (clock) clock.textContent = "00:00:00";
+      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, 0, activePlayFile.name);
+      showToast("\u21BA Timer reset to 00:00:00");
+    });
+    const rBanner = $("#presume-banner"), prCopy = $("#pr-copy"), prResume = $("#pr-resume"), prRestart = $("#pr-restart"), prClose = $("#pr-close");
+    if (prCopy) prCopy.addEventListener("click", () => {
+      S.click();
+      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
+      try {
+        navigator.clipboard.writeText(str);
+      } catch (_) {
+      }
+      showToast("\u{1F4CB} Copied " + str + "! Scrub Drive progress bar to " + str);
+    });
+    if (prResume) prResume.addEventListener("click", () => {
+      S.click();
+      if (rBanner) rBanner.hidden = true;
+      playRunning = true;
+      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
+      try {
+        navigator.clipboard.writeText(str);
+      } catch (_) {
+      }
+      showToast("\u25B6 Resumed from " + str + " (copied to clipboard)");
+    });
+    if (prRestart) prRestart.addEventListener("click", () => {
+      S.click();
+      if (rBanner) rBanner.hidden = true;
+      playSec = 0;
+      if (clock) clock.textContent = "00:00:00";
+      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, 0, activePlayFile.name);
+    });
+    if (prClose) prClose.addEventListener("click", () => {
+      S.click();
+      if (rBanner) rBanner.hidden = true;
+    });
+  }
   async function details(f, push = true) {
     S.open();
     S.ambience(false);
+    $("#bar").hidden = false;
+    document.body.classList.add("details-open");
+    if (window.NA && NA.menuHTML) try {
+      menu2();
+    } catch (e) {
+    }
+    const b = $("#bar");
+    if (b) document.documentElement.style.setProperty("--barh", (b.offsetHeight || 56) + "px");
     const p = parse(f.name), id = target(f), m = meta[f.id] || meta[id] || {};
     const F2 = window.FEX && FEX.film(f.id, id) || meta.films && meta.map && meta.films[meta.map[f.id] || meta.map[id]] || null;
     const film = F2 ? { title: F2.title, year: F2.year, director: (F2.director || []).join(", ") } : m.sourceFilm || { title: p.film, year: p.year };
@@ -2073,10 +2248,24 @@ var __spreadValues = (a, b) => {
     const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source film.</p>';
     const T = m.title || p.raw, meta1 = [film.year, F2 && F2.runtime ? F2.runtime + " min" : "", F2 && F2.tv ? "TV series" : ""].filter(Boolean).join(" \xB7 ");
     const PS = posters[f.id] || posters[id], PU = F2 && F2.fx && F2.poster && (!PS || meta.map && (meta.map[f.id] || meta.map[id])) ? F2.poster : PS && PS.url;
+    const fn = (f.name || "").toLowerCase();
+    let fp = fn, curF = f, gc = 0;
+    while (curF && curF.parent && gc++ < 15) {
+      curF = items.get(curF.parent);
+      if (curF && curF.name) fp += " " + curF.name.toLowerCase();
+    }
+    const isPurr = fp.includes("purassic"), isJura = fp.includes("jurassic");
+    if (isPurr) {
+      S.fx(["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"]);
+    } else if (isJura) {
+      S.fx(["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"]);
+    }
+    const pbRec = window.UD && (UD.getPlayback(f.id) || UD.getPlayback(id));
+    const pbHTML = pbRec && pbRec.sec > 10 ? '<div class="fx-playback" id="fx-playback"><div class="pb-head"><h3 class="pb-title">\u23F1\uFE0F Watch Progress & Time Log</h3></div><div class="pb-status">Left off at: <b>'.concat(esc(pbRec.formatted), '</b><small style="color:#94a3b8;margin-left:8px">').concat(timeAgo(pbRec.updatedAt), '</small></div><div class="pb-actions"><button class="pb-btn pb-resume" data-pbresume="').concat(esc(f.id), '" data-time="').concat(pbRec.sec, '">\u25B6 Resume at ').concat(esc(pbRec.formatted), '</button><button class="pb-btn pb-copy" data-pbcopy="').concat(esc(pbRec.formatted), '">\u{1F4CB} Copy Timestamp (').concat(esc(pbRec.formatted), ')</button><button class="pb-btn pb-clear" data-pbclear="').concat(esc(f.id), '">\u21BA Reset</button></div>').concat(pbRec.log && pbRec.log.length ? '<ul class="pb-log">'.concat(pbRec.log.map((item) => "<li><span>Stopped at <b>".concat(esc(item.formatted), '</b> <small style="color:#64748b">(').concat(timeAgo(item.at), ')</small></span><button class="pb-copy-mini" data-pbcopy="').concat(esc(item.formatted), '">Copy</button></li>')).join(""), "</ul>") : "", "</div>") : "";
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(pbHTML, "\n  ").concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     $("#details").hidden = false;
     $("#details").dataset.id = f.id;
     detBackdrop(f, PU);
@@ -2086,9 +2275,44 @@ var __spreadValues = (a, b) => {
     $("#details").scrollTop = 0;
     const lb = $("#details .lc-body");
     if (lb) lb.scrollTop = 0;
-    $("#details").querySelectorAll("[data-jump]").forEach((b) => b.addEventListener("click", () => {
+    $("#details").querySelectorAll("[data-pbresume]").forEach((b2) => b2.addEventListener("click", (e) => {
+      e.preventDefault();
+      S.click();
+      window.__resumeSec = +b2.dataset.time;
+      try {
+        navigator.clipboard.writeText(b2.closest(".fx-playback").querySelector(".pb-status b").textContent);
+      } catch (_) {
+      }
+      go("#/play/" + b2.dataset.pbresume);
+    }));
+    $("#details").querySelectorAll("[data-pbcopy]").forEach((b2) => b2.addEventListener("click", (e) => {
+      e.preventDefault();
+      S.click();
+      const t = b2.dataset.pbcopy;
+      try {
+        navigator.clipboard.writeText(t);
+      } catch (_) {
+      }
+      b2.textContent = "\u2713 Copied!";
+      setTimeout(() => {
+        b2.textContent = b2.dataset.pbcopy ? "\u{1F4CB} Copy Timestamp (" + t + ")" : "Copy";
+      }, 2e3);
+    }));
+    $("#details").querySelectorAll("[data-pbclear]").forEach((b2) => b2.addEventListener("click", (e) => {
+      e.preventDefault();
+      S.click();
+      if (window.UD) UD.clearPlayback(b2.dataset.pbclear);
+      const el = $("#fx-playback");
+      if (el) el.remove();
+    }));
+    if (isPurr) {
+      $("#details").addEventListener("click", (e) => {
+        if (e.target.closest("button,a,.pill,.bigplay,.ol-tile")) S.fx(["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"]);
+      });
+    }
+    $("#details").querySelectorAll("[data-jump]").forEach((b2) => b2.addEventListener("click", () => {
       S.chirp(2);
-      const t = $("#lc-" + b.dataset.jump);
+      const t = $("#lc-" + b2.dataset.jump);
       if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
     }));
     let n = 0;
@@ -2111,6 +2335,7 @@ var __spreadValues = (a, b) => {
     return !!window._u && document.body.classList.contains("intro-done");
   }
   function play(f) {
+    activePlayFile = f;
     const E = episodes(f), pn = $("#pprev"), nx = $("#pnext");
     if (pn && nx) {
       const p0 = E && E.idx > 0 ? E.eps[E.idx - 1].f : null, n0 = E && E.idx >= 0 && E.idx < E.eps.length - 1 ? E.eps[E.idx + 1].f : null;
@@ -2133,6 +2358,41 @@ var __spreadValues = (a, b) => {
     newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
     $("#player").hidden = false;
+    wirePlayerTimeControls();
+    const pbRec = window.UD && (UD.getPlayback(f.id) || UD.getPlayback(id));
+    const resumeBanner = $("#presume-banner"), prTime = $("#pr-time"), ptClock = $("#pt-clock"), ptToggle = $("#pt-toggle");
+    if (window.__resumeSec != null) {
+      playSec = window.__resumeSec;
+      window.__resumeSec = null;
+      if (resumeBanner) resumeBanner.hidden = true;
+    } else if (pbRec && pbRec.sec > 10) {
+      playSec = pbRec.sec;
+      if (resumeBanner && prTime) {
+        prTime.textContent = pbRec.formatted;
+        resumeBanner.hidden = false;
+      }
+    } else {
+      playSec = 0;
+      if (resumeBanner) resumeBanner.hidden = true;
+    }
+    playRunning = true;
+    if (ptClock) {
+      ptClock.textContent = window.UD ? UD.formatTime(playSec) : "00:00:00";
+      ptClock.classList.remove("paused");
+    }
+    if (ptToggle) {
+      ptToggle.textContent = "\u23F8 PAUSE TIMER";
+      ptToggle.classList.remove("is-paused");
+    }
+    clearInterval(playTimerInterval);
+    let ticks = 0;
+    playTimerInterval = setInterval(() => {
+      if (!$("#player").hidden && playRunning) {
+        playSec++;
+        if (ptClock && window.UD) ptClock.textContent = UD.formatTime(playSec);
+        if (++ticks % 5 === 0 && window.UD && activePlayFile) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name);
+      }
+    }, 1e3);
   }
   document.addEventListener("click", (e) => {
     const pe = e.target.closest("#pprev,#pnext");
@@ -2194,15 +2454,15 @@ var __spreadValues = (a, b) => {
     if (e.target.matches(".ol-tile,.mi")) S.move();
   });
   const SEMANTIC_MAP = {
-    space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar"],
-    superhero: ["batman", "superman", "spider-man", "spiderman", "avengers", "iron man", "captain america", "thor", "x-men", "justice league", "hulk", "daredevil"],
-    horror: ["halloween", "friday the 13th", "nightmare on elm", "evil dead", "scream", "shining", "chucky", "hellraiser", "exorcist", "texas chainsaw"],
-    timetravel: ["back to the future", "terminator", "donnie darko", "tenet", "12 monkeys", "edge of tomorrow"],
-    comedy: ["airplane", "naked gun", "monty python", "austin powers", "spaceballs", "ghostbusters", "anchorman", "lebowski", "borat"],
-    action: ["die hard", "matrix", "john wick", "terminator", "predator", "mad max", "mission impossible", "fast and furious", "bourne", "robocop"],
-    fantasy: ["lord of the rings", "hobbit", "harry potter", "game of thrones", "willow", "conan", "chronicles of narnia"],
-    mob: ["godfather", "goodfellas", "scarface", "casino", "sopranos", "irishman"],
-    western: ["good, the bad", "django", "unforgiven", "fistful of dollars", "magnificent seven"]
+    space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
+    superhero: ["batman", "superman", "spider-man", "spiderman", "avengers", "iron man", "captain america", "thor", "x-men", "justice league", "hulk", "daredevil", "deadpool", "wolverine", "guardians of the galaxy", "black panther", "doctor strange", "aquaman", "wonder woman", "flash", "green lantern", "watchmen", "blade", "punisher", "spawn"],
+    horror: ["halloween", "friday the 13th", "nightmare on elm", "evil dead", "scream", "shining", "chucky", "hellraiser", "exorcist", "texas chainsaw", "thing", "dracula", "frankenstein", "alien", "predator", "poltergeist", "conjuring", "insidious", "saw", "ring", "grudge", "babadook", "hereditary", "midsommar"],
+    timetravel: ["back to the future", "terminator", "donnie darko", "tenet", "12 monkeys", "edge of tomorrow", "primer", "looper", "time machine", "groundhog day", "interstellar", "source code", "butterfly effect", "about time", "predestination"],
+    comedy: ["airplane", "naked gun", "monty python", "austin powers", "spaceballs", "ghostbusters", "anchorman", "lebowski", "borat", "tropic thunder", "superbad", "step brothers", "dumb and dumber", "ace ventura", "mask", "liar liar", "billy madison", "happy gilmore", "waterboy", "big daddy"],
+    action: ["die hard", "matrix", "john wick", "terminator", "predator", "mad max", "mission impossible", "fast and furious", "bourne", "robocop", "rambo", "rocky", "speed", "gladiator", "taken", "crank", "transporter", "equalizer"],
+    fantasy: ["lord of the rings", "hobbit", "harry potter", "game of thrones", "willow", "conan", "chronicles of narnia", "wizard of oz", "neverending story", "dark crystal", "labyrinth", "pan's labyrinth", "excalibur", "princess bride"],
+    mob: ["godfather", "goodfellas", "scarface", "casino", "sopranos", "irishman", "departed", "donnie brasco", "untouchables", "heat", "carlito's way", "miller's crossing"],
+    western: ["good, the bad", "django", "unforgiven", "fistful of dollars", "magnificent seven", "tombstone", "true grit", "wild bunch", "once upon a time in the west", "butch cassidy", "deadwood", "hateful eight"]
   };
   function semanticSearch(q) {
     const norm2 = (q || "").toLowerCase();
@@ -2214,19 +2474,67 @@ var __spreadValues = (a, b) => {
     if (!matchedKeywords.size) return [];
     const results = [];
     const seen = /* @__PURE__ */ new Set();
+    const pathOf = (f) => {
+      let s = (f.name || "").toLowerCase(), c = f, n = 0;
+      while (c && c.parent && n++ < 8) {
+        c = items.get(c.parent);
+        if (c && c.name) s += " " + c.name.toLowerCase();
+      }
+      return s;
+    };
     for (const item of items.values()) {
       if (isFolder(item)) continue;
-      const name = (item.name || "").toLowerCase();
+      const full = pathOf(item);
       for (const kw of matchedKeywords) {
-        if (name.includes(kw) && !seen.has(target(item))) {
+        if (full.includes(kw) && !seen.has(target(item))) {
           seen.add(target(item));
           results.push({ item, why: "Vault match for " + kw.replace(/\b\w/g, (l) => l.toUpperCase()) });
           break;
         }
       }
-      if (results.length >= 36) break;
+      if (results.length >= 100) break;
     }
     return results;
+  }
+  function searchPage(q) {
+    q = (q || "").trim();
+    if (!q) return showHome();
+    closeSpot(true);
+    hideHome();
+    cur = "virtual";
+    view = "search";
+    $("#crumb").textContent = "Search: " + q;
+    $("#arena").innerHTML = "";
+    status("");
+    menu2();
+    $("#main").scrollTop = 0;
+    const qNorm = spNorm(q);
+    const words = qNorm.split(/\s+/).filter((w) => w.length > 1 || qNorm.length < 3);
+    const hit = (s) => words.every((w) => s.includes(w)) || s.includes(qNorm);
+    const idx = spBuild();
+    const seen = /* @__PURE__ */ new Set();
+    const folds = [], vidsList = [];
+    for (const r of idx) {
+      if (hit(r.n) || r.cn.some((c) => c.includes(qNorm)) || r.dn.some((d) => d.includes(qNorm))) {
+        const k = target(r.f);
+        if (!seen.has(k)) {
+          seen.add(k);
+          if (r.fold) folds.push(r.f);
+          else vidsList.push(r.f);
+        }
+      }
+    }
+    const sem = semanticSearch(q);
+    sem.forEach((s) => {
+      const k = target(s.item);
+      if (!seen.has(k)) {
+        seen.add(k);
+        vidsList.push(s.item);
+      }
+    });
+    render([...folds, ...vidsList], "Search: " + q, "home");
+    const total = folds.length + vidsList.length;
+    $("#sec2").textContent = total + " result" + (total === 1 ? "" : "s") + " for \u201C" + q + "\u201D";
   }
   let aiSeq = 0;
   async function aiSearch(q) {
@@ -2256,13 +2564,10 @@ var __spreadValues = (a, b) => {
       if (my !== aiSeq) return;
       const sem = semanticSearch(q);
       if (sem.length) {
-        const picks = sem.slice(0, 12).map((x) => ({ f: x.item, why: x.why }));
+        const picks = sem.slice(0, 36).map((x) => ({ f: x.item, why: x.why }));
         showOptimus(picks, "I searched the vault for \u201C".concat(q, "\u201D and picked ").concat(picks.length, " fan edits for you!"));
       } else {
-        open(ROOT, "all").then(() => {
-          $("#q").value = q;
-          $("#q").dispatchEvent(new Event("input"));
-        });
+        searchPage(q);
       }
     }
   }
@@ -2456,7 +2761,7 @@ var __spreadValues = (a, b) => {
       openSpot("");
     };
   })();
-  const OPT_SVG = '<div class="op-ph" aria-hidden="true"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><span class="op-fig"><img class="op-full" src="assets/optimus-full.webp" alt="" decoding="async"><i class="op-glow"></i></span><b class="op-cue"></b></div>';
+  const OPT_SVG = '<div class="op-ph" aria-hidden="true"><div class="op-scene"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><div class="op-screen"><div class="op-stars"></div><div class="op-ship s1"></div><div class="op-ship s2"></div><div class="op-laser"></div><div class="op-term"><b>&gt; SEARCH:</b><i class="op-cur"></i></div></div><div class="op-popcorn"><span class="op-pc">\u{1F37F}</span></div><div class="op-screen-glow"></div><div class="op-type-hands"></div></div><span class="op-fig"><img class="op-full" src="assets/optimus-full.webp" alt="" decoding="async"><i class="op-glow"></i></span><b class="op-cue"></b></div>';
   let spEl = null, spSeq = 0, spT = null, spAiT = null, spMoodT = null, spIdx = null, spIdxN = -1, spSel = -1, spLastFocus = null;
   const spOpen = () => !!(spEl && spEl.classList.contains("on"));
   const spNorm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -2549,6 +2854,22 @@ var __spreadValues = (a, b) => {
   function spSay(t) {
     spEl.querySelector(".sp-say").textContent = t;
   }
+  function triggerStarshipEasterEgg() {
+    let ship = document.getElementById("starship-egg");
+    if (!ship) {
+      ship = document.createElement("div");
+      ship.id = "starship-egg";
+      ship.innerHTML = '<div class="starship-wrap"><div class="starship-body"><div class="ss-nose"></div><div class="ss-fins top"></div><div class="ss-barrel"></div><div class="ss-fins bot"></div><div class="ss-flame"><div class="ss-core"></div><div class="ss-trail"></div></div></div><div class="ss-text">\u{1F680} STARSHIP FLIGHT TEST \u2022 MECHAZILLA CATCH READY \u{1F9BE}</div></div>';
+      document.body.appendChild(ship);
+    }
+    ship.classList.remove("launch");
+    void ship.offsetWidth;
+    ship.classList.add("launch");
+    if (window.S && S.open) S.open();
+    setTimeout(() => {
+      ship.classList.remove("launch");
+    }, 4200);
+  }
   function spMk() {
     spEl = document.createElement("div");
     spEl.id = "spot";
@@ -2558,15 +2879,47 @@ var __spreadValues = (a, b) => {
     document.body.appendChild(spEl);
     const inp = spEl.querySelector("#sp-q");
     spEl.querySelector(".sp-back").addEventListener("click", closeSpot);
+    let typeT = null;
+    const onKeyOrType = () => {
+      const o = spEl.querySelector(".sp-opt");
+      if (!o) return;
+      o.classList.add("typing");
+      o.classList.remove("m-idle");
+      const term = spEl.querySelector(".op-term b");
+      if (term) term.textContent = "> " + (inp.value.toUpperCase() || "SEARCH");
+      clearTimeout(typeT);
+      typeT = setTimeout(() => {
+        if (o) {
+          o.classList.remove("typing");
+          if (!inp.value.trim()) o.classList.add("m-idle");
+        }
+      }, 600);
+    };
     inp.addEventListener("input", () => {
+      onKeyOrType();
       const q = inp.value;
       const o = spEl.querySelector(".sp-opt");
-      if (q.trim() && /m-idle/.test(o.className)) {
-        spMood("wave", 1300);
-        spSay("Oh! Hi there. What are we looking for?");
-      }
-      if (!q.trim()) {
-        spMood("idle");
+      const nq = q.trim().toLowerCase();
+      if (nq) {
+        if (/^(starship|spacex|ift|boca chica|super heavy|mechazilla)/i.test(nq)) {
+          spMood("yay");
+          spSay("\u{1F680} Starship Flight Test initiated! Catching Super Heavy with Mechazilla chopsticks!");
+          triggerStarshipEasterEgg();
+        } else if (/^(tesla|cybertruck|plaid)/i.test(nq)) {
+          spMood("yay");
+          spSay("\u26A1 Plaid Mode engaged! Accelerating from 0 to 60 in 1.99s. Autonomously indexing fan edits!");
+        } else if (/^(boring|not a flamethrower|tunnel)/i.test(nq)) {
+          spMood("yay");
+          spSay("\u{1F525} Not a Flamethrower detected! Boring tunnels beneath the movie vault to bypass traffic!");
+        } else if (/^(grok|xai)/i.test(nq)) {
+          spMood("think");
+          spSay("\u{1F916} Grok mode enabled! Cosmic curiosity level: Maximum. Answer: 42.");
+        } else {
+          spMood("think");
+          spSay("Optimus is searching for \u201C" + q + "\u201D\u2026");
+        }
+      } else {
+        o.className = "sp-opt m-idle";
         spSay("Optimus is watching a fan edit. Type to interrupt him.");
       }
       clearTimeout(spT);
@@ -2581,6 +2934,9 @@ var __spreadValues = (a, b) => {
       const k = e.keyCode;
       e.stopPropagation();
       const L = [].slice.call(spEl.querySelectorAll(".sp-it"));
+      if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        onKeyOrType();
+      }
       if (k === 27 || k === 10009 || k === 461 || e.key === "GoBack" || e.key === "BrowserBack") {
         e.preventDefault();
         closeSpot();
@@ -2605,11 +2961,11 @@ var __spreadValues = (a, b) => {
         e.preventDefault();
         const a = document.activeElement && document.activeElement.closest(".sp-it");
         if (a) return spGo(a);
+        if (spSel >= 0 && L[spSel]) return spGo(L[spSel]);
         const q = inp.value.trim();
-        if (L[0]) return spGo(L[Math.max(0, spSel)]);
         if (q) {
-          closeSpot();
-          aiSearch(q);
+          closeSpot(true);
+          go("#/search/" + encodeURIComponent(q));
         }
         return;
       }

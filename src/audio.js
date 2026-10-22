@@ -3,16 +3,53 @@ window.SFX=(()=>{let ctx,master,amb,muted=localStorage.fefcMute==='1',started=fa
 function init(){if(ctx)return;ctx=new (window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.gain.value=muted?0:0.6;master.connect(ctx.destination)}
 function tone(f,t0,d,type='sine',g=.15,f2){const o=ctx.createOscillator(),v=ctx.createGain();o.type=type;o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+d);
  v.gain.setValueAtTime(0,t0);v.gain.linearRampToValueAtTime(g,t0+.01);v.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(v);v.connect(master);o.start(t0);o.stop(t0+d+.05)}
-/* Ambient home bed: original Web Audio pad in the key of the intro's final tail (C pedal, G/B/F# colour = Cmaj7#11).
-   Endless oscillators = seamless loop. Level ~12% of the intro bus. */
-let ambWant=false;
-function ambStart(){if(!ctx||amb||ctx.state!=='running')return;const t=ctx.currentTime,g=ctx.createGain();g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.075,t+5);
- const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=700;lp.Q.value=.4;lp.connect(g);g.connect(master);
- const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.05;lg.gain.value=260;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
- const os=[];[[65.41,'sine',.55],[98,'triangle',.22],[130.81,'sine',.28],[246.94,'triangle',.07],[369.99,'sine',.045],[392,'sine',.04]].forEach(([f,ty,v],i)=>{[-5,5].forEach(dt=>{const o=ctx.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=dt+(i%2?2:-2);const vg=ctx.createGain();vg.gain.value=v/2;
-  if(i>=3){const tr=ctx.createOscillator(),tg=ctx.createGain();tr.frequency.value=.08+i*.031;tg.gain.value=v/2*.8;tr.connect(tg);tg.connect(vg.gain);tr.start();os.push(tr)}
-  o.connect(vg);vg.connect(lp);o.start();os.push(o)})});
- amb={g,os:[...os,lfo]}}
+/* Ambient home bed: sampled directly from the ending tail of Carson's assets/intro.mp3,
+   plus warm E-major harmonic shimmer (E, G#, B) matching the final chime chord. */
+let ambWant=false,ambBuf=null;
+function getAmbBuf(ib){
+ if(ambBuf)return ambBuf;
+ if(!ib||!ctx)return null;
+ try{
+  const sr=ib.sampleRate;
+  const t0=Math.floor(Math.max(0,24.65*sr));
+  const t1=Math.floor(Math.min(ib.duration-0.03,26.12)*sr);
+  const len=t1-t0;
+  if(len<=sr*0.4)return null;
+  const b=ctx.createBuffer(ib.numberOfChannels,len,sr);
+  const xf=Math.floor(Math.min(0.28*sr,len*0.25));
+  for(let ch=0;ch<ib.numberOfChannels;ch++){
+   const src=ib.getChannelData(ch),dst=b.getChannelData(ch);
+   for(let i=0;i<len;i++){
+    let v=src[t0+i];
+    if(i<xf){const t=i/xf;v=v*t+src[t1-xf+i]*(1-t)}
+    dst[i]=v;
+   }
+  }
+  return ambBuf=b;
+ }catch(e){return null}
+}
+function ambStart(){
+ if(!ctx||amb||ctx.state!=='running')return;
+ const t=ctx.currentTime,g=ctx.createGain();
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.085,t+3);
+ const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=850;lp.Q.value=.5;lp.connect(g);g.connect(master);
+ const os=[];
+ const ab=S._ib&&getAmbBuf(S._ib);
+ if(ab){
+  const src=ctx.createBufferSource();src.buffer=ab;src.loop=true;src.connect(lp);src.start(t);os.push(src);
+ }else{
+  S.loadIntro().then(b=>{if(b&&ambWant&&amb&&!amb.hasBuf){const ab2=getAmbBuf(b);if(ab2){const src=ctx.createBufferSource();src.buffer=ab2;src.loop=true;src.connect(lp);src.start();amb.os.push(src);amb.hasBuf=true}}});
+ }
+ // E-major resonant tail bed matching the 24.75s chord of the intro
+ const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.04;lg.gain.value=180;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
+ [[55,'sine',.4],[164.81,'triangle',.2],[329.63,'sine',.16],[415.30,'sine',.12],[493.88,'sine',.09],[659.25,'sine',.06],[987.77,'sine',.03]].forEach(([f,ty,v],i)=>{
+  [-4,4].forEach(dt=>{
+   const o=ctx.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=dt+(i%2?1.5:-1.5);
+   const vg=ctx.createGain();vg.gain.value=v/2.5;o.connect(vg);vg.connect(lp);o.start();os.push(o);
+  });
+ });
+ amb={g,os:[...os,lfo],hasBuf:!!ab};
+}
 function ambStop(){if(!amb)return;const a=amb;amb=null;const t=ctx.currentTime;a.g.gain.cancelScheduledValues(t);a.g.gain.setValueAtTime(a.g.gain.value,t);a.g.gain.linearRampToValueAtTime(0,t+.8);setTimeout(()=>a.os.forEach(o=>{try{o.stop()}catch(e){}}),900)}
 /* The intro has exactly one sound: Carson's assets/intro.mp3. No synthesized intro, drone, bells or stings. */
 const INTRO_MP3='assets/intro.mp3?v=352e1617';
@@ -30,9 +67,11 @@ const S={
  /* one-shot sound effects (Carson-supplied files), decoded once and cached; ducks the ambient bed while playing */
  _fx:{},
  loadFx(list){init();const k=list.join('|');if(S._fx[k])return S._fx[k];const tryN=i=>i>=list.length?Promise.resolve(null):fetch(list[i]).then(r=>{if(!r.ok)throw 0;const ct=r.headers.get('content-type')||'';if(ct.includes('text/html')||ct.includes('text/plain'))throw 0;return r.arrayBuffer()}).then(a=>new Promise((res,rej)=>ctx.decodeAudioData(a,res,rej))).catch(()=>tryN(i+1));return S._fx[k]=tryN(0).then(b=>{if(!b)delete S._fx[k];return b},()=>{delete S._fx[k];return null})},
- fx(list){if(muted)return;init();if(ctx.state==='suspended')ctx.resume();S.loadFx(list).then(b=>{if(!b||muted)return;const src=ctx.createBufferSource(),g=ctx.createGain();g.gain.value=1;src.buffer=b;src.connect(g);g.connect(master);const t=ctx.currentTime;
+ fx(list){if(muted||!list||!list.length)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();S.loadFx(list).then(b=>{
+  if(!b){try{const a=new Audio(list[0]);a.volume=muted?0:0.8;a.play().catch(()=>{})}catch(_){}return}
+  if(muted)return;const src=ctx.createBufferSource(),g=ctx.createGain();g.gain.value=1;src.buffer=b;src.connect(g);g.connect(master);const t=ctx.currentTime;
   if(amb){amb.g.gain.cancelScheduledValues(t);amb.g.gain.setValueAtTime(amb.g.gain.value,t);amb.g.gain.linearRampToValueAtTime(.012,t+.25);amb.g.gain.setValueAtTime(.012,t+b.duration);amb.g.gain.linearRampToValueAtTime(.075,t+b.duration+2.5)}
-  src.start(t)})},
+  src.start(t)}).catch(()=>{try{const a=new Audio(list[0]);a.volume=muted?0:0.8;a.play().catch(()=>{})}catch(_){}})},
  BACK:['assets/sfx/ui-back.m4a','assets/sfx/ui-back.mp3','assets/sfx/ui-back.wav'],
  back(){const n=Date.now();if(n-(S._bt||0)<350)return;S._bt=n;S.fx(S.BACK)},
  state(){init();return ctx.state},

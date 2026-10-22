@@ -1,7 +1,7 @@
 // Cloudflare Pages advanced-mode worker: POST /api/ai-search (Gemini), everything else -> static assets.
 // Secret: set GEMINI_API_KEY (encrypted) in Pages > Settings > Variables and Secrets. Optional: GEMINI_MODEL.
-const MAX_BODY = 2048, MAX_Q = 200, MAX_CAND = 140, MAX_OUT = 12;
-const RL_WINDOW = 60000, RL_MAX = 8;               // per IP per isolate: 8 asks / minute
+const MAX_BODY = 4096, MAX_Q = 200, MAX_CAND = 200, MAX_OUT = 36;
+const RL_WINDOW = 60000, RL_MAX = 12;               // per IP per isolate: 12 asks / minute
 const rl = new Map();
 let TITLES = null, TITLES_AT = 0;
 const STOP = new Set('a an and the of to in on for with without from by is are be it its that this into than then very more less some any all just only my me i want find show give like movie movies film films edit edits fan cut cuts version versions one ones please about where which what who how'.split(' '));
@@ -23,10 +23,11 @@ function prefilter(all, words) {
   sc.sort((a, b) => b[0] - a[0]); return sc.slice(0, MAX_CAND).map(a => a[1]);
 }
 async function gemini(env, prompt, schema) {
-  const models = [...new Set([env.GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter(Boolean))];
+  const models = [...new Set([env.GEMINI_MODEL, 'gemini-1.5-flash', 'gemini-1.5-flash-latest', 'gemini-2.0-flash', 'gemini-1.5-pro'].filter(Boolean))];
   let last;
   for (const model of models) {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`;
+    const r = await fetch(url, {
       method: 'POST', signal: AbortSignal.timeout(20000), headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 4096, responseMimeType: 'application/json', responseSchema: schema } })
     });
