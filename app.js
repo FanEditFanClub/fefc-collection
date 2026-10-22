@@ -341,11 +341,15 @@ var __spreadValues = (a, b) => {
   function tile(f, live_) {
     const fold = isFolder(f), p = parse(f.name), aud = !fold && !isVid(f) && isAud(f), vid = !fold && (isVid(f) || aud), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
+    if (fold) {
+      const fid = target(f);
+      if ((fid === FOLD.collections || f.id === FOLD.collections) && cur !== FOLD.collections) return '<button class="ol-tile fecc" data-id="'.concat(f.id, '" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">').concat(esc(countsLine(FOLD.collections)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
+      if ((fid === FOLD.tbc || f.id === FOLD.tbc) && cur !== FOLD.tbc) return '<button class="ol-tile fecc fecc-tbc" data-id="'.concat(f.id, '" data-fecc="1" aria-label="To Be Catalogued"><span class="fecc-t">To Be Catalogued</span><small class="fecc-c">').concat(esc(countsLine(FOLD.tbc)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
+    }
     if (fold && target(f) === ROOT && f.parent === FOLD.collections) return '<button class="ol-tile mainc" data-id="'.concat(f.id, '" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">').concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
-    if (fold && (target(f) === FOLD.collections || f.id === FOLD.collections) && cur !== FOLD.collections) return '<button class="ol-tile fecc" data-id="'.concat(f.id, '" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">').concat(esc(countsLine(FOLD.collections)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
     if (!fold && !vid && isSupportDoc(f)) return '<button class="ol-tile sup" data-id="'.concat(f.id, '" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small></button>');
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
-    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "COLLECTION" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
+    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<span class="star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-pressed="').concat(on, '" aria-label="').concat(on ? "Remove from My List" : "Add to My List", '" title="').concat(on ? "Starred" : "Star", ' (S)">').concat(on ? "\u2605" : "\u2606", "</span>");
     })() : "").concat(vid ? '<div class="pcap '.concat((() => {
@@ -1203,9 +1207,33 @@ var __spreadValues = (a, b) => {
     (window.requestIdleCallback || setTimeout)(pre, { timeout: 4e3 });
   }).catch(() => {
   });
+  let _lastSfxId = null, _lastSfxAt = 0, _sandlerLast = -1, _cruiseLast = -1;
   function folderSfx(id) {
+    if (navBack || !id || id === ROOT) return;
+    const now = Date.now();
+    if (_lastSfxId === id && now - _lastSfxAt < 1200) return;
+    _lastSfxId = id;
+    _lastSfxAt = now;
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
+    if (!L) {
+      const p = people[id] || f && (people[f.id] || people[f.targetId]);
+      const pName = (p ? p.name + " " + (p.folder || "") : f ? f.name : "").toLowerCase();
+      const isDir = p && p.role === "director" || f && f.parent === FOLD.directors || /^(abrams|bay|cameron|emmerich|nolan|ritchie|scott|snyder|spielberg|verhoeven)$/i.test(f ? f.name : "");
+      if (/carrey/i.test(pName)) {
+        L = ["assets/sfx/bruce-almighty-beautiful.m4a", "assets/sfx/bruce-almighty-beautiful.mp3"];
+      } else if (/cage/i.test(pName)) {
+        L = ["assets/sfx/cage-not-the-bees.m4a", "assets/sfx/cage-not-the-bees.mp3"];
+      } else if (/sandler/i.test(pName)) {
+        _sandlerLast = (_sandlerLast + 1) % 2;
+        L = _sandlerLast === 0 ? ["assets/sfx/sandler-swan.mp3"] : ["assets/sfx/sandler-quote2.mp3"];
+      } else if (/cruise/i.test(pName)) {
+        _cruiseLast = (_cruiseLast + 1) % 2;
+        L = _cruiseLast === 0 ? ["assets/sfx/cruise-money.mp3"] : ["assets/sfx/cruise-speed.mp3"];
+      } else if (isDir) {
+        L = ["assets/sfx/director-action.m4a", "assets/sfx/director-action.mp3"];
+      }
+    }
     if (!L && f && Array.isArray(FSFX._rules)) {
       const names = [], ids = [];
       let c = f, n = 0;
@@ -1721,6 +1749,7 @@ var __spreadValues = (a, b) => {
     cur = id;
     view = id === ROOT ? mode : "folder";
     $("#q").value = "";
+    if (!navBack && id !== ROOT) folderSfx(id);
     if (live && !kids.has(id)) {
       try {
         await loadFolder(id);
@@ -2141,6 +2170,41 @@ var __spreadValues = (a, b) => {
   document.addEventListener("focusin", (e) => {
     if (e.target.matches(".ol-tile,.mi")) S.move();
   });
+  const SEMANTIC_MAP = {
+    space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar"],
+    superhero: ["batman", "superman", "spider-man", "spiderman", "avengers", "iron man", "captain america", "thor", "x-men", "justice league", "hulk", "daredevil"],
+    horror: ["halloween", "friday the 13th", "nightmare on elm", "evil dead", "scream", "shining", "chucky", "hellraiser", "exorcist", "texas chainsaw"],
+    timetravel: ["back to the future", "terminator", "donnie darko", "tenet", "12 monkeys", "edge of tomorrow"],
+    comedy: ["airplane", "naked gun", "monty python", "austin powers", "spaceballs", "ghostbusters", "anchorman", "lebowski", "borat"],
+    action: ["die hard", "matrix", "john wick", "terminator", "predator", "mad max", "mission impossible", "fast and furious", "bourne", "robocop"],
+    fantasy: ["lord of the rings", "hobbit", "harry potter", "game of thrones", "willow", "conan", "chronicles of narnia"],
+    mob: ["godfather", "goodfellas", "scarface", "casino", "sopranos", "irishman"],
+    western: ["good, the bad", "django", "unforgiven", "fistful of dollars", "magnificent seven"]
+  };
+  function semanticSearch(q) {
+    const norm2 = (q || "").toLowerCase();
+    const matchedKeywords = /* @__PURE__ */ new Set();
+    for (const [key, targets] of Object.entries(SEMANTIC_MAP)) {
+      const re = new RegExp("\\b" + key + "\\b|\\b" + key + "s\\b|\\b" + key + " movies?\\b", "i");
+      if (re.test(norm2)) targets.forEach((t) => matchedKeywords.add(t));
+    }
+    if (!matchedKeywords.size) return [];
+    const results = [];
+    const seen = /* @__PURE__ */ new Set();
+    for (const item of items.values()) {
+      if (isFolder(item)) continue;
+      const name = (item.name || "").toLowerCase();
+      for (const kw of matchedKeywords) {
+        if (name.includes(kw) && !seen.has(target(item))) {
+          seen.add(target(item));
+          results.push({ item, why: "Vault match for " + kw.replace(/\b\w/g, (l) => l.toUpperCase()) });
+          break;
+        }
+      }
+      if (results.length >= 36) break;
+    }
+    return results;
+  }
   let aiSeq = 0;
   async function aiSearch(q) {
     q = (q || "").trim();
@@ -2150,6 +2214,12 @@ var __spreadValues = (a, b) => {
     const g = $("#grid");
     g.className = "sectioned";
     g.innerHTML = '<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble thinking"><span class="dots"><i></i><i></i><i></i></span> Searching the vault for \u201C'.concat(esc(q), "\u201D\u2026</div></div>");
+    const showOptimus = (res, intro2) => {
+      if (my !== aiSeq) return;
+      $("#sec2").textContent = res.length + " picks from Fan Edit Optimus for \u201C" + q + "\u201D";
+      g.innerHTML = '<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble">'.concat(esc(intro2), '</div></div><div class="ol-div"><span>OPTIMUS PICKS</span><i></i><b>').concat(res.length, '</b></div><div class="sgrid vids ai-res">').concat(res.map((x) => '<div class="ai-cell">'.concat(tile(x.f), '<p class="ai-why"><img src="assets/optimus.png" alt="" class="opt-mini">').concat(esc(x.why), "</p></div>")).join(""), "</div>");
+      g.querySelectorAll(".ol-tile").forEach(lazyArt);
+    };
     try {
       const r = await fetch("/api/ai-search", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ q: q.slice(0, 200) }) });
       if (!r.ok) throw 0;
@@ -2157,16 +2227,20 @@ var __spreadValues = (a, b) => {
       if (my !== aiSeq) return;
       const res = (j.results || []).map((x) => ({ f: items.get(x.id), why: x.reason })).filter((x) => x.f);
       if (!res.length) throw 0;
-      $("#sec2").textContent = res.length + " picks from Fan Edit Optimus for \u201C" + q + "\u201D";
       const intro2 = j.intro || "I found ".concat(res.length, " fan edit").concat(res.length === 1 ? "" : "s", " for you!");
-      g.innerHTML = '<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble">'.concat(esc(intro2), '</div></div><div class="ol-div"><span>OPTIMUS PICKS</span><i></i><b>').concat(res.length, '</b></div><div class="sgrid vids ai-res">').concat(res.map((x) => '<div class="ai-cell">'.concat(tile(x.f), '<p class="ai-why"><img src="assets/optimus.png" alt="" class="opt-mini">').concat(esc(x.why), "</p></div>")).join(""), "</div>");
-      g.querySelectorAll(".ol-tile").forEach(lazyArt);
+      showOptimus(res, intro2);
     } catch (e) {
       if (my !== aiSeq) return;
-      open(ROOT, "all").then(() => {
-        $("#q").value = q;
-        $("#q").dispatchEvent(new Event("input"));
-      });
+      const sem = semanticSearch(q);
+      if (sem.length) {
+        const picks = sem.slice(0, 12).map((x) => ({ f: x.item, why: x.why }));
+        showOptimus(picks, "I searched the vault for \u201C".concat(q, "\u201D and picked ").concat(picks.length, " fan edits for you!"));
+      } else {
+        open(ROOT, "all").then(() => {
+          $("#q").value = q;
+          $("#q").dispatchEvent(new Event("input"));
+        });
+      }
     }
   }
   const looksLikeQuestion = (q) => /\?$/.test(q) || q.trim().split(/\s+/).length >= 3;
@@ -2562,16 +2636,25 @@ var __spreadValues = (a, b) => {
         if (my !== spSeq) return;
         const local = /* @__PURE__ */ new Set();
         groups.forEach((g) => g[1].forEach((x) => x.f && local.add(target(x.f))));
-        const list = (j.results || []).map((x) => ({ f: items.get(x.id), sub: x.reason })).filter((x) => x.f && !local.has(target(x.f))).slice(0, 10);
+        let list = (j.results || []).map((x) => ({ f: items.get(x.id), sub: x.reason })).filter((x) => x.f && !local.has(target(x.f))).slice(0, 10);
+        if (!list.length) {
+          const sem = semanticSearch(q);
+          list = sem.map((x) => ({ f: x.item, sub: x.why })).filter((x) => x.f && !local.has(target(x.f))).slice(0, 10);
+        }
         spPaint(groups, { list });
         const t = n + list.length;
         spMood(t ? "yay" : "shrug");
         spSay(t ? list.length ? "I found ".concat(list.length, " smart pick").concat(list.length === 1 ? "" : "s", " for you!") : "Found ".concat(n, " match").concat(n === 1 ? "" : "es", "!") : "Hmm, nothing for that. Try other words?");
       } catch (e) {
         if (my !== spSeq) return;
-        spPaint(groups, { list: [] });
-        spMood(n ? "yay" : "shrug");
-        spSay(n ? "Found ".concat(n, " match").concat(n === 1 ? "" : "es", "!") : "Hmm, nothing for that.");
+        const local = /* @__PURE__ */ new Set();
+        groups.forEach((g) => g[1].forEach((x) => x.f && local.add(target(x.f))));
+        const sem = semanticSearch(q);
+        const list = sem.map((x) => ({ f: x.item, sub: x.why })).filter((x) => x.f && !local.has(target(x.f))).slice(0, 10);
+        spPaint(groups, { list });
+        const t = n + list.length;
+        spMood(t ? "yay" : "shrug");
+        spSay(t ? list.length ? "I found ".concat(list.length, " smart pick").concat(list.length === 1 ? "" : "s", " for you!") : "Found ".concat(n, " match").concat(n === 1 ? "" : "es", "!") : "Hmm, nothing for that.");
       }
     }, 600);
   }

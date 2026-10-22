@@ -681,6 +681,7 @@ body.tv .priv-box h2{font-size:4vh}body.tv .priv-box p{font-size:2.2vh}body.tv .
 .ol-tile.fecc .fecc-t{font-size:clamp(20px,2.2vw,40px);font-weight:700;line-height:1.02;text-shadow:0 1px 3px #000}
 .ol-tile.fecc .fecc-c{color:#ffa31a;font-size:clamp(11px,.95vw,18px);font-weight:600}
 body.tv .ol-tile.fecc .fecc-t{font-size:3.4vh}body.tv .ol-tile.fecc .fecc-c{font-size:1.7vh}
+.ol-tile.fecc:hover,.ol-tile.fecc:focus{outline:0;border-color:#ffb02e;box-shadow:inset 0 0 0 1px #000,inset 0 0 26px #ff9c0033,0 0 0 2px #ff9c00,0 0 24px #ff9c00cc}
 /* Optimus photo avatar (real Tesla Optimus photos; poses = subtle motion) */
 .sp-opt .op-ph{position:relative;width:100%;height:100%}
 .op-ph img{position:absolute;display:block;pointer-events:none}

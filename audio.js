@@ -139,9 +139,17 @@ window.SFX = (() => {
       if (S._fx[k]) return S._fx[k];
       const tryN = (i) => i >= list.length ? Promise.resolve(null) : fetch(list[i]).then((r) => {
         if (!r.ok) throw 0;
+        const ct = r.headers.get("content-type") || "";
+        if (ct.includes("text/html") || ct.includes("text/plain")) throw 0;
         return r.arrayBuffer();
       }).then((a) => new Promise((res, rej) => ctx.decodeAudioData(a, res, rej))).catch(() => tryN(i + 1));
-      return S._fx[k] = tryN(0);
+      return S._fx[k] = tryN(0).then((b) => {
+        if (!b) delete S._fx[k];
+        return b;
+      }, () => {
+        delete S._fx[k];
+        return null;
+      });
     },
     fx(list) {
       if (muted) return;

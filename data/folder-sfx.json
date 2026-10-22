@@ -57,40 +57,6 @@
   },
   {
    "files": [
-    "assets/sfx/bruce-almighty-beautiful.m4a",
-    "assets/sfx/bruce-almighty-beautiful.mp3"
-   ],
-   "path": true,
-   "source": "myinstants b-e-a-utiful_Gu8pD2O.mp3",
-   "match": "jim carrey",
-   "ids": [
-    "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ"
-   ]
-  },
-  {
-   "files": [
-    "assets/sfx/director-action.m4a",
-    "assets/sfx/director-action.mp3"
-   ],
-   "path": true,
-   "source": "myinstants action_3GPexhe.mp3",
-   "ids": [
-    "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP",
-    "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4",
-    "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v",
-    "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2",
-    "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg",
-    "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o",
-    "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF",
-    "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el",
-    "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t",
-    "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC",
-    "1JRoaEUqc4xn1bTbv-km3u8rHATwIn_vk",
-    "1UKLpEz_W-gH2Fjm2jeQshEhTMnVQnwsQ"
-   ]
-  },
-  {
-   "files": [
     "assets/sfx/indy-snakes.m4a",
     "assets/sfx/indy-snakes.mp3"
    ],
@@ -199,7 +165,7 @@
     "assets/sfx/die-hard-yippee.mp3"
    ],
    "path": true,
-   "source": "myinstants yippy_mf-13464909…mp3",
+   "source": "myinstants yippy_mf-13464909\u2026mp3",
    "match": "die hard"
   },
   {
@@ -219,18 +185,6 @@
    "path": true,
    "source": "myinstants to-infinity-and-beyond.mp3",
    "match": "toy story"
-  },
-  {
-   "files": [
-    "assets/sfx/cage-not-the-bees.m4a",
-    "assets/sfx/cage-not-the-bees.mp3"
-   ],
-   "path": true,
-   "source": "myinstants not-the-bees.mp3",
-   "match": "nicolas cage",
-   "ids": [
-    "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq"
-   ]
   },
   {
    "files": [
@@ -311,7 +265,7 @@
    ],
    "path": true,
    "source": "myinstants xenomorph-screech.mp3",
-   "regex": "^(alien|aliens|alien 3|alien³|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
+   "regex": "^(alien|aliens|alien 3|alien\u00b3|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
   },
   {
    "files": [
@@ -429,6 +383,90 @@
    "path": true,
    "source": "myinstants austin-powers_XkOpRDM.mp3 (Austin Powers: 'Groovy baby')",
    "regex": "^austin powers\\b"
+  },
+  {
+   "files": [
+    "assets/sfx/bruce-almighty-beautiful.mp3"
+   ],
+   "path": true,
+   "match": "carrey",
+   "regex": "\\bcarrey\\b|jim carrey",
+   "ids": [
+    "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ"
+   ]
+  },
+  {
+   "files": [
+    "assets/sfx/cage-not-the-bees.mp3"
+   ],
+   "path": true,
+   "match": "cage",
+   "regex": "\\bcage\\b|nicolas cage",
+   "ids": [
+    "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq"
+   ]
+  },
+  {
+   "file": [
+    [
+     "assets/sfx/sandler-swan.mp3"
+    ],
+    [
+     "assets/sfx/sandler-quote2.mp3"
+    ]
+   ],
+   "path": true,
+   "match": "sandler",
+   "regex": "\\bsandler\\b|adam sandler",
+   "ids": [
+    "1sBe2LolQsUBYKe-rFAg7eT44OMJjRJIO"
+   ]
+  },
+  {
+   "file": [
+    [
+     "assets/sfx/cruise-money.mp3"
+    ],
+    [
+     "assets/sfx/cruise-speed.mp3"
+    ]
+   ],
+   "path": true,
+   "match": "cruise",
+   "regex": "\\bcruise\\b|tom cruise",
+   "ids": [
+    "1X1_iqdZJ9Nz62fGZSSvbzGuk_92Xespa"
+   ]
+  },
+  {
+   "files": [
+    "assets/sfx/director-action.mp3"
+   ],
+   "path": true,
+   "ids": [
+    "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP",
+    "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4",
+    "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v",
+    "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2",
+    "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg",
+    "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o",
+    "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF",
+    "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el",
+    "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t",
+    "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC"
+   ]
   }
+ ],
+ "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ": [
+  "assets/sfx/bruce-almighty-beautiful.mp3"
+ ],
+ "Carrey": [
+  "assets/sfx/bruce-almighty-beautiful.mp3"
+ ],
+ "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq": [
+  "assets/sfx/cage-not-the-bees.mp3"
+ ],
+ "Cage": [
+  "assets/sfx/cage-not-the-bees.mp3"
  ]
 }

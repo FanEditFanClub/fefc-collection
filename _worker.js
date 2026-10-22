@@ -23,7 +23,7 @@ function prefilter(all, words) {
   sc.sort((a, b) => b[0] - a[0]); return sc.slice(0, MAX_CAND).map(a => a[1]);
 }
 async function gemini(env, prompt, schema) {
-  const models = [...new Set([env.GEMINI_MODEL, 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-flash-lite-latest'].filter(Boolean))];
+  const models = [...new Set([env.GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter(Boolean))];
   let last;
   for (const model of models) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
@@ -47,7 +47,21 @@ async function aiSearch(req, env) {
   let q = ''; try { q = String(JSON.parse(raw).q || ''); } catch { return json({ error: 'bad_request' }, 400); }
   q = q.replace(/\s+/g, ' ').trim().slice(0, MAX_Q); if (q.length < 2) return json({ error: 'bad_request' }, 400);
   const all = await titles(env, req);
-  let words = toks(q), cand = prefilter(all, words);
+  let words = toks(q);
+  const SEM_EXP = {
+    space: ['star', 'wars', 'trek', 'interstellar', '2001', 'alien', 'dune', 'spaceballs', 'guardians', 'galaxy', 'martian', 'apollo', 'serenity', 'battlestar'],
+    superhero: ['batman', 'superman', 'spiderman', 'avengers', 'iron', 'man', 'captain', 'america', 'thor', 'xmen', 'justice', 'league', 'hulk'],
+    horror: ['halloween', 'friday', 'elm', 'evil', 'dead', 'scream', 'shining', 'chucky', 'hellraiser', 'exorcist'],
+    timetravel: ['future', 'terminator', 'donnie', 'darko', 'tenet', 'monkeys'],
+    action: ['die', 'hard', 'matrix', 'wick', 'terminator', 'predator', 'mad', 'max', 'mission', 'impossible', 'bourne', 'robocop'],
+    comedy: ['airplane', 'naked', 'gun', 'monty', 'python', 'austin', 'powers', 'spaceballs', 'ghostbusters', 'anchorman'],
+    fantasy: ['rings', 'hobbit', 'potter', 'thrones', 'willow', 'conan']
+  };
+  for (const [k, exp] of Object.entries(SEM_EXP)) {
+    if (words.includes(k) || norm(q).includes(k)) words.push(...exp);
+  }
+  words = [...new Set(words)];
+  let cand = prefilter(all, words);
   if (cand.length < 12 || !cand.some(c => words.filter(w => c.t.includes(' ' + w + ' ')).length >= 2 || words.length === 1)) {
     // expand vague questions into franchise/title keywords (one cheap call)
     try {

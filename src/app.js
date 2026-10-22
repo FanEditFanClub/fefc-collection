@@ -62,7 +62,7 @@ async function tmdbFind(q,year){if(!C.TMDB_API_KEY)return null;const k='t:'+q+ye
  try{const j=await(await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${C.TMDB_API_KEY}&query=${encodeURIComponent(q)}${year?'&year='+year:''}`)).json();cache[k]=(j.results||[]).find(x=>x.poster_path)||null}catch(e){cache[k]=null}save();return cache[k]}
 function artBg(f){const h=HUES[hash(parse(f.name).series||f.name)%8];return `radial-gradient(circle at 75% 20%,hsl(${h} 90% 60% / .85),hsl(${h} 70% 25%) 45%,#050a14 100%)`}
 const SUPRE=/^\s*\w{1,3}\s*-\s*support\b|support\s+(us|patreon)|patreon|paypal|venmo|donat(e|ion)/i;function isSupportDoc(f){if(!f||isFolder(f))return false;const t=f.targetId&&items.get(f.targetId);return SUPRE.test(f.name||'')||!!(t&&SUPRE.test(t.name||''))}
-function tile(f,live_){const fold=isFolder(f),p=parse(f.name),aud=!fold&&!isVid(f)&&isAud(f),vid=!fold&&(isVid(f)||aud),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';if(fold&&target(f)===ROOT&&f.parent===FOLD.collections)return `<button class="ol-tile mainc" data-id="${f.id}" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">${esc(countsLine(ROOT)).replace(/ · /g,' <wbr>· ')}</small></button>`;if(fold&&(target(f)===FOLD.collections||f.id===FOLD.collections)&&cur!==FOLD.collections)return `<button class="ol-tile fecc" data-id="${f.id}" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">${esc(countsLine(FOLD.collections)).replace(/ · /g,' <wbr>· ')}</small></button>`;if(!fold&&!vid&&isSupportDoc(f))return `<button class="ol-tile sup" data-id="${f.id}" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon · <wbr>PayPal · <wbr>Venmo</small></button>`;const ad=cls==='doc'&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);return `<button class="ol-tile ${cls}${ad?' ad':''} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}"></div><span class="kind">${live_?'NEW':pp?(pp.role==='director'?'DIRECTOR':'ACTOR'):fold?'COLLECTION':aud?'AUDIO':vid?'FAN EDIT':'DOCUMENT'}</span>${(fold||vid)?(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<span class="star${on?' on':''}" data-star="${f.id}" role="button" aria-pressed="${on}" aria-label="${on?'Remove from My List':'Add to My List'}" title="${on?'Starred':'Star'} (S)">${on?'★':'☆'}</span>`})():''}${vid?`<div class="pcap ${(()=>{const n=p.raw.length;return n>90?'c4':n>55?'c3':n>30?'c2':'c1'})()}">${esc(p.raw)}</div>`:''}${fold&&typeof isDenied==='function'&&isDenied(target(f))?'<span class="lockb" title="Private library" aria-label="Private">🔒</span>':''}<div class="nm">${esc(fold?f.name:p.raw)}</div></button>`}
+function tile(f,live_){const fold=isFolder(f),p=parse(f.name),aud=!fold&&!isVid(f)&&isAud(f),vid=!fold&&(isVid(f)||aud),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';if(fold){const fid=target(f);if((fid===FOLD.collections||f.id===FOLD.collections)&&cur!==FOLD.collections)return `<button class="ol-tile fecc" data-id="${f.id}" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">${esc(countsLine(FOLD.collections)).replace(/ · /g,' <wbr>· ')}</small></button>`;if((fid===FOLD.tbc||f.id===FOLD.tbc)&&cur!==FOLD.tbc)return `<button class="ol-tile fecc fecc-tbc" data-id="${f.id}" data-fecc="1" aria-label="To Be Catalogued"><span class="fecc-t">To Be Catalogued</span><small class="fecc-c">${esc(countsLine(FOLD.tbc)).replace(/ · /g,' <wbr>· ')}</small></button>`}if(fold&&target(f)===ROOT&&f.parent===FOLD.collections)return `<button class="ol-tile mainc" data-id="${f.id}" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">${esc(countsLine(ROOT)).replace(/ · /g,' <wbr>· ')}</small></button>`;if(!fold&&!vid&&isSupportDoc(f))return `<button class="ol-tile sup" data-id="${f.id}" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon · <wbr>PayPal · <wbr>Venmo</small></button>`;const ad=cls==='doc'&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);return `<button class="ol-tile ${cls}${ad?' ad':''} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}"></div><span class="kind">${live_?'NEW':pp?(pp.role==='director'?'DIRECTOR':'ACTOR'):fold?'':aud?'AUDIO':vid?'FAN EDIT':'DOCUMENT'}</span>${(fold||vid)?(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<span class="star${on?' on':''}" data-star="${f.id}" role="button" aria-pressed="${on}" aria-label="${on?'Remove from My List':'Add to My List'}" title="${on?'Starred':'Star'} (S)">${on?'★':'☆'}</span>`})():''}${vid?`<div class="pcap ${(()=>{const n=p.raw.length;return n>90?'c4':n>55?'c3':n>30?'c2':'c1'})()}">${esc(p.raw)}</div>`:''}${fold&&typeof isDenied==='function'&&isDenied(target(f))?'<span class="lockb" title="Private library" aria-label="Private">🔒</span>':''}<div class="nm">${esc(fold?f.name:p.raw)}</div></button>`}
 async function art(el,f){if(el.dataset&&el.dataset.fecc)return;if(!f||el.classList.contains('sup')||el.classList.contains('mainc'))return;let src=null;const p=parse(f.name);
  if(isFolder(f)&&people[target(f)])src=people[target(f)].url;else if(!isFolder(f)&&isMedia(f)){const ps=posters[f.id]||posters[target(f)]||(isAud(f)?(()=>{const sb=kids.get(f.parent)||[],pf=parse(f.name).film;for(const x of sb){const q=!isFolder(x)&&isVid(x)&&parse(x.name).film===pf&&(posters[x.id]||posters[target(x)]);if(q)return q}return null})():null);if(!ps)return;src=ps.url;el.classList.add('has-poster')}else
  if(isFolder(f)){const fid=target(f);let t=fthumbs[fid];if(!t){let q=[fid];for(let d=0;d<3&&!t&&q.length;d++){const nq=[];for(const id of q){const ks=kids.get(id)||[],v=ks.find(x=>!isFolder(x)&&isVid(x));if(v){t=target(v);break}ks.forEach(x=>{if(isFolder(x))nq.push(target(x))})}q=nq.slice(0,40)}}if(t)src=t.startsWith('assets/')?t:'https://drive.google.com/thumbnail?sz=w640&id='+t}
@@ -238,7 +238,31 @@ function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supp
 /* ---------- HASH ROUTER ---------- */
 /* per-folder sound effects (data/folder-sfx.json: folder id or name -> files) */
 let FSFX={};tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{});
-function folderSfx(id){const f=items.get(id);let L=FSFX[id]||(f&&FSFX[f.name]);
+let _lastSfxId=null,_lastSfxAt=0,_sandlerLast=-1,_cruiseLast=-1;
+function folderSfx(id){
+ if(navBack||!id||id===ROOT)return;
+ const now=Date.now();
+ if(_lastSfxId===id&&(now-_lastSfxAt)<1200)return;
+ _lastSfxId=id;_lastSfxAt=now;
+ const f=items.get(id);let L=FSFX[id]||(f&&FSFX[f.name]);
+ if(!L){
+  const p=people[id]||(f&&(people[f.id]||people[f.targetId]));
+  const pName=(p?(p.name+' '+(p.folder||'')):(f?f.name:'')).toLowerCase();
+  const isDir=(p&&p.role==='director')||(f&&f.parent===FOLD.directors)||/^(abrams|bay|cameron|emmerich|nolan|ritchie|scott|snyder|spielberg|verhoeven)$/i.test(f?f.name:'');
+  if(/carrey/i.test(pName)){
+   L=['assets/sfx/bruce-almighty-beautiful.m4a','assets/sfx/bruce-almighty-beautiful.mp3']
+  }else if(/cage/i.test(pName)){
+   L=['assets/sfx/cage-not-the-bees.m4a','assets/sfx/cage-not-the-bees.mp3']
+  }else if(/sandler/i.test(pName)){
+   _sandlerLast=(_sandlerLast+1)%2;
+   L=_sandlerLast===0?['assets/sfx/sandler-swan.mp3']:['assets/sfx/sandler-quote2.mp3']
+  }else if(/cruise/i.test(pName)){
+   _cruiseLast=(_cruiseLast+1)%2;
+   L=_cruiseLast===0?['assets/sfx/cruise-money.mp3']:['assets/sfx/cruise-speed.mp3']
+  }else if(isDir){
+   L=['assets/sfx/director-action.m4a','assets/sfx/director-action.mp3']
+  }
+ }
  if(!L&&f&&Array.isArray(FSFX._rules)){const names=[],ids=[];let c=f,n=0;while(c&&n++<30){names.push((c.name||'').toLowerCase());ids.push(c.id,c.targetId||'');c=items.get(c.parent)}
   const sc=[...items.values()].find(x=>x.targetId===id&&x.id!==id);if(sc)names.push((sc.name||'').toLowerCase());
   const r=FSFX._rules.find(r=>{if(r.ids&&r.ids.some(x=>x===id||(r.path!==false&&ids.indexOf(x)>=0)))return true;if(r.regex){let re;try{re=new RegExp(r.regex,'i')}catch(e){}if(re&&(r.path?names:names.slice(0,1)).some(x=>re.test(x)))return true}const q=(r.match||'').toLowerCase();return q&&(r.path?names:names.slice(0,1).concat(sc?[(sc.name||'').toLowerCase()]:[])).some(x=>x.includes(q))});if(r){if(Array.isArray(r.file)&&Array.isArray(r.file[0])){const V=r.file;let i=Math.random()*V.length|0;if(V.length>1&&i===r._last)i=(i+1+(Math.random()*(V.length-1)|0))%V.length;r._last=i;L=V[i]}else L=r.files||(Array.isArray(r.file)?r.file:[r.file])}}
@@ -349,7 +373,7 @@ function privatePrompt(id,f){const g=$('#grid');if(!g)return;const own=f&&(f.own
  g.innerHTML=`<div class="priv"><div class="priv-box"><div class="priv-bar"><span>ACCESS RESTRICTED</span><i></i><b>🔒</b></div><h2>This library is private.</h2><p>Request access from the owner${own?` (<b>${esc(own)}</b>)`:''} to view it.</p><div class="priv-row"><a class="pill priv-req" href="${url}" target="_blank" rel="noopener" data-privreq="1">Request Access</a><button class="pill priv-back" type="button" data-privback="1">Back</button></div><small>Opens Google Drive, where you can ask the owner for access.</small></div></div>`;
  status('');const b=g.querySelector('.priv-req');setTimeout(()=>{try{b.focus({preventScroll:true})}catch(e){}},60)}
 document.addEventListener('click',e=>{if(e.target.closest('[data-privback]')){e.preventDefault();back(parentHash())}});
-async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){if(/drive (403|404)/.test(e&&e.message||''))DENIED.add(id);live=false;status('');add(window._idx||[])}}
+async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(!navBack&&id!==ROOT)folderSfx(id);if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){if(/drive (403|404)/.test(e&&e.message||''))DENIED.add(id);live=false;status('');add(window._idx||[])}}
  const f=items.get(id);if(id===ROOT&&mode==='home')return showHome();render(kids.get(id)||[],id===ROOT?{home:'The Fan Edit Fan Club Collection',all:'The Fan Edit Fan Club Collection',arena:'New Arrivals',collections:'Collections'}[mode]:f.name,id===ROOT?mode:'home');if(id!==ROOT&&!(kids.get(id)||[]).length&&isDenied(id))privatePrompt(id,f)}
 /* ---------- SORT (#/all) ---------- */
 const SORTS=[['az','A–Z'],['za','Z–A'],['newest','Newest'],['oldest','Oldest'],['film','Source Film'],['genre','Genre'],['size','Largest']];
@@ -453,14 +477,52 @@ document.addEventListener('click',e=>{const pe=e.target.closest('#pprev,#pnext')
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
 document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi'))S.move()});
+/* ---------- Semantic concept search (instant local fallback for concept queries like "Space Movies") ---------- */
+const SEMANTIC_MAP = {
+  space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar"],
+  superhero: ["batman", "superman", "spider-man", "spiderman", "avengers", "iron man", "captain america", "thor", "x-men", "justice league", "hulk", "daredevil"],
+  horror: ["halloween", "friday the 13th", "nightmare on elm", "evil dead", "scream", "shining", "chucky", "hellraiser", "exorcist", "texas chainsaw"],
+  timetravel: ["back to the future", "terminator", "donnie darko", "tenet", "12 monkeys", "edge of tomorrow"],
+  comedy: ["airplane", "naked gun", "monty python", "austin powers", "spaceballs", "ghostbusters", "anchorman", "lebowski", "borat"],
+  action: ["die hard", "matrix", "john wick", "terminator", "predator", "mad max", "mission impossible", "fast and furious", "bourne", "robocop"],
+  fantasy: ["lord of the rings", "hobbit", "harry potter", "game of thrones", "willow", "conan", "chronicles of narnia"],
+  mob: ["godfather", "goodfellas", "scarface", "casino", "sopranos", "irishman"],
+  western: ["good, the bad", "django", "unforgiven", "fistful of dollars", "magnificent seven"]
+};
+
+function semanticSearch(q) {
+  const norm = (q || '').toLowerCase();
+  const matchedKeywords = new Set();
+  for (const [key, targets] of Object.entries(SEMANTIC_MAP)) {
+    const re = new RegExp("\\b" + key + "\\b|\\b" + key + "s\\b|\\b" + key + " movies?\\b", "i");
+    if (re.test(norm)) targets.forEach(t => matchedKeywords.add(t));
+  }
+  if (!matchedKeywords.size) return [];
+  const results = [];
+  const seen = new Set();
+  for (const item of items.values()) {
+    if (isFolder(item)) continue;
+    const name = (item.name || '').toLowerCase();
+    for (const kw of matchedKeywords) {
+      if (name.includes(kw) && !seen.has(target(item))) {
+        seen.add(target(item));
+        results.push({ item, why: 'Vault match for ' + kw.replace(/\b\w/g, l => l.toUpperCase()) });
+        break;
+      }
+    }
+    if (results.length >= 36) break;
+  }
+  return results;
+}
+
 /* ---------- AI search (server-side Gemini via /api/ai-search; key never in the browser) ---------- */
 let aiSeq=0;
 async function aiSearch(q){q=(q||'').trim();if(!q)return;const my=++aiSeq;pageShell('Ask Fan Edit Optimus','Looking for: “'+q+'”');const g=$('#grid');g.className='sectioned';g.innerHTML=`<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble thinking"><span class="dots"><i></i><i></i><i></i></span> Searching the vault for “${esc(q)}”…</div></div>`;
+ const showOptimus=(res,intro)=>{if(my!==aiSeq)return;$('#sec2').textContent=res.length+' picks from Fan Edit Optimus for “'+q+'”';g.innerHTML=`<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble">${esc(intro)}</div></div><div class="ol-div"><span>OPTIMUS PICKS</span><i></i><b>${res.length}</b></div><div class="sgrid vids ai-res">${res.map(x=>`<div class="ai-cell">${tile(x.f)}<p class="ai-why"><img src="assets/optimus.png" alt="" class="opt-mini">${esc(x.why)}</p></div>`).join('')}</div>`;g.querySelectorAll('.ol-tile').forEach(lazyArt)};
  try{const r=await fetch('/api/ai-search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q:q.slice(0,200)})});if(!r.ok)throw 0;const j=await r.json();if(my!==aiSeq)return;
   const res=(j.results||[]).map(x=>({f:items.get(x.id),why:x.reason})).filter(x=>x.f);if(!res.length)throw 0;
-  $('#sec2').textContent=res.length+' picks from Fan Edit Optimus for “'+q+'”';
-  const intro=j.intro||`I found ${res.length} fan edit${res.length===1?'':'s'} for you!`;g.innerHTML=`<div class="opt-head"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div><b>Fan Edit Optimus</b><small>Powered by Fan Edit Optimus</small></div></div><div class="opt-chat"><img class="opt-av" src="assets/optimus.png" alt="" width="40" height="40"><div class="opt-bubble">${esc(intro)}</div></div><div class="ol-div"><span>OPTIMUS PICKS</span><i></i><b>${res.length}</b></div><div class="sgrid vids ai-res">${res.map(x=>`<div class="ai-cell">${tile(x.f)}<p class="ai-why"><img src="assets/optimus.png" alt="" class="opt-mini">${esc(x.why)}</p></div>`).join('')}</div>`;g.querySelectorAll('.ol-tile').forEach(lazyArt)}
- catch(e){if(my!==aiSeq)return;open(ROOT,'all').then(()=>{$('#q').value=q;$('#q').dispatchEvent(new Event('input'))})}}
+  const intro=j.intro||`I found ${res.length} fan edit${res.length===1?'':'s'} for you!`;showOptimus(res,intro)}
+ catch(e){if(my!==aiSeq)return;const sem=semanticSearch(q);if(sem.length){const picks=sem.slice(0,12).map(x=>({f:x.item,why:x.why}));showOptimus(picks,`I searched the vault for “${q}” and picked ${picks.length} fan edits for you!`)}else{open(ROOT,'all').then(()=>{$('#q').value=q;$('#q').dispatchEvent(new Event('input'))})}}}
 const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
 let qt;$('#q').readOnly=true;['focus','click'].forEach(ev=>$('#q').addEventListener(ev,e=>{if(spOpen())return;e.preventDefault();$('#q').blur();openSpot('')}));
 setTimeout(sm2,0);
@@ -556,9 +618,11 @@ function spRun(q){const my=++spSeq;q=q.trim();if(!q){spPaint([]);return}const gr
  spMood(n?'yay':'think');spSay(n?`${n} instant match${n===1?'':'es'}. Asking my smart circuits too…`:'Let me think about that…');
  spAiT=setTimeout(async()=>{if(my!==spSeq)return;spMood('think');try{const r=await fetch('/api/ai-search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q:q.slice(0,200)})});if(!r.ok)throw 0;const j=await r.json();if(my!==spSeq)return;
    const local=new Set();groups.forEach(g=>g[1].forEach(x=>x.f&&local.add(target(x.f))));
-   const list=(j.results||[]).map(x=>({f:items.get(x.id),sub:x.reason})).filter(x=>x.f&&!local.has(target(x.f))).slice(0,10);spPaint(groups,{list});
+   let list=(j.results||[]).map(x=>({f:items.get(x.id),sub:x.reason})).filter(x=>x.f&&!local.has(target(x.f))).slice(0,10);
+   if(!list.length){const sem=semanticSearch(q);list=sem.map(x=>({f:x.item,sub:x.why})).filter(x=>x.f&&!local.has(target(x.f))).slice(0,10)}
+   spPaint(groups,{list});
    const t=n+list.length;spMood(t?'yay':'shrug');spSay(t?(list.length?`I found ${list.length} smart pick${list.length===1?'':'s'} for you!`:`Found ${n} match${n===1?'':'es'}!`):'Hmm, nothing for that. Try other words?')}
-  catch(e){if(my!==spSeq)return;spPaint(groups,{list:[]});spMood(n?'yay':'shrug');spSay(n?`Found ${n} match${n===1?'':'es'}!`:'Hmm, nothing for that.')}},600)}
+  catch(e){if(my!==spSeq)return;const local=new Set();groups.forEach(g=>g[1].forEach(x=>x.f&&local.add(target(x.f))));const sem=semanticSearch(q);const list=sem.map(x=>({f:x.item,sub:x.why})).filter(x=>x.f&&!local.has(target(x.f))).slice(0,10);spPaint(groups,{list});const t=n+list.length;spMood(t?'yay':'shrug');spSay(t?(list.length?`I found ${list.length} smart pick${list.length===1?'':'s'} for you!`:`Found ${n} match${n===1?'':'es'}!`):'Hmm, nothing for that.')}},600)}
 function openSpot(q){if(!spEl)spMk();spLastFocus=document.activeElement;const inp=spEl.querySelector('#sp-q');spEl.hidden=false;document.body.classList.add('sp-lock');requestAnimationFrame(()=>spEl.classList.add('on'));
  inp.value=q||'';spSeq++;clearTimeout(spAiT);spPaint([]);const o=spEl.querySelector('.sp-opt');o.dataset.lock=0;spMood('idle');spSay('Optimus is watching a fan edit. Type to interrupt him.');if(q){inp.dispatchEvent(new Event('input'))}
  setTimeout(()=>{try{inp.focus({preventScroll:true})}catch(e){inp.focus()}},30)}
