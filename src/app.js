@@ -84,6 +84,7 @@ function genreStrip(){const have={};Object.keys(genreMap).forEach(k=>genreMap[k]
  $('#genres').innerHTML='<span class="glab">Genres</span>'+GORDER.filter(g=>have[g]).map(g=>`<button class="gt" data-genre="${g}">${g}</button>`).join('')}
 document.addEventListener('click',e=>{const g=e.target.closest('[data-genre]');if(!g)return;S.click();go('#/genres/'+encodeURIComponent(g.dataset.genre))});
 const allVids=()=>vids();let _vc=null,_vk=-1;function vids(){if(_vk!==items.size){_vk=items.size;_vc=Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f))}return _vc}
+let _rvc=null,_rvk=-1;function rootVids(){if(_rvk!==items.size){_rvk=items.size;_rvc=Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)&&(f.parent===ROOT||(!f.parent&&f.id!==ROOT)))}return _rvc}
 const DOCX=/\.(pdf|docx?|txt|xlsx?|pptx?|url|html?|rtf|csv|md|webloc|lnk|json|xml|zip|rar|7z|jpe?g|png|gif|mp3|flac|wav|srt)$/i;
 function isVid(f,d){if(!f)return false;if(f.kind)return f.kind==='video';/* resolved type stored by tools/classify.py */
  const t=f.targetId;if(t&&t!==f.id&&(d|0)<3){const x=items.get(t);if(x)return isVid(x,(d|0)+1)}
@@ -109,7 +110,7 @@ document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest
  const id=m[1],f=[...(items.get(id)?[items.get(id)]:[])][0]||[...items.values()].find(x=>x.targetId===id),did=$('#details')&&!$('#details').hidden?$('#details').dataset.id:null,rec=(did&&(did===id||target(items.get(did)||{id:did})===id))?items.get(did):f;
  try{UD.opened(rec?rec.id:id,rec?rec.name:(a.title||a.textContent||'Drive file'))}catch(err){}},true);
 function cnt(id){const k=kids.get(id);return k?k.length:0}
-function hub(){if(document.body.classList.contains('genres-mode')&&window.FEFCGenres&&FEFCGenres.hub)return FEFCGenres.hub();const newN=NA.newCount(vids());
+function hub(){if(document.body.classList.contains('genres-mode')&&window.FEFCGenres&&FEFCGenres.hub)return FEFCGenres.hub();const newN=NA.newCount(rootVids());
  const T=[['readfirst','Read First',''],['arena','New Arrivals',newN?newN+(newN===1?' New File':' New Files'):''],['support','Support Us','Patreon · PayPal · Venmo'],
   ['folder:'+FOLD.collections,'Fan Edit Collections',countsLine(FOLD.collections)],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',countsLine(FOLD.tbc)],
   ['people','Actors\n&\nDirectors',NA.plural(peopleList().length,'Collection')],['mylist','My List','History & Starred'],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
@@ -270,13 +271,13 @@ function folderSfx(id){
 addEventListener('hashchange',()=>{const m=location.hash.match(/^#\/folder\/([^/?]+)/);if(m&&!navBack)folderSfx(decodeURIComponent(m[1]))});
 function go(h){const m=h.match(/^#\/folder\/([^/?]+)/);if(m)folderSfx(decodeURIComponent(m[1]));if(location.hash===h)return route();history.pushState({fefc:1},'',h);route()}
 function back(fallback){S.back();navBack=true;const h=location.hash,fb=()=>{history.replaceState(null,'',fallback||'#/');route()};if(history.state&&history.state.fefc){history.back();setTimeout(()=>{if(location.hash===h)fb()},450)}else fb()}
-function parentHash(){const r=parseH();if(r[0]==='play')return r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/';if(r[0]==='edit'||r[0]==='readfirst')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';if(r[0]==='genres'&&r[2])return '#/genres/'+encodeURIComponent(r[1]);if(r[0]==='genres'&&r[1])return '#/genres';return '#/'}
+function parentHash(){const r=parseH();if(r[0]==='play')return window.__shufPrevHash||(r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/');if(r[0]==='edit'||r[0]==='readfirst')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';if(r[0]==='genres'&&r[2])return '#/genres/'+encodeURIComponent(r[1]);if(r[0]==='genres'&&r[1])return '#/genres';return '#/'}
 function parseH(){if(/^#\/arena/.test(location.hash))history.replaceState(history.state,'','#/newarrivals');return (location.hash.replace(/^#\/?newarrivals/,'#/arena').replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent)}
 function itemOr(id){return items.get(id)||{id:id,name:'Fan edit',mimeType:'video/mp4'}}
 let baseKey=null;
 function route(){const r=parseH(),k=r[0]||'';
  // overlays
- if(k!=='play'&&!$('#player').hidden){$('#player').hidden=true;killFrame();if(started())S.ambience(true)}
+ if(k!=='play'&&!$('#player').hidden){$('#player').hidden=true;killFrame();document.body.classList.remove('shuf-player');$('#player').classList.remove('floating');window.__shufPrevHash=null;if(started())S.ambience(true)}
  if(k!=='edit'&&k!=='play'&&!$('#details').hidden){$('#details').hidden=true}
  if(k!=='readfirst')closeRF();
  if(k==='edit'){details(itemOr(r[1]),false);if(baseKey===null)renderBase('');return}
@@ -354,16 +355,16 @@ function shufPool(scope){if(!SHUF)return [];const seen={};let gcs=null;if(/^gc:/
 function shufPick(scope){const pool=shufPool(scope);if(!pool.length)return null;let rec=[];try{rec=JSON.parse(localStorage.fefcShufRecent||'[]')}catch(e){}
  const fresh=pool.filter(f=>rec.indexOf(target(f))<0),from=fresh.length?fresh:pool,f=from[Math.floor(Math.random()*from.length)];
  rec.push(target(f));rec=rec.slice(-20);try{localStorage.fefcShufRecent=JSON.stringify(rec)}catch(e){}return f}
-function shuffle(scope){const f=shufPick(scope);if(!f){status('Nothing to shuffle yet');return}try{sessionStorage.fefcShufScope=scope}catch(e){}window.__shufPlay=1;go('#/play/'+encodeURIComponent(f.id))}
+function shuffle(scope){const f=shufPick(scope);if(!f){status('Nothing to shuffle yet');return}try{sessionStorage.fefcShufScope=scope}catch(e){}if(!window.__shufPrevHash&&location.hash&&!/^#\/play\//.test(location.hash)){window.__shufPrevHash=location.hash}window.__shufPlay=1;const targetHash='#/play/'+encodeURIComponent(f.id);if(parseH()[0]==='play'){history.replaceState({fefc:1},'',targetHash);route()}else{go(targetHash)}}
 const shufBtn=scope=>`<button class="sortpill shuf-btn" data-shuffle="${esc(scope)}" title="Play a random fan edit">${SHUF_ICON}Shuffle Play</button>`;
 document.addEventListener('click',e=>{const b=e.target.closest('[data-shuffle]');if(!b)return;e.preventDefault();S.unlock&&S.unlock();shuffle(b.dataset.shuffle)});
 function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));
  $('#crumb').textContent=title;hideHome();
- $('#arena').innerHTML='';NA.top(allVids());const isNew={};if(mode!=='collections')list.forEach(f=>{if(NA.isNew(f))isNew[f.id]=1});
+ $('#arena').innerHTML='';NA.top(rootVids());const isNew={};if(mode!=='collections')list.forEach(f=>{if(NA.isNew(f))isNew[f.id]=1});
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
  $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':(cur===ROOT||cur===FOLD.collections||cur===FOLD.tbc)?countsLine(cur):`${fold.length} collections · ${vids.length} fan edits`;
  const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),ck=mode==='arena'?'az':csortGet(cur),evs=csortList(vids.filter(f=>isVid(f)||isAd(f)),ck,isAd),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
- const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(window._idx?Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)):all,tile,art,i=>items.get(i))}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':cur==='virtual'&&window.__gscope&&title===window.__gtitle?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
+ const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(rootVids(),tile,art,i=>items.get(i))}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':cur==='virtual'&&window.__gscope&&title===window.__gtitle?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)]))+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
  document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena'&&!(mode==='all'&&cur===ROOT))drain(Q,isNew);
  status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll()}
 /* ---------- private / not-shared folders: Request Access prompt (app-side only, no requests sent) ---------- */
@@ -470,7 +471,7 @@ async function details(f,push=true){S.open();S.ambience(false);const p=parse(f.n
 function killFrame(){const o=$('#pframe');if(o){const n=o.cloneNode(false);n.removeAttribute('src');o.replaceWith(n)}}
 function newFrame(u){const o=$('#pframe'),n=o.cloneNode(false);n.src=u;o.replaceWith(n)}
 function started(){return !!window._u&&document.body.classList.contains('intro-done')}
-function play(f){const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();$('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false}
+function play(f){const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();const isShuf=!!(window.__shufPlay||sessionStorage.fefcShufScope);document.body.classList.toggle('shuf-player',isShuf);$('#player').classList.toggle('floating',isShuf);$('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false}
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
  const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return back('#/');S.chirp(1);go('#/play/'+f.id);return}
@@ -538,7 +539,7 @@ function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).fi
   const main=dir==='left'||dir==='right'?Math.abs(dx):Math.abs(dy),off=dir==='left'||dir==='right'?Math.abs(dy):Math.abs(dx),d=main+off*2.5;if(d<bd){bd=d;best=e}});
  if(best)focusEl(best)}
 function focusEl(e){e.focus({preventScroll:true});if(e.scrollIntoView)e.scrollIntoView({block:'nearest',inline:'nearest'})}
-function goBack(){S.back();if(!$('#rfpanel').hidden)return rfDismiss();back(parentHash())}
+function goBack(){S.back();if(!$('#rfpanel').hidden)return rfDismiss();if(!$('#player').hidden){const fb=window.__shufPrevHash||parentHash()||'#/';window.__shufPrevHash=null;return back(fb)}back(parentHash())}
 document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('#q');{const it=document.getElementById('intro');if(it&&(!it.classList.contains('done')||Date.now()-(window.__ie||0)<900))return}
  const dir={37:'left',38:'up',39:'right',40:'down'}[k];
  if(dir&&!$('#rfpanel').hidden&&(k===38||k===40)){e.preventDefault();const w=$('.rf-scroll');if(w)w.scrollBy(0,k===40?220:-220);return}
@@ -643,12 +644,13 @@ const reArt=()=>document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').forE
 tmo('data/posters.json',15000).then(m=>{posters=m;reArt()}).catch(()=>{});tmo('data/people.json',10000).then(m=>{people=m;reArt()}).catch(()=>{});
 tmo('data/genres.json',10000).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;if(!$('#home').hidden)hub();else if(/^#\/genres?\/./.test(location.hash))route()}).catch(()=>{});
 tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});
-tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(vids()));if(!$('#home').hidden)hub();else if(/^#\/(newarrivals|arena|folder)/.test(location.hash))route()}).catch(e=>console.warn(e));
+tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));if(!$('#home').hidden)hub();else if(/^#\/(newarrivals|arena|folder)/.test(location.hash))route()}).catch(e=>console.warn(e));
 tmo('data/metadata.json',8000).then(m=>meta=m).catch(e=>console.warn(e));{const sx=document.createElement('script');sx.src='details-extra.js';document.head.appendChild(sx)}
 tmo('data/index.json',15000).then(d=>{window._idx=d.items;if(!live)add(d.items);if(!live)tmo('data/links.json',15000).then(L=>{for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(()=>{});if(d.partial!==false&&!live)tmo('data/index.interim.json',20000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
  if(P.get('focus')){setTimeout(()=>{document.body.classList.add('kbd');const t=document.querySelectorAll('.ol-tile,.hb')[+P.get('focus')];if(t)focusEl(t)},300)}
  const e=P.get('edit');if(e)go('#/edit/'+e);const pp=P.get('play');if(pp)go('#/play/'+pp);if(P.get('readfirst'))go('#/readfirst')});
 $('#back').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();goBack()});
+$('#player').addEventListener('click',e=>{if(e.target.closest('#pclose')||(e.target.id==='player'&&!e.target.closest('.pcard'))){e.preventDefault();e.stopPropagation();goBack()}});
 showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))route();
 })();
 
@@ -679,10 +681,10 @@ showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))rout
  document.getElementById('ins-no').onclick=()=>{localStorage.fefcInstallSnooze=Date.now()+7*864e5;box.hidden=true};
  const t=setInterval(()=>{if(document.body.classList.contains('intro-done')){clearInterval(t);setTimeout(show,1200)}},400)})();
 addEventListener('load',()=>{const s=document.createElement('script');s.src='clips.js?v='+(document.querySelector('script[src*="app.js?v="]')||{src:''}).src.split('v=')[1];s.async=true;document.body.appendChild(s)}); // moving edge clips (src/clips.js)
-;(function(){const sync=()=>{const d=!document.getElementById('details').hidden&&document.getElementById('player').hidden;document.body.classList.toggle('overlay',!document.getElementById('details').hidden||!document.getElementById('player').hidden);document.body.classList.toggle('details-open',d);if(d){const b=document.getElementById('bar');document.documentElement.style.setProperty('--barh',(b.offsetHeight||56)+'px');if(window.NA&&NA.menuHTML)try{menu()}catch(e){}}};const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden']}));sync()})();
+;(function(){const sync=()=>{const d=!document.getElementById('details').hidden&&document.getElementById('player').hidden;const isShuf=document.body.classList.contains('shuf-player');document.body.classList.toggle('overlay',(!document.getElementById('details').hidden||!document.getElementById('player').hidden)&&!isShuf);document.body.classList.toggle('details-open',d);if(d||isShuf){const b=document.getElementById('bar');document.documentElement.style.setProperty('--barh',(b.offsetHeight||56)+'px');if(window.NA&&NA.menuHTML)try{menu()}catch(e){}}};const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden','class']}));sync()})();
 addEventListener('load',()=>{const w=document.getElementById('wordmark');if(w)window.dispatchEvent(new Event('resize'))});
 
-(()=>{const h=document.getElementById('hints'),pl=document.getElementById('player'),rf=document.getElementById('rfpanel'),up=()=>{if(h)h.style.display=(pl&&!pl.hidden)||(rf&&!rf.hidden)?'none':''};if(window.MutationObserver)[pl,rf].forEach(x=>x&&new MutationObserver(up).observe(x,{attributes:true,attributeFilter:['hidden']}));up()})(); // one sound/legend control on every page, hidden in the player
+(()=>{const h=document.getElementById('hints'),pl=document.getElementById('player'),rf=document.getElementById('rfpanel'),up=()=>{if(h){const isShuf=document.body.classList.contains('shuf-player');h.style.display=(rf&&!rf.hidden)||(pl&&!pl.hidden&&!isShuf)?'none':''}};if(window.MutationObserver)[pl,rf].forEach(x=>x&&new MutationObserver(up).observe(x,{attributes:true,attributeFilter:['hidden','class']}));up()})(); // one sound/legend control on every page, hidden in the player
 
 /* keep tile subtitles inside their tiles: wrap at the dot, then shrink until nothing overflows */
 function fitSmalls(){document.querySelectorAll('#hub .hb small,#grid.gnrs .gnr small').forEach(el=>{el.style.removeProperty('font-size');const p=el.parentElement;if(!p||!el.offsetWidth)return;

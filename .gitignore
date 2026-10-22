@@ -2,3 +2,5 @@ node_modules/
 shots/
 data/index.partial.json
 tools/cache/
+.config/
+.data/

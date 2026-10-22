@@ -466,6 +466,14 @@ var __spreadValues = (a, b) => {
     }
     return _vc;
   }
+  let _rvc = null, _rvk = -1;
+  function rootVids() {
+    if (_rvk !== items.size) {
+      _rvk = items.size;
+      _rvc = Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f) && (f.parent === ROOT || !f.parent && f.id !== ROOT));
+    }
+    return _rvc;
+  }
   const DOCX = /\.(pdf|docx?|txt|xlsx?|pptx?|url|html?|rtf|csv|md|webloc|lnk|json|xml|zip|rar|7z|jpe?g|png|gif|mp3|flac|wav|srt)$/i;
   function isVid(f, d) {
     if (!f) return false;
@@ -596,7 +604,7 @@ var __spreadValues = (a, b) => {
   }
   function hub() {
     if (document.body.classList.contains("genres-mode") && window.FEFCGenres && FEFCGenres.hub) return FEFCGenres.hub();
-    const newN = NA.newCount(vids());
+    const newN = NA.newCount(rootVids());
     const T = [
       ["readfirst", "Read First", ""],
       ["arena", "New Arrivals", newN ? newN + (newN === 1 ? " New File" : " New Files") : ""],
@@ -1296,7 +1304,7 @@ var __spreadValues = (a, b) => {
   }
   function parentHash() {
     const r = parseH();
-    if (r[0] === "play") return r[1] ? "#/edit/" + encodeURIComponent(r[1]) : "#/";
+    if (r[0] === "play") return window.__shufPrevHash || (r[1] ? "#/edit/" + encodeURIComponent(r[1]) : "#/");
     if (r[0] === "edit" || r[0] === "readfirst") return "#/";
     if (r[0] === "folder") {
       const f = items.get(r[1]);
@@ -1321,6 +1329,9 @@ var __spreadValues = (a, b) => {
     if (k !== "play" && !$("#player").hidden) {
       $("#player").hidden = true;
       killFrame();
+      document.body.classList.remove("shuf-player");
+      $("#player").classList.remove("floating");
+      window.__shufPrevHash = null;
       if (started()) S.ambience(true);
     }
     if (k !== "edit" && k !== "play" && !$("#details").hidden) {
@@ -1663,8 +1674,17 @@ var __spreadValues = (a, b) => {
       sessionStorage.fefcShufScope = scope;
     } catch (e) {
     }
+    if (!window.__shufPrevHash && location.hash && !/^#\/play\//.test(location.hash)) {
+      window.__shufPrevHash = location.hash;
+    }
     window.__shufPlay = 1;
-    go("#/play/" + encodeURIComponent(f.id));
+    const targetHash = "#/play/" + encodeURIComponent(f.id);
+    if (parseH()[0] === "play") {
+      history.replaceState({ fefc: 1 }, "", targetHash);
+      route();
+    } else {
+      go(targetHash);
+    }
   }
   const shufBtn = (scope) => '<button class="sortpill shuf-btn" data-shuffle="'.concat(esc(scope), '" title="Play a random fan edit">').concat(SHUF_ICON, "Shuffle Play</button>");
   document.addEventListener("click", (e) => {
@@ -1679,7 +1699,7 @@ var __spreadValues = (a, b) => {
     $("#crumb").textContent = title;
     hideHome();
     $("#arena").innerHTML = "";
-    NA.top(allVids());
+    NA.top(rootVids());
     const isNew = {};
     if (mode !== "collections") list.forEach((f) => {
       if (NA.isNew(f)) isNew[f.id] = 1;
@@ -1695,7 +1715,7 @@ var __spreadValues = (a, b) => {
     const g = $("#grid");
     if (mode === "arena") {
       $("#arena").innerHTML = "";
-      NA.render(window._idx ? Array.from(items.values()).filter((f) => !isFolder(f) && isVid(f)) : all, tile, art, (i) => items.get(i));
+      NA.render(rootVids(), tile, art, (i) => items.get(i));
     } else if (mode === "all" && cur === ROOT) {
       g.className = "sectioned";
       sortedAll(fold, vids2, g, typeof shufBtn === "function" ? shufBtn("all") : "");
@@ -2106,6 +2126,9 @@ var __spreadValues = (a, b) => {
     }
     S.ambience(false);
     S.click();
+    const isShuf = !!(window.__shufPlay || sessionStorage.fefcShufScope);
+    document.body.classList.toggle("shuf-player", isShuf);
+    $("#player").classList.toggle("floating", isShuf);
     $("#ptitle").textContent = parse(f.name).raw;
     newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
@@ -2292,6 +2315,11 @@ var __spreadValues = (a, b) => {
   function goBack() {
     S.back();
     if (!$("#rfpanel").hidden) return rfDismiss();
+    if (!$("#player").hidden) {
+      const fb = window.__shufPrevHash || parentHash() || "#/";
+      window.__shufPrevHash = null;
+      return back(fb);
+    }
     back(parentHash());
   }
   document.addEventListener("keydown", (e) => {
@@ -2814,7 +2842,7 @@ var __spreadValues = (a, b) => {
   });
   tmo("data/dates.json", 15e3).then((m) => {
     NA.dates = m;
-    (window.requestIdleCallback || setTimeout)(() => NA.top(vids()));
+    (window.requestIdleCallback || setTimeout)(() => NA.top(rootVids()));
     if (!$("#home").hidden) hub();
     else if (/^#\/(newarrivals|arena|folder)/.test(location.hash)) route();
   }).catch((e) => console.warn(e));
@@ -2868,6 +2896,13 @@ var __spreadValues = (a, b) => {
     e.preventDefault();
     e.stopPropagation();
     goBack();
+  });
+  $("#player").addEventListener("click", (e) => {
+    if (e.target.closest("#pclose") || e.target.id === "player" && !e.target.closest(".pcard")) {
+      e.preventDefault();
+      e.stopPropagation();
+      goBack();
+    }
   });
   showHome();
   if (/^#\/(genres|supportus|support|mylist)\b/.test(location.hash)) route();
@@ -2989,9 +3024,10 @@ addEventListener("load", () => {
 (function() {
   const sync = () => {
     const d = !document.getElementById("details").hidden && document.getElementById("player").hidden;
-    document.body.classList.toggle("overlay", !document.getElementById("details").hidden || !document.getElementById("player").hidden);
+    const isShuf = document.body.classList.contains("shuf-player");
+    document.body.classList.toggle("overlay", (!document.getElementById("details").hidden || !document.getElementById("player").hidden) && !isShuf);
     document.body.classList.toggle("details-open", d);
-    if (d) {
+    if (d || isShuf) {
       const b = document.getElementById("bar");
       document.documentElement.style.setProperty("--barh", (b.offsetHeight || 56) + "px");
       if (window.NA && NA.menuHTML) try {
@@ -3001,7 +3037,7 @@ addEventListener("load", () => {
     }
   };
   const mo = new MutationObserver(sync);
-  ["details", "player"].forEach((i) => mo.observe(document.getElementById(i), { attributes: true, attributeFilter: ["hidden"] }));
+  ["details", "player"].forEach((i) => mo.observe(document.getElementById(i), { attributes: true, attributeFilter: ["hidden", "class"] }));
   sync();
 })();
 addEventListener("load", () => {
@@ -3010,9 +3046,12 @@ addEventListener("load", () => {
 });
 (() => {
   const h = document.getElementById("hints"), pl = document.getElementById("player"), rf = document.getElementById("rfpanel"), up = () => {
-    if (h) h.style.display = pl && !pl.hidden || rf && !rf.hidden ? "none" : "";
+    if (h) {
+      const isShuf = document.body.classList.contains("shuf-player");
+      h.style.display = rf && !rf.hidden || pl && !pl.hidden && !isShuf ? "none" : "";
+    }
   };
-  if (window.MutationObserver) [pl, rf].forEach((x) => x && new MutationObserver(up).observe(x, { attributes: true, attributeFilter: ["hidden"] }));
+  if (window.MutationObserver) [pl, rf].forEach((x) => x && new MutationObserver(up).observe(x, { attributes: true, attributeFilter: ["hidden", "class"] }));
   up();
 })();
 function fitSmalls() {
