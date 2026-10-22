@@ -233,8 +233,8 @@ body.intro-done:not(.at-home) #tagline{visibility:hidden}
 #intro.gated .gate{display:grid}#intro.gated .ihint{display:none}
 #intro .gate span{font:600 clamp(16px,2.6vh,30px) 'Source Sans 3',sans-serif;color:#ffb347;letter-spacing:.08em;padding:.6em 1.4em;border:1px solid #ff8a1a88;border-radius:4px;animation:gp 1.6s ease-in-out infinite}
 @keyframes gp{50%{opacity:.45}}
-#intro .ihint{position:absolute;right:3vw;bottom:4vh;font:700 clamp(16px,2.4vh,28px) 'Source Sans 3',sans-serif;color:#fff;padding:.45em 1.25em;border:1.5px solid rgba(255,255,255,.5);border-radius:6px;background:rgba(0,0,0,.65);box-shadow:0 4px 20px rgba(0,0,0,.6);letter-spacing:.05em;z-index:10;cursor:pointer;transition:transform .15s,background .15s,border-color .15s;user-select:none}
-#intro .ihint:hover,#intro .ihint:focus{background:rgba(255,140,0,.25);border-color:#ffb347;color:#ffb347;transform:scale(1.05)}
+#intro .ihint{position:absolute;right:3vw;bottom:4vh;font:700 clamp(20px,3.2vh,34px) 'Source Sans 3',sans-serif;color:#fff;padding:.6em 1.6em;border:2px solid rgba(255,255,255,.8);border-radius:8px;background:rgba(0,0,0,.75);box-shadow:0 6px 24px rgba(0,0,0,.7);letter-spacing:.05em;z-index:10;cursor:pointer;transition:transform .15s,background .15s,border-color .15s;user-select:none}
+#intro .ihint:hover,#intro .ihint:focus{background:rgba(255,140,0,.35);border-color:#ffb347;color:#ffb347;transform:scale(1.08)}
 #intro .isnd{position:absolute;right:calc(3vw + 8.5em);bottom:4vh;font:600 clamp(13px,1.9vh,22px) 'Source Sans 3',sans-serif;color:#fffb;padding:.45em 1em;border:1px solid #fff4;border-radius:6px;background:#0006;z-index:10;cursor:pointer}
 .ol-tile .art:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000e 0,#0008 35%,#0000 65%)}
 .ol-tile .nm{text-shadow:0 1px 3px #000,0 0 10px #000}
@@ -752,51 +752,6 @@ body.tv .op-cue{font-size:3vh}
 .sp-opt.typing .op-type-hands{opacity:.95!important;animation:opTypingClatter .1s ease-in-out infinite alternate}
 @keyframes opTypingClatter{0%{transform:translateY(0) rotate(-3deg)}100%{transform:translateY(-3px) rotate(3deg)}}
 
-/* ---------- PLAYBACK TIME LOG & RESUME CONTROLS ---------- */
-.ptime-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:6px 14px;background:linear-gradient(180deg,#18202c 0%,#0d1219 100%);border-bottom:2px solid var(--o);font-family:Antonio,Jura,sans-serif;z-index:10;box-sizing:border-box}
-.pt-left,.pt-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pt-badge{font-size:11px;letter-spacing:.15em;font-weight:700;color:var(--o);background:#000;padding:3px 8px;border-radius:4px;border:1px solid var(--o);text-transform:uppercase}
-.pt-clock{font-family:'Source Code Pro','Courier New',monospace;font-size:19px;font-weight:700;letter-spacing:.06em;color:#5cf;background:#05080d;padding:2px 10px;border-radius:6px;border:1px solid #2fa8ff66;text-shadow:0 0 10px rgba(47,168,255,0.5);cursor:pointer;min-width:90px;text-align:center;user-select:none}
-.pt-clock:hover{border-color:#5cf;background:#0d1724}
-.pt-clock.paused{color:#ffcc66;text-shadow:0 0 10px rgba(255,204,102,0.5);animation:ptPauseBlink 1.2s infinite}
-@keyframes ptPauseBlink{0%,100%{opacity:1}50%{opacity:.4}}
-.pt-adj{display:flex;gap:3px}
-.pt-pill{background:#1e2634;border:1px solid #4a5970;color:#cfd8e3;border-radius:4px;font-size:11px;font-weight:700;padding:3px 7px;cursor:pointer;font-family:Antonio,sans-serif;transition:all .15s}
-.pt-pill:hover,.pt-pill:focus-visible{background:var(--b);color:#000;border-color:#fff;outline:0}
-.pt-btn{background:linear-gradient(180deg,#2b3545,#171d27);border:1px solid #5a6d85;color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:700;letter-spacing:.08em;cursor:pointer;font-family:Antonio,sans-serif;text-transform:uppercase;display:inline-flex;align-items:center;gap:4px;transition:all .15s}
-.pt-btn:hover,.pt-btn:focus-visible{filter:brightness(1.25);border-color:#7fd0ff;outline:0}
-.pt-playpause{background:linear-gradient(180deg,#ff9c00,#c86e00);color:#000;border-color:#ffb833}
-.pt-playpause.is-paused{background:linear-gradient(180deg,#33ccbb,#178a7e);color:#000;border-color:#55eedd}
-.pt-copy{background:linear-gradient(180deg,#2fa8ff,#1168ba);color:#fff;border-color:#7fd0ff}
-.pt-mark{background:linear-gradient(180deg,#cc99ff,#7e4db0);color:#fff;border-color:#ddaaff}
-.pt-toast{font-size:12px;font-weight:700;color:#33ff88;background:#000c;border:1px solid #33ff88;padding:2px 8px;border-radius:4px}
-.presume-banner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:8px 16px;background:linear-gradient(90deg,#1b263b,#0d1b2a 50%,#1a162b);border-bottom:2px solid #2fa8ff;box-shadow:0 4px 14px rgba(0,0,0,0.8);font-family:Jura,system-ui,sans-serif;animation:slideDown .25s ease-out;z-index:12}
-@keyframes slideDown{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
-.pr-msg{display:flex;align-items:center;gap:10px;font-size:14px;color:#e0e6ed}
-.pr-msg strong{color:#ffcc66;font-family:monospace;font-size:16px;background:#000;padding:1px 6px;border-radius:4px;border:1px solid #ffcc6666}
-.pr-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pr-btn{border:0;border-radius:6px;padding:6px 12px;font-family:Antonio,sans-serif;font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:transform .1s,filter .15s}
-.pr-btn:hover{filter:brightness(1.2);transform:scale(1.02)}
-.pr-copy{background:#2fa8ff;color:#000}
-.pr-res{background:#ff9c00;color:#000}
-.pr-restart{background:#334155;color:#cfd8e3}
-.pr-close{background:none;border:0;color:#94a3b8;font-size:16px;cursor:pointer;padding:4px 8px}
-.pr-close:hover{color:#fff}
-.fx-playback{margin:14px 0 10px;padding:12px 14px;background:linear-gradient(180deg,#141b24,#0b0e14);border:1px solid #2fa8ff44;border-left:6px solid var(--b);border-radius:0 14px 14px 0}
-.pb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.pb-title{font-family:Antonio,sans-serif;color:var(--b);letter-spacing:.15em;font-size:15px;text-transform:uppercase;margin:0}
-.pb-status{font-size:14px;color:#e2e8f0;margin-bottom:8px}
-.pb-status b{color:#ffcc66;font-family:monospace;font-size:16px}
-.pb-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.pb-btn{padding:5px 12px;border-radius:6px;font-family:Antonio,sans-serif;font-weight:700;font-size:13px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:1px solid transparent}
-.pb-btn.pb-resume{background:var(--o);color:#000}
-.pb-btn.pb-copy{background:var(--b);color:#000}
-.pb-btn.pb-clear{background:#2a3442;color:#cbd5e1;border-color:#475569}
-.pb-log{margin:6px 0 0;padding:0;list-style:none;font-size:12px;color:#94a3b8}
-.pb-log li{padding:3px 0;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #ffffff10}
-.pb-copy-mini{background:none;border:1px solid #4a5568;border-radius:4px;color:var(--b);padding:1px 6px;font-size:11px;cursor:pointer}
-.pb-copy-mini:hover{background:var(--b);color:#000}
-
 /* Starship Launch Easter Egg */
 #starship-egg{position:fixed;inset:0;pointer-events:none;z-index:99999;display:none;align-items:center;justify-content:center}
 #starship-egg.launch{display:flex}
@@ -822,10 +777,12 @@ body.tv .op-cue{font-size:3vh}
 @keyframes ssTextFade{0%,20%{opacity:0;transform:translateY(20px)}35%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-20px)}}
 
 /* Home -> Main Collection Smooth Camera Plunge */
-#home{transition:opacity .32s cubic-bezier(0.2,0,0.2,1),transform .32s cubic-bezier(0.2,0,0.2,1);will-change:opacity,transform}
-#home.leaving{opacity:0;transform:scale(1.12);pointer-events:none}
-#main.entering{animation:mainSmoothIn .32s cubic-bezier(0.16,1,0.3,1) forwards}
-@keyframes mainSmoothIn{from{opacity:0;transform:scale(0.975)}to{opacity:1;transform:scale(1)}}
+#home{transition:opacity .42s cubic-bezier(0.2,0.8,0.2,1),transform .42s cubic-bezier(0.2,0.8,0.2,1),filter .42s ease;will-change:opacity,transform,filter}
+#home.leaving{opacity:0;transform:scale(1.09) translateZ(0);filter:blur(2px);pointer-events:none}
+#main.entering{animation:mainSmoothIn .42s cubic-bezier(0.16,1,0.3,1) forwards}
+#bar.entering{animation:barSmoothIn .36s ease forwards}
+@keyframes mainSmoothIn{from{opacity:0;transform:scale(0.98) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes barSmoothIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
 
 /* =========================================================================
    EASTER EGGS CSS SUITE

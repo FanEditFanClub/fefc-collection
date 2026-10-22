@@ -831,9 +831,22 @@ var __spreadValues = (a, b) => {
   let homeHideTimer = null;
   function showHome(gm) {
     clearTimeout(homeHideTimer);
+    closeRF();
+    if (!$("#details").hidden) {
+      $("#details").hidden = true;
+      document.body.classList.remove("details-open");
+    }
+    if (!$("#player").hidden) {
+      stopPlayerTimer();
+      $("#player").hidden = true;
+      killFrame();
+      document.body.classList.remove("shuf-player");
+      $("#player").classList.remove("floating");
+    }
     const home = $("#home"), main = $("#main"), bar = $("#bar");
     home.classList.remove("leaving");
     main.classList.remove("entering");
+    bar.classList.remove("entering");
     document.body.classList.toggle("genres-mode", !!gm);
     view = gm ? "genres" : "home";
     cur = ROOT;
@@ -869,11 +882,13 @@ var __spreadValues = (a, b) => {
       main.hidden = false;
       main.classList.add("entering");
       bar.hidden = false;
+      bar.classList.add("entering");
       homeHideTimer = setTimeout(() => {
         home.hidden = true;
         home.classList.remove("leaving");
         main.classList.remove("entering");
-      }, 320);
+        bar.classList.remove("entering");
+      }, 420);
     } else {
       home.hidden = true;
       main.hidden = false;
@@ -1261,7 +1276,8 @@ var __spreadValues = (a, b) => {
         }
       }
       if (/purr|purassic/i.test(fullPath)) {
-        L = ["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"];
+        if (window.S && S.catMeow) S.catMeow();
+        L = ["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"];
       } else if (fullPath.includes("jurassic")) {
         L = ["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"];
       } else if (/carrey/i.test(pName) || id === "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ") {
@@ -1695,6 +1711,23 @@ var __spreadValues = (a, b) => {
         return seen[t] = 1;
       });
     }
+    if (scope === "tbc" || scope === "tobecatalogued" || scope === FOLD.tbc) {
+      const tbcVids = [], seenFolders = {}, q = [FOLD.tbc];
+      while (q.length) {
+        const fid = q.pop();
+        if (seenFolders[fid]) continue;
+        seenFolders[fid] = 1;
+        (kids.get(fid) || []).forEach((x) => {
+          if (isFolder(x)) q.push(target(x));
+          else if (isVid(x)) tbcVids.push(x);
+        });
+      }
+      return tbcVids.filter((f) => {
+        const t = target(f);
+        if (seen[t] || !SHUF.has(t)) return false;
+        return seen[t] = 1;
+      });
+    }
     let gcs = null;
     if (/^gc:/.test(scope || "")) {
       const m = scope.slice(3), i = m.indexOf("/"), c = genreColls(m.slice(0, i)).find((x) => x.slug === m.slice(i + 1));
@@ -1789,7 +1822,7 @@ var __spreadValues = (a, b) => {
       sortedAll(fold, vids2, g, typeof shufBtn === "function" ? shufBtn("all") : "");
     } else {
       g.className = "sectioned";
-      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
+      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === FOLD.tbc || underTBC(cur) || /to be catalogued/i.test(title) ? "tbc" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
       g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
@@ -2129,126 +2162,6 @@ var __spreadValues = (a, b) => {
     if (d < 30) return d + "d ago";
     return new Date(ts).toLocaleDateString();
   }
-  let playTimerInterval = null, playSec = 0, playRunning = false, activePlayFile = null;
-  function stopPlayerTimer() {
-    clearInterval(playTimerInterval);
-    if (activePlayFile && playRunning && playSec > 10 && window.UD) {
-      UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
-    }
-    playRunning = false;
-  }
-  function wirePlayerTimeControls() {
-    const bar = $("#ptime-bar");
-    if (!bar || bar._wired) return;
-    bar._wired = true;
-    const toggle = $("#pt-toggle"), clock = $("#pt-clock"), toast = $("#pt-toast");
-    const showToast = (msg) => {
-      if (!toast) return;
-      toast.textContent = msg;
-      toast.hidden = false;
-      clearTimeout(toast._t);
-      toast._t = setTimeout(() => {
-        toast.hidden = true;
-      }, 3400);
-    };
-    if (toggle) toggle.addEventListener("click", () => {
-      S.click();
-      playRunning = !playRunning;
-      toggle.textContent = playRunning ? "\u23F8 PAUSE STOPWATCH" : "\u25B6 START STOPWATCH";
-      toggle.classList.toggle("is-paused", !playRunning);
-      if (clock) clock.classList.toggle("paused", !playRunning);
-      if (!playRunning && activePlayFile && window.UD) {
-        UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
-        showToast("\u23F8 Stopwatch paused at " + UD.formatTime(playSec));
-      } else if (playRunning && window.UD) {
-        showToast("\u23F1\uFE0F Stopwatch tracking from " + UD.formatTime(playSec));
-      }
-    });
-    bar.querySelectorAll(".pt-pill").forEach((btn) => btn.addEventListener("click", () => {
-      S.click();
-      const d = parseInt(btn.dataset.adj, 10) || 0;
-      playSec = Math.max(0, playSec + d);
-      if (clock && window.UD) clock.textContent = UD.formatTime(playSec);
-      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name);
-      const lbl = Math.abs(d) >= 60 ? d / 60 + "m" : d + "s";
-      showToast((d > 0 ? "+" : "") + lbl + " \u2192 " + (window.UD ? UD.formatTime(playSec) : playSec));
-    }));
-    const setBtn = $("#pt-set");
-    if (setBtn) setBtn.addEventListener("click", () => {
-      S.click();
-      const curStr = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      const ans = prompt("Enter the timestamp shown on your Drive player (e.g. 1:24:35 or 45:10):", curStr);
-      if (ans && window.UD) {
-        const s = UD.parseTime(ans);
-        playSec = s;
-        if (clock) clock.textContent = UD.formatTime(playSec);
-        if (activePlayFile) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
-        showToast("\u23F1\uFE0F Logged timestamp " + UD.formatTime(playSec) + " saved!");
-      }
-    });
-    if (clock) clock.addEventListener("click", () => {
-      if (setBtn) setBtn.click();
-    });
-    const copyBtn = $("#pt-copy");
-    if (copyBtn) copyBtn.addEventListener("click", () => {
-      S.click();
-      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      try {
-        navigator.clipboard.writeText(str);
-      } catch (_) {
-      }
-      showToast("\u{1F4CB} Copied " + str + "! Seek or fast-forward to " + str + " in Drive");
-    });
-    const markBtn = $("#pt-mark");
-    if (markBtn) markBtn.addEventListener("click", () => {
-      S.click();
-      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
-      showToast("\u{1F4CC} Logged timestamp " + str + " to Watch History!");
-    });
-    const resetBtn = $("#pt-reset");
-    if (resetBtn) resetBtn.addEventListener("click", () => {
-      S.click();
-      playSec = 0;
-      playRunning = false;
-      if (clock) {
-        clock.textContent = "00:00:00";
-        clock.classList.add("paused");
-      }
-      if (toggle) {
-        toggle.textContent = "\u25B6 START STOPWATCH";
-        toggle.classList.add("is-paused");
-      }
-      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, 0, activePlayFile.name);
-      showToast("\u21BA Timestamp reset to 00:00:00");
-    });
-    const rBanner = $("#presume-banner"), prCopy = $("#pr-copy"), prResume = $("#pr-resume"), prRestart = $("#pr-restart"), prClose = $("#pr-close");
-    if (prCopy) prCopy.addEventListener("click", () => {
-      S.click();
-      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      try {
-        navigator.clipboard.writeText(str);
-      } catch (_) {
-      }
-      showToast("\u{1F4CB} Copied " + str + "! Seek Drive progress bar to " + str);
-    });
-    if (prResume) prResume.addEventListener("click", () => {
-      S.click();
-      if (rBanner) rBanner.hidden = true;
-      if (setBtn) setBtn.click();
-    });
-    if (prRestart) prRestart.addEventListener("click", () => {
-      S.click();
-      if (rBanner) rBanner.hidden = true;
-      playSec = 0;
-      if (clock) clock.textContent = "00:00:00";
-      if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, 0, activePlayFile.name);
-    });
-    if (prClose) prClose.addEventListener("click", () => {
-      S.click();
-      if (rBanner) rBanner.hidden = true;
-    });
-  }
   async function details(f, push = true) {
     S.open();
     S.ambience(false);
@@ -2287,16 +2200,15 @@ var __spreadValues = (a, b) => {
     }
     const isPurr = /purr|purassic/i.test(fp), isJura = !isPurr && fp.includes("jurassic");
     if (isPurr) {
-      S.fx(["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"]);
+      if (window.S && S.catMeow) S.catMeow();
+      else S.fx(["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"]);
     } else if (isJura) {
       S.fx(["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"]);
     }
-    const pbRec = window.UD && (UD.getPlayback(f.id) || UD.getPlayback(id));
-    const pbHTML = pbRec && pbRec.sec > 10 ? '<div class="fx-playback" id="fx-playback"><div class="pb-head"><h3 class="pb-title">\u23F1\uFE0F Watch Progress & Time Log</h3></div><div class="pb-status">Left off at: <b>'.concat(esc(pbRec.formatted), '</b><small style="color:#94a3b8;margin-left:8px">').concat(timeAgo(pbRec.updatedAt), '</small></div><div class="pb-actions"><button class="pb-btn pb-resume" data-pbresume="').concat(esc(f.id), '" data-time="').concat(pbRec.sec, '">\u25B6 Resume at ').concat(esc(pbRec.formatted), '</button><button class="pb-btn pb-copy" data-pbcopy="').concat(esc(pbRec.formatted), '">\u{1F4CB} Copy Timestamp (').concat(esc(pbRec.formatted), ')</button><button class="pb-btn pb-clear" data-pbclear="').concat(esc(f.id), '">\u21BA Reset</button></div>').concat(pbRec.log && pbRec.log.length ? '<ul class="pb-log">'.concat(pbRec.log.map((item) => "<li><span>Stopped at <b>".concat(esc(item.formatted), '</b> <small style="color:#64748b">(').concat(timeAgo(item.at), ')</small></span><button class="pb-copy-mini" data-pbcopy="').concat(esc(item.formatted), '">Copy</button></li>')).join(""), "</ul>") : "", "</div>") : "";
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(pbHTML, "\n  ").concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     $("#details").hidden = false;
     $("#details").dataset.id = f.id;
     detBackdrop(f, PU);
@@ -2306,40 +2218,13 @@ var __spreadValues = (a, b) => {
     $("#details").scrollTop = 0;
     const lb = $("#details .lc-body");
     if (lb) lb.scrollTop = 0;
-    $("#details").querySelectorAll("[data-pbresume]").forEach((b2) => b2.addEventListener("click", (e) => {
-      e.preventDefault();
-      S.click();
-      window.__resumeSec = +b2.dataset.time;
-      try {
-        navigator.clipboard.writeText(b2.closest(".fx-playback").querySelector(".pb-status b").textContent);
-      } catch (_) {
-      }
-      go("#/play/" + b2.dataset.pbresume);
-    }));
-    $("#details").querySelectorAll("[data-pbcopy]").forEach((b2) => b2.addEventListener("click", (e) => {
-      e.preventDefault();
-      S.click();
-      const t = b2.dataset.pbcopy;
-      try {
-        navigator.clipboard.writeText(t);
-      } catch (_) {
-      }
-      b2.textContent = "\u2713 Copied!";
-      setTimeout(() => {
-        b2.textContent = b2.dataset.pbcopy ? "\u{1F4CB} Copy Timestamp (" + t + ")" : "Copy";
-      }, 2e3);
-    }));
-    $("#details").querySelectorAll("[data-pbclear]").forEach((b2) => b2.addEventListener("click", (e) => {
-      e.preventDefault();
-      S.click();
-      if (window.UD) UD.clearPlayback(b2.dataset.pbclear);
-      const el = $("#fx-playback");
-      if (el) el.remove();
-    }));
     if (isPurr) {
-      $("#details").addEventListener("click", (e) => {
-        if (e.target.closest("button,a,.pill,.bigplay,.ol-tile")) S.fx(["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"]);
-      });
+      $("#details").onclick = (e) => {
+        if (e.target.closest("button,a,.pill,.bigplay,.ol-tile")) {
+          if (window.S && S.catMeow) S.catMeow();
+          else S.fx(["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"]);
+        }
+      };
     }
     $("#details").querySelectorAll("[data-jump]").forEach((b2) => b2.addEventListener("click", () => {
       S.chirp(2);
@@ -2366,7 +2251,6 @@ var __spreadValues = (a, b) => {
     return !!window._u && document.body.classList.contains("intro-done");
   }
   function play(f) {
-    activePlayFile = f;
     const E = episodes(f), pn = $("#pprev"), nx = $("#pnext");
     if (pn && nx) {
       const p0 = E && E.idx > 0 ? E.eps[E.idx - 1].f : null, n0 = E && E.idx >= 0 && E.idx < E.eps.length - 1 ? E.eps[E.idx + 1].f : null;
@@ -2389,44 +2273,19 @@ var __spreadValues = (a, b) => {
     newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
     $("#player").hidden = false;
-    wirePlayerTimeControls();
-    const pbRec = window.UD && (UD.getPlayback(f.id) || UD.getPlayback(id));
-    const resumeBanner = $("#presume-banner"), prTime = $("#pr-time"), prTime2 = $("#pr-time2"), ptClock = $("#pt-clock"), ptToggle = $("#pt-toggle");
-    if (window.__resumeSec != null) {
-      playSec = window.__resumeSec;
-      window.__resumeSec = null;
-      if (resumeBanner) resumeBanner.hidden = true;
-    } else if (pbRec && pbRec.sec > 10) {
-      playSec = pbRec.sec;
-      if (resumeBanner && prTime) {
-        prTime.textContent = pbRec.formatted;
-        if (prTime2) prTime2.textContent = pbRec.formatted;
-        resumeBanner.hidden = false;
-      }
-    } else {
-      playSec = 0;
-      if (resumeBanner) resumeBanner.hidden = true;
-    }
-    playRunning = false;
-    if (ptClock) {
-      ptClock.textContent = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      ptClock.classList.add("paused");
-    }
-    if (ptToggle) {
-      ptToggle.textContent = "\u25B6 START STOPWATCH";
-      ptToggle.classList.add("is-paused");
-    }
-    clearInterval(playTimerInterval);
-    let ticks = 0;
-    playTimerInterval = setInterval(() => {
-      if (!$("#player").hidden && playRunning) {
-        playSec++;
-        if (ptClock && window.UD) ptClock.textContent = UD.formatTime(playSec);
-        if (++ticks % 5 === 0 && window.UD && activePlayFile) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name);
-      }
-    }, 1e3);
   }
   document.addEventListener("click", (e) => {
+    const br = e.target.closest("#brand");
+    if (br) {
+      e.preventDefault();
+      S.click();
+      if (location.hash === "" || location.hash === "#/home" || location.hash === "#") {
+        showHome();
+      } else {
+        location.hash = "";
+      }
+      return;
+    }
     const pe = e.target.closest("#pprev,#pnext");
     if (pe && pe.dataset.to) {
       S.click();
@@ -3385,12 +3244,11 @@ var __spreadValues = (a, b) => {
   const box = document.getElementById("install");
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((r) => r.update()).catch(() => {
   });
-  if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+  if ("serviceWorker" in navigator) {
     let rl = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (rl || sessionStorage.fefcSwReload) return;
+      if (rl) return;
       rl = true;
-      sessionStorage.fefcSwReload = "1";
       location.reload();
     });
   }

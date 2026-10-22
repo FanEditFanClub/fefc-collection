@@ -461,6 +461,37 @@ window.SFX = (() => {
       [261.6, 329.6, 392, 523.3, 659.3, 1046.5].forEach((fq, i) => {
         tone(fq, t + i * 0.07, 0.16, "square", 0.08);
       });
+    },
+    catMeow() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      S.fx(["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"]);
+      setTimeout(() => {
+        if (!S._fx["assets/sfx/cat-meow.wav|assets/sfx/cat-meow.m4a"]) {
+          try {
+            const t = ctx.currentTime, o = ctx.createOscillator(), v = ctx.createGain(), f = ctx.createBiquadFilter();
+            o.type = "sawtooth";
+            f.type = "bandpass";
+            f.Q.value = 3.5;
+            f.frequency.setValueAtTime(450, t);
+            f.frequency.exponentialRampToValueAtTime(850, t + 0.18);
+            f.frequency.exponentialRampToValueAtTime(320, t + 0.5);
+            o.frequency.setValueAtTime(360, t);
+            o.frequency.exponentialRampToValueAtTime(680, t + 0.18);
+            o.frequency.exponentialRampToValueAtTime(260, t + 0.5);
+            v.gain.setValueAtTime(0, t);
+            v.gain.linearRampToValueAtTime(0.15, t + 0.04);
+            v.gain.exponentialRampToValueAtTime(1e-4, t + 0.5);
+            o.connect(f);
+            f.connect(v);
+            v.connect(master);
+            o.start(t);
+            o.stop(t + 0.52);
+          } catch (e) {
+          }
+        }
+      }, 150);
     }
   };
   return S;
