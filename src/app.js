@@ -172,9 +172,31 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
  cells.forEach(c=>set(c,true));requestAnimationFrame(fitHeader);clearInterval(mosaicTimer);
  mosaicTimer=setInterval(()=>{if($('#home').hidden||document.hidden)return;const k=tv?1:2;for(let j=0;j<k;j++)set(cells[Math.random()*cells.length|0])},tv?3500:1800)}
 let mosT;if(window.ResizeObserver)new ResizeObserver(()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},150)}).observe(document.getElementById('hub'));addEventListener('resize',()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},250)});
-function showHome(gm){document.body.classList.toggle('genres-mode',!!gm);view=gm?'genres':'home';cur=ROOT;$('#home').hidden=false;document.body.classList.add('at-home');$('#main').hidden=true;$('#bar').hidden=true;hub();const lay=()=>{const r=$('#hub').getBoundingClientRect(),k=Math.round(r.left)+'x'+Math.round(r.top)+'x'+Math.round(r.width);if($('#mosaic')._k!==k){$('#mosaic')._k=k;mosaic()}};requestAnimationFrame(lay);setTimeout(lay,500);setTimeout(lay,1500);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(lay);
+let homeHideTimer=null;
+function showHome(gm){
+ clearTimeout(homeHideTimer);
+ const home=$('#home'),main=$('#main'),bar=$('#bar');
+ home.classList.remove('leaving');main.classList.remove('entering');
+ document.body.classList.toggle('genres-mode',!!gm);view=gm?'genres':'home';cur=ROOT;home.hidden=false;document.body.classList.add('at-home');main.hidden=true;bar.hidden=true;hub();const lay=()=>{const r=$('#hub').getBoundingClientRect(),k=Math.round(r.left)+'x'+Math.round(r.top)+'x'+Math.round(r.width);if($('#mosaic')._k!==k){$('#mosaic')._k=k;mosaic()}};requestAnimationFrame(lay);setTimeout(lay,500);setTimeout(lay,1500);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(lay);
  setTimeout(()=>{if(document.body.classList.contains('kbd')||document.body.classList.contains('tv')){const t=$('.hb-logo')||$('#hub .hb:not(.gempty)');if(t)focusEl(t)}},30)}
-function hideHome(){document.body.classList.remove('at-home');$('#home').hidden=true;$('#main').hidden=false;$('#bar').hidden=false}
+function hideHome(){
+ clearTimeout(homeHideTimer);
+ document.body.classList.remove('at-home');
+ const home=$('#home'),main=$('#main'),bar=$('#bar');
+ if(!home.hidden){
+  home.classList.add('leaving');
+  main.hidden=false;
+  main.classList.add('entering');
+  bar.hidden=false;
+  homeHideTimer=setTimeout(()=>{
+   home.hidden=true;
+   home.classList.remove('leaving');
+   main.classList.remove('entering');
+  },320);
+ }else{
+  home.hidden=true;main.hidden=false;bar.hidden=false;
+ }
+}
 function virtual(list,title){hideHome();cur='virtual';view='folder';render(list,title,'home')}
 function secHTML(k,l,a,extra){return `<div class="ol-div"><span>${l}</span><i></i>${extra||''}<b>${a.length}</b></div>`+(a.length?`<div class="sgrid ${k}">${a.map(f=>tile(f)).join('')}</div>`:'')}
 function pageShell(title,sub){hideHome();cur='virtual';view='folder';$('#crumb').textContent=title;$('#arena').innerHTML='';$('#sec2').textContent=sub||'';status('');menu();$('#main').scrollTop=0}
@@ -254,7 +276,7 @@ function folderSfx(id){
   const isDir=DIR_IDS[id]||(p&&p.role==='director')||(f&&f.parent===FOLD.directors)||/^(abrams|bay|cameron|emmerich|nolan|ritchie|scott|snyder|spielberg|verhoeven)$/i.test(f?f.name:'');
   let fullPath = pName;
   if(f){let c=f,g=0;while(c&&c.parent&&g++<15){c=items.get(c.parent);if(c&&c.name)fullPath+=' '+c.name.toLowerCase()}}
-  if(fullPath.includes('purassic')){
+  if(/purr|purassic/i.test(fullPath)){
    L=['assets/sfx/cat-meow.m4a','assets/sfx/cat-meow.wav']
   }else if(fullPath.includes('jurassic')){
    L=['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a']
@@ -366,7 +388,7 @@ function shufPool(scope){if(!SHUF)return [];const seen={};
 function shufPick(scope){const pool=shufPool(scope);if(!pool.length)return null;let rec=[];try{rec=JSON.parse(localStorage.fefcShufRecent||'[]')}catch(e){}
  const fresh=pool.filter(f=>rec.indexOf(target(f))<0),from=fresh.length?fresh:pool,f=from[Math.floor(Math.random()*from.length)];
  rec.push(target(f));rec=rec.slice(-20);try{localStorage.fefcShufRecent=JSON.stringify(rec)}catch(e){}return f}
-function shuffle(scope){const f=shufPick(scope);if(!f){status('Nothing to shuffle yet');return}try{sessionStorage.fefcShufScope=scope}catch(e){}if(!window.__shufPrevHash&&location.hash&&!/^#\/play\//.test(location.hash)){window.__shufPrevHash=location.hash}window.__shufPlay=1;const targetHash='#/play/'+encodeURIComponent(f.id);if(parseH()[0]==='play'){history.replaceState({fefc:1},'',targetHash);route()}else{go(targetHash)}}
+function shuffle(scope){const f=shufPick(scope);if(!f){status('Nothing to shuffle yet');return}const doWarp=()=>{try{sessionStorage.fefcShufScope=scope}catch(e){}if(!window.__shufPrevHash&&location.hash&&!/^#\/play\//.test(location.hash)){window.__shufPrevHash=location.hash}window.__shufPlay=1;const targetHash='#/play/'+encodeURIComponent(f.id);if(parseH()[0]==='play'){history.replaceState({fefc:1},'',targetHash);route()}else{go(targetHash)}};if(window.FEFCHotStage){window.FEFCHotStage(doWarp)}else{doWarp()}}
 const shufBtn=scope=>`<button class="sortpill shuf-btn" data-shuffle="${esc(scope)}" title="Play a random fan edit">${SHUF_ICON}Shuffle Play</button>`;
 document.addEventListener('click',e=>{const b=e.target.closest('[data-shuffle]');if(!b)return;e.preventDefault();S.unlock&&S.unlock();shuffle(b.dataset.shuffle)});
 function render(list,title,mode){const fold=list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));
@@ -450,51 +472,55 @@ function detBackdrop(f,pu){const d=$('#details');let c=d.querySelector('canvas.l
  im.onload=()=>{if(d.dataset.id!==want)return;const r=Math.max(40/im.width,24/im.height),w=im.width*r,h=im.height*r;x.drawImage(im,(40-w)/2,(24-h)/2,w,h);c.classList.add('on')};im.onerror=()=>{if(pu&&src!==pu&&!im.dataset.fb){im.dataset.fb=1;im.src=pu}};im.src=src}
 function timeAgo(ts){if(!ts)return'';const diff=Math.max(0,Date.now()-ts),m=Math.floor(diff/60000),h=Math.floor(m/60),d=Math.floor(h/24);if(m<1)return'just now';if(m<60)return m+'m ago';if(h<24)return h+'h ago';if(d===1)return'yesterday';if(d<30)return d+'d ago';return new Date(ts).toLocaleDateString()}
 let playTimerInterval=null,playSec=0,playRunning=false,activePlayFile=null;
-function stopPlayerTimer(){clearInterval(playTimerInterval);if(activePlayFile&&playSec>10&&window.UD){UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name,{log:true})}playRunning=false}
+function stopPlayerTimer(){clearInterval(playTimerInterval);if(activePlayFile&&playRunning&&playSec>10&&window.UD){UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name,{log:true})}playRunning=false}
 function wirePlayerTimeControls(){
  const bar=$('#ptime-bar');if(!bar||bar._wired)return;bar._wired=true;
  const toggle=$('#pt-toggle'),clock=$('#pt-clock'),toast=$('#pt-toast');
- const showToast=msg=>{if(!toast)return;toast.textContent=msg;toast.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{toast.hidden=true},3200)};
+ const showToast=msg=>{if(!toast)return;toast.textContent=msg;toast.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>{toast.hidden=true},3400)};
  if(toggle)toggle.addEventListener('click',()=>{
-  S.click();playRunning=!playRunning;toggle.textContent=playRunning?'⏸ PAUSE TIMER':'▶ RESUME TIMER';
+  S.click();playRunning=!playRunning;toggle.textContent=playRunning?'⏸ PAUSE STOPWATCH':'▶ START STOPWATCH';
   toggle.classList.toggle('is-paused',!playRunning);if(clock)clock.classList.toggle('paused',!playRunning);
-  if(!playRunning&&activePlayFile&&window.UD){UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name,{log:true});showToast('⏸ Timer paused at '+UD.formatTime(playSec))}
+  if(!playRunning&&activePlayFile&&window.UD){UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name,{log:true});showToast('⏸ Stopwatch paused at '+UD.formatTime(playSec))}
+  else if(playRunning&&window.UD){showToast('⏱️ Stopwatch tracking from '+UD.formatTime(playSec))}
  });
  bar.querySelectorAll('.pt-pill').forEach(btn=>btn.addEventListener('click',()=>{
   S.click();const d=parseInt(btn.dataset.adj,10)||0;playSec=Math.max(0,playSec+d);
   if(clock&&window.UD)clock.textContent=UD.formatTime(playSec);
   if(activePlayFile&&window.UD)UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name);
-  showToast((d>0?'+':'')+d+'s → '+(window.UD?UD.formatTime(playSec):playSec));
+  const lbl=Math.abs(d)>=60?(d/60)+'m':d+'s';
+  showToast((d>0?'+':'')+lbl+' → '+(window.UD?UD.formatTime(playSec):playSec));
  }));
  const setBtn=$('#pt-set');
  if(setBtn)setBtn.addEventListener('click',()=>{
   S.click();const curStr=window.UD?UD.formatTime(playSec):'00:00:00';
-  const ans=prompt('Set exact video playback time (e.g. 1:24:35 or 45:10):',curStr);
-  if(ans&&window.UD){const s=UD.parseTime(ans);playSec=s;if(clock)clock.textContent=UD.formatTime(playSec);if(activePlayFile)UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name);showToast('⏱️ Set to '+UD.formatTime(playSec))}
+  const ans=prompt('Enter the timestamp shown on your Drive player (e.g. 1:24:35 or 45:10):',curStr);
+  if(ans&&window.UD){const s=UD.parseTime(ans);playSec=s;if(clock)clock.textContent=UD.formatTime(playSec);if(activePlayFile)UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name,{log:true});showToast('⏱️ Logged timestamp '+UD.formatTime(playSec)+' saved!')}
  });
  if(clock)clock.addEventListener('click',()=>{if(setBtn)setBtn.click()});
  const copyBtn=$('#pt-copy');
  if(copyBtn)copyBtn.addEventListener('click',()=>{
   S.click();const str=window.UD?UD.formatTime(playSec):'00:00:00';
   try{navigator.clipboard.writeText(str)}catch(_){}
-  showToast('📋 Copied '+str+'! Fast forward / seek to '+str+' in player');
+  showToast('📋 Copied '+str+'! Seek or fast-forward to '+str+' in Drive');
  });
  const markBtn=$('#pt-mark');
  if(markBtn)markBtn.addEventListener('click',()=>{
   S.click();const str=window.UD?UD.formatTime(playSec):'00:00:00';
   if(activePlayFile&&window.UD)UD.setPlayback(activePlayFile.id,playSec,activePlayFile.name,{log:true});
-  showToast('📌 Saved bookmark at '+str+' to watch history!');
+  showToast('📌 Logged timestamp '+str+' to Watch History!');
  });
  const resetBtn=$('#pt-reset');
  if(resetBtn)resetBtn.addEventListener('click',()=>{
-  S.click();playSec=0;if(clock)clock.textContent='00:00:00';if(activePlayFile&&window.UD)UD.setPlayback(activePlayFile.id,0,activePlayFile.name);showToast('↺ Timer reset to 00:00:00');
+  S.click();playSec=0;playRunning=false;if(clock){clock.textContent='00:00:00';clock.classList.add('paused')}
+  if(toggle){toggle.textContent='▶ START STOPWATCH';toggle.classList.add('is-paused')}
+  if(activePlayFile&&window.UD)UD.setPlayback(activePlayFile.id,0,activePlayFile.name);showToast('↺ Timestamp reset to 00:00:00');
  });
  const rBanner=$('#presume-banner'),prCopy=$('#pr-copy'),prResume=$('#pr-resume'),prRestart=$('#pr-restart'),prClose=$('#pr-close');
  if(prCopy)prCopy.addEventListener('click',()=>{
-  S.click();const str=window.UD?UD.formatTime(playSec):'00:00:00';try{navigator.clipboard.writeText(str)}catch(_){}showToast('📋 Copied '+str+'! Scrub Drive progress bar to '+str);
+  S.click();const str=window.UD?UD.formatTime(playSec):'00:00:00';try{navigator.clipboard.writeText(str)}catch(_){}showToast('📋 Copied '+str+'! Seek Drive progress bar to '+str);
  });
  if(prResume)prResume.addEventListener('click',()=>{
-  S.click();if(rBanner)rBanner.hidden=true;playRunning=true;const str=window.UD?UD.formatTime(playSec):'00:00:00';try{navigator.clipboard.writeText(str)}catch(_){}showToast('▶ Resumed from '+str+' (copied to clipboard)');
+  S.click();if(rBanner)rBanner.hidden=true;if(setBtn)setBtn.click();
  });
  if(prRestart)prRestart.addEventListener('click',()=>{
   S.click();if(rBanner)rBanner.hidden=true;playSec=0;if(clock)clock.textContent='00:00:00';if(activePlayFile&&window.UD)UD.setPlayback(activePlayFile.id,0,activePlayFile.name);
@@ -522,7 +548,7 @@ async function details(f,push=true){S.open();S.ambience(false);
  const T=m.title||p.raw,meta1=[film.year,F&&F.runtime?F.runtime+' min':'',F&&F.tv?'TV series':''].filter(Boolean).join(' · ');
  const PS=posters[f.id]||posters[id],PU=F&&F.fx&&F.poster&&(!PS||(meta.map&&(meta.map[f.id]||meta.map[id])))?F.poster:PS&&PS.url;
  const fn=(f.name||'').toLowerCase();let fp=fn,curF=f,gc=0;while(curF&&curF.parent&&gc++<15){curF=items.get(curF.parent);if(curF&&curF.name)fp+=' '+curF.name.toLowerCase()}
- const isPurr=fp.includes('purassic'),isJura=fp.includes('jurassic');
+ const isPurr=/purr|purassic/i.test(fp),isJura=!isPurr&&fp.includes('jurassic');
  if(isPurr){S.fx(['assets/sfx/cat-meow.m4a','assets/sfx/cat-meow.wav'])}
  else if(isJura){S.fx(['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a'])}
  const pbRec=window.UD&&(UD.getPlayback(f.id)||UD.getPlayback(id));
@@ -568,13 +594,13 @@ function play(f){
  $('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;
  wirePlayerTimeControls();
  const pbRec=window.UD&&(UD.getPlayback(f.id)||UD.getPlayback(id));
- const resumeBanner=$('#presume-banner'),prTime=$('#pr-time'),ptClock=$('#pt-clock'),ptToggle=$('#pt-toggle');
+ const resumeBanner=$('#presume-banner'),prTime=$('#pr-time'),prTime2=$('#pr-time2'),ptClock=$('#pt-clock'),ptToggle=$('#pt-toggle');
  if(window.__resumeSec!=null){playSec=window.__resumeSec;window.__resumeSec=null;if(resumeBanner)resumeBanner.hidden=true}
- else if(pbRec&&pbRec.sec>10){playSec=pbRec.sec;if(resumeBanner&&prTime){prTime.textContent=pbRec.formatted;resumeBanner.hidden=false}}
+ else if(pbRec&&pbRec.sec>10){playSec=pbRec.sec;if(resumeBanner&&prTime){prTime.textContent=pbRec.formatted;if(prTime2)prTime2.textContent=pbRec.formatted;resumeBanner.hidden=false}}
  else{playSec=0;if(resumeBanner)resumeBanner.hidden=true}
- playRunning=true;
- if(ptClock){ptClock.textContent=window.UD?UD.formatTime(playSec):'00:00:00';ptClock.classList.remove('paused')}
- if(ptToggle){ptToggle.textContent='⏸ PAUSE TIMER';ptToggle.classList.remove('is-paused')}
+ playRunning=false;
+ if(ptClock){ptClock.textContent=window.UD?UD.formatTime(playSec):'00:00:00';ptClock.classList.add('paused')}
+ if(ptToggle){ptToggle.textContent='▶ START STOPWATCH';ptToggle.classList.add('is-paused')}
  clearInterval(playTimerInterval);let ticks=0;
  playTimerInterval=setInterval(()=>{
   if(!$('#player').hidden&&playRunning){
@@ -727,7 +753,7 @@ document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.close
 /* TV: search input becomes a 'Search' button that opens an on-screen search overlay */
 (function(){const b=document.createElement('button');b.id='tvq';b.type='button';b.className='mi tv-only';b.textContent='⌕ Search';$('#bar').insertBefore(b,$('#q'));b.onclick=()=>{S.click();openSpot('')}})();
 /* ---------- Spotlight search: one box, instant local results + automatic Smart picks (AI) ---------- */
-const OPT_SVG=`<div class="op-ph" aria-hidden="true"><div class="op-scene"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><div class="op-screen"><div class="op-stars"></div><div class="op-ship s1"></div><div class="op-ship s2"></div><div class="op-laser"></div><div class="op-term"><b>&gt; SEARCH:</b><i class="op-cur"></i></div></div><div class="op-popcorn"><span class="op-pc">🍿</span></div><div class="op-screen-glow"></div><div class="op-type-hands"></div></div><span class="op-fig"><img class="op-full" src="assets/optimus-full.webp" alt="" decoding="async"><i class="op-glow"></i></span><b class="op-cue"></b></div>`;
+const OPT_SVG=`<div class="op-ph" aria-hidden="true"><div class="op-scene"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><div class="op-screen"><div class="op-stars"></div><div class="op-ship s1"></div><div class="op-ship s2"></div><div class="op-laser"></div><div class="op-term"><b>&gt; SEARCH:</b><i class="op-cur"></i></div></div><div class="op-kernel"><div class="op-corn-puff"></div></div><div class="op-screen-glow"></div><div class="op-type-hands"></div></div><b class="op-cue"></b></div>`;
 let spEl=null,spSeq=0,spT=null,spAiT=null,spMoodT=null,spIdx=null,spIdxN=-1,spSel=-1,spLastFocus=null;
 const spOpen=()=>!!(spEl&&spEl.classList.contains('on'));
 const spNorm=t=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -789,23 +815,50 @@ function spMk(){spEl=document.createElement('div');spEl.id='spot';spEl.setAttrib
   const q=inp.value;
   const o=spEl.querySelector('.sp-opt');
   const nq=q.trim().toLowerCase();
+  const EE=window.FEFCEasterEggs||{};
   if(nq){
-   if(/^(starship|spacex|ift|boca chica|super heavy|mechazilla)/i.test(nq)){
+   if(/^(starship|spacex|ift|boca chica|super heavy)/i.test(nq)){
     spMood('yay');
     spSay('🚀 Starship Flight Test initiated! Catching Super Heavy with Mechazilla chopsticks!');
     triggerStarshipEasterEgg();
-   }else if(/^(tesla|cybertruck|plaid)/i.test(nq)){
+   }else if(/^(mechazilla|chopsticks)/i.test(nq)){
+    spMood('yay');
+    spSay('🦾 Mechazilla Chopsticks Catch initiated!');
+    if(EE.triggerMechazilla)EE.triggerMechazilla();
+   }else if(/^(plaid|ludicrous)/i.test(nq)){
     spMood('yay');
     spSay('⚡ Plaid Mode engaged! Accelerating from 0 to 60 in 1.99s. Autonomously indexing fan edits!');
-   }else if(/^(boring|not a flamethrower|tunnel)/i.test(nq)){
+    if(EE.triggerPlaidMode)EE.triggerPlaidMode();
+   }else if(/^(cybertruck|armor glass|franz)/i.test(nq)){
     spMood('yay');
-    spSay('🔥 Not a Flamethrower detected! Boring tunnels beneath the movie vault to bypass traffic!');
-   }else if(/^(grok|xai)/i.test(nq)){
+    spSay('🔨 Cybertruck Armor Glass Test! Franz: It didn\'t go through!');
+    if(EE.triggerCybertruckTest)EE.triggerCybertruckTest();
+   }else if(/^(fsd|autopilot|full self driving)/i.test(nq)){
+    spMood('yay');
+    spSay('🚗 Tesla FSD Autopilot engaged! Autonomous vault cruise active.');
+    if(EE.toggleFSDMode)EE.toggleFSDMode();
+   }else if(/^(boring|not a flamethrower|flamethrower)/i.test(nq)){
+    spMood('yay');
+    spSay('🔥 Not a Flamethrower active! Click anywhere to blast flames!');
+    if(EE.toggleFlamethrower)EE.toggleFlamethrower();
+   }else if(/^(tunnel|hyperloop)/i.test(nq)){
+    spMood('yay');
+    spSay('🚇 Boring Company Hyperloop tunnel engaged! 150 MPH underground.');
+    if(EE.toggleTunnelMode)EE.toggleTunnelMode();
+   }else if(/^(grok|xai|unhinged)/i.test(nq)){
     spMood('think');
     spSay('🤖 Grok mode enabled! Cosmic curiosity level: Maximum. Answer: 42.');
+    if(window.FEFCGrok&&!FEFCGrok.isGrok)FEFCGrok.toggle();
+   }else if(/^(42|dont panic|don't panic)/i.test(nq)){
+    spMood('think');
+    spSay('🪐 DON\'T PANIC. The Answer is 42.');
+    if(EE.trigger42Terminal)EE.trigger42Terminal();
+   }else if(/^(horn|fart|whoopee)/i.test(nq)){
+    spSay('💨 Tesla Boombox deployed!');
+    if(EE.triggerTeslaHorn)EE.triggerTeslaHorn();
    }else{
     spMood('think');
-    spSay('Optimus is searching for “'+q+'”…');
+    spSay(window.FEFCGrok&&FEFCGrok.isGrok?`🤖 Grok: Searching “${q}”... Let's see what edits survive the cosmic filter.`:'Optimus is searching for “'+q+'”…');
    }
   }else{
    o.className='sp-opt m-idle';

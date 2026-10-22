@@ -86,4 +86,60 @@ const S={
   g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(out?.12:.16,t+(out?.08:.38));g.gain.linearRampToValueAtTime(0,t+.6);n.connect(f);f.connect(g);g.connect(master);n.start(t);n.stop(t+.7);
   tone(out?48:62,t,.5,'sine',.22,out?36:55);
   if(!out)[659.3,987.8,1318.5].forEach((fq,i)=>{const s0=t+.4+i*.02,c=ctx.createOscillator(),m=ctx.createOscillator(),mg=ctx.createGain(),v=ctx.createGain();c.frequency.value=fq;m.frequency.value=fq*1.41;mg.gain.setValueAtTime(fq*2,s0);mg.gain.exponentialRampToValueAtTime(fq*.05,s0+.8);m.connect(mg);mg.connect(c.frequency);v.gain.setValueAtTime(0,s0);v.gain.linearRampToValueAtTime(.045,s0+.005);v.gain.exponentialRampToValueAtTime(.0001,s0+1.4);c.connect(v);v.connect(master);c.start(s0);m.start(s0);c.stop(s0+1.5);m.stop(s0+1.5)})},
+  chopstick(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   const b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.55),ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+   const ns=ctx.createBufferSource();ns.buffer=b;const flt=ctx.createBiquadFilter(),ng=ctx.createGain();
+   flt.type='bandpass';flt.frequency.value=1600;flt.Q.value=1.5;
+   ng.gain.setValueAtTime(.18,t);ng.gain.exponentialRampToValueAtTime(.001,t+.5);
+   ns.connect(flt);flt.connect(ng);ng.connect(master);ns.start(t);ns.stop(t+.55);
+   tone(160,t+.12,.2,'triangle',.25,40);tone(320,t+.12,.14,'square',.1,80);tone(920,t+.14,.25,'sine',.08,350);
+  },
+  hotStage(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   tone(130,t,.65,'sine',.4,26);
+   const b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.45),ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+   const ns=ctx.createBufferSource();ns.buffer=b;const flt=ctx.createBiquadFilter(),ng=ctx.createGain();
+   flt.type='lowpass';flt.frequency.value=420;flt.Q.value=2;
+   ng.gain.setValueAtTime(.28,t);ng.gain.exponentialRampToValueAtTime(.001,t+.45);
+   ns.connect(flt);flt.connect(ng);ng.connect(master);ns.start(t);ns.stop(t+.48);
+  },
+  horn(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   tone(440,t,.35,'sawtooth',.16);tone(554,t,.35,'sawtooth',.14);tone(659,t,.35,'sawtooth',.12);
+  },
+  fart(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   const o=ctx.createOscillator(),v=ctx.createGain(),f=ctx.createBiquadFilter();
+   o.type='sawtooth';f.type='lowpass';f.frequency.value=380;
+   o.frequency.setValueAtTime(90,t);o.frequency.linearRampToValueAtTime(40,t+.45);
+   const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=26;lg.gain.value=20;lfo.connect(o.frequency);
+   v.gain.setValueAtTime(.35,t);v.gain.exponentialRampToValueAtTime(.001,t+.45);
+   o.connect(f);f.connect(v);v.connect(master);lfo.start(t);o.start(t);lfo.stop(t+.48);o.stop(t+.48);
+  },
+  glassCrack(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   tone(2600,t,.12,'triangle',.18,1100);tone(3400,t,.08,'sine',.15,2000);tone(160,t,.15,'square',.24,50);
+  },
+  warp(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   tone(110,t,.9,'sawtooth',.14,1900);tone(220,t,.9,'sine',.18,2500);
+  },
+  flame(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   const b=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*.45),ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+   const ns=ctx.createBufferSource();ns.buffer=b;const flt=ctx.createBiquadFilter(),ng=ctx.createGain();
+   flt.type='bandpass';flt.frequency.setValueAtTime(280,t);flt.frequency.linearRampToValueAtTime(950,t+.15);flt.frequency.linearRampToValueAtTime(240,t+.45);flt.Q.value=1.5;
+   ng.gain.setValueAtTime(0,t);ng.gain.linearRampToValueAtTime(.24,t+.05);ng.gain.exponentialRampToValueAtTime(.001,t+.45);
+   ns.connect(flt);flt.connect(ng);ng.connect(master);ns.start(t);ns.stop(t+.46);
+  },
+  apChime(engaged){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   if(engaged){tone(587.33,t,.13,'sine',.18);tone(880,t+.11,.2,'sine',.2)}
+   else{tone(880,t,.13,'sine',.2);tone(587.33,t+.11,.22,'sine',.16)}
+  },
+  retro42(){
+   if(muted)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;
+   [261.6,329.6,392.0,523.3,659.3,1046.5].forEach((fq,i)=>{tone(fq,t+i*.07,.16,'square',.08)});
+  },
 };return S})();

@@ -105,7 +105,7 @@
   function onIn() {
     var h = location.hash, r = pending;
     pending = null;
-    if (/readfirst/.test(h)) return;
+    if (/readfirst/.test(h) || !stack.__from || stack.__from === "#/" || stack.__from === "#") return;
     depth++;
     if (r) {
       stack[h] = r;

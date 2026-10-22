@@ -233,8 +233,9 @@ body.intro-done:not(.at-home) #tagline{visibility:hidden}
 #intro.gated .gate{display:grid}#intro.gated .ihint{display:none}
 #intro .gate span{font:600 clamp(16px,2.6vh,30px) 'Source Sans 3',sans-serif;color:#ffb347;letter-spacing:.08em;padding:.6em 1.4em;border:1px solid #ff8a1a88;border-radius:4px;animation:gp 1.6s ease-in-out infinite}
 @keyframes gp{50%{opacity:.45}}
-#intro .ihint{position:absolute;right:3vw;bottom:4vh;font:600 clamp(13px,1.8vh,22px) 'Source Sans 3',sans-serif;color:#fff9;padding:.35em .9em;border:1px solid #fff4;border-radius:3px;background:#0006;z-index:2}
-body.cintro #tagline{animation:none!important;opacity:0;visibility:hidden}
+#intro .ihint{position:absolute;right:3vw;bottom:4vh;font:700 clamp(16px,2.4vh,28px) 'Source Sans 3',sans-serif;color:#fff;padding:.45em 1.25em;border:1.5px solid rgba(255,255,255,.5);border-radius:6px;background:rgba(0,0,0,.65);box-shadow:0 4px 20px rgba(0,0,0,.6);letter-spacing:.05em;z-index:10;cursor:pointer;transition:transform .15s,background .15s,border-color .15s;user-select:none}
+#intro .ihint:hover,#intro .ihint:focus{background:rgba(255,140,0,.25);border-color:#ffb347;color:#ffb347;transform:scale(1.05)}
+#intro .isnd{position:absolute;right:calc(3vw + 8.5em);bottom:4vh;font:600 clamp(13px,1.9vh,22px) 'Source Sans 3',sans-serif;color:#fffb;padding:.45em 1em;border:1px solid #fff4;border-radius:6px;background:#0006;z-index:10;cursor:pointer}
 .ol-tile .art:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000e 0,#0008 35%,#0000 65%)}
 .ol-tile .nm{text-shadow:0 1px 3px #000,0 0 10px #000}
 /* ---------- OnLive-style 3D tilt of the dashboard plane (hub + edge mosaic share it) ---------- */
@@ -702,33 +703,22 @@ body.tv .priv-box h2{font-size:4vh}body.tv .priv-box p{font-size:2.2vh}body.tv .
 .ol-tile.fecc .fecc-c{color:#ffa31a;font-size:clamp(11px,.95vw,18px);font-weight:600}
 body.tv .ol-tile.fecc .fecc-t{font-size:3.4vh}body.tv .ol-tile.fecc .fecc-c{font-size:1.7vh}
 .ol-tile.fecc:hover,.ol-tile.fecc:focus{outline:0;border-color:#ffb02e;box-shadow:inset 0 0 0 1px #000,inset 0 0 26px #ff9c0033,0 0 0 2px #ff9c00,0 0 24px #ff9c00cc}
-/* Optimus photo avatar (real Tesla Optimus photos; poses = subtle motion) */
-.sp-opt .op-ph{position:relative;width:100%;height:100%}
+/* Optimus photo avatar: sitting at desk in front of iMac monitor holding individual popcorn */
+.sp-opt .op-ph{position:relative;width:100%;height:100%;overflow:hidden;border-radius:10px}
 .op-ph img{position:absolute;display:block;pointer-events:none}
-.op-watch{inset:0;width:100%;height:100%;object-fit:cover;object-position:30% 30%;border-radius:10px;transition:opacity .35s ease}
-.op-fig{position:absolute;left:50%;top:4%;height:150%;aspect-ratio:272/698;transform:translateX(-50%);transform-origin:50% 85%;opacity:0;transition:opacity .35s ease,transform .45s ease}
-.op-full{inset:0;width:100%;height:100%;filter:drop-shadow(0 2px 4px #000a)}
-.sp-opt .op-ph{overflow:hidden;border-radius:10px}
-.op-glow{position:absolute;left:30%;top:0;width:40%;height:9%;border-radius:50%;background:radial-gradient(#fff 0,#bfe9ff88 40%,transparent 70%);mix-blend-mode:screen;opacity:0}
+.op-watch{inset:0;width:100%;height:100%;object-fit:cover;object-position:center;border-radius:10px;display:block;transition:transform .3s ease}
 .op-cue{position:absolute;right:2px;top:0;font-size:18px;line-height:1;opacity:0;transition:opacity .3s;filter:drop-shadow(0 1px 2px #000)}
-.sp-opt:not(.m-idle) .op-watch{opacity:0}.sp-opt:not(.m-idle) .op-fig{opacity:1}
-.m-idle .op-watch{animation:opw 6s ease-in-out infinite}@keyframes opw{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-.m-wave .op-fig{animation:opwave 1.1s ease-in-out infinite}.m-wave .op-cue{opacity:1}.m-wave .op-cue::after{content:'👋'}
-@keyframes opwave{0%,100%{transform:translateX(-50%) rotate(-4deg)}50%{transform:translateX(-50%) rotate(4deg)}}
-.m-think .op-fig{animation:opbob 1.6s ease-in-out infinite}.m-think .op-glow{animation:opglow 1.2s ease-in-out infinite}.m-think .op-cue{opacity:1}.m-think .op-cue::after{content:'💭'}
-@keyframes opbob{0%,100%{transform:translateX(-50%) translateY(0) rotate(-2deg)}50%{transform:translateX(-50%) translateY(-3%) rotate(2deg)}}
-@keyframes opglow{0%,100%{opacity:.15}50%{opacity:.9}}
-.m-yay .op-fig{animation:opyay .6s ease-out 2}.m-yay .op-glow{opacity:.7}.m-yay .op-cue{opacity:1}.m-yay .op-cue::after{content:'👍'}
-@keyframes opyay{0%,100%{transform:translateX(-50%) scale(1)}40%{transform:translateX(-50%) translateY(-6%) scale(1.06)}}
-.m-shrug .op-fig{animation:opshrug 1.4s ease-in-out infinite}.m-shrug .op-cue{opacity:1}.m-shrug .op-cue::after{content:'🤷'}
-@keyframes opshrug{0%,100%{transform:translateX(-50%) rotate(0)}50%{transform:translateX(-50%) translateY(2%) rotate(-6deg)}}
+.m-wave .op-cue{opacity:1}.m-wave .op-cue::after{content:'👋'}
+.m-think .op-cue{opacity:1}.m-think .op-cue::after{content:'💭'}
+.m-yay .op-cue{opacity:1}.m-yay .op-cue::after{content:'👍'}
+.m-shrug .op-cue{opacity:1}.m-shrug .op-cue::after{content:'🤷'}
 body.tv .op-cue{font-size:3vh}
 @media (prefers-reduced-motion:reduce){.op-ph *{animation:none!important}}
 .ol-tile.fecc>img,.ol-tile.fecc .art{display:none!important}
 
 /* ---------- OPTIMUS DESK SCENE & ANIMATION ---------- */
 .op-scene{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;border-radius:10px}
-.op-screen{position:absolute;right:11%;top:35%;width:33%;height:27%;background:#03070d;border-radius:3px;overflow:hidden;box-shadow:0 0 10px rgba(47,168,255,0.6);border:1px solid #1c3b5c;z-index:2}
+.op-screen{position:absolute;left:72.3%;top:22.2%;width:26.7%;height:37.8%;background:#03070d;border-radius:2px;overflow:hidden;box-shadow:0 0 10px rgba(47,168,255,0.7);border:1px solid #1c3b5c;z-index:2}
 .op-stars{position:absolute;inset:0;background:radial-gradient(1px 1px at 20% 30%,#fff,transparent),radial-gradient(1.5px 1.5px at 70% 60%,#99ccff,transparent),radial-gradient(1px 1px at 40% 80%,#fff,transparent),radial-gradient(1.5px 1.5px at 85% 20%,#ffcc66,transparent),radial-gradient(1px 1px at 15% 75%,#fff,transparent);animation:opStarfield 2s linear infinite}
 @keyframes opStarfield{0%{transform:scale(1);opacity:.7}50%{transform:scale(1.1) translate(-2px,1px);opacity:1}100%{transform:scale(1);opacity:.7}}
 .op-ship{position:absolute;width:6px;height:4px;border-radius:1px}
@@ -738,21 +728,29 @@ body.tv .op-cue{font-size:3vh}
 @keyframes opShip2{0%{transform:translate(0,0) rotate(-10deg)}100%{transform:translate(-10px,8px) rotate(20deg)}}
 .op-laser{position:absolute;left:28%;top:46%;width:14px;height:1px;background:#33ff88;box-shadow:0 0 4px #33ff88;opacity:0;animation:opLaser 1.4s steps(1) infinite}
 @keyframes opLaser{0%,80%{opacity:0}85%{opacity:1;transform:translate(0,0)}90%{opacity:1;transform:translate(10px,4px)}95%,100%{opacity:0}}
-.op-screen-glow{position:absolute;right:9%;top:33%;width:37%;height:31%;border-radius:50%;background:radial-gradient(circle,rgba(47,168,255,0.4) 0%,transparent 70%);mix-blend-mode:screen;pointer-events:none;animation:opGlowFlicker 1.8s ease-in-out infinite alternate}
+.op-screen-glow{position:absolute;left:69%;top:18%;width:33%;height:46%;border-radius:50%;background:radial-gradient(circle,rgba(47,168,255,0.45) 0%,transparent 70%);mix-blend-mode:screen;pointer-events:none;animation:opGlowFlicker 1.8s ease-in-out infinite alternate}
 @keyframes opGlowFlicker{0%{opacity:.4;transform:scale(.95)}100%{opacity:.85;transform:scale(1.05)}}
-.op-popcorn{position:absolute;left:22%;bottom:10%;font-size:15px;z-index:3;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));animation:opEatLoop 3.2s cubic-bezier(0.4,0,0.2,1) infinite}
-@keyframes opEatLoop{0%,15%{transform:translateY(0) rotate(0deg)}35%{transform:translateY(-16px) translateX(6px) rotate(-12deg) scale(1.2)}50%{transform:translateY(-18px) translateX(8px) rotate(-6deg) scale(1.25)}65%{transform:translateY(-8px) translateX(3px) scale(1.1)}80%,100%{transform:translateY(0) rotate(0deg)}}
+.op-kernel{position:absolute;left:50.5%;top:37%;width:13px;height:12px;z-index:3;pointer-events:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.85));animation:opEatKernel 5.4s cubic-bezier(0.4,0,0.2,1) infinite}
+.op-corn-puff{width:100%;height:100%;background:radial-gradient(circle at 35% 30%,#fffde7 0%,#ffe082 40%,#ffb300 75%,#e65100 100%);border-radius:45% 55% 50% 50%/55% 45% 55% 45%;box-shadow:inset 1px 1px 2px rgba(255,255,255,0.8),0 1px 3px rgba(0,0,0,0.7)}
+@keyframes opEatKernel{
+ 0%,18%{transform:translate(0,0) scale(1);opacity:1}
+ 30%{transform:translate(-10px,-24px) scale(0.95);opacity:1}
+ 36%{transform:translate(-14px,-28px) scale(0.2);opacity:0}
+ 44%{transform:translate(4px,50px) scale(0.1);opacity:0}
+ 52%,60%{transform:translate(10px,140px) scale(0.1);opacity:0}
+ 70%{transform:translate(6px,60px) scale(0.7);opacity:1}
+ 82%,100%{transform:translate(0,0) scale(1);opacity:1}
+}
 .op-term{position:absolute;inset:0;background:#050c14;color:#33ff88;font-family:'Courier New',monospace;font-size:7px;padding:2px 3px;display:flex;align-items:center;gap:2px;opacity:0;pointer-events:none;z-index:4;overflow:hidden;white-space:nowrap}
 .op-cur{display:inline-block;width:4px;height:7px;background:#33ff88;animation:opBlink 0.6s steps(1) infinite}
 @keyframes opBlink{0%,50%{opacity:1}51%,100%{opacity:0}}
-.op-type-hands{position:absolute;right:11%;top:60%;width:28%;height:14%;background:linear-gradient(90deg,#8fa3b7 0%,#cfdbe6 50%,#8fa3b7 100%);border-radius:4px;opacity:0;z-index:5;box-shadow:0 2px 6px rgba(0,0,0,0.8);pointer-events:none}
+.op-type-hands{position:absolute;left:71%;top:66%;width:27%;height:12%;background:linear-gradient(90deg,#8fa3b7 0%,#cfdbe6 50%,#8fa3b7 100%);border-radius:4px;opacity:0;z-index:5;box-shadow:0 2px 6px rgba(0,0,0,0.8);pointer-events:none}
 .sp-opt.typing .op-watch{opacity:1!important}
-.sp-opt.typing .op-fig{opacity:0!important}
 .sp-opt.typing .op-stars,.sp-opt.typing .op-ship,.sp-opt.typing .op-laser{opacity:0!important;animation-play-state:paused!important}
-.sp-opt.typing .op-popcorn{opacity:0!important;transform:translateY(16px)!important;transition:all .2s}
+.sp-opt.typing .op-kernel{opacity:0!important;transform:translateY(50px)!important;transition:all .2s}
 .sp-opt.typing .op-term{opacity:1!important}
-.sp-opt.typing .op-type-hands{opacity:.95!important;animation:opTypingClatter .12s ease-in-out infinite alternate}
-@keyframes opTypingClatter{0%{transform:translateY(0) rotate(-3deg)}100%{transform:translateY(-4px) rotate(3deg)}}
+.sp-opt.typing .op-type-hands{opacity:.95!important;animation:opTypingClatter .1s ease-in-out infinite alternate}
+@keyframes opTypingClatter{0%{transform:translateY(0) rotate(-3deg)}100%{transform:translateY(-3px) rotate(3deg)}}
 
 /* ---------- PLAYBACK TIME LOG & RESUME CONTROLS ---------- */
 .ptime-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:6px 14px;background:linear-gradient(180deg,#18202c 0%,#0d1219 100%);border-bottom:2px solid var(--o);font-family:Antonio,Jura,sans-serif;z-index:10;box-sizing:border-box}
@@ -822,4 +820,101 @@ body.tv .op-cue{font-size:3vh}
 @keyframes ssRaptorPulse{0%{transform:scaleY(0.92) scaleX(0.95)}100%{transform:scaleY(1.12) scaleX(1.05)}}
 @keyframes ssPlume{0%{opacity:.8;transform:scaleX(0.9)}100%{opacity:1;transform:scaleX(1.15)}}
 @keyframes ssTextFade{0%,20%{opacity:0;transform:translateY(20px)}35%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-20px)}}
+
+/* Home -> Main Collection Smooth Camera Plunge */
+#home{transition:opacity .32s cubic-bezier(0.2,0,0.2,1),transform .32s cubic-bezier(0.2,0,0.2,1);will-change:opacity,transform}
+#home.leaving{opacity:0;transform:scale(1.12);pointer-events:none}
+#main.entering{animation:mainSmoothIn .32s cubic-bezier(0.16,1,0.3,1) forwards}
+@keyframes mainSmoothIn{from{opacity:0;transform:scale(0.975)}to{opacity:1;transform:scale(1)}}
+
+/* =========================================================================
+   EASTER EGGS CSS SUITE
+   ========================================================================= */
+
+/* Futuristic Notification Toast */
+#ee-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(30px);background:rgba(10,18,30,0.96);border:1.5px solid #38bdf8;box-shadow:0 0 25px rgba(56,189,248,0.5),0 8px 32px rgba(0,0,0,0.8);color:#fff;font-family:Antonio,system-ui,sans-serif;font-size:15px;letter-spacing:.06em;padding:9px 24px;border-radius:30px;z-index:999999;opacity:0;pointer-events:none;transition:all .28s cubic-bezier(0.16,1,0.3,1)}
+#ee-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 1. Mechazilla Chopsticks Catch */
+#mechazilla-overlay{position:fixed;inset:0;pointer-events:none;z-index:99998;opacity:0;display:flex;align-items:center;justify-content:center;transition:opacity .2s}
+#mechazilla-overlay.active{opacity:1}
+.ch-arm{position:absolute;top:0;bottom:0;width:38%;background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);border:3px solid #475569;box-shadow:0 0 40px rgba(0,0,0,0.9);display:flex;flex-direction:column;justify-content:center;transition:transform .45s cubic-bezier(0.1,0.9,0.2,1)}
+.ch-arm.left{left:0;border-right:6px solid #eab308;transform:translateX(-100%)}
+.ch-arm.right{right:0;border-left:6px solid #eab308;transform:translateX(100%)}
+#mechazilla-overlay.active .ch-arm.left{transform:translateX(-5%)}
+#mechazilla-overlay.active .ch-arm.right{transform:translateX(5%)}
+.ch-hydraulic{height:40px;margin:20px;background:linear-gradient(90deg,#64748b,#cbd5e1 50%,#475569);border-radius:4px;box-shadow:inset 0 2px 4px #000}
+.ch-pin{width:24px;height:24px;background:#eab308;border-radius:50%;margin:10px auto;box-shadow:0 0 12px #eab308}
+.ch-stripe{height:20px;background:repeating-linear-gradient(45deg,#000,#000 12px,#eab308 12px,#eab308 24px)}
+.ch-hud{position:absolute;bottom:15%;background:rgba(15,23,42,0.95);border:2px solid #eab308;box-shadow:0 0 30px rgba(234,179,8,0.6);padding:14px 28px;border-radius:12px;text-align:center;color:#fff;font-family:Antonio,system-ui,sans-serif;letter-spacing:.12em;animation:chHudPulse 1s infinite alternate}
+.ch-hud b{display:block;font-size:22px;color:#eab308;margin-bottom:4px}
+.ch-hud small{font-size:12px;color:#94a3b8}
+@keyframes chHudPulse{0%{box-shadow:0 0 20px rgba(234,179,8,0.4)}100%{box-shadow:0 0 35px rgba(234,179,8,0.85)}}
+
+/* 2. SpaceX Orbital Telemetry HUD */
+#spacex-hud{position:fixed;top:60px;right:20px;width:320px;background:rgba(5,12,24,0.92);border:1.5px solid #0284c7;border-radius:10px;box-shadow:0 0 25px rgba(2,132,199,0.4);color:#e2e8f0;font-family:'Courier New',monospace;z-index:99990;padding:12px 14px;pointer-events:none;opacity:0;transform:translateY(-15px);transition:all .3s ease}
+#spacex-hud.visible{opacity:1;transform:translateY(0);pointer-events:auto}
+.hud-top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1e3a5f;padding-bottom:6px;margin-bottom:8px}
+.hud-tag{font-size:10px;letter-spacing:.12em;color:#38bdf8;font-weight:700}
+.hud-clock{font-size:15px;color:#38bdf8;font-weight:700}
+.hud-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.hud-cell small{display:block;font-size:9px;color:#64748b;letter-spacing:.08em}
+.hud-cell b{font-size:14px;color:#fff;display:block}
+.hud-cell.span2{grid-column:span 2}
+.hud-sub{font-size:10px;color:#94a3b8}
+.hud-gyro{display:flex;gap:10px;font-size:11px;color:#38bdf8;margin-top:2px}
+.hud-foot{margin-top:8px;padding-top:6px;border-top:1px solid #1e3a5f;font-size:10px;color:#64748b;text-align:right}
+
+/* 3. Hot Staging Separation */
+#hotstage-blast{position:fixed;inset:0;pointer-events:none;z-index:99998;opacity:0;display:flex;align-items:center;justify-content:center}
+#hotstage-blast.fire{opacity:1}
+.hs-ring{position:absolute;width:120px;height:120px;border-radius:50%;border:8px solid #ff7700;box-shadow:0 0 60px #ff3300,inset 0 0 40px #ffaa00;animation:hsBlastRing .55s ease-out forwards}
+.hs-core{position:absolute;width:40px;height:40px;background:#fff;border-radius:50%;box-shadow:0 0 80px 40px #ff4400;animation:hsBlastCore .55s ease-out forwards}
+.hs-txt{position:relative;margin-top:160px;background:rgba(0,0,0,0.9);border:2px solid #ff5500;padding:10px 24px;border-radius:8px;color:#ffaa00;font-family:Antonio,sans-serif;font-size:20px;font-weight:700;letter-spacing:.15em;text-align:center;box-shadow:0 0 30px #ff3300}
+@keyframes hsBlastRing{0%{transform:scale(0.3);opacity:1}100%{transform:scale(8);opacity:0}}
+@keyframes hsBlastCore{0%{transform:scale(0.5);opacity:1}100%{transform:scale(6);opacity:0}}
+
+/* 4. Tesla Plaid Speed Warp */
+body.plaid-warp{overflow:hidden}
+body.plaid-warp::before{content:'';position:fixed;inset:0;background:radial-gradient(circle at 50% 50%,transparent 0%,rgba(10,5,30,0.8) 100%),repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(255,50,150,0.3) 40px,rgba(50,200,255,0.3) 42px);z-index:99995;pointer-events:none;animation:plaidSpeedLines .15s linear infinite}
+@keyframes plaidSpeedLines{0%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.05) rotate(0.5deg)}100%{transform:scale(1) rotate(0deg)}}
+
+/* 5. Cybertruck Armor Glass Test */
+#cybertruck-test{position:fixed;inset:0;pointer-events:none;z-index:99999;display:none;align-items:center;justify-content:center}
+#cybertruck-test.active{display:flex}
+.ct-ball{position:absolute;width:55px;height:55px;border-radius:50%;background:radial-gradient(circle at 30% 30%,#e2e8f0 0%,#64748b 60%,#1e293b 100%);box-shadow:0 0 30px rgba(0,0,0,0.9);animation:ctBallThrow .35s ease-in forwards}
+.ct-crack{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;animation:ctCrackAppear .1s .35s forwards}
+.crack-svg{width:340px;height:340px;filter:drop-shadow(0 0 10px rgba(255,255,255,0.8))}
+.ct-quote{margin-top:20px;background:rgba(0,0,0,0.92);border:2px solid #fff;color:#fff;font-family:Antonio,sans-serif;font-size:19px;font-weight:700;letter-spacing:.08em;padding:8px 20px;border-radius:8px;box-shadow:0 0 25px rgba(255,255,255,0.4)}
+@keyframes ctBallThrow{0%{transform:translate(-60vw,40vh) scale(0.3);opacity:0}80%{opacity:1}100%{transform:translate(0,0) scale(1);opacity:0}}
+@keyframes ctCrackAppear{0%{opacity:0;transform:scale(0.8)}100%{opacity:1;transform:scale(1)}}
+
+/* 6. Tesla FSD Autopilot */
+#fsd-pill{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-60px);background:linear-gradient(180deg,#1e293b 0%,#0f172a 100%);border:1.5px solid #38bdf8;box-shadow:0 0 25px rgba(56,189,248,0.5);color:#38bdf8;font-family:Antonio,system-ui,sans-serif;font-size:14px;font-weight:700;letter-spacing:.1em;padding:6px 18px;border-radius:24px;z-index:99997;display:flex;align-items:center;gap:8px;transition:all .3s cubic-bezier(0.16,1,0.3,1);pointer-events:none}
+#fsd-pill.active{transform:translateX(-50%) translateY(0)}
+.fsd-wheel{width:18px;height:18px;animation:fsdWheelSpin 3s ease-in-out infinite alternate}
+@keyframes fsdWheelSpin{0%{transform:rotate(-15deg)}100%{transform:rotate(15deg)}}
+.fsd-box{position:absolute;inset:-4px;border:2.5px solid #38bdf8;border-radius:6px;box-shadow:0 0 20px #0284c7,inset 0 0 15px rgba(56,189,248,0.3);pointer-events:none;z-index:10;animation:fsdBoxLock .3s ease-out}
+.fsd-box span{position:absolute;top:-18px;left:0;background:#0284c7;color:#fff;font-family:monospace;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px}
+@keyframes fsdBoxLock{0%{transform:scale(1.15);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* 7. Hitchhiker's Guide 42 Terminal */
+#terminal-42{position:fixed;inset:0;background:rgba(3,8,15,0.96);z-index:999999;display:none;align-items:center;justify-content:center;cursor:pointer}
+#terminal-42.active{display:flex}
+.hitch-box{border:3px solid #33ff88;box-shadow:0 0 40px rgba(51,255,136,0.5),inset 0 0 30px rgba(51,255,136,0.15);background:#02070a;padding:36px 44px;border-radius:14px;max-width:540px;text-align:center;color:#33ff88;font-family:'Courier New',monospace}
+.hitch-head{font-size:12px;letter-spacing:.2em;margin-bottom:12px;color:#88ffa8}
+.hitch-box h1{font-size:44px;margin:0 0 12px;letter-spacing:.15em;text-shadow:0 0 15px #33ff88}
+.hitch-box p{font-size:15px;line-height:1.5;margin-bottom:18px;color:#cfecd7}
+.hitch-42{font-size:96px;font-weight:900;letter-spacing:.1em;text-shadow:0 0 30px #33ff88;margin-bottom:16px;animation:hitchGlow 1.2s infinite alternate}
+.hitch-box small{display:block;font-size:12px;color:#6fa57d;font-style:italic}
+@keyframes hitchGlow{0%{text-shadow:0 0 15px #33ff88}100%{text-shadow:0 0 45px #33ff88,0 0 80px #33ff88}}
+
+/* 8. Boring Company Not A Flamethrower */
+#flame-canvas{position:fixed;inset:0;pointer-events:none;z-index:999998;display:none}
+body.flamethrower-active,body.flamethrower-active *{cursor:crosshair!important}
+
+/* 9. Boring Company Hyperloop Tunnel */
+body.tunnel-mode{background:#000!important}
+body.tunnel-mode #app::after{content:'';position:fixed;inset:0;border:40px solid transparent;border-image:radial-gradient(circle,#00f0ff 0%,transparent 60%) 1;box-shadow:inset 0 0 100px #00e5ff;pointer-events:none;z-index:99990;animation:tunnelPulse 1.2s infinite alternate}
+@keyframes tunnelPulse{0%{box-shadow:inset 0 0 50px #0088ff}100%{box-shadow:inset 0 0 120px #00f0ff}}
 

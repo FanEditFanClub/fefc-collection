@@ -1,5 +1,7 @@
 {
  "_doc": "Manual source-title overrides. Key: regex matched against the file name (case-insensitive) or an exact Drive file id. Value: Wikidata QID or IMDb id (tt...). Applied by tools/editinfo.py.",
  "^Serenity\\b(?!.*2019)": "tt0379786",
- "James Bond - Goldeneye - N64": "wiki:GoldenEye 007 (1997 video game)"
+ "James Bond - Goldeneye - N64": "wiki:GoldenEye 007 (1997 video game)",
+ "1DW_XDhRFV059jGPRsDfToV1NuLVnj1rA": "Q56290639",
+ "1XvNl1DwfX4sRL0jqW9V-u8W_7LxxGeW2": "Q56290639"
 }

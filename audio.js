@@ -318,6 +318,149 @@ window.SFX = (() => {
         c.stop(s0 + 1.5);
         m.stop(s0 + 1.5);
       });
+    },
+    chopstick() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      const b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.55), ctx.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const ns = ctx.createBufferSource();
+      ns.buffer = b;
+      const flt = ctx.createBiquadFilter(), ng = ctx.createGain();
+      flt.type = "bandpass";
+      flt.frequency.value = 1600;
+      flt.Q.value = 1.5;
+      ng.gain.setValueAtTime(0.18, t);
+      ng.gain.exponentialRampToValueAtTime(1e-3, t + 0.5);
+      ns.connect(flt);
+      flt.connect(ng);
+      ng.connect(master);
+      ns.start(t);
+      ns.stop(t + 0.55);
+      tone(160, t + 0.12, 0.2, "triangle", 0.25, 40);
+      tone(320, t + 0.12, 0.14, "square", 0.1, 80);
+      tone(920, t + 0.14, 0.25, "sine", 0.08, 350);
+    },
+    hotStage() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      tone(130, t, 0.65, "sine", 0.4, 26);
+      const b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.45), ctx.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const ns = ctx.createBufferSource();
+      ns.buffer = b;
+      const flt = ctx.createBiquadFilter(), ng = ctx.createGain();
+      flt.type = "lowpass";
+      flt.frequency.value = 420;
+      flt.Q.value = 2;
+      ng.gain.setValueAtTime(0.28, t);
+      ng.gain.exponentialRampToValueAtTime(1e-3, t + 0.45);
+      ns.connect(flt);
+      flt.connect(ng);
+      ng.connect(master);
+      ns.start(t);
+      ns.stop(t + 0.48);
+    },
+    horn() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      tone(440, t, 0.35, "sawtooth", 0.16);
+      tone(554, t, 0.35, "sawtooth", 0.14);
+      tone(659, t, 0.35, "sawtooth", 0.12);
+    },
+    fart() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      const o = ctx.createOscillator(), v = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = "sawtooth";
+      f.type = "lowpass";
+      f.frequency.value = 380;
+      o.frequency.setValueAtTime(90, t);
+      o.frequency.linearRampToValueAtTime(40, t + 0.45);
+      const lfo = ctx.createOscillator(), lg = ctx.createGain();
+      lfo.frequency.value = 26;
+      lg.gain.value = 20;
+      lfo.connect(o.frequency);
+      v.gain.setValueAtTime(0.35, t);
+      v.gain.exponentialRampToValueAtTime(1e-3, t + 0.45);
+      o.connect(f);
+      f.connect(v);
+      v.connect(master);
+      lfo.start(t);
+      o.start(t);
+      lfo.stop(t + 0.48);
+      o.stop(t + 0.48);
+    },
+    glassCrack() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      tone(2600, t, 0.12, "triangle", 0.18, 1100);
+      tone(3400, t, 0.08, "sine", 0.15, 2e3);
+      tone(160, t, 0.15, "square", 0.24, 50);
+    },
+    warp() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      tone(110, t, 0.9, "sawtooth", 0.14, 1900);
+      tone(220, t, 0.9, "sine", 0.18, 2500);
+    },
+    flame() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      const b = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.45), ctx.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      const ns = ctx.createBufferSource();
+      ns.buffer = b;
+      const flt = ctx.createBiquadFilter(), ng = ctx.createGain();
+      flt.type = "bandpass";
+      flt.frequency.setValueAtTime(280, t);
+      flt.frequency.linearRampToValueAtTime(950, t + 0.15);
+      flt.frequency.linearRampToValueAtTime(240, t + 0.45);
+      flt.Q.value = 1.5;
+      ng.gain.setValueAtTime(0, t);
+      ng.gain.linearRampToValueAtTime(0.24, t + 0.05);
+      ng.gain.exponentialRampToValueAtTime(1e-3, t + 0.45);
+      ns.connect(flt);
+      flt.connect(ng);
+      ng.connect(master);
+      ns.start(t);
+      ns.stop(t + 0.46);
+    },
+    apChime(engaged) {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      if (engaged) {
+        tone(587.33, t, 0.13, "sine", 0.18);
+        tone(880, t + 0.11, 0.2, "sine", 0.2);
+      } else {
+        tone(880, t, 0.13, "sine", 0.2);
+        tone(587.33, t + 0.11, 0.22, "sine", 0.16);
+      }
+    },
+    retro42() {
+      if (muted) return;
+      init();
+      if (ctx && ctx.state === "suspended") ctx.resume();
+      const t = ctx.currentTime;
+      [261.6, 329.6, 392, 523.3, 659.3, 1046.5].forEach((fq, i) => {
+        tone(fq, t + i * 0.07, 0.16, "square", 0.08);
+      });
     }
   };
   return S;

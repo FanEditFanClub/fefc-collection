@@ -24,7 +24,9 @@ function create(opt){
  const hues=[];for(let i=0;i<64;i++)hues.push(`hsl(${(rnd()*360)|0},${(20+rnd()*30)|0}%,${(18+rnd()*28)|0}%)`);
  const tile=(i,x,y,w,h)=>{const im=imgs.length?imgs[((i%imgs.length)+imgs.length)%imgs.length]:null;if(im&&im.ok)c.drawImage(im,x,y,w,h);else{c.fillStyle=hues[((i%64)+64)%64];c.fillRect(x,y,w,h)}};
  const hash=(a,b)=>{let h=a*374761393+b*668265263;h=(h^(h>>13))*1274126177;return (h^(h>>16))&0x7fffffff};
- function sky(a){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#000');g.addColorStop(1,'#141a24');c.fillStyle=g;c.fillRect(0,0,W,H);c.fillStyle='#fff';for(const s of stars){c.globalAlpha=a*(.25+.75*s[2]);const r=s[2]>.9?1.6:.9;c.fillRect(s[0]*W,s[1]*H,r,r)}c.globalAlpha=1}
+ function sky(a){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#000');g.addColorStop(1,'#141a24');c.fillStyle=g;c.fillRect(0,0,W,H);c.fillStyle='#fff';for(const s of stars){c.globalAlpha=a*(.25+.75*s[2]);const r=s[2]>.9?1.6:.9;c.fillRect(s[0]*W,s[1]*H,r,r)}
+  if(curS>12&&curS<22){const p=(curS-12)/10,startX=W*(-0.2+p*1.4),startY=H*(0.08+p*0.12);c.fillStyle='#88ccff';for(let i=0;i<12;i++){const sx=startX-i*(W*0.014),sy=startY-i*(H*0.005);if(sx>0&&sx<W&&sy>0&&sy<H){c.globalAlpha=a*0.75;c.fillRect(sx,sy,1.8,1.8)}}}
+  c.globalAlpha=1}
  function drawLogo(s,a,sc,rot,dx,dy,tinted){if(!logo.complete)return;const L=H*.46*sc;c.save();c.globalAlpha=a;c.translate(W/2+dx,H/2+dy);c.rotate(rot);if(!tv){c.shadowColor='rgba(255,255,255,.35)';c.shadowBlur=30*sc}c.drawImage(logo,-L/2,-L/2,L,L);c.restore()}
  function ribbon(s){ // 0-5: blurred glowing orange ribbons sweeping right->left, then zooming back into the mark
   const p=s/2,z=s<2?1:lerp(1,.18,eo((s-2)/1.6)),fade=sm(0,.5,s)*(1-sm(2.5,3.3,s));if(fade<=0)return;

@@ -2,7 +2,7 @@
  "name": "fefc-collection",
  "private": true,
  "scripts": {
-  "build": "esbuild src/newarrivals.js src/readfirst.js src/app.js src/details-extra.js src/audio.js src/intro.js src/clips.js src/zoom.js src/genres.js src/userdata.js src/sync.js src/syncui.js --outdir=. --target=es2017,chrome56,safari11 && node -e \"const fs=require('fs'),v=Date.now().toString(36);fs.writeFileSync('sw.js',fs.readFileSync('tools/sw.template.js','utf8').replace('__VERSION__',v));let h=fs.readFileSync('index.html','utf8').replace(/\\?v=[0-9a-z]+/g,'?v='+v);fs.writeFileSync('index.html',h)\""
+  "build": "esbuild src/newarrivals.js src/readfirst.js src/app.js src/details-extra.js src/audio.js src/eastereggs.js src/intro.js src/clips.js src/zoom.js src/genres.js src/userdata.js src/sync.js src/syncui.js --outdir=. --target=es2017,chrome56,safari11 && node -e \"const fs=require('fs'),v=Date.now().toString(36);fs.writeFileSync('sw.js',fs.readFileSync('tools/sw.template.js','utf8').replace('__VERSION__',v));let h=fs.readFileSync('index.html','utf8').replace(/\\?v=[0-9a-z]+/g,'?v='+v);fs.writeFileSync('index.html',h)\""
  },
  "devDependencies": {
   "esbuild": "^0.24.2",

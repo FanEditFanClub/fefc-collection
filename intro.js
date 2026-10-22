@@ -103,6 +103,17 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
         const r = s[2] > 0.9 ? 1.6 : 0.9;
         c.fillRect(s[0] * W, s[1] * H, r, r);
       }
+      if (curS > 12 && curS < 22) {
+        const p = (curS - 12) / 10, startX = W * (-0.2 + p * 1.4), startY = H * (0.08 + p * 0.12);
+        c.fillStyle = "#88ccff";
+        for (let i = 0; i < 12; i++) {
+          const sx = startX - i * (W * 0.014), sy = startY - i * (H * 5e-3);
+          if (sx > 0 && sx < W && sy > 0 && sy < H) {
+            c.globalAlpha = a * 0.75;
+            c.fillRect(sx, sy, 1.8, 1.8);
+          }
+        }
+      }
       c.globalAlpha = 1;
     }
     function drawLogo(s, a, sc, rot, dx, dy, tinted) {

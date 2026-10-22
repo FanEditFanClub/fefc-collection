@@ -828,14 +828,19 @@ var __spreadValues = (a, b) => {
       if (!$("#home").hidden) mosaic();
     }, 250);
   });
+  let homeHideTimer = null;
   function showHome(gm) {
+    clearTimeout(homeHideTimer);
+    const home = $("#home"), main = $("#main"), bar = $("#bar");
+    home.classList.remove("leaving");
+    main.classList.remove("entering");
     document.body.classList.toggle("genres-mode", !!gm);
     view = gm ? "genres" : "home";
     cur = ROOT;
-    $("#home").hidden = false;
+    home.hidden = false;
     document.body.classList.add("at-home");
-    $("#main").hidden = true;
-    $("#bar").hidden = true;
+    main.hidden = true;
+    bar.hidden = true;
     hub();
     const lay = () => {
       const r = $("#hub").getBoundingClientRect(), k = Math.round(r.left) + "x" + Math.round(r.top) + "x" + Math.round(r.width);
@@ -856,10 +861,24 @@ var __spreadValues = (a, b) => {
     }, 30);
   }
   function hideHome() {
+    clearTimeout(homeHideTimer);
     document.body.classList.remove("at-home");
-    $("#home").hidden = true;
-    $("#main").hidden = false;
-    $("#bar").hidden = false;
+    const home = $("#home"), main = $("#main"), bar = $("#bar");
+    if (!home.hidden) {
+      home.classList.add("leaving");
+      main.hidden = false;
+      main.classList.add("entering");
+      bar.hidden = false;
+      homeHideTimer = setTimeout(() => {
+        home.hidden = true;
+        home.classList.remove("leaving");
+        main.classList.remove("entering");
+      }, 320);
+    } else {
+      home.hidden = true;
+      main.hidden = false;
+      bar.hidden = false;
+    }
   }
   function virtual(list, title) {
     hideHome();
@@ -1241,7 +1260,7 @@ var __spreadValues = (a, b) => {
           if (c && c.name) fullPath += " " + c.name.toLowerCase();
         }
       }
-      if (fullPath.includes("purassic")) {
+      if (/purr|purassic/i.test(fullPath)) {
         L = ["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"];
       } else if (fullPath.includes("jurassic")) {
         L = ["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"];
@@ -1712,20 +1731,27 @@ var __spreadValues = (a, b) => {
       status("Nothing to shuffle yet");
       return;
     }
-    try {
-      sessionStorage.fefcShufScope = scope;
-    } catch (e) {
-    }
-    if (!window.__shufPrevHash && location.hash && !/^#\/play\//.test(location.hash)) {
-      window.__shufPrevHash = location.hash;
-    }
-    window.__shufPlay = 1;
-    const targetHash = "#/play/" + encodeURIComponent(f.id);
-    if (parseH()[0] === "play") {
-      history.replaceState({ fefc: 1 }, "", targetHash);
-      route();
+    const doWarp = () => {
+      try {
+        sessionStorage.fefcShufScope = scope;
+      } catch (e) {
+      }
+      if (!window.__shufPrevHash && location.hash && !/^#\/play\//.test(location.hash)) {
+        window.__shufPrevHash = location.hash;
+      }
+      window.__shufPlay = 1;
+      const targetHash = "#/play/" + encodeURIComponent(f.id);
+      if (parseH()[0] === "play") {
+        history.replaceState({ fefc: 1 }, "", targetHash);
+        route();
+      } else {
+        go(targetHash);
+      }
+    };
+    if (window.FEFCHotStage) {
+      window.FEFCHotStage(doWarp);
     } else {
-      go(targetHash);
+      doWarp();
     }
   }
   const shufBtn = (scope) => '<button class="sortpill shuf-btn" data-shuffle="'.concat(esc(scope), '" title="Play a random fan edit">').concat(SHUF_ICON, "Shuffle Play</button>");
@@ -2106,7 +2132,7 @@ var __spreadValues = (a, b) => {
   let playTimerInterval = null, playSec = 0, playRunning = false, activePlayFile = null;
   function stopPlayerTimer() {
     clearInterval(playTimerInterval);
-    if (activePlayFile && playSec > 10 && window.UD) {
+    if (activePlayFile && playRunning && playSec > 10 && window.UD) {
       UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
     }
     playRunning = false;
@@ -2123,17 +2149,19 @@ var __spreadValues = (a, b) => {
       clearTimeout(toast._t);
       toast._t = setTimeout(() => {
         toast.hidden = true;
-      }, 3200);
+      }, 3400);
     };
     if (toggle) toggle.addEventListener("click", () => {
       S.click();
       playRunning = !playRunning;
-      toggle.textContent = playRunning ? "\u23F8 PAUSE TIMER" : "\u25B6 RESUME TIMER";
+      toggle.textContent = playRunning ? "\u23F8 PAUSE STOPWATCH" : "\u25B6 START STOPWATCH";
       toggle.classList.toggle("is-paused", !playRunning);
       if (clock) clock.classList.toggle("paused", !playRunning);
       if (!playRunning && activePlayFile && window.UD) {
         UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
-        showToast("\u23F8 Timer paused at " + UD.formatTime(playSec));
+        showToast("\u23F8 Stopwatch paused at " + UD.formatTime(playSec));
+      } else if (playRunning && window.UD) {
+        showToast("\u23F1\uFE0F Stopwatch tracking from " + UD.formatTime(playSec));
       }
     });
     bar.querySelectorAll(".pt-pill").forEach((btn) => btn.addEventListener("click", () => {
@@ -2142,19 +2170,20 @@ var __spreadValues = (a, b) => {
       playSec = Math.max(0, playSec + d);
       if (clock && window.UD) clock.textContent = UD.formatTime(playSec);
       if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name);
-      showToast((d > 0 ? "+" : "") + d + "s \u2192 " + (window.UD ? UD.formatTime(playSec) : playSec));
+      const lbl = Math.abs(d) >= 60 ? d / 60 + "m" : d + "s";
+      showToast((d > 0 ? "+" : "") + lbl + " \u2192 " + (window.UD ? UD.formatTime(playSec) : playSec));
     }));
     const setBtn = $("#pt-set");
     if (setBtn) setBtn.addEventListener("click", () => {
       S.click();
       const curStr = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      const ans = prompt("Set exact video playback time (e.g. 1:24:35 or 45:10):", curStr);
+      const ans = prompt("Enter the timestamp shown on your Drive player (e.g. 1:24:35 or 45:10):", curStr);
       if (ans && window.UD) {
         const s = UD.parseTime(ans);
         playSec = s;
         if (clock) clock.textContent = UD.formatTime(playSec);
-        if (activePlayFile) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name);
-        showToast("\u23F1\uFE0F Set to " + UD.formatTime(playSec));
+        if (activePlayFile) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
+        showToast("\u23F1\uFE0F Logged timestamp " + UD.formatTime(playSec) + " saved!");
       }
     });
     if (clock) clock.addEventListener("click", () => {
@@ -2168,22 +2197,30 @@ var __spreadValues = (a, b) => {
         navigator.clipboard.writeText(str);
       } catch (_) {
       }
-      showToast("\u{1F4CB} Copied " + str + "! Fast forward / seek to " + str + " in player");
+      showToast("\u{1F4CB} Copied " + str + "! Seek or fast-forward to " + str + " in Drive");
     });
     const markBtn = $("#pt-mark");
     if (markBtn) markBtn.addEventListener("click", () => {
       S.click();
       const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
       if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, playSec, activePlayFile.name, { log: true });
-      showToast("\u{1F4CC} Saved bookmark at " + str + " to watch history!");
+      showToast("\u{1F4CC} Logged timestamp " + str + " to Watch History!");
     });
     const resetBtn = $("#pt-reset");
     if (resetBtn) resetBtn.addEventListener("click", () => {
       S.click();
       playSec = 0;
-      if (clock) clock.textContent = "00:00:00";
+      playRunning = false;
+      if (clock) {
+        clock.textContent = "00:00:00";
+        clock.classList.add("paused");
+      }
+      if (toggle) {
+        toggle.textContent = "\u25B6 START STOPWATCH";
+        toggle.classList.add("is-paused");
+      }
       if (activePlayFile && window.UD) UD.setPlayback(activePlayFile.id, 0, activePlayFile.name);
-      showToast("\u21BA Timer reset to 00:00:00");
+      showToast("\u21BA Timestamp reset to 00:00:00");
     });
     const rBanner = $("#presume-banner"), prCopy = $("#pr-copy"), prResume = $("#pr-resume"), prRestart = $("#pr-restart"), prClose = $("#pr-close");
     if (prCopy) prCopy.addEventListener("click", () => {
@@ -2193,18 +2230,12 @@ var __spreadValues = (a, b) => {
         navigator.clipboard.writeText(str);
       } catch (_) {
       }
-      showToast("\u{1F4CB} Copied " + str + "! Scrub Drive progress bar to " + str);
+      showToast("\u{1F4CB} Copied " + str + "! Seek Drive progress bar to " + str);
     });
     if (prResume) prResume.addEventListener("click", () => {
       S.click();
       if (rBanner) rBanner.hidden = true;
-      playRunning = true;
-      const str = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      try {
-        navigator.clipboard.writeText(str);
-      } catch (_) {
-      }
-      showToast("\u25B6 Resumed from " + str + " (copied to clipboard)");
+      if (setBtn) setBtn.click();
     });
     if (prRestart) prRestart.addEventListener("click", () => {
       S.click();
@@ -2254,7 +2285,7 @@ var __spreadValues = (a, b) => {
       curF = items.get(curF.parent);
       if (curF && curF.name) fp += " " + curF.name.toLowerCase();
     }
-    const isPurr = fp.includes("purassic"), isJura = fp.includes("jurassic");
+    const isPurr = /purr|purassic/i.test(fp), isJura = !isPurr && fp.includes("jurassic");
     if (isPurr) {
       S.fx(["assets/sfx/cat-meow.m4a", "assets/sfx/cat-meow.wav"]);
     } else if (isJura) {
@@ -2360,7 +2391,7 @@ var __spreadValues = (a, b) => {
     $("#player").hidden = false;
     wirePlayerTimeControls();
     const pbRec = window.UD && (UD.getPlayback(f.id) || UD.getPlayback(id));
-    const resumeBanner = $("#presume-banner"), prTime = $("#pr-time"), ptClock = $("#pt-clock"), ptToggle = $("#pt-toggle");
+    const resumeBanner = $("#presume-banner"), prTime = $("#pr-time"), prTime2 = $("#pr-time2"), ptClock = $("#pt-clock"), ptToggle = $("#pt-toggle");
     if (window.__resumeSec != null) {
       playSec = window.__resumeSec;
       window.__resumeSec = null;
@@ -2369,20 +2400,21 @@ var __spreadValues = (a, b) => {
       playSec = pbRec.sec;
       if (resumeBanner && prTime) {
         prTime.textContent = pbRec.formatted;
+        if (prTime2) prTime2.textContent = pbRec.formatted;
         resumeBanner.hidden = false;
       }
     } else {
       playSec = 0;
       if (resumeBanner) resumeBanner.hidden = true;
     }
-    playRunning = true;
+    playRunning = false;
     if (ptClock) {
       ptClock.textContent = window.UD ? UD.formatTime(playSec) : "00:00:00";
-      ptClock.classList.remove("paused");
+      ptClock.classList.add("paused");
     }
     if (ptToggle) {
-      ptToggle.textContent = "\u23F8 PAUSE TIMER";
-      ptToggle.classList.remove("is-paused");
+      ptToggle.textContent = "\u25B6 START STOPWATCH";
+      ptToggle.classList.add("is-paused");
     }
     clearInterval(playTimerInterval);
     let ticks = 0;
@@ -2761,7 +2793,7 @@ var __spreadValues = (a, b) => {
       openSpot("");
     };
   })();
-  const OPT_SVG = '<div class="op-ph" aria-hidden="true"><div class="op-scene"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><div class="op-screen"><div class="op-stars"></div><div class="op-ship s1"></div><div class="op-ship s2"></div><div class="op-laser"></div><div class="op-term"><b>&gt; SEARCH:</b><i class="op-cur"></i></div></div><div class="op-popcorn"><span class="op-pc">\u{1F37F}</span></div><div class="op-screen-glow"></div><div class="op-type-hands"></div></div><span class="op-fig"><img class="op-full" src="assets/optimus-full.webp" alt="" decoding="async"><i class="op-glow"></i></span><b class="op-cue"></b></div>';
+  const OPT_SVG = '<div class="op-ph" aria-hidden="true"><div class="op-scene"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><div class="op-screen"><div class="op-stars"></div><div class="op-ship s1"></div><div class="op-ship s2"></div><div class="op-laser"></div><div class="op-term"><b>&gt; SEARCH:</b><i class="op-cur"></i></div></div><div class="op-kernel"><div class="op-corn-puff"></div></div><div class="op-screen-glow"></div><div class="op-type-hands"></div></div><b class="op-cue"></b></div>';
   let spEl = null, spSeq = 0, spT = null, spAiT = null, spMoodT = null, spIdx = null, spIdxN = -1, spSel = -1, spLastFocus = null;
   const spOpen = () => !!(spEl && spEl.classList.contains("on"));
   const spNorm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -2900,23 +2932,50 @@ var __spreadValues = (a, b) => {
       const q = inp.value;
       const o = spEl.querySelector(".sp-opt");
       const nq = q.trim().toLowerCase();
+      const EE = window.FEFCEasterEggs || {};
       if (nq) {
-        if (/^(starship|spacex|ift|boca chica|super heavy|mechazilla)/i.test(nq)) {
+        if (/^(starship|spacex|ift|boca chica|super heavy)/i.test(nq)) {
           spMood("yay");
           spSay("\u{1F680} Starship Flight Test initiated! Catching Super Heavy with Mechazilla chopsticks!");
           triggerStarshipEasterEgg();
-        } else if (/^(tesla|cybertruck|plaid)/i.test(nq)) {
+        } else if (/^(mechazilla|chopsticks)/i.test(nq)) {
+          spMood("yay");
+          spSay("\u{1F9BE} Mechazilla Chopsticks Catch initiated!");
+          if (EE.triggerMechazilla) EE.triggerMechazilla();
+        } else if (/^(plaid|ludicrous)/i.test(nq)) {
           spMood("yay");
           spSay("\u26A1 Plaid Mode engaged! Accelerating from 0 to 60 in 1.99s. Autonomously indexing fan edits!");
-        } else if (/^(boring|not a flamethrower|tunnel)/i.test(nq)) {
+          if (EE.triggerPlaidMode) EE.triggerPlaidMode();
+        } else if (/^(cybertruck|armor glass|franz)/i.test(nq)) {
           spMood("yay");
-          spSay("\u{1F525} Not a Flamethrower detected! Boring tunnels beneath the movie vault to bypass traffic!");
-        } else if (/^(grok|xai)/i.test(nq)) {
+          spSay("\u{1F528} Cybertruck Armor Glass Test! Franz: It didn't go through!");
+          if (EE.triggerCybertruckTest) EE.triggerCybertruckTest();
+        } else if (/^(fsd|autopilot|full self driving)/i.test(nq)) {
+          spMood("yay");
+          spSay("\u{1F697} Tesla FSD Autopilot engaged! Autonomous vault cruise active.");
+          if (EE.toggleFSDMode) EE.toggleFSDMode();
+        } else if (/^(boring|not a flamethrower|flamethrower)/i.test(nq)) {
+          spMood("yay");
+          spSay("\u{1F525} Not a Flamethrower active! Click anywhere to blast flames!");
+          if (EE.toggleFlamethrower) EE.toggleFlamethrower();
+        } else if (/^(tunnel|hyperloop)/i.test(nq)) {
+          spMood("yay");
+          spSay("\u{1F687} Boring Company Hyperloop tunnel engaged! 150 MPH underground.");
+          if (EE.toggleTunnelMode) EE.toggleTunnelMode();
+        } else if (/^(grok|xai|unhinged)/i.test(nq)) {
           spMood("think");
           spSay("\u{1F916} Grok mode enabled! Cosmic curiosity level: Maximum. Answer: 42.");
+          if (window.FEFCGrok && !FEFCGrok.isGrok) FEFCGrok.toggle();
+        } else if (/^(42|dont panic|don't panic)/i.test(nq)) {
+          spMood("think");
+          spSay("\u{1FA90} DON'T PANIC. The Answer is 42.");
+          if (EE.trigger42Terminal) EE.trigger42Terminal();
+        } else if (/^(horn|fart|whoopee)/i.test(nq)) {
+          spSay("\u{1F4A8} Tesla Boombox deployed!");
+          if (EE.triggerTeslaHorn) EE.triggerTeslaHorn();
         } else {
           spMood("think");
-          spSay("Optimus is searching for \u201C" + q + "\u201D\u2026");
+          spSay(window.FEFCGrok && FEFCGrok.isGrok ? "\u{1F916} Grok: Searching \u201C".concat(q, "\u201D... Let's see what edits survive the cosmic filter.") : "Optimus is searching for \u201C" + q + "\u201D\u2026");
         }
       } else {
         o.className = "sp-opt m-idle";
