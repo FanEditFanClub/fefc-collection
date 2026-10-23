@@ -175,6 +175,22 @@ window.SFX = (() => {
     },
     /* one-shot sound effects (Carson-supplied files), decoded once and cached; ducks the ambient bed while playing */
     _fx: {},
+    stopFx() {
+      if (S._fxSrc) {
+        try {
+          S._fxSrc.stop();
+        } catch (_) {
+        }
+        S._fxSrc = null;
+      }
+      if (S._fxAud) {
+        try {
+          S._fxAud.pause();
+        } catch (_) {
+        }
+        S._fxAud = null;
+      }
+    },
     loadFx(list) {
       init();
       const k = list.join("|");
@@ -197,10 +213,13 @@ window.SFX = (() => {
       if (muted || !list || !list.length) return;
       init();
       if (ctx && ctx.state === "suspended") ctx.resume();
+      S.stopFx();
       S.loadFx(list).then((b) => {
         if (!b) {
           try {
+            S.stopFx();
             const a = new Audio(list[0]);
+            S._fxAud = a;
             a.volume = muted ? 0 : 0.8;
             a.play().catch(() => {
             });
@@ -209,6 +228,7 @@ window.SFX = (() => {
           return;
         }
         if (muted) return;
+        S.stopFx();
         const src = ctx.createBufferSource(), g = ctx.createGain();
         g.gain.value = 1;
         src.buffer = b;
@@ -222,10 +242,16 @@ window.SFX = (() => {
           amb.g.gain.setValueAtTime(0.012, t + b.duration);
           amb.g.gain.linearRampToValueAtTime(0.075, t + b.duration + 2.5);
         }
+        S._fxSrc = src;
+        src.onended = () => {
+          if (S._fxSrc === src) S._fxSrc = null;
+        };
         src.start(t);
       }).catch(() => {
         try {
+          S.stopFx();
           const a = new Audio(list[0]);
+          S._fxAud = a;
           a.volume = muted ? 0 : 0.8;
           a.play().catch(() => {
           });

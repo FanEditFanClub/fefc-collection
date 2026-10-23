@@ -455,6 +455,21 @@
     "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t",
     "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC"
    ]
+  },
+  {
+   "files": [
+    "assets/sfx/dexter-tonights-the-night.mp3",
+    "assets/sfx/dexter-tonights-the-night.m4a"
+   ],
+   "path": true,
+   "source": "myinstants tonights-the-night.mp3 (Dexter: 'Tonight's the night')",
+   "match": "dexter",
+   "regex": "\\bdexter\\b(?!'?s?\\s+lab)",
+   "ids": [
+    "1xfht3f2wVYJRAvcN1fP_U5GPE5s6E2c5",
+    "1D3k5iJYvA8NNHRufgtzTFA8W3QVUcSYB",
+    "1xubVBwzg113U866eZLhrAR1o_Jv-lEbA"
+   ]
   }
  ],
  "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ": [
@@ -468,5 +483,21 @@
  ],
  "Cage": [
   "assets/sfx/cage-not-the-bees.mp3"
+ ],
+ "1xfht3f2wVYJRAvcN1fP_U5GPE5s6E2c5": [
+  "assets/sfx/dexter-tonights-the-night.mp3",
+  "assets/sfx/dexter-tonights-the-night.m4a"
+ ],
+ "1D3k5iJYvA8NNHRufgtzTFA8W3QVUcSYB": [
+  "assets/sfx/dexter-tonights-the-night.mp3",
+  "assets/sfx/dexter-tonights-the-night.m4a"
+ ],
+ "1xubVBwzg113U866eZLhrAR1o_Jv-lEbA": [
+  "assets/sfx/dexter-tonights-the-night.mp3",
+  "assets/sfx/dexter-tonights-the-night.m4a"
+ ],
+ "Dexter": [
+  "assets/sfx/dexter-tonights-the-night.mp3",
+  "assets/sfx/dexter-tonights-the-night.m4a"
  ]
 }

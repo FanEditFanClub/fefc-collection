@@ -66,12 +66,13 @@ const S={
 
  /* one-shot sound effects (Carson-supplied files), decoded once and cached; ducks the ambient bed while playing */
  _fx:{},
+ stopFx(){if(S._fxSrc){try{S._fxSrc.stop()}catch(_){}S._fxSrc=null}if(S._fxAud){try{S._fxAud.pause()}catch(_){}S._fxAud=null}},
  loadFx(list){init();const k=list.join('|');if(S._fx[k])return S._fx[k];const tryN=i=>i>=list.length?Promise.resolve(null):fetch(list[i]).then(r=>{if(!r.ok)throw 0;const ct=r.headers.get('content-type')||'';if(ct.includes('text/html')||ct.includes('text/plain'))throw 0;return r.arrayBuffer()}).then(a=>new Promise((res,rej)=>ctx.decodeAudioData(a,res,rej))).catch(()=>tryN(i+1));return S._fx[k]=tryN(0).then(b=>{if(!b)delete S._fx[k];return b},()=>{delete S._fx[k];return null})},
- fx(list){if(muted||!list||!list.length)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();S.loadFx(list).then(b=>{
-  if(!b){try{const a=new Audio(list[0]);a.volume=muted?0:0.8;a.play().catch(()=>{})}catch(_){}return}
-  if(muted)return;const src=ctx.createBufferSource(),g=ctx.createGain();g.gain.value=1;src.buffer=b;src.connect(g);g.connect(master);const t=ctx.currentTime;
+ fx(list){if(muted||!list||!list.length)return;init();if(ctx&&ctx.state==='suspended')ctx.resume();S.stopFx();S.loadFx(list).then(b=>{
+  if(!b){try{S.stopFx();const a=new Audio(list[0]);S._fxAud=a;a.volume=muted?0:0.8;a.play().catch(()=>{})}catch(_){}return}
+  if(muted)return;S.stopFx();const src=ctx.createBufferSource(),g=ctx.createGain();g.gain.value=1;src.buffer=b;src.connect(g);g.connect(master);const t=ctx.currentTime;
   if(amb){amb.g.gain.cancelScheduledValues(t);amb.g.gain.setValueAtTime(amb.g.gain.value,t);amb.g.gain.linearRampToValueAtTime(.012,t+.25);amb.g.gain.setValueAtTime(.012,t+b.duration);amb.g.gain.linearRampToValueAtTime(.075,t+b.duration+2.5)}
-  src.start(t)}).catch(()=>{try{const a=new Audio(list[0]);a.volume=muted?0:0.8;a.play().catch(()=>{})}catch(_){}})},
+  S._fxSrc=src;src.onended=()=>{if(S._fxSrc===src)S._fxSrc=null};src.start(t)}).catch(()=>{try{S.stopFx();const a=new Audio(list[0]);S._fxAud=a;a.volume=muted?0:0.8;a.play().catch(()=>{})}catch(_){}})},
  BACK:['assets/sfx/ui-back.m4a','assets/sfx/ui-back.mp3','assets/sfx/ui-back.wav'],
  back(){const n=Date.now();if(n-(S._bt||0)<350)return;S._bt=n;S.fx(S.BACK)},
  state(){init();return ctx.state},

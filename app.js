@@ -1280,6 +1280,8 @@ var __spreadValues = (a, b) => {
         L = ["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"];
       } else if (fullPath.includes("jurassic")) {
         L = ["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"];
+      } else if (/\bdexter\b(?!'?s?\s+lab)/i.test(fullPath)) {
+        L = ["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"];
       } else if (/carrey/i.test(pName) || id === "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ") {
         L = ["assets/sfx/bruce-almighty-beautiful.mp3"];
       } else if (/cage/i.test(pName) || id === "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq") {
@@ -2198,12 +2200,21 @@ var __spreadValues = (a, b) => {
       curF = items.get(curF.parent);
       if (curF && curF.name) fp += " " + curF.name.toLowerCase();
     }
-    const isPurr = /purr|purassic/i.test(fp), isJura = !isPurr && fp.includes("jurassic");
+    if (f.targetId) {
+      let tF = items.get(f.targetId), gc2 = 0;
+      while (tF && gc2++ < 15) {
+        if (tF.name) fp += " " + tF.name.toLowerCase();
+        tF = tF.parent ? items.get(tF.parent) : null;
+      }
+    }
+    const isPurr = /purr|purassic/i.test(fp), isJura = !isPurr && fp.includes("jurassic"), isDexter = /\bdexter\b(?!'?s?\s+lab)/i.test(fp);
     if (isPurr) {
       if (window.S && S.catMeow) S.catMeow();
       else S.fx(["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"]);
     } else if (isJura) {
       S.fx(["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"]);
+    } else if (isDexter) {
+      S.fx(["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"]);
     }
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));

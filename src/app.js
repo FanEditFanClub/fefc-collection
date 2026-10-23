@@ -286,6 +286,8 @@ function folderSfx(id){
    L=['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a']
   }else if(fullPath.includes('jurassic')){
    L=['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a']
+  }else if(/\bdexter\b(?!'?s?\s+lab)/i.test(fullPath)){
+   L=['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a']
   }else if(/carrey/i.test(pName)||id==='10AA5RFZKOrtyeALpY891WpIKTiqASZbZ'){
    L=['assets/sfx/bruce-almighty-beautiful.mp3']
   }else if(/cage/i.test(pName)||id==='19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq'){
@@ -499,9 +501,11 @@ async function details(f,push=true){S.open();S.ambience(false);
  const T=m.title||p.raw,meta1=[film.year,F&&F.runtime?F.runtime+' min':'',F&&F.tv?'TV series':''].filter(Boolean).join(' · ');
  const PS=posters[f.id]||posters[id],PU=F&&F.fx&&F.poster&&(!PS||(meta.map&&(meta.map[f.id]||meta.map[id])))?F.poster:PS&&PS.url;
  const fn=(f.name||'').toLowerCase();let fp=fn,curF=f,gc=0;while(curF&&curF.parent&&gc++<15){curF=items.get(curF.parent);if(curF&&curF.name)fp+=' '+curF.name.toLowerCase()}
- const isPurr=/purr|purassic/i.test(fp),isJura=!isPurr&&fp.includes('jurassic');
+ if(f.targetId){let tF=items.get(f.targetId),gc2=0;while(tF&&gc2++<15){if(tF.name)fp+=' '+tF.name.toLowerCase();tF=tF.parent?items.get(tF.parent):null}}
+ const isPurr=/purr|purassic/i.test(fp),isJura=!isPurr&&fp.includes('jurassic'),isDexter=/\bdexter\b(?!'?s?\s+lab)/i.test(fp);
  if(isPurr){if(window.S&&S.catMeow)S.catMeow();else S.fx(['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a'])}
  else if(isJura){S.fx(['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a'])}
+ else if(isDexter){S.fx(['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a'])}
  $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
  <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play">▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
  <div class="lc-body"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
