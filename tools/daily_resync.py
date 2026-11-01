@@ -88,6 +88,12 @@ def main():
     except Exception as e:
         print(f"Warning during metadata: {e}", flush=True)
 
+    # 3b. Fan-edit community ratings (MRDb crawl continues each night; IFDB reported as blocked if Cloudflare challenges it)
+    try:
+        run_cmd("python3 tools/fanedit_ratings.py --budget-sec 900")
+    except Exception as e:
+        print(f"Warning during fanedit ratings: {e}", flush=True)
+
     # 4. Artwork sync
     try:
         run_cmd("python3 tools/posters.py")

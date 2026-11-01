@@ -54,3 +54,18 @@ Worker (`_worker.js`, `feedApi`): Cloudflare Cache API + `s-maxage=600`, merges 
 ## Intro (canvas vs TV)
 - Desktop/phone: the 26 s canvas intro (`src/intro.js`). Title (wordmark) enters at 6.9 s (after the logo has built and settled), subtitle at 8.0 s (`body.cintro.tg-run` in style.css).
 - TV (`?tv=1` / TV UA): CSS-only intro (`.tvi-*` in style.css, `tvl` branch in `intro()`), no per-frame canvas: glow + rings 0–5.7 s, flash + logo 5.75 s, title 6.9 s, subtitle 8.0 s, hands off to Home at 9.6 s. `?fullintro=1` forces the canvas intro on TV.
+
+## Recent changes (Nov 1, 2026)
+- **Fire TV v1.0.6** (versionCode 7): in-app updater (below). v1.0.5 made Play on TV launch the native TV player directly (no black WebView picture; stream pre-warmed); the black-picture fix itself is web-side.
+- **Fire TV in-app updater**: on launch (after the site intro) the app fetches `/firetv/version.json` without cache; if `versionCode` is higher than installed it shows an Update / Later dialog, downloads the APK (progress bar, checksum + signature checks) and opens the system installer through `ApkProvider`. First time only, Android asks to allow "Install unknown apps" for FEFC Collection. `./gradlew assembleRelease` regenerates `firetv/version.json` and copies the signed APK to `firetv/FEFC-Collection.apk`; edit `firetv/release-notes.txt` for the dialog text. To ship an update: bump versionCode/versionName in `firetv/app/build.gradle`, build with the SAME keystore, commit and deploy `firetv/version.json` + `firetv/FEFC-Collection.apk`. Installs older than 1.0.6 have no updater and need one manual sideload. Tests: `firetv/tests/run-update-tests.sh`.
+- **TV D-pad**: model-based navigation. Up leaves for the menu only from the first row; arrow keys always `preventDefault`.
+- **TV intro**: `assets/intro-tv.mp4` (1080p60, 26 s, ~14.3 MB; bitrate limited by the ~15 MB cap) with a CSS intro fallback. `?nointro=1` skips it.
+- **TV lag**: memoised `topFolder`, cached `genreList`, indexed `collVids` (`vidsByTop`). Genre route 2.0 s -> 0.57 s at 6x CPU throttle.
+- **Folder classification**: `isFolder`/`isVid` hardened, `tools/classify.py` is repo-relative and incremental, regression test in `tests/`.
+- **Easter-egg sounds**: every folder route resolves to a clip (`sfxResolve`/`sfxFallback` in `src/app.js`, defaults `assets/sfx/default-*`). `tests/sfx-coverage.test.js` checks every rule file exists and every route resolves. Root cause of the Dexter/Carrey regression: `navBack` stayed true after Back; it is now cleared in `go()` and by a timeout.
+- **People tiles**: 16:9 face-centred crops, thumbs in `assets/people/t/`.
+- **Search overlay (mobile)**: `.sp-opt` CSS collision with the Sync panel fixed (sync rules scoped to `.sp-opts`), `visualViewport` fit, LEAN rendering, 600-result cap, 220 ms debounce.
+- **Install**: top-bar install button removed; the bottom legend "Install App" button and bottom card remain.
+- **Fan edit ratings**: `tools/fanedit_ratings.py` writes `data/fanedit-ratings.json` (run nightly from `tools/daily_resync.py`, step 3b). Sources: Movies Remastered DB (polite 1 req/s sitemap crawl, cached in `data/.fanedit-ratings-cache.json`), IFDB scores from `data/editinfo.json`, Fan Edit Changes (not configured). IFDB live pages sit behind a Cloudflare challenge; the tool detects it and skips, it never tries to bypass it. Details page shows a "Fan Edit Ratings" block.
+- **Security**: `tools/daily_resync.py` contains a hardcoded Cloudflare API token. Rotate it and move it to a secret.
+

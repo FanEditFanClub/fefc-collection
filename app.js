@@ -586,17 +586,31 @@ var __spreadValues = (a, b) => {
   const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<svg viewBox="0 0 24 24"><circle cx="15" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" fill="currentColor"/></svg>' }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub", sub: "One-time donation", logo: "<b>P</b>" }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: "<b>V</b>" }];
   let posters = {}, people = {}, mosaicList = [], mosaicTimer = null, genreMap = {}, fthumbs = {};
   const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Crime", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
+  let _tfC = /* @__PURE__ */ new Map(), _tfN = -1;
   function topFolder(f) {
+    if (_tfN !== items.size) {
+      _tfN = items.size;
+      _tfC = /* @__PURE__ */ new Map();
+    }
+    if (f && _tfC.has(f.id)) return _tfC.get(f.id);
     let x = f, guard = 0;
     while (x && x.parent && x.parent !== ROOT && guard++ < 30) x = items.get(x.parent);
-    return x && x.parent === ROOT ? x.id : null;
+    const r = x && x.parent === ROOT ? x.id : null;
+    if (f && f.id) _tfC.set(f.id, r);
+    return r;
   }
   function genresOf(f) {
     const t = topFolder(f), g = t && genreMap[t];
     return g ? g.genres : ["Uncategorized"];
   }
+  let _glC = {}, _glK = "";
   function genreList(g) {
-    return vids().filter((f) => genresOf(f).indexOf(g) >= 0);
+    const k = items.size + "|" + Object.keys(genreMap).length;
+    if (_glK !== k) {
+      _glK = k;
+      _glC = {};
+    }
+    return _glC[g] || (_glC[g] = vids().filter((f) => genresOf(f).indexOf(g) >= 0));
   }
   function genreStrip() {
     const have = {};
@@ -1385,6 +1399,11 @@ var __spreadValues = (a, b) => {
     RFX.open(p);
     setTimeout(() => focusEl($("#rfclose")), 60);
   }
+  let FER = {};
+  tmo("data/fanedit-ratings.json", 1e4).then((j) => {
+    FER = j && j.items || {};
+  }).catch(() => {
+  });
   let FSFX = {};
   tmo("data/folder-sfx.json", 1e4).then((m) => {
     FSFX = m;
@@ -1847,15 +1866,34 @@ var __spreadValues = (a, b) => {
   function genreColls(G) {
     return GC[G] || [];
   }
+  let _vbt = null, _vbk = -1;
+  function vidsByTop() {
+    if (_vbk !== items.size || !_vbt) {
+      _vbk = items.size;
+      const m = {};
+      vids().forEach((f, i) => {
+        const t = topFolder(f);
+        if (t) (m[t] || (m[t] = [])).push([i, f]);
+      });
+      _vbt = { m };
+    }
+    return _vbt;
+  }
   function collVids(c) {
     const k = c.slug + "|" + items.size;
     if (_cv[k]) return _cv[k];
     const fs = {}, seen = {};
     c.folders.forEach((x) => fs[x] = 1);
     const out = [];
-    vids().forEach((f) => {
-      const t = target(f);
-      if (!seen[t] && fs[topFolder(f)]) {
+    const by = vidsByTop(), pick = [];
+    c.folders.forEach((x) => {
+      const a = by.m[x];
+      if (a) for (const e of a) pick.push(e);
+    });
+    pick.sort((p, q) => p[0] - q[0]);
+    pick.forEach((e) => {
+      const f = e[1], t = target(f);
+      if (!seen[t]) {
         seen[t] = 1;
         out.push(f);
       }
@@ -2451,9 +2489,19 @@ var __spreadValues = (a, b) => {
     const rts = F2 && F2.rtScore != null ? F2.rtScore + "%" : rto && rto.value;
     if (rtUrl) R.push({ ico: "rt", name: "Rotten Tomatoes", val: rts || "VIEW \u203A", sub: rts ? "Tomatometer" + (F2 && F2.rtAudience != null ? " \xB7 Audience " + F2.rtAudience + "%" : "") : "", url: rtUrl });
     const ifdb = (meta.ifdb || {})[f.id] || (meta.ifdb || {})[id] || (old.find((r) => /FanEdit/.test(r.source)) || {}).url;
-    if (ifdb) R.push({ ico: "fe", name: "FanEdit.org", val: "IFDB \u203A", sub: "Fan edit database entry", url: ifdb });
-    const mr = old.find((r) => /Movies Remastered/.test(r.source) && (r.url || r.value));
-    if (mr) R.push({ ico: "mr", name: "Movies Remastered", val: mr.value || "VIEW \u203A", sub: "", url: mr.url });
+    const FE = [], fer = FER[f.id] || FER[id] || {}, fsc = (x) => x && x.score != null ? (+x.score).toFixed(1).replace(/\.0$/, "") + "/" + (x.scale || 10) : "VIEW \u203A", fsub = (x) => x && x.votes ? fmtV(x.votes) + " vote" + (x.votes === 1 ? "" : "s") : "";
+    {
+      const x = fer.ifdb || (ifdb ? { url: ifdb } : null);
+      if (x && x.url) FE.push({ ico: "fe", name: "FanEdit.org", val: fsc(x), sub: fsub(x) || "IFDB entry", url: x.url });
+    }
+    {
+      const mro = old.find((r) => /Movies Remastered/.test(r.source) && (r.url || r.value)), x = fer.mrdb || (mro ? { url: mro.url, score: null } : null);
+      if (x && x.url) FE.push({ ico: "mr", name: "Movies Remastered", val: fsc(x), sub: fsub(x) || "MRDb entry", url: x.url });
+    }
+    {
+      const x = fer.changes;
+      if (x && x.url) FE.push({ ico: "fe", name: "Fan Edit Changes", val: fsc(x), sub: fsub(x), url: x.url });
+    }
     const tr = m.trailer && m.trailer.youtubeId ? { id: m.trailer.youtubeId } : F2 && F2.trailer;
     const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source film.</p>';
     const T = m.title || p.raw, meta1 = [film.year, F2 && F2.runtime ? F2.runtime + " min" : "", F2 && F2.tv ? "TV series" : ""].filter(Boolean).join(" \xB7 ");
@@ -2483,7 +2531,7 @@ var __spreadValues = (a, b) => {
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, "</div>").concat(FE.length ? '<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">'.concat(FE.map((r) => '<a href="'.concat(esc(r.url), '" target="_blank" rel="noopener" class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join(""), "</div>") : "", '\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     $("#details").hidden = false;
     $("#details").dataset.id = f.id;
     detBackdrop(f, PU);

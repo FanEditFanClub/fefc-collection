@@ -1028,3 +1028,5 @@ body.fit #details #lc-eps{max-height:14vh;overflow:hidden}
 }
 @media (max-height:480px) and (pointer:coarse){#spot .sp-opt{display:none}#spot .sp-say{display:none}}
 body.sp-lock{overscroll-behavior:none}
+
+.fer-h{margin:10px 0 4px;font:700 12px/1 'Source Sans 3',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ff9e3d}body.tv .fer-h{font-size:1.5vh;margin:1vh 0 .4vh}

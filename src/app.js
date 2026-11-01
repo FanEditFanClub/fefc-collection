@@ -105,9 +105,9 @@ const FOLD={readFirst:'1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT',collections:'1fEaxNbFI
 const SUPPORT=[{name:'Patreon',url:'https://www.patreon.com/cw/FanEditFanClub',sub:'From $1 / month',logo:'<svg viewBox="0 0 24 24"><circle cx="15" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" fill="currentColor"/></svg>'},{name:'PayPal',url:'https://www.paypal.biz/faneditfanclub',sub:'One-time donation',logo:'<b>P</b>'},{name:'Venmo',url:'https://venmo.com/u/FanEditFanClub',sub:'@FanEditFanClub',logo:'<b>V</b>'}];
 let posters={},people={},mosaicList=[],mosaicTimer=null,genreMap={},fthumbs={};
 const GORDER=['Action','Sci-Fi','Horror','Comedy','Animation','Drama','Fantasy','Superhero','Thriller','Crime','Adventure','War','Western','Family','Musical','Documentary','Uncategorized'];
-function topFolder(f){let x=f,guard=0;while(x&&x.parent&&x.parent!==ROOT&&guard++<30)x=items.get(x.parent);return x&&x.parent===ROOT?x.id:null}
+let _tfC=new Map(),_tfN=-1;function topFolder(f){if(_tfN!==items.size){_tfN=items.size;_tfC=new Map()}if(f&&_tfC.has(f.id))return _tfC.get(f.id);let x=f,guard=0;while(x&&x.parent&&x.parent!==ROOT&&guard++<30)x=items.get(x.parent);const r=x&&x.parent===ROOT?x.id:null;if(f&&f.id)_tfC.set(f.id,r);return r}
 function genresOf(f){const t=topFolder(f),g=t&&genreMap[t];return g?g.genres:['Uncategorized']}
-function genreList(g){return vids().filter(f=>genresOf(f).indexOf(g)>=0)}
+let _glC={},_glK='';function genreList(g){const k=items.size+'|'+Object.keys(genreMap).length;if(_glK!==k){_glK=k;_glC={}}return _glC[g]||(_glC[g]=vids().filter(f=>genresOf(f).indexOf(g)>=0))}
 function genreStrip(){const have={};Object.keys(genreMap).forEach(k=>genreMap[k].genres.forEach(g=>have[g]=1));have.Uncategorized=1;
  $('#genres').innerHTML='<span class="glab">Genres</span>'+GORDER.filter(g=>have[g]).map(g=>`<button class="gt" data-genre="${g}">${g}</button>`).join('')}
 document.addEventListener('click',e=>{const g=e.target.closest('[data-genre]');if(!g)return;S.click();go('#/genres/'+encodeURIComponent(g.dataset.genre))});
@@ -293,6 +293,7 @@ function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supp
  rfInPlace=true;S.click();p.hidden=false;void p.offsetWidth;RFX.open(p);setTimeout(()=>focusEl($('#rfclose')),60)}
 /* ---------- HASH ROUTER ---------- */
 /* per-folder sound effects (data/folder-sfx.json: folder id or name -> files) */
+let FER={};tmo('data/fanedit-ratings.json',10000).then(j=>{FER=(j&&j.items)||{}}).catch(()=>{});
 let FSFX={};tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m._genres||{}).forEach(g=>S.loadFx&&S.loadFx(m._genres[g]));Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{});
 let _lastSfxId=null,_lastSfxAt=0,_sandlerLast=-1,_cruiseLast=-1;
 const DIR_IDS={'1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP':1,'1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4':1,'13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v':1,'1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2':1,'1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg':1,'1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o':1,'1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF':1,'1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el':1,'1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t':1,'1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC':1};
@@ -429,8 +430,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-csort]');i
 /* ---------- GENRE PAGES: collection folders/franchises first, then loose edits (#/genres/<genre>[/<collection>]) ---------- */
 let GC={};const _cv={};
 function genreColls(G){return GC[G]||[]}
+let _vbt=null,_vbk=-1;function vidsByTop(){if(_vbk!==items.size||!_vbt){_vbk=items.size;const m={};vids().forEach((f,i)=>{const t=topFolder(f);if(t)(m[t]||(m[t]=[])).push([i,f])});_vbt={m}}return _vbt}
 function collVids(c){const k=c.slug+'|'+items.size;if(_cv[k])return _cv[k];const fs={},seen={};c.folders.forEach(x=>fs[x]=1);const out=[];
- vids().forEach(f=>{const t=target(f);if(!seen[t]&&fs[topFolder(f)]){seen[t]=1;out.push(f)}});(c.extra||[]).forEach(id=>{const f=items.get(id);if(f&&!seen[target(f)]){seen[target(f)]=1;out.push(f)}});return _cv[k]=out}
+ const by=vidsByTop(),pick=[];c.folders.forEach(x=>{const a=by.m[x];if(a)for(const e of a)pick.push(e)});pick.sort((p,q)=>p[0]-q[0]);pick.forEach(e=>{const f=e[1],t=target(f);if(!seen[t]){seen[t]=1;out.push(f)}});(c.extra||[]).forEach(id=>{const f=items.get(id);if(f&&!seen[target(f)]){seen[target(f)]=1;out.push(f)}});return _cv[k]=out}
 function genrePage(G,slug){if(!slug)genreSfx(G);hideHome();cur='virtual';view='folder';const C=genreColls(G);
  if(slug){const c=C.find(x=>x.slug===slug);if(!c){if(!Object.keys(GC).length)return status('Loading…');return go('#/genres/'+encodeURIComponent(G))}
   window.__gscope='gc:'+G+'/'+slug;window.__gtitle=c.name;const fl=c.folders.map(x=>items.get(x)).filter(Boolean),vs=collVids(c).filter(f=>c.folders.indexOf(topFolder(f))<0);
@@ -558,8 +560,10 @@ async function details(f,push=true){fitMode();S.open();S.ambience(false);
  const rto=old.find(r=>/Tomatometer/.test(r.source));const rtUrl=F&&F.rt?'https://www.rottentomatoes.com/'+F.rt:rto&&rto.url;const rts=F&&F.rtScore!=null?F.rtScore+'%':rto&&rto.value;
  if(rtUrl)R.push({ico:'rt',name:'Rotten Tomatoes',val:rts||'VIEW ›',sub:rts?'Tomatometer'+(F&&F.rtAudience!=null?' · Audience '+F.rtAudience+'%':''):'',url:rtUrl});
  const ifdb=(meta.ifdb||{})[f.id]||(meta.ifdb||{})[id]||((old.find(r=>/FanEdit/.test(r.source))||{}).url);
- if(ifdb)R.push({ico:'fe',name:'FanEdit.org',val:'IFDB ›',sub:'Fan edit database entry',url:ifdb});
- const mr=old.find(r=>/Movies Remastered/.test(r.source)&&(r.url||r.value));if(mr)R.push({ico:'mr',name:'Movies Remastered',val:mr.value||'VIEW ›',sub:'',url:mr.url});
+ const FE=[],fer=FER[f.id]||FER[id]||{},fsc=x=>x&&x.score!=null?(+x.score).toFixed(1).replace(/\.0$/,'')+'/'+(x.scale||10):'VIEW ›',fsub=x=>x&&x.votes?fmtV(x.votes)+' vote'+(x.votes===1?'':'s'):'';
+ {const x=fer.ifdb||(ifdb?{url:ifdb}:null);if(x&&x.url)FE.push({ico:'fe',name:'FanEdit.org',val:fsc(x),sub:fsub(x)||'IFDB entry',url:x.url})}
+ {const mro=old.find(r=>/Movies Remastered/.test(r.source)&&(r.url||r.value)),x=fer.mrdb||(mro?{url:mro.url,score:null}:null);if(x&&x.url)FE.push({ico:'mr',name:'Movies Remastered',val:fsc(x),sub:fsub(x)||'MRDb entry',url:x.url})}
+ {const x=fer.changes;if(x&&x.url)FE.push({ico:'fe',name:'Fan Edit Changes',val:fsc(x),sub:fsub(x),url:x.url})}
  const tr=m.trailer&&m.trailer.youtubeId?{id:m.trailer.youtubeId}:F&&F.trailer;
  const rt=R.map(r=>`<a ${r.url?`href="${esc(r.url)}" target="_blank" rel="noopener"`:''} class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')||'<p class="src">No ratings found for the source film.</p>';
  const T=m.title||p.raw,meta1=[film.year,F&&F.runtime?F.runtime+' min':'',F&&F.tv?'TV series':''].filter(Boolean).join(' · ');
@@ -579,7 +583,7 @@ async function details(f,push=true){fitMode();S.open();S.ambience(false);
   <div id="lc-eps"></div>
   ${cast.length?`<h3 class="lc-h p">Cast</h3><div class="cast">${cast.map(c=>`<span>${esc(c.name)}</span>`).join('')}</div>`:''}
  </div><div>
-  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">${rt}</div>
+  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">${rt}</div>${FE.length?`<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">${FE.map(r=>`<a href="${esc(r.url)}" target="_blank" rel="noopener" class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')}</div>`:''}
   <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer${film.title?' · '+esc(film.title):''}</h3><div class="trailer">${tr?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(tr.id)}" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>`:`<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query=${encodeURIComponent((film.title||p.raw)+' '+(film.year||'')+' official trailer')}" target="_blank" rel="noopener">Search YouTube ›</a></span>`}</div>
  </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>`;
  $('#details').hidden=false;$('#details').dataset.id=f.id;detBackdrop(f,PU);const E=episodes(f);epWire(f,E);if(window.FEX)FEX.ready.then(()=>FEX.enhance(f,{items,target,root:ROOT},F));$('#details').scrollTop=0;const lb=$('#details .lc-body');if(lb)lb.scrollTop=0;
