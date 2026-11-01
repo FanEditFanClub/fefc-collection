@@ -14,22 +14,28 @@ function parse(n){const base=n.replace(/\.[a-z0-9]{2,4}$/i,'');const parts=base.
 const sz=b=>b?(b/1e9).toFixed(2)+' GB':'';
 /* ---------- INTRO ---------- */
 (function(){var d=document.createElement('div').style;if(!('perspective' in d||'webkitPerspective' in d))document.documentElement.classList.add('no3d')})();
+const IQ=[];function afterIntro(fn){const c=document.body.classList;if(c.contains('tvintro')&&!c.contains('intro-done'))IQ.push(fn);else fn()}/* TV: boot data work (JSON parse/index/posters) waits until the CSS intro has handed off, so the intro itself never competes for the main thread */
+const TVI={end:9.6};/* TV intro timeline (s): 0-5.7 glow/rings build to the audio hit, 5.75 flash + logo, 6.9 title, 7.9 subtitle, 9.6 hand-off to Home (matches style.css .tvi-*) */
 function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElementById('wordmark');if(wmi&&!wmi.complete)wmi.addEventListener('load',placeHeader);const el=$('#intro');
  /* the intro plays ONCE per app start: never again on reload (service-worker update, WebView restore/recreate), sync, focus or navigation. Marked in sessionStorage (tab/app life) and a short localStorage window (WebView restore after process death). */
  let seenNow=false;try{const t=+localStorage.fefcIntroAt||0;seenNow=!!sessionStorage.fefcIntro||(t>0&&Date.now()-t<3*60*1000)}catch(e){}
  if(!P.get('introframe')&&!P.get('shortintro')){if(seenNow){el.remove();document.body.classList.add('intro-done','no-intro');return}try{sessionStorage.fefcIntro='1';localStorage.fefcIntroAt=String(Date.now())}catch(e){}}
  if(P.get('nointro')){el.remove();document.body.classList.add('intro-done','no-intro');return}
- const short=!!P.get('shortintro'),tv=document.body.classList.contains('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
+ const short=!!P.get('shortintro'),tv=document.body.classList.contains('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||!!P.get('tv');
  document.body.classList.add('cintro');const tg=$('#tagline');
+ /* TV: no per-frame canvas. A short CSS-only intro (transform/opacity on a few static layers) on the same audio; ?fullintro=1 forces the canvas intro. Timeline in seconds: see TVI. */
+ const tvl=tv&&!P.get('fullintro')&&!P.get('introframe')&&!short;
+ if(tvl){document.body.classList.add('tvintro');el.classList.add('tvi');el.insertAdjacentHTML('afterbegin','<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');requestAnimationFrame(()=>requestAnimationFrame(()=>document.body.classList.add('tg-run')))}
+ else if(!short)document.body.classList.add('tg-run');else document.body.classList.add('tg-run','tg-short');
  const lite=!tv&&(/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1)||matchMedia('(prefers-reduced-motion: reduce)').matches||(navigator.hardwareConcurrency||8)<=4||!!P.get('lite'));if(lite)document.body.classList.add('lite');
- const R=window.FEFCIntro.create({tv,lite,tagline:tg});el.prepend(R.canvas);
- fetch('data/mosaic.json').then(r=>r.json()).then(m=>R.setTiles(m.map(x=>x.target||x.id))).catch(()=>{});
+ const R=tvl?{canvas:document.createElement('i'),frame(){},setTiles(){},mapF:r=>r>=TVI.end?24.2:0,mapC:r=>r>=TVI.end?24.2:0}:window.FEFCIntro.create({tv,lite,tagline:tg});if(!tvl)el.prepend(R.canvas);
+ if(!tvl)fetch('data/mosaic.json').then(r=>r.json()).then(m=>R.setTiles(m.map(x=>x.target||x.id))).catch(()=>{});
  try{S.loadIntro()}catch(e){}
  const fr=P.get('introframe');if(fr!==null){document.body.classList.add('frozen');el.querySelector('.ihint').hidden=true;const draw=()=>R.frame(+fr);draw();[300,1000,2000,3500].forEach(t=>setTimeout(draw,t));return}
- let done=false,raf=0,ia=null;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';sndHint(false);if(skipped){S.introStop();if(ia){try{ia.pause()}catch(e){}}}
-  tg.style.opacity='';tg.style.clipPath='';tg.style.visibility='';document.body.classList.remove('cintro');el.classList.add('done');document.body.classList.add('intro-done');window.__ie=Date.now();$('#home').classList.add('enter');setTimeout(()=>{S.ambience($('#player').hidden&&$('#details').hidden);el.remove()},skipped?600:1870)};
+ let done=false,raf=0,ia=null;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';sndHint(false);if(skipped||tvl){S.introStop();if(ia){try{ia.pause()}catch(e){}}}
+  tg.style.opacity='';tg.style.clipPath='';tg.style.visibility='';document.body.classList.remove('cintro');el.classList.add('done');document.body.classList.add('intro-done');window.__ie=Date.now();IQ.splice(0).forEach(f=>setTimeout(f,0));$('#home').classList.add('enter');setTimeout(()=>{S.ambience($('#player').hidden&&$('#details').hidden);el.remove()},skipped?600:1870)};
  let t0=performance.now(),last=0;const hint=el.querySelector('.ihint');let sndOn=false;
- const fd=[];let pn=0,dg=0;const loop=now=>{if(pn&&dg<3){fd.push(now-pn);if(fd.length>12)fd.shift();if(fd.length>=3){const m=fd.slice().sort((a,b)=>a-b)[fd.length>>1];if(m>26&&R.degrade){fd.length=0;dg++;if(R.degrade())document.body.classList.add('lite')}}}pn=now;const r=(now-t0)/1000,s=short?R.mapC(r):R.mapF(r);last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
+ const fd=[];let pn=0,dg=0;const loop=now=>{if(tvl&&ia){const r0=(now-t0)/1000;if(r0>TVI.end-1)try{ia.volume=Math.max(0,Math.min(1,(TVI.end-r0)/1))}catch(e){}}if(pn&&dg<3){fd.push(now-pn);if(fd.length>12)fd.shift();if(fd.length>=3){const m=fd.slice().sort((a,b)=>a-b)[fd.length>>1];if(m>26&&R.degrade){fd.length=0;dg++;if(R.degrade())document.body.classList.add('lite')}}}pn=now;const r=(now-t0)/1000,s=short?R.mapC(r):R.mapF(r);last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
  const off=()=>(performance.now()-t0)/1000;
  const hEl=document.createElement('div');hEl.className='isnd';hEl.textContent='Click or press any key for sound';el.appendChild(hEl);
  function sndHint(on){hEl.classList.toggle('on',!!on)}
@@ -551,14 +557,30 @@ async function details(f,push=true){S.open();S.ambience(false);
 let playerTimer=null,closedFor=null;
 function stopPlayerTimer(){if(playerTimer){clearTimeout(playerTimer);clearInterval(playerTimer);playerTimer=null}}
 function closePlayer(){try{stopPlayerTimer()}catch(e){}const pl=$('#player');if(pl){pl.hidden=true;pl.classList.remove('floating')}try{killFrame()}catch(e){}document.body.classList.remove('shuf-player');window.__shufPlay=0}
-function killFrame(){const o=$('#pframe');if(o){const n=o.cloneNode(false);n.removeAttribute('src');o.replaceWith(n)}}
+function killFrame(){killVideo();const o=$('#pframe');if(o){const n=o.cloneNode(false);n.removeAttribute('src');o.replaceWith(n)}}
+/* Player source: our /api/stream/:id proxy (Range-aware, no virus-scan page) in a native <video>; falls back to the Drive preview iframe
+   when the proxy isn't configured (503), the file isn't shared / quota is used up (403/429), or the video errors. */
+let streamTok=0;
+function killVideo(){streamTok++;const v=$('#pvideo');if(v){try{v.pause()}catch(e){}v.removeAttribute('src');try{v.load()}catch(e){}v.remove()}const w=$('#player .pwrap');if(w)w.classList.remove('vid')}
+function previewFallback(id){killVideo();const w=$('#player .pwrap');if(w)w.classList.remove('vid');newFrame(`https://drive.google.com/file/d/${id}/preview`)}
+function startStream(id){
+ killVideo();const tok=streamTok,fo=$('#pframe');if(fo){const n=fo.cloneNode(false);n.removeAttribute('src');fo.replaceWith(n)}
+ const w=$('#player .pwrap'),url='/api/stream/'+encodeURIComponent(id);
+ if(!w||!window.fetch||location.protocol==='file:'){previewFallback(id);return}
+ const ac=window.AbortController?new AbortController():null,to=setTimeout(()=>{try{ac&&ac.abort()}catch(e){}},7000);
+ fetch(url,{headers:{Range:'bytes=0-0'},signal:ac?ac.signal:undefined}).then(r=>{clearTimeout(to);if(tok!==streamTok)return;try{r.body&&r.body.cancel&&r.body.cancel()}catch(e){}
+  if(!(r.status===206||r.status===200)||!/video|octet/i.test(r.headers.get('content-type')||'')){previewFallback(id);return}
+  const v=document.createElement('video');v.id='pvideo';v.controls=true;v.autoplay=true;v.playsInline=true;v.preload='auto';v.setAttribute('playsinline','');v.tabIndex=-1;
+  v.addEventListener('error',()=>{if(tok===streamTok)previewFallback(id)});
+  v.src=url;w.classList.add('vid');w.appendChild(v);const pp=v.play&&v.play();if(pp&&pp.catch)pp.catch(()=>{});
+ }).catch(()=>{clearTimeout(to);if(tok===streamTok)previewFallback(id)})}
 function newFrame(u){const o=$('#pframe'),n=o.cloneNode(false);n.src=u;o.replaceWith(n)}
 function started(){return !!window._u&&document.body.classList.contains('intro-done')}
 function play(f){
  const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}
  const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();
  const isShuf=!!(window.__shufPlay||sessionStorage.fefcShufScope);document.body.classList.toggle('shuf-player',isShuf);$('#player').classList.toggle('floating',isShuf);
- $('#player').dataset.pid=f.id;$('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;
+ $('#player').dataset.pid=f.id;$('#ptitle').textContent=parse(f.name).raw;$('#player').dataset.did=id;startStream(id);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
@@ -881,17 +903,17 @@ document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once
 intro();if(C.GOOGLE_API_KEY){live=true;}
 tmo('data/folderthumbs.json',10000).then(m=>{fthumbs=m;document.querySelectorAll('#grid .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&isFolder(f)&&!el.querySelector('img'))art(el,f)})}).catch(()=>{});
 const reArt=()=>document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&!el.querySelector('img')){if(isFolder(f)&&people[target(f)]){el.outerHTML=tile(f);const n=document.querySelector('[data-id="'+f.id+'"]');n&&art(n,f)}else art(el,f)}});
-tmo('data/posters.json',15000).then(m=>{posters=m;reArt()}).catch(()=>{});tmo('data/people.json',10000).then(m=>{people=m;reArt()}).catch(()=>{});
+afterIntro(()=>{tmo('data/posters.json',15000).then(m=>{posters=m;reArt()}).catch(()=>{});tmo('data/people.json',10000).then(m=>{people=m;reArt()}).catch(()=>{});});
 const TVB=/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||!!P.get('tv');
 /* On TV the big secondary JSON files (genres 0.5 MB, dates 1.6 MB, metadata 1.7 MB, details extras 3.7 MB) are fetched/parsed one after another after the hub is up, not all at once during startup. */
-const later=(fn,ms)=>TVB?setTimeout(fn,ms):fn();
+const later=(fn,ms)=>TVB?afterIntro(()=>setTimeout(fn,ms)):fn();
 later(()=>tmo('data/genres.json',10000).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;if(!$('#home').hidden)hub();else if(/^#\/genres?\/./.test(location.hash))route()}).catch(()=>{}),1500);
-tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});
+afterIntro(()=>{tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});});
 later(()=>tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));if(!$('#home').hidden)hub();else if(/^#\/(newarrivals|arena|folder)/.test(location.hash))route()}).catch(e=>console.warn(e)),3000);
 later(()=>tmo('data/metadata.json',8000).then(m=>meta=m).catch(e=>console.warn(e)),5000);later(()=>{const sx=document.createElement('script');sx.src='details-extra.js';document.head.appendChild(sx)},8000);
-tmo('data/index.json',15000).then(d=>{window._idx=d.items;if(!live)add(d.items);if(!live)tmo('data/links.json',15000).then(L=>{for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(()=>{});if(d.partial!==false&&!live)tmo('data/index.interim.json',20000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
+afterIntro(()=>{tmo('data/index.json',15000).then(d=>{window._idx=d.items;if(!live)add(d.items);if(!live)tmo('data/links.json',15000).then(L=>{for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(()=>{});if(d.partial!==false&&!live)tmo('data/index.interim.json',20000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
  if(P.get('focus')){setTimeout(()=>{document.body.classList.add('kbd');const t=document.querySelectorAll('.ol-tile,.hb')[+P.get('focus')];if(t)focusEl(t)},300)}
- const e=P.get('edit');if(e)go('#/edit/'+e);const pp=P.get('play');if(pp)go('#/play/'+pp);if(P.get('readfirst'))go('#/readfirst')});
+ const e=P.get('edit');if(e)go('#/edit/'+e);const pp=P.get('play');if(pp)go('#/play/'+pp);if(P.get('readfirst'))go('#/readfirst')});});
 $('#back').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();goBack()});
 $('#player').addEventListener('click',e=>{if(e.target.closest('#pclose')||(e.target.id==='player'&&!e.target.closest('.pcard'))){e.preventDefault();e.stopPropagation();goBack()}});
 showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))route();

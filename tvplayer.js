@@ -10,6 +10,8 @@
     return p && p.dataset.pid;
   }
   function driveId() {
+    var pl = $("#player");
+    if (pl && pl.dataset.did) return pl.dataset.did;
     var f = $("#pframe"), m = f && (f.getAttribute("src") || "").match(/\/file\/d\/([\w-]+)/);
     return m && m[1];
   }
@@ -27,6 +29,12 @@
     }, 4200);
   }
   function doTap() {
+    var v = $("#pvideo");
+    if (v) {
+      if (v.paused) v.play();
+      else v.pause();
+      return;
+    }
     var n = N();
     if (n && n.tap) {
       var f = $("#pframe"), r = f.getBoundingClientRect();
@@ -94,6 +102,13 @@
       e.preventDefault();
       e.stopImmediatePropagation();
       doTap();
+      return;
+    }
+    if (a && a.id === "ptap" && $("#pvideo") && (k === 37 || k === 39 || k === 21 || k === 22 || k === 89 || k === 90 || k === 272 || k === 273)) {
+      var v = $("#pvideo");
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      v.currentTime = Math.max(0, v.currentTime + (k === 37 || k === 21 || k === 89 || k === 272 ? -10 : 10));
       return;
     }
     if ((k === 179 || k === 85 || e.key === "MediaPlayPause") && !(a && a.closest && a.closest(".ptop"))) {

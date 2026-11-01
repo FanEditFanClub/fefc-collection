@@ -36,7 +36,7 @@ const ASSETS=[
 self.addEventListener('install',e=>{e.waitUntil(caches.open(SHELL).then(c=>c.addAll(ASSETS.map(a=>new Request(a,{cache:'reload'})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==SHELL).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
- if(e.request.method!=='GET'||u.origin!==location.origin||u.pathname.startsWith('/assets/clips/'))return; // never touch Drive/Docs/YouTube/Google APIs
+ if(e.request.method!=='GET'||u.origin!==location.origin||u.pathname.startsWith('/assets/clips/')||u.pathname.startsWith('/api/stream/'))return; // never touch Drive/Docs/YouTube/Google APIs
  if(u.pathname.startsWith('/data/')){e.respondWith(fetch(e.request,{cache:'no-cache'}).catch(()=>caches.match(e.request)));return} // network-first, no caching of data
  // app shell: network-first (fresh builds), cache fallback for offline
  const nav=e.request.mode==='navigate'||/(^\/$|\.html$|\.js$|\.css$)/.test(u.pathname);

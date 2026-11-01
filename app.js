@@ -50,6 +50,13 @@ var __spreadValues = (a, b) => {
     var d = document.createElement("div").style;
     if (!("perspective" in d || "webkitPerspective" in d)) document.documentElement.classList.add("no3d");
   })();
+  const IQ = [];
+  function afterIntro(fn) {
+    const c = document.body.classList;
+    if (c.contains("tvintro") && !c.contains("intro-done")) IQ.push(fn);
+    else fn();
+  }
+  const TVI = { end: 9.6 };
   function intro() {
     requestAnimationFrame(placeHeader);
     const wmi = document.getElementById("wordmark");
@@ -78,14 +85,24 @@ var __spreadValues = (a, b) => {
       document.body.classList.add("intro-done", "no-intro");
       return;
     }
-    const short = !!P.get("shortintro"), tv = document.body.classList.contains("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
+    const short = !!P.get("shortintro"), tv = document.body.classList.contains("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || !!P.get("tv");
     document.body.classList.add("cintro");
     const tg = $("#tagline");
+    const tvl = tv && !P.get("fullintro") && !P.get("introframe") && !short;
+    if (tvl) {
+      document.body.classList.add("tvintro");
+      el.classList.add("tvi");
+      el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
+      requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("tg-run")));
+    } else if (!short) document.body.classList.add("tg-run");
+    else document.body.classList.add("tg-run", "tg-short");
     const lite = !tv && (/iPhone|iPad|iPod/.test(navigator.userAgent) || /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1 || matchMedia("(prefers-reduced-motion: reduce)").matches || (navigator.hardwareConcurrency || 8) <= 4 || !!P.get("lite"));
     if (lite) document.body.classList.add("lite");
-    const R = window.FEFCIntro.create({ tv, lite, tagline: tg });
-    el.prepend(R.canvas);
-    fetch("data/mosaic.json").then((r) => r.json()).then((m) => R.setTiles(m.map((x) => x.target || x.id))).catch(() => {
+    const R = tvl ? { canvas: document.createElement("i"), frame() {
+    }, setTiles() {
+    }, mapF: (r) => r >= TVI.end ? 24.2 : 0, mapC: (r) => r >= TVI.end ? 24.2 : 0 } : window.FEFCIntro.create({ tv, lite, tagline: tg });
+    if (!tvl) el.prepend(R.canvas);
+    if (!tvl) fetch("data/mosaic.json").then((r) => r.json()).then((m) => R.setTiles(m.map((x) => x.target || x.id))).catch(() => {
     });
     try {
       S.loadIntro();
@@ -107,7 +124,7 @@ var __spreadValues = (a, b) => {
       cancelAnimationFrame(raf);
       localStorage.fefcSeen = "1";
       sndHint(false);
-      if (skipped) {
+      if (skipped || tvl) {
         S.introStop();
         if (ia) {
           try {
@@ -123,6 +140,7 @@ var __spreadValues = (a, b) => {
       el.classList.add("done");
       document.body.classList.add("intro-done");
       window.__ie = Date.now();
+      IQ.splice(0).forEach((f) => setTimeout(f, 0));
       $("#home").classList.add("enter");
       setTimeout(() => {
         S.ambience($("#player").hidden && $("#details").hidden);
@@ -135,6 +153,13 @@ var __spreadValues = (a, b) => {
     const fd = [];
     let pn = 0, dg = 0;
     const loop = (now) => {
+      if (tvl && ia) {
+        const r0 = (now - t0) / 1e3;
+        if (r0 > TVI.end - 1) try {
+          ia.volume = Math.max(0, Math.min(1, (TVI.end - r0) / 1));
+        } catch (e) {
+        }
+      }
       if (pn && dg < 3) {
         fd.push(now - pn);
         if (fd.length > 12) fd.shift();
@@ -2346,12 +2371,90 @@ var __spreadValues = (a, b) => {
     window.__shufPlay = 0;
   }
   function killFrame() {
+    killVideo();
     const o = $("#pframe");
     if (o) {
       const n = o.cloneNode(false);
       n.removeAttribute("src");
       o.replaceWith(n);
     }
+  }
+  let streamTok = 0;
+  function killVideo() {
+    streamTok++;
+    const v = $("#pvideo");
+    if (v) {
+      try {
+        v.pause();
+      } catch (e) {
+      }
+      v.removeAttribute("src");
+      try {
+        v.load();
+      } catch (e) {
+      }
+      v.remove();
+    }
+    const w = $("#player .pwrap");
+    if (w) w.classList.remove("vid");
+  }
+  function previewFallback(id) {
+    killVideo();
+    const w = $("#player .pwrap");
+    if (w) w.classList.remove("vid");
+    newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
+  }
+  function startStream(id) {
+    killVideo();
+    const tok = streamTok, fo = $("#pframe");
+    if (fo) {
+      const n = fo.cloneNode(false);
+      n.removeAttribute("src");
+      fo.replaceWith(n);
+    }
+    const w = $("#player .pwrap"), url = "/api/stream/" + encodeURIComponent(id);
+    if (!w || !window.fetch || location.protocol === "file:") {
+      previewFallback(id);
+      return;
+    }
+    const ac = window.AbortController ? new AbortController() : null, to = setTimeout(() => {
+      try {
+        ac && ac.abort();
+      } catch (e) {
+      }
+    }, 7e3);
+    fetch(url, { headers: { Range: "bytes=0-0" }, signal: ac ? ac.signal : void 0 }).then((r) => {
+      clearTimeout(to);
+      if (tok !== streamTok) return;
+      try {
+        r.body && r.body.cancel && r.body.cancel();
+      } catch (e) {
+      }
+      if (!(r.status === 206 || r.status === 200) || !/video|octet/i.test(r.headers.get("content-type") || "")) {
+        previewFallback(id);
+        return;
+      }
+      const v = document.createElement("video");
+      v.id = "pvideo";
+      v.controls = true;
+      v.autoplay = true;
+      v.playsInline = true;
+      v.preload = "auto";
+      v.setAttribute("playsinline", "");
+      v.tabIndex = -1;
+      v.addEventListener("error", () => {
+        if (tok === streamTok) previewFallback(id);
+      });
+      v.src = url;
+      w.classList.add("vid");
+      w.appendChild(v);
+      const pp = v.play && v.play();
+      if (pp && pp.catch) pp.catch(() => {
+      });
+    }).catch(() => {
+      clearTimeout(to);
+      if (tok === streamTok) previewFallback(id);
+    });
   }
   function newFrame(u) {
     const o = $("#pframe"), n = o.cloneNode(false);
@@ -2382,7 +2485,8 @@ var __spreadValues = (a, b) => {
     $("#player").classList.toggle("floating", isShuf);
     $("#player").dataset.pid = f.id;
     $("#ptitle").textContent = parse(f.name).raw;
-    newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
+    $("#player").dataset.did = id;
+    startStream(id);
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
     $("#player").hidden = false;
   }
@@ -3244,18 +3348,20 @@ var __spreadValues = (a, b) => {
       } else art(el, f);
     }
   });
-  tmo("data/posters.json", 15e3).then((m) => {
-    posters = m;
-    reArt();
-  }).catch(() => {
-  });
-  tmo("data/people.json", 1e4).then((m) => {
-    people = m;
-    reArt();
-  }).catch(() => {
+  afterIntro(() => {
+    tmo("data/posters.json", 15e3).then((m) => {
+      posters = m;
+      reArt();
+    }).catch(() => {
+    });
+    tmo("data/people.json", 1e4).then((m) => {
+      people = m;
+      reArt();
+    }).catch(() => {
+    });
   });
   const TVB = /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || !!P.get("tv");
-  const later = (fn, ms) => TVB ? setTimeout(fn, ms) : fn();
+  const later = (fn, ms) => TVB ? afterIntro(() => setTimeout(fn, ms)) : fn();
   later(() => tmo("data/genres.json", 1e4).then((g) => {
     GC = g.__collections || {};
     delete g.__collections;
@@ -3264,10 +3370,12 @@ var __spreadValues = (a, b) => {
     else if (/^#\/genres?\/./.test(location.hash)) route();
   }).catch(() => {
   }), 1500);
-  tmo("data/mosaic.json", 1e4).then((m) => {
-    mosaicList = m;
-    if (!$("#home").hidden) mosaic();
-  }).catch(() => {
+  afterIntro(() => {
+    tmo("data/mosaic.json", 1e4).then((m) => {
+      mosaicList = m;
+      if (!$("#home").hidden) mosaic();
+    }).catch(() => {
+    });
   });
   later(() => tmo("data/dates.json", 15e3).then((m) => {
     NA.dates = m;
@@ -3281,45 +3389,47 @@ var __spreadValues = (a, b) => {
     sx.src = "details-extra.js";
     document.head.appendChild(sx);
   }, 8e3);
-  tmo("data/index.json", 15e3).then((d) => {
-    window._idx = d.items;
-    if (!live) add(d.items);
-    if (!live) tmo("data/links.json", 15e3).then((L) => {
-      for (const p in L) {
-        if (!kids.has(p)) kids.set(p, []);
-        const a = kids.get(p);
-        for (const id of L[p]) {
-          const f = items.get(id);
-          if (f && !a.includes(f)) a.push(f);
+  afterIntro(() => {
+    tmo("data/index.json", 15e3).then((d) => {
+      window._idx = d.items;
+      if (!live) add(d.items);
+      if (!live) tmo("data/links.json", 15e3).then((L) => {
+        for (const p in L) {
+          if (!kids.has(p)) kids.set(p, []);
+          const a = kids.get(p);
+          for (const id of L[p]) {
+            const f = items.get(id);
+            if (f && !a.includes(f)) a.push(f);
+          }
         }
-      }
-      if (/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash)) route();
-      else if (!$("#home").hidden) hub();
-    }).catch(() => {
-    });
-    if (d.partial !== false && !live) tmo("data/index.interim.json", 2e4).then((x) => {
-      add(x.items.filter((f) => !items.has(f.id)));
-      window._idx = Array.from(items.values());
+        if (/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash)) route();
+        else if (!$("#home").hidden) hub();
+      }).catch(() => {
+      });
+      if (d.partial !== false && !live) tmo("data/index.interim.json", 2e4).then((x) => {
+        add(x.items.filter((f) => !items.has(f.id)));
+        window._idx = Array.from(items.values());
+        route();
+      }).catch(() => {
+      });
+    }).catch((e) => {
+      console.warn(e);
+      status("Saved index unavailable");
+    }).then(() => {
       route();
-    }).catch(() => {
+      if (P.get("focus")) {
+        setTimeout(() => {
+          document.body.classList.add("kbd");
+          const t = document.querySelectorAll(".ol-tile,.hb")[+P.get("focus")];
+          if (t) focusEl(t);
+        }, 300);
+      }
+      const e = P.get("edit");
+      if (e) go("#/edit/" + e);
+      const pp = P.get("play");
+      if (pp) go("#/play/" + pp);
+      if (P.get("readfirst")) go("#/readfirst");
     });
-  }).catch((e) => {
-    console.warn(e);
-    status("Saved index unavailable");
-  }).then(() => {
-    route();
-    if (P.get("focus")) {
-      setTimeout(() => {
-        document.body.classList.add("kbd");
-        const t = document.querySelectorAll(".ol-tile,.hb")[+P.get("focus")];
-        if (t) focusEl(t);
-      }, 300);
-    }
-    const e = P.get("edit");
-    if (e) go("#/edit/" + e);
-    const pp = P.get("play");
-    if (pp) go("#/play/" + pp);
-    if (P.get("readfirst")) go("#/readfirst");
   });
   $("#back").addEventListener("click", (e) => {
     e.preventDefault();

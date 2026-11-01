@@ -27,7 +27,11 @@ public class PlayerActivity extends Activity {
     private TextView info, bar;
     private ProgressBar spin;
     private final Handler ui = new Handler(Looper.getMainLooper());
-    private boolean prepared;
+    private boolean prepared, triedDirect;
+    private String vid;
+    private static final String PROXY = "https://collection.faneditfanclub.com/api/stream/";
+    private static final String DIRECT_PREFIX = "https://drive.usercontent.google.com/download?id=";
+    private static final String DIRECT = DIRECT_PREFIX;
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             if (prepared && video.getDuration() > 0) {
@@ -90,12 +94,19 @@ public class PlayerActivity extends Activity {
         });
         video.setOnCompletionListener(mp -> finish());
         video.setOnErrorListener((mp, what, extra) -> {
+            if (!triedDirect && !prepared) {   // /api/stream proxy unavailable (not configured, quota, 403): fall back to the direct Drive URL
+                triedDirect = true;
+                video.setVideoURI(Uri.parse(DIRECT_PREFIX + vid + "&export=download&confirm=t"));
+                return true;
+            }
             spin.setVisibility(View.GONE);
             info.setVisibility(View.VISIBLE);
             info.setText("This file can't be streamed directly (it may not be shared publicly, may be over Google's download quota, or uses a format this TV can't decode).\nPress Back and use the web player or OPEN IN DRIVE.");
             return true;
         });
-        video.setVideoURI(Uri.parse("https://drive.usercontent.google.com/download?id=" + id + "&export=download&confirm=t"));
+        vid = id;
+        // 1st choice: the site's Range-aware streaming proxy (no virus-scan page, works for big files); falls back to the direct URL on error.
+        video.setVideoURI(Uri.parse(PROXY + id));
         ui.post(tick);
     }
 
