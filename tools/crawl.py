@@ -12,6 +12,8 @@ def get(u,tries=4):
     return None,''
 ENTRY=re.compile(r'<a href="https://drive\.google\.com/(drive/folders|file/d)/([\w-]+)[^"]*"[^>]*>.*?flip-entry-title">([^<]*)<.*?(?:flip-entry-last-modified"><div>([^<]*)<)?',re.S)
 items={};folders=[ROOT];seen={ROOT}
+try: OLD={x['id']:x for x in json.load(open(OUT))['items']}   # ids resolved on a previous crawl keep their result (a Drive id never changes its target) - only NEW files need the slow redirect lookup
+except Exception: OLD={}
 def listf(fid):
     _,t=get(f'https://drive.google.com/embeddedfolderview?id={fid}')
     return fid,[(k,i,html.unescape(n),m) for k,i,n,m in ENTRY.findall(t)]
@@ -25,13 +27,29 @@ with cf.ThreadPoolExecutor(8) as ex:
                 if fold and i not in seen: seen.add(i);folders.append(i)
         print('folders',len(seen),'items',len(items),flush=True)
     vids=[v for v in items.values() if v['mimeType']=='video/*']
-    def res(v):
-        u,_=get(f"https://drive.google.com/file/d/{v['id']}/view",2)
-        m=re.search(r'/file/d/([\w-]+)',u or '')
-        if m and m.group(1)!=v['id']: v['targetId']=m.group(1)
+    for v in vids:
+        o=OLD.get(v['id'])
+        if o and o.get('targetId'): v['targetId']=o['targetId']
+    vids=[v for v in vids if v['id'] not in OLD]
+    class _NR(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self,*a,**k): return None
+    _op=urllib.request.build_opener(_NR)
+    def res(v):   # a shortcut's /view answers 302 -> its target; a real file answers 200. Retry on network errors (a failed lookup used to look like "real file" and left shortcuts undeduped).
+        for t in range(4):
+            try: _op.open(urllib.request.Request(f"https://drive.google.com/file/d/{v['id']}/view",headers=UA),timeout=20);return
+            except urllib.error.HTTPError as e:
+                if e.code in (301,302,303,307):
+                    m=re.search(r'/file/d/([\w-]+)',e.headers.get('Location',''))
+                    if m and m.group(1)!=v['id']: v['targetId']=m.group(1)
+                    return
+            except Exception: pass
+            time.sleep(2*(t+1))
     for n,_ in enumerate(ex.map(res,vids)):
         if n%250==0: print('resolved',n,'/',len(vids),flush=True)
 for v in items.values():
     if v['mimeType']=='video/*': v['mimeType']='video/mp4'
+for x in items.values():   # keep the resolved type (tools/classify.py, manual) for entries seen before
+    o=OLD.get(x['id'])
+    if o and o.get('kind') and 'kind' not in x: x['kind']=o['kind']
 json.dump({'root':ROOT,'generated':time.strftime('%Y-%m-%d %H:%M'),'partial':False,'items':list(items.values())},open(OUT,'w'))
 print('DONE folders',len(seen),'items',len(items),'videos',len(vids),'shortcuts',sum('targetId' in v for v in vids))

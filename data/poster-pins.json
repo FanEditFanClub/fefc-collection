@@ -1,0 +1,323 @@
+{
+ "_doc": "Pinned poster art. 'art': key -> TMDB page (og:image poster) or Wikipedia page image. 'rules': regex on FILE NAME (optional 'ctx' regex on ancestor folder names, optional 'not') -> art key. Applied by tools/poster_fix.py after every posters.py run, so the nightly resync cannot reintroduce a wrong poster. Add a rule here to fix any new mismatch.",
+ "art": {
+  "serenity-2005": {
+   "tmdb": "movie/16320",
+   "title": "Serenity (2005 film)"
+  },
+  "firefly-tv": {
+   "tmdb": "tv/1437",
+   "title": "Firefly (TV series, 2002)"
+  },
+  "defenders-2017": {
+   "tmdb": "tv/62285",
+   "title": "Marvel's The Defenders (Netflix, 2017)"
+  },
+  "whatif-tv": {
+   "tmdb": "tv/91363",
+   "title": "What If...? (Marvel animated series, Disney+, 2021)"
+  },
+  "alias-tv": {
+   "wiki": "Alias (TV series)",
+   "title": "Alias (TV series, 2001)"
+  },
+  "upinsmoke": {
+   "wiki": "Up in Smoke (1978 film)",
+   "title": "Cheech & Chong\u2019s Up in Smoke (1978)"
+  },
+  "madmax-1979": {
+   "wiki": "Mad Max",
+   "title": "Mad Max (1979 film)"
+  },
+  "ff-2009": {
+   "wiki": "Fast & Furious (2009 film)",
+   "title": "Fast & Furious (2009 film)"
+  },
+  "ff6": {
+   "wiki": "Furious 6",
+   "title": "Furious 6 (2013 film)"
+  },
+  "hobbsshaw": {
+   "wiki": "Fast & Furious Presents: Hobbs & Shaw",
+   "title": "Fast & Furious Presents: Hobbs & Shaw"
+  },
+  "robocop-1987": {
+   "wiki": "RoboCop",
+   "title": "RoboCop (1987 film)"
+  },
+  "tmnt-1990": {
+   "wiki": "Teenage Mutant Ninja Turtles (1990 film)",
+   "title": "Teenage Mutant Ninja Turtles (1990 film)"
+  },
+  "tmnt-2": {
+   "wiki": "Teenage Mutant Ninja Turtles II: The Secret of the Ooze",
+   "title": "Teenage Mutant Ninja Turtles II: The Secret of the Ooze"
+  },
+  "rotld-1985": {
+   "wiki": "The Return of the Living Dead",
+   "title": "The Return of the Living Dead (1985)"
+  },
+  "tcm-1974": {
+   "wiki": "The Texas Chainsaw Massacre (1974 film)",
+   "title": "The Texas Chainsaw Massacre (1974 film)"
+  },
+  "spiderman-2002": {
+   "wiki": "Spider-Man (2002 film)",
+   "title": "Spider-Man (2002 film)"
+  },
+  "smallville": {
+   "tmdb": "tv/4604",
+   "title": "Smallville (TV series, 2001)"
+  },
+  "twinpeaks": {
+   "wiki": "Twin Peaks",
+   "title": "Twin Peaks"
+  },
+  "wonderwoman-1984": {
+   "wiki": "Wonder Woman 1984",
+   "title": "Wonder Woman 1984"
+  },
+  "miniseries-112263": {
+   "wiki": "11.22.63",
+   "title": "11.22.63 (miniseries)"
+  },
+  "latelate": {
+   "wiki": "The Late Late Show with Craig Ferguson",
+   "title": "The Late Late Show with Craig Ferguson"
+  },
+  "dbz": {
+   "wiki": "Dragon Ball Z",
+   "title": "Dragon Ball Z"
+  },
+  "godzilla-1955": {
+   "wiki": "Godzilla Raids Again",
+   "title": "Godzilla Raids Again"
+  },
+  "godzilla-1963": {
+   "wiki": "Mothra vs. Godzilla",
+   "title": "Mothra vs. Godzilla"
+  },
+  "godzilla-1964": {
+   "wiki": "Ghidorah, the Three-Headed Monster",
+   "title": "Ghidorah, the Three-Headed Monster"
+  },
+  "godzilla-1965": {
+   "wiki": "Invasion of Astro-Monster",
+   "title": "Invasion of Astro-Monster"
+  },
+  "godzilla-1968": {
+   "wiki": "Destroy All Monsters",
+   "title": "Destroy All Monsters"
+  },
+  "godzilla-1969": {
+   "wiki": "All Monsters Attack",
+   "title": "All Monsters Attack"
+  },
+  "godzilla-1991": {
+   "wiki": "Godzilla vs. King Ghidorah",
+   "title": "Godzilla vs. King Ghidorah"
+  },
+  "godzilla-1992": {
+   "wiki": "Godzilla and Mothra: The Battle for Earth",
+   "title": "Godzilla and Mothra: The Battle for Earth"
+  },
+  "godzilla-1993": {
+   "wiki": "Godzilla vs. Mechagodzilla II",
+   "title": "Godzilla vs. Mechagodzilla II"
+  },
+  "godzilla-1994": {
+   "wiki": "Godzilla vs. SpaceGodzilla",
+   "title": "Godzilla vs. SpaceGodzilla"
+  },
+  "godzilla-1995": {
+   "wiki": "Godzilla vs. Destroyah",
+   "title": "Godzilla vs. Destroyah"
+  },
+  "godzilla-1999": {
+   "wiki": "Godzilla 2000",
+   "title": "Godzilla 2000"
+  },
+  "godzilla-2001": {
+   "wiki": "Godzilla, Mothra and King Ghidorah: Giant Monsters All-Out Attack",
+   "title": "Godzilla, Mothra and King Ghidorah: Giant Monsters All-Out Attack"
+  },
+  "godzilla-2002": {
+   "wiki": "Godzilla Against Mechagodzilla",
+   "title": "Godzilla Against Mechagodzilla"
+  },
+  "godzilla-2004": {
+   "wiki": "Godzilla: Final Wars",
+   "title": "Godzilla: Final Wars"
+  }
+ },
+ "rules": [
+  {
+   "match": "^Serenity\\b(?!.*2019)",
+   "art": "serenity-2005",
+   "not": "2019|mcconaughey"
+  },
+  {
+   "match": "^Firefly\\b.*Serenity Chronicles|^Serenity Chronicles",
+   "art": "firefly-tv"
+  },
+  {
+   "match": "^(Marvel.?s )?The Defenders(?! Saga)",
+   "art": "defenders-2017"
+  },
+  {
+   "match": "^What If\\.\\.\\.\\?",
+   "art": "whatif-tv"
+  },
+  {
+   "match": "^Alias S\\d\\dE\\d\\d",
+   "art": "alias-tv"
+  },
+  {
+   "match": "^Cheech & Chong.?s Up in Smoke",
+   "art": "upinsmoke"
+  },
+  {
+   "match": "^Mad Max \\(1979\\)|^Mad Max\\b(?!.*(2|II|Fury|Road|Beyond|Furiosa))",
+   "art": "madmax-1979"
+  },
+  {
+   "match": "^Fast & Furious \\(Hybrid",
+   "art": "ff-2009"
+  },
+  {
+   "match": "^Fast & Furious 6",
+   "art": "ff6"
+  },
+  {
+   "match": "^Fast & Furious Presents: Hobbs",
+   "art": "hobbsshaw"
+  },
+  {
+   "match": "^RoboCop \\(1987\\)",
+   "art": "robocop-1987"
+  },
+  {
+   "match": "^Teenage Mutant Ninja Turtles II\\b",
+   "art": "tmnt-2"
+  },
+  {
+   "match": "^Teenage Mutant Ninja Turtles \\(1990\\)",
+   "art": "tmnt-1990"
+  },
+  {
+   "match": "^The Return of The Living Dead \\(1985\\)",
+   "art": "rotld-1985"
+  },
+  {
+   "match": "^The Texas Chainsaw Massacre Part 1 & Torso",
+   "art": "tcm-1974"
+  },
+  {
+   "match": "^Spider-Man 1 & 2 & 3",
+   "art": "spiderman-2002"
+  },
+  {
+   "match": "^Smallville\\.S\\d\\dE\\d\\d",
+   "art": "smallville"
+  },
+  {
+   "match": "^Twin Peaks Series",
+   "art": "twinpeaks"
+  },
+  {
+   "match": "^Wonder Woman 1984",
+   "art": "wonderwoman-1984"
+  },
+  {
+   "match": "^11\\.23\\.63",
+   "art": "miniseries-112263"
+  },
+  {
+   "match": "^\\d+\\. The Late Late Show with Craig Ferguson",
+   "art": "latelate"
+  },
+  {
+   "match": "^Freeza Saga",
+   "art": "dbz"
+  },
+  {
+   "match": "^1955 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1955"
+  },
+  {
+   "match": "^1963 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1963"
+  },
+  {
+   "match": "^1964 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1964"
+  },
+  {
+   "match": "^1965 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1965"
+  },
+  {
+   "match": "^1968 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1968"
+  },
+  {
+   "match": "^1969 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1969"
+  },
+  {
+   "match": "^1991 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1991"
+  },
+  {
+   "match": "^1992 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1992"
+  },
+  {
+   "match": "^1993 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1993"
+  },
+  {
+   "match": "^1994 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1994"
+  },
+  {
+   "match": "^1995 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1995"
+  },
+  {
+   "match": "^1999 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-1999"
+  },
+  {
+   "match": "^2001 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-2001"
+  },
+  {
+   "match": "^2002 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-2002"
+  },
+  {
+   "match": "^2004 - (Godzilla|Ghidorah|Invasion|Destroy|All[ .]Monsters)",
+   "ctx": "sensical|godzilla",
+   "art": "godzilla-2004"
+  },
+  {
+   "match": "^Godzilla 2000: Millennium",
+   "art": "godzilla-1999"
+  }
+ ]
+}

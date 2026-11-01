@@ -64,6 +64,12 @@ def main():
     except Exception as e:
         print(f"Warning during dates: {e}", flush=True)
 
+    # 1b. When each item was added to the collection (first-seen + pinned Drive createdTime) -> dates.json a/c, added.json
+    try:
+        run_cmd("python3 tools/added.py")
+    except Exception as e:
+        print(f"Warning during added: {e}", flush=True)
+
     # 2. File classification
     try:
         run_cmd("python3 tools/classify.py")
@@ -86,6 +92,12 @@ def main():
         run_cmd("python3 tools/posters.py")
     except Exception as e:
         print(f"Warning during posters: {e}", flush=True)
+
+    # 4b. Poster accuracy: year/title re-match + pinned official art (data/poster-pins.json); regenerated posters.json would otherwise lose them
+    try:
+        run_cmd("python3 tools/poster_fix.py")
+    except Exception as e:
+        print(f"Warning during poster_fix: {e}", flush=True)
 
     try:
         run_cmd("python3 tools/folderthumbs.py")
