@@ -894,3 +894,8 @@ body.tunnel-mode #app::after{content:'';position:fixed;inset:0;border:40px solid
 #syncpanel .mi:focus,#syncpanel .mi:hover{outline:3px solid #ffb02e;outline-offset:2px}
 body.tv .sp-card{width:min(900px,92vw)}body.tv .sp-card h2{font-size:4vh}body.tv .sp-sub{font-size:2.6vh}body.tv .sp-note{font-size:2.1vh}body.tv .sp-opt b{font-size:2.8vh}body.tv .sp-opt span{font-size:2.1vh}body.tv .sp-b{font-size:2.6vh}body.tv .sp-code{font-size:8vh}body.tv .sp-url{font-size:5vh}body.tv .sp-qr{width:30vh}body.tv .sp-k{height:7vh;font-size:3.4vh}body.tv .sp-pad{grid-template-columns:repeat(3,14vh)}body.tv .sp-slots i{width:6.5vh;height:8.5vh;font-size:5vh;line-height:8vh}
 @media (max-width:600px){.sp-code{font-size:38px}.sp-url{font-size:24px}.sp-slots i{width:38px;height:52px;line-height:48px}}
+/* TV: GPU-friendly intro (transform/opacity only; no filter dissolve, canvas on its own layer) */
+body.tv #intro canvas,body.lite #intro canvas{transform:translateZ(0);will-change:transform}
+body.tv #intro.done,body.lite #intro.done{animation:introFadeTv .5s linear forwards}
+@keyframes introFadeTv{0%{opacity:1}100%{opacity:0;visibility:hidden}}
+body.tv #intro .isnd,body.tv #intro .ihint{box-shadow:none;text-shadow:none}

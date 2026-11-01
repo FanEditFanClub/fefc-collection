@@ -16,7 +16,11 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
   function create(opt) {
     let tv = opt.tv || opt.lite;
     const cv = document.createElement("canvas"), c = cv.getContext("2d", { alpha: false });
-    let dpr = Math.min(window.devicePixelRatio || 1, tv ? 1 : 1.5);
+    const pickDpr = () => {
+      const d = window.devicePixelRatio || 1, w = Math.max(innerWidth, 1);
+      return tv ? Math.min(2, Math.max(d, Math.min(2, 1920 / w), 1)) : Math.min(d, 2);
+    };
+    let dpr = pickDpr(), gs = tv ? 0.6 : 1, tier = 0;
     let W = 0, H = 0;
     const size = () => {
       W = innerWidth;
@@ -27,7 +31,11 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       cv.style.height = H + "px";
     };
     size();
-    addEventListener("resize", size);
+    addEventListener("resize", () => {
+      dpr = pickDpr();
+      size();
+      if (warmed) warm();
+    });
     const buf = document.createElement("canvas"), bc = buf.getContext("2d"), sbuf = document.createElement("canvas"), sbc = sbuf.getContext("2d");
     let fx = null, fxa = -1;
     const flashA = (a) => {
@@ -197,7 +205,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       c.drawImage(sbuf, W / 2 - L / 2, H / 2 - L / 2);
       c.restore();
     }
-    const AT = tv ? 32 : 64, AN = 16, atlas = document.createElement("canvas");
+    const AT = tv ? 48 : 64, AN = 16, atlas = document.createElement("canvas");
     atlas.width = atlas.height = AT * AN;
     const ax = atlas.getContext("2d");
     let pat = null, gpat = null, dirty = 1, lastB = 0, curS = 0;
@@ -229,9 +237,10 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     };
     const gcv = document.createElement("canvas"), gx = gcv.getContext("2d");
     const sizeG = () => {
-      if (gcv.width !== cv.width || gcv.height !== cv.height) {
-        gcv.width = cv.width;
-        gcv.height = cv.height;
+      const gw = Math.max(2, Math.round(cv.width * gs)), gh = Math.max(2, Math.round(cv.height * gs));
+      if (gcv.width !== gw || gcv.height !== gh) {
+        gcv.width = gw;
+        gcv.height = gh;
       }
     };
     let warmed = 0;
@@ -261,7 +270,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
         const d = y - hy;
         if (d <= 0) continue;
         const z = f * h / d, k = f / (z * AT), ky = f * h / (z * z * AT), tx = W / 2 - camX * AT * k, ty = y - (z + cam) * AT * ky;
-        gx.setTransform(k * dpr, 0, 0, ky * dpr, tx * dpr, ty * dpr);
+        gx.setTransform(k * dpr * gs, 0, 0, ky * dpr * gs, tx * dpr * gs, ty * dpr * gs);
         gx.fillRect(-tx / k, (y - ty) / ky, W / k, band / ky * 1.5);
       }
       gx.setTransform(1, 0, 0, 1, 0, 0);
@@ -455,12 +464,28 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       }
     }
     const degrade = () => {
-      if (tv) return false;
-      tv = true;
-      dpr = 1;
-      size();
-      if (warmed) warm();
-      return true;
+      tier++;
+      if (tier === 1 && !tv) {
+        tv = true;
+        gs = 0.6;
+        dpr = pickDpr();
+        size();
+        if (warmed) warm();
+        return true;
+      }
+      if (tier <= 2 && gs > 0.4) {
+        gs = 0.4;
+        if (warmed) warm();
+        else sizeG();
+        return true;
+      }
+      if (tier <= 3 && cv.width > 1400) {
+        dpr = Math.max(1, dpr * 0.75);
+        size();
+        if (warmed) warm();
+        return true;
+      }
+      return false;
     };
     return { canvas: cv, frame, mapC, mapF, FULL, setTiles, degrade };
   }

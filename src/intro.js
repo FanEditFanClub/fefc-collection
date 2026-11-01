@@ -9,8 +9,10 @@ const FULL=26.15,SEGF=[[0,5.75,0,2.6],[5.75,6.75,2.6,4.8],[6.75,7.6,4.8,6.6],[7.
 const mapF=r=>{for(const s of SEGF)if(r<=s[1])return lerp(s[2],s[3],(r-s[0])/(s[1]-s[0]));return 24.2};
 function create(opt){
  // lo = low-cost path (TV, iOS/WebKit, reduced motion, <=4 cores): same timeline/look, no canvas blur/shadowBlur, dpr 1, coarser ground strips, fewer stars
- let tv=opt.tv||opt.lite;const cv=document.createElement('canvas'),c=cv.getContext('2d',{alpha:false});let dpr=Math.min(window.devicePixelRatio||1,tv?1:1.5);
- let W=0,H=0;const size=()=>{W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px'};size();addEventListener('resize',size);
+ let tv=opt.tv||opt.lite;const cv=document.createElement('canvas'),c=cv.getContext('2d',{alpha:false});// Full resolution everywhere: backing store = CSS size x device pixel ratio (TV: at least ~1920px wide, capped at 2x). TV stays fast by dropping blur/shadow and
+ // rendering only the big mosaic ground at reduced internal resolution (see gs), not by shrinking the whole canvas.
+ const pickDpr=()=>{const d=window.devicePixelRatio||1,w=Math.max(innerWidth,1);return tv?Math.min(2,Math.max(d,Math.min(2,1920/w),1)):Math.min(d,2)};let dpr=pickDpr(),gs=tv?.6:1,tier=0;
+ let W=0,H=0;const size=()=>{W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;cv.style.width=W+'px';cv.style.height=H+'px'};size();addEventListener('resize',()=>{dpr=pickDpr();size();if(warmed)warm()});
  const buf=document.createElement('canvas'),bc=buf.getContext('2d'),sbuf=document.createElement('canvas'),sbc=sbuf.getContext('2d');
  // white flashes: a pre-sized DOM layer animated with opacity only (compositor), so the canvas never repaints a full white frame
  let fx=null,fxa=-1;const flashA=a=>{a=a>.995?1:a<.005?0:+a.toFixed(3);if(!fx&&cv.parentNode){fx=document.createElement('div');fx.style.cssText='position:absolute;left:0;top:0;width:100%;height:100%;background:#fff;opacity:0;pointer-events:none;will-change:opacity;transform:translateZ(0);z-index:1';cv.parentNode.insertBefore(fx,cv.nextSibling)}if(fx&&a!==fxa){fxa=a;fx.style.opacity=a}};
@@ -41,18 +43,18 @@ function create(opt){
   if(sbuf.width!==(L|0)||sbuf.height!==(L|0)){sbuf.width=L|0;sbuf.height=L|0}const bc=sbc;bc.globalCompositeOperation='source-over';bc.clearRect(0,0,L,L);bc.drawImage(logo,0,0,L,L);bc.globalCompositeOperation='source-in';const g2=bc.createLinearGradient(t*2*L-L*.65,0,t*2*L-L*.35,0);g2.addColorStop(0,'rgba(255,255,255,0)');g2.addColorStop(.5,'rgba(235,240,250,.9)');g2.addColorStop(1,'rgba(255,255,255,0)');bc.fillStyle=g2;bc.fillRect(0,0,L,L);bc.globalCompositeOperation='source-over';
   c.save();c.globalCompositeOperation='lighter';c.drawImage(sbuf,W/2-L/2,H/2-L/2);c.restore()}
  // tile atlas (mosaic thumbnails, rebuilt as they arrive) used as a repeating ground texture
- const AT=tv?32:64,AN=16,atlas=document.createElement('canvas');atlas.width=atlas.height=AT*AN;const ax=atlas.getContext('2d');let pat=null,gpat=null,dirty=1,lastB=0,curS=0;
+ const AT=tv?48:64,AN=16,atlas=document.createElement('canvas');atlas.width=atlas.height=AT*AN;const ax=atlas.getContext('2d');let pat=null,gpat=null,dirty=1,lastB=0,curS=0;
  function buildAtlas(){ax.fillStyle='#0c0e12';ax.fillRect(0,0,AT*AN,AT*AN);const gp=Math.max(2,AT*.09);for(let j=0;j<AN;j++)for(let i=0;i<AN;i++){const k=hash(i,j),im=imgs.length?imgs[k%imgs.length]:null,x=i*AT+gp/2,y=j*AT+gp/2,w=AT-gp;if(im&&im.ok)ax.drawImage(im,x,y,w,w*.82),ax.fillStyle='rgba(0,0,0,.15)',ax.fillRect(x,y+w*.82,w,w*.18);else{ax.fillStyle=hues[k%64];ax.fillRect(x,y,w,w*.82)}}pat=c.createPattern(atlas,'repeat');gpat=gx.createPattern(atlas,'repeat');dirty=0}
  const quiet=()=>(curS>11.2&&curS<13.2)||curS>21.8; // never rebuild the atlas around the flashes / dive
  const ensure=()=>{if(pat&&quiet())return;const n=imgs.filter(i=>i.ok).length,now=Date.now();if(!pat||(n!==lastB&&now-(ensure.t||0)>400)){lastB=n;ensure.t=now;buildAtlas()}};
  const gcv=document.createElement('canvas'),gx=gcv.getContext('2d');
- const sizeG=()=>{if(gcv.width!==cv.width||gcv.height!==cv.height){gcv.width=cv.width;gcv.height=cv.height}};
+ const sizeG=()=>{const gw=Math.max(2,Math.round(cv.width*gs)),gh=Math.max(2,Math.round(cv.height*gs));if(gcv.width!==gw||gcv.height!==gh){gcv.width=gw;gcv.height=gh}};
  let warmed=0;const warm=()=>{warmed=1;flashA(0);sizeG();lastB=-1;ensure.t=0;buildAtlas();lastB=imgs.filter(i=>i.ok).length;gx.fillStyle=gpat;gx.fillRect(0,0,1,1);if(!tv&&(buf.width!==cv.width||buf.height!==cv.height)){buf.width=cv.width;buf.height=cv.height}};
  function ground(hy,cam,camX){ // mode-7 style perspective strips into gcv (screen space, unrotated)
   ensure();sizeG()
   const f=H*.9,h=10,band=opt.lite||(tv&&!opt.tv)?6:tv?4:2;gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,gcv.width,gcv.height);gx.fillStyle=gpat;
   for(let y=Math.max(Math.floor(hy)+1,-H);y<H*1.3;y+=band){const d=y-hy;if(d<=0)continue;const z=f*h/d,k=f/(z*AT),ky=f*h/(z*z*AT),tx=W/2-camX*AT*k,ty=y-(z+cam)*AT*ky;
-   gx.setTransform(k*dpr,0,0,ky*dpr,tx*dpr,ty*dpr);gx.fillRect(-tx/k,(y-ty)/ky,W/k,band/ky*1.5)}
+   gx.setTransform(k*dpr*gs,0,0,ky*dpr*gs,tx*dpr*gs,ty*dpr*gs);gx.fillRect(-tx/k,(y-ty)/ky,W/k,band/ky*1.5)}
   gx.setTransform(1,0,0,1,0,0)}
  function planet(s){ // 12-23: starry sky, blue horizon limb, fly over a sphere of mosaic tiles
   const u=cl((s-12)/9),hy0=H*lerp(.5,.2,eo(u))-H*1.2*sm(21,22.8,s),R=W*lerp(.9,9,u*u),rot=lerp(-.3,0,eo(cl((s-12)/7)));
@@ -89,6 +91,10 @@ function create(opt){
   // tagline: fades in at its exact dashboard position (real DOM element)
   const tg=opt.tagline;if(tg){const a=+sm(17.4,18.6,s).toFixed(3),cp=`inset(0 ${(100-100*eo(cl((s-17.4)/1.4))).toFixed(1)}% 0 0)`;if(tg._a!==a){tg._a=a;tg.style.opacity=a}if(tg._cp!==cp){tg._cp=cp;tg.style.clipPath=cp}if(!tg._v){tg._v=1;tg.style.visibility='visible'}}}
  // adaptive: if the device can't hold frame rate, drop to the low-cost path mid-intro (same timeline)
- const degrade=()=>{if(tv)return false;tv=true;dpr=1;size();if(warmed)warm();return true};
+ // tier 1: drop blur/shadow path; tier 2: lower the ground resolution; tier 3: step the canvas down (never below ~1280px wide)
+ const degrade=()=>{tier++;if(tier===1&&!tv){tv=true;gs=.6;dpr=pickDpr();size();if(warmed)warm();return true}
+  if(tier<=2&&gs>.4){gs=.4;if(warmed)warm();else sizeG();return true}
+  if(tier<=3&&cv.width>1400){dpr=Math.max(1,dpr*.75);size();if(warmed)warm();return true}
+  return false};
  return {canvas:cv,frame,mapC,mapF,FULL,setTiles,degrade}}
 return {create,mapC,mapF,FULL}})();
