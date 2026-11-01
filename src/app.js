@@ -306,6 +306,20 @@ function folderSfx(id){
  if(_lastSfxId===id&&(now-_lastSfxAt)<1200)return;
  _lastSfxId=id;_lastSfxAt=now;
  if(window.S&&S.unlock)try{S.unlock()}catch(e){}
+ const L=sfxResolve(id);
+ if(Array.isArray(L)&&L.length){if(/cat-meow/.test(L[0])&&window.S&&S.catMeow)S.catMeow();if(S.fx)S.fx(L)}}
+/*SFX-RESOLVE-BEGIN (tests/sfx-coverage.test.js evaluates this block)*/
+const SFX_DEFAULTS=['clack','reel','chime'].map(n=>['assets/sfx/default-'+n+'.mp3','assets/sfx/default-'+n+'.m4a']);
+const SFX_GENRE_RX=[['Horror',/horror|slasher|nasties|schlock|monster|creepshow|haunt|zombie|walking dead|nightmare|evil dead|scream|saw\b|halloween|friday the 13th|chucky|exorcist|conjuring|insidious|purge/i],['Western',/western|cowboy|gunslinger|yellowstone|deadwood/i],['War',/\bwar\b|soldier|band of brothers|platoon|vietnam|d-day|navy|marines/i],['Sci-Fi',/sci-?fi|space|star|alien|robot|cyber|galactic|dune|matrix|terminator|futur|mars|trek|battlestar|dragon ball|gundam/i],['Superhero',/marvel|dc\b|batman|superman|x-men|avengers|spider|hero|justice league|suicide squad|daredevil|jessica jones|iron fist/i],['Animation',/anime|animat|cartoon|pixar|disney|demon slayer|naruto|simpsons|dragon ball/i],['Crime',/crime|mob|gangster|detective|noir|mafia|reacher|sopranos|godfather/i],['Comedy',/comed|sitcom|seinfeld|parody|funny|spoof|jackass|late late|actors studio/i],['Fantasy',/fantasy|wizard|magic|witcher|dragon|rings|hobbit|potter|narnia/i],['Action',/action|fast &|die hard|bond|007|mission|rambo|fury/i],['Documentary',/documentar|archive|interview|behind the|making of/i],['Family',/family|kids|christmas|holiday/i],['Drama',/drama|series|season|story/i]];
+/* Last-resort layers so EVERY collection has a clip: (1) the collection's catalogued genre, (2) a genre inferred from its own and its ancestors' names, (3) a deterministic generic projector/clapper/chime sound. */
+function sfxFallback(id,f){const G=FSFX._genres||{};
+ const gm=(typeof genreMap==='object'&&genreMap&&(genreMap[id]||(f&&genreMap[f.id])))||null;
+ if(gm&&gm.genres){const g=gm.genres.find(x=>G[x]);if(g)return G[g]}
+ const names=[];let c=f,n=0;while(c&&n++<12){names.push(c.name||'');c=items.get(c.parent)}
+ const txt=names.join(' | ');
+ for(const [g,rx] of SFX_GENRE_RX){if(G[g]&&rx.test(txt))return G[g]}
+ let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return SFX_DEFAULTS[h%SFX_DEFAULTS.length]}
+function sfxResolve(id){
  const f=items.get(id);let L=FSFX[id]||(f&&FSFX[f.name]);
  if(!L){
   const p=people[id]||(f&&(people[f.id]||people[f.targetId]));
@@ -314,7 +328,6 @@ function folderSfx(id){
   let fullPath = pName;
   if(f){let c=f,g=0;while(c&&c.parent&&g++<15){c=items.get(c.parent);if(c&&c.name)fullPath+=' '+c.name.toLowerCase()}}
   if(/purr|purassic/i.test(fullPath)){
-   if(window.S&&S.catMeow)S.catMeow();
    L=['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a']
   }else if(fullPath.includes('jurassic')){
    L=['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a']
@@ -337,7 +350,9 @@ function folderSfx(id){
  if(!L&&f&&Array.isArray(FSFX._rules)){const names=[],ids=[];let c=f,n=0;while(c&&n++<30){names.push((c.name||'').toLowerCase());ids.push(c.id,c.targetId||'');c=items.get(c.parent)}
   const sc=[...items.values()].find(x=>x.targetId===id&&x.id!==id);if(sc)names.push((sc.name||'').toLowerCase());
   const r=FSFX._rules.find(r=>{if(r.ids&&r.ids.some(x=>x===id||(r.path!==false&&ids.indexOf(x)>=0)))return true;if(r.regex){let re;try{re=new RegExp(r.regex,'i')}catch(e){}if(re&&(r.path?names:names.slice(0,1)).some(x=>re.test(x)))return true}const q=(r.match||'').toLowerCase();return q&&(r.path?names:names.slice(0,1).concat(sc?[(sc.name||'').toLowerCase()]:[])).some(x=>x.includes(q))});if(r){if(Array.isArray(r.file)&&Array.isArray(r.file[0])){const V=r.file;let i=Math.random()*V.length|0;if(V.length>1&&i===r._last)i=(i+1+(Math.random()*(V.length-1)|0))%V.length;r._last=i;L=V[i]}else L=r.files||(Array.isArray(r.file)?r.file:[r.file])}}
- if(Array.isArray(L)&&S.fx)S.fx(L)}
+ if(!L&&f)L=sfxFallback(id,f);
+ return L}
+/*SFX-RESOLVE-END*/
 addEventListener('hashchange',()=>{const m=location.hash.match(/^#\/folder\/([^/?]+)/);if(m&&!navBack)folderSfx(decodeURIComponent(m[1]))});
 function go(h){navBack=false;const m=h.match(/^#\/folder\/([^/?]+)/);if(m)folderSfx(decodeURIComponent(m[1]));if(location.hash===h)return route();history.pushState({fefc:1},'',h);route()}
 function back(fallback){S.back();navBack=true;clearBack();const h=location.hash,fb=()=>{history.replaceState(null,'',fallback||'#/');route()};if(history.state&&history.state.fefc){history.back();setTimeout(()=>{if(location.hash===h)fb()},450)}else fb()}

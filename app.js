@@ -1434,6 +1434,36 @@ var __spreadValues = (a, b) => {
       S.unlock();
     } catch (e) {
     }
+    const L = sfxResolve(id);
+    if (Array.isArray(L) && L.length) {
+      if (/cat-meow/.test(L[0]) && window.S && S.catMeow) S.catMeow();
+      if (S.fx) S.fx(L);
+    }
+  }
+  const SFX_DEFAULTS = ["clack", "reel", "chime"].map((n) => ["assets/sfx/default-" + n + ".mp3", "assets/sfx/default-" + n + ".m4a"]);
+  const SFX_GENRE_RX = [["Horror", /horror|slasher|nasties|schlock|monster|creepshow|haunt|zombie|walking dead|nightmare|evil dead|scream|saw\b|halloween|friday the 13th|chucky|exorcist|conjuring|insidious|purge/i], ["Western", /western|cowboy|gunslinger|yellowstone|deadwood/i], ["War", /\bwar\b|soldier|band of brothers|platoon|vietnam|d-day|navy|marines/i], ["Sci-Fi", /sci-?fi|space|star|alien|robot|cyber|galactic|dune|matrix|terminator|futur|mars|trek|battlestar|dragon ball|gundam/i], ["Superhero", /marvel|dc\b|batman|superman|x-men|avengers|spider|hero|justice league|suicide squad|daredevil|jessica jones|iron fist/i], ["Animation", /anime|animat|cartoon|pixar|disney|demon slayer|naruto|simpsons|dragon ball/i], ["Crime", /crime|mob|gangster|detective|noir|mafia|reacher|sopranos|godfather/i], ["Comedy", /comed|sitcom|seinfeld|parody|funny|spoof|jackass|late late|actors studio/i], ["Fantasy", /fantasy|wizard|magic|witcher|dragon|rings|hobbit|potter|narnia/i], ["Action", /action|fast &|die hard|bond|007|mission|rambo|fury/i], ["Documentary", /documentar|archive|interview|behind the|making of/i], ["Family", /family|kids|christmas|holiday/i], ["Drama", /drama|series|season|story/i]];
+  function sfxFallback(id, f) {
+    const G = FSFX._genres || {};
+    const gm = typeof genreMap === "object" && genreMap && (genreMap[id] || f && genreMap[f.id]) || null;
+    if (gm && gm.genres) {
+      const g = gm.genres.find((x) => G[x]);
+      if (g) return G[g];
+    }
+    const names = [];
+    let c = f, n = 0;
+    while (c && n++ < 12) {
+      names.push(c.name || "");
+      c = items.get(c.parent);
+    }
+    const txt = names.join(" | ");
+    for (const [g, rx] of SFX_GENRE_RX) {
+      if (G[g] && rx.test(txt)) return G[g];
+    }
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = h * 31 + id.charCodeAt(i) >>> 0;
+    return SFX_DEFAULTS[h % SFX_DEFAULTS.length];
+  }
+  function sfxResolve(id) {
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
     if (!L) {
@@ -1449,7 +1479,6 @@ var __spreadValues = (a, b) => {
         }
       }
       if (/purr|purassic/i.test(fullPath)) {
-        if (window.S && S.catMeow) S.catMeow();
         L = ["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"];
       } else if (fullPath.includes("jurassic")) {
         L = ["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"];
@@ -1502,7 +1531,8 @@ var __spreadValues = (a, b) => {
         } else L = r.files || (Array.isArray(r.file) ? r.file : [r.file]);
       }
     }
-    if (Array.isArray(L) && S.fx) S.fx(L);
+    if (!L && f) L = sfxFallback(id, f);
+    return L;
   }
   addEventListener("hashchange", () => {
     const m = location.hash.match(/^#\/folder\/([^/?]+)/);
