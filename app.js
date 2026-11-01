@@ -89,18 +89,36 @@ var __spreadValues = (a, b) => {
     document.body.classList.add("cintro");
     const tg = $("#tagline");
     const tvl = tv && !P.get("fullintro") && !P.get("introframe") && !short;
+    const vid = tvl && !P.get("novideo");
+    let vfb = false, vEl = null, tEnd = vid ? 26.1 : TVI.end;
+    const tviLayers = () => {
+      el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
+      requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("tg-run")));
+    };
     if (tvl) {
       document.body.classList.add("tvintro");
       el.classList.add("tvi");
-      el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
-      requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("tg-run")));
+      if (vid) {
+        vEl = document.createElement("video");
+        vEl.className = "tvi-video";
+        vEl.src = "assets/intro-tv.mp4?v=1";
+        vEl.setAttribute("playsinline", "");
+        vEl.preload = "auto";
+        vEl.disablePictureInPicture = true;
+        el.prepend(vEl);
+        vEl.addEventListener("error", () => vidFail());
+        vEl.addEventListener("ended", () => end(false));
+        vEl.addEventListener("playing", () => {
+          t0 = performance.now();
+        }, { once: true });
+      } else tviLayers();
     } else if (!short) document.body.classList.add("tg-run");
     else document.body.classList.add("tg-run", "tg-short");
     const lite = !tv && (/iPhone|iPad|iPod/.test(navigator.userAgent) || /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1 || matchMedia("(prefers-reduced-motion: reduce)").matches || (navigator.hardwareConcurrency || 8) <= 4 || !!P.get("lite"));
     if (lite) document.body.classList.add("lite");
     const R = tvl ? { canvas: document.createElement("i"), frame() {
     }, setTiles() {
-    }, mapF: (r) => r >= TVI.end ? 24.2 : 0, mapC: (r) => r >= TVI.end ? 24.2 : 0 } : window.FEFCIntro.create({ tv, lite, tagline: tg });
+    }, mapF: (r) => r >= tEnd ? 24.2 : 0, mapC: (r) => r >= tEnd ? 24.2 : 0 } : window.FEFCIntro.create({ tv, lite, tagline: tg });
     if (!tvl) el.prepend(R.canvas);
     if (!tvl) fetch("data/mosaic.json").then((r) => r.json()).then((m) => R.setTiles(m.map((x) => x.target || x.id))).catch(() => {
     });
@@ -132,6 +150,12 @@ var __spreadValues = (a, b) => {
           } catch (e) {
           }
         }
+        if (vEl) {
+          try {
+            vEl.pause();
+          } catch (e) {
+          }
+        }
       }
       tg.style.opacity = "";
       tg.style.clipPath = "";
@@ -149,14 +173,48 @@ var __spreadValues = (a, b) => {
     };
     let t0 = performance.now(), last = 0;
     const hint = el.querySelector(".ihint");
-    let sndOn = false;
+    let sndOn = vid ? "vid" : false;
+    const vidFail = () => {
+      if (vfb || done || !vid) return;
+      vfb = true;
+      tEnd = TVI.end;
+      try {
+        vEl.pause();
+        vEl.remove();
+      } catch (e) {
+      }
+      sndOn = false;
+      t0 = performance.now();
+      tviLayers();
+      let s2 = "suspended";
+      try {
+        S.unlock();
+        s2 = S.state();
+      } catch (e) {
+      }
+      if (s2 === "running") {
+        sndOn = "ctx";
+        try {
+          S.introSeq(false, 0, () => (performance.now() - t0) / 1e3);
+        } catch (e) {
+        }
+      } else {
+        tryEl().then((ok) => {
+          if (!ok && !sndOn && !done) sndHint(true);
+        });
+        const tick = setInterval(() => {
+          if (sndOn || done) return clearInterval(tick);
+          go2();
+        }, 250);
+      }
+    };
     const fd = [];
     let pn = 0, dg = 0;
     const loop = (now) => {
       if (tvl && ia) {
         const r0 = (now - t0) / 1e3;
-        if (r0 > TVI.end - 1) try {
-          ia.volume = Math.max(0, Math.min(1, (TVI.end - r0) / 1));
+        if (r0 > tEnd - 1) try {
+          ia.volume = Math.max(0, Math.min(1, (tEnd - r0) / 1));
         } catch (e) {
         }
       }
@@ -173,7 +231,7 @@ var __spreadValues = (a, b) => {
         }
       }
       pn = now;
-      const r = (now - t0) / 1e3, s = short ? R.mapC(r) : R.mapF(r);
+      const r = vid && !vfb && vEl.currentTime > 0 ? vEl.currentTime : (now - t0) / 1e3, s = short ? R.mapC(r) : R.mapF(r);
       last = r;
       R.frame(s);
       if (s >= 24.2) return end(false);
@@ -248,7 +306,8 @@ var __spreadValues = (a, b) => {
         }
       }
     };
-    if (st === "running") {
+    if (vid) {
+    } else if (st === "running") {
       sndOn = "ctx";
       try {
         S.introSeq(short, 0, () => (performance.now() - t0) / 1e3);
@@ -263,6 +322,24 @@ var __spreadValues = (a, b) => {
         go2();
       }, 250);
       ["pointerdown", "touchstart", "keydown", "click"].forEach((ev) => addEventListener(ev, go2, { capture: true, passive: true }));
+    }
+    if (vid) {
+      let m = false;
+      try {
+        m = !!S.muted;
+      } catch (e) {
+      }
+      vEl.muted = m;
+      const pp = vEl.play();
+      const mp = () => {
+        vEl.muted = true;
+        const p2 = vEl.play();
+        if (p2 && p2.catch) p2.catch(() => vidFail());
+      };
+      if (pp && pp.catch) pp.catch(mp);
+      setTimeout(() => {
+        if (!done && !vfb && !(vEl.currentTime > 0.05)) vidFail();
+      }, 7e3);
     }
     R.frame(0);
     raf = requestAnimationFrame(loop);
@@ -1340,6 +1417,13 @@ var __spreadValues = (a, b) => {
     ;
     if (S.fx) S.fx(L);
   }
+  let _bcT = 0;
+  function clearBack() {
+    clearTimeout(_bcT);
+    _bcT = setTimeout(() => {
+      navBack = false;
+    }, 2500);
+  }
   function folderSfx(id) {
     if (navBack || !id || id === ROOT) return;
     const now = Date.now();
@@ -1425,6 +1509,7 @@ var __spreadValues = (a, b) => {
     if (m && !navBack) folderSfx(decodeURIComponent(m[1]));
   });
   function go(h) {
+    navBack = false;
     const m = h.match(/^#\/folder\/([^/?]+)/);
     if (m) folderSfx(decodeURIComponent(m[1]));
     if (location.hash === h) return route();
@@ -1434,6 +1519,7 @@ var __spreadValues = (a, b) => {
   function back(fallback) {
     S.back();
     navBack = true;
+    clearBack();
     const h = location.hash, fb = () => {
       history.replaceState(null, "", fallback || "#/");
       route();
@@ -1563,6 +1649,7 @@ var __spreadValues = (a, b) => {
   window.addEventListener("popstate", () => {
     S.back();
     navBack = true;
+    clearBack();
     route();
   });
   (window.requestIdleCallback || setTimeout)(() => {
@@ -1592,8 +1679,9 @@ var __spreadValues = (a, b) => {
     }), { root: null, rootMargin: "800px 0px" });
     artIO.observe(el);
   }
+  const LEAN = () => document.body.classList.contains("tv") || matchMedia("(pointer:coarse)").matches;
   function tvGate() {
-    if (!document.body.classList.contains("tv")) return true;
+    if (!LEAN()) return true;
     const m = $("#main");
     return !m || m.scrollTop + m.clientHeight * 3 > m.scrollHeight - m.clientHeight * 0.5;
   }
@@ -2700,9 +2788,9 @@ var __spreadValues = (a, b) => {
         vidsList.push(s.item);
       }
     });
-    render([...folds, ...vidsList], "Search: " + q, "home");
-    const total = folds.length + vidsList.length;
-    $("#sec2").textContent = total + " result" + (total === 1 ? "" : "s") + " for \u201C" + q + "\u201D";
+    const CAP = LEAN() ? 600 : Infinity, total = folds.length + vidsList.length, shown = [...folds, ...vidsList].slice(0, CAP);
+    render(shown, "Search: " + q, "home");
+    $("#sec2").textContent = total + " result" + (total === 1 ? "" : "s") + " for \u201C" + q + "\u201D" + (total > shown.length ? " \xB7 showing the first " + shown.length + ", type more to narrow" : "");
   }
   let aiSeq = 0;
   async function aiSearch(q) {
@@ -3099,7 +3187,7 @@ var __spreadValues = (a, b) => {
   function spThumb(f) {
     if (isFolder(f)) {
       const pp = people[target(f)];
-      if (pp) return pp.url;
+      if (pp) return /^assets\/people\/[^/]+\.jpg$/.test(pp.url) ? pp.url.replace("assets/people/", "assets/people/t/") : pp.url;
       const t = fthumbs[target(f)];
       return t ? t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=w200&id=" + t : "";
     }
@@ -3268,7 +3356,7 @@ var __spreadValues = (a, b) => {
       }
       clearTimeout(spT);
       clearTimeout(spAiT);
-      spT = setTimeout(() => spRun(q), 120);
+      spT = setTimeout(() => spRun(q), 220);
     });
     spEl.addEventListener("click", (e) => {
       const it = e.target.closest(".sp-it");
@@ -3386,8 +3474,46 @@ var __spreadValues = (a, b) => {
       }
     }, 600);
   }
+  let spVV = null;
+  function spFit() {
+    const v = window.visualViewport, r = document.documentElement.style;
+    if (!v) {
+      r.setProperty("--vvh", innerHeight + "px");
+      r.setProperty("--vvt", "0px");
+      return;
+    }
+    r.setProperty("--vvh", Math.round(v.height) + "px");
+    r.setProperty("--vvt", Math.round(v.offsetTop) + "px");
+    r.setProperty("--vvl", Math.round(v.offsetLeft) + "px");
+    r.setProperty("--vvw", Math.round(v.width) + "px");
+  }
+  function spVVon() {
+    spFit();
+    if (window.visualViewport && !spVV) {
+      spVV = () => {
+        spFit();
+        if (spEl) {
+          const pn = spEl.querySelector(".sp-panel");
+          if (pn && (pn.scrollLeft || pn.scrollTop)) {
+            pn.scrollLeft = 0;
+            pn.scrollTop = 0;
+          }
+        }
+      };
+      visualViewport.addEventListener("resize", spVV);
+      visualViewport.addEventListener("scroll", spVV);
+    }
+  }
+  function spVVoff() {
+    if (window.visualViewport && spVV) {
+      visualViewport.removeEventListener("resize", spVV);
+      visualViewport.removeEventListener("scroll", spVV);
+      spVV = null;
+    }
+  }
   function openSpot(q) {
     if (!spEl) spMk();
+    spVVon();
     spLastFocus = document.activeElement;
     const inp = spEl.querySelector("#sp-q");
     spEl.hidden = false;
@@ -3414,6 +3540,7 @@ var __spreadValues = (a, b) => {
   }
   function closeSpot(nav) {
     if (!spOpen()) return;
+    spVVoff();
     spSeq++;
     clearTimeout(spT);
     clearTimeout(spAiT);
@@ -3633,15 +3760,13 @@ var __spreadValues = (a, b) => {
     b.onclick = doInstall;
     return b;
   };
-  const hb = mk("hinstall", "hint-btn inst-btn"), tb = mk("tinstall", "mi inst-btn top-inst");
+  const hb = mk("hinstall", "hint-btn inst-btn");
   const hints = document.getElementById("hints");
   if (hints) hints.appendChild(hb);
-  const bar = document.getElementById("bar");
-  if (bar) bar.insertBefore(tb, document.getElementById("q"));
   const droid = /Android/i.test(ua) && !document.body.classList.contains("tv");
   const upd = () => {
     const ok = !isStandalone() && (!!window.__bip || ios && !localStorage.fefcIosTipDone || droid);
-    hb.hidden = tb.hidden = !ok;
+    hb.hidden = !ok;
   };
   function doInstall() {
     if (window.__bip) {
