@@ -169,7 +169,9 @@
       C = core({ drive: driveApi(function() {
         return tok;
       }), store: window.UD });
-      return me().then(run).then(function() {
+      return me().then(function() {
+        if (window.FEFCSrv && user && tok) window.FEFCSrv.googleSession(tok, user);
+      }).then(run).then(function() {
         if (!S._wired) {
           S._wired = 1;
           window.UD.subscribe(function() {
@@ -205,6 +207,7 @@
         });
       },
       signOut: function() {
+        if (window.FEFCSrv && window.FEFCSrv.connected()) window.FEFCSrv.signOut();
         try {
           if (tok && window.google) google.accounts.oauth2.revoke(tok, function() {
           });
@@ -234,6 +237,200 @@
     }
     return api;
   }
+  function srvClient() {
+    var KT = "fefcSrvTok", KU = "fefcSrvUser", KK = "fefcSrvKind", subs = [], busy = false, again = false, deb, timer, cfg = null;
+    var S = { state: "out", kind: null, user: null, error: "" };
+    function tok() {
+      try {
+        return localStorage.getItem(KT);
+      } catch (e) {
+        return null;
+      }
+    }
+    function emit() {
+      subs.forEach(function(f) {
+        try {
+          f(S);
+        } catch (e) {
+        }
+      });
+    }
+    function api(path, body, auth) {
+      var h = { "content-type": "application/json" };
+      if (auth !== false && tok()) h.Authorization = "Bearer " + tok();
+      return fetch("/api/sync/" + path, { method: body === void 0 ? "GET" : "POST", headers: h, body: body === void 0 ? void 0 : JSON.stringify(body), cache: "no-store" }).then(function(r) {
+        return r.json().catch(function() {
+          return {};
+        }).then(function(j) {
+          if (!r.ok) {
+            var e = new Error(j.error || "http " + r.status);
+            e.status = r.status;
+            throw e;
+          }
+          return j;
+        });
+      });
+    }
+    function load() {
+      var t = tok();
+      if (!t) {
+        S.state = "out";
+        S.kind = null;
+        S.user = null;
+        return;
+      }
+      S.state = "in";
+      S.kind = localStorage.getItem(KK) || "code";
+      try {
+        S.user = JSON.parse(localStorage.getItem(KU) || "null");
+      } catch (e) {
+        S.user = null;
+      }
+    }
+    function run() {
+      if (!tok() || !window.UD) return Promise.resolve();
+      if (busy) {
+        again = true;
+        return Promise.resolve();
+      }
+      busy = true;
+      S.state = "syncing";
+      emit();
+      return api("list", { data: JSON.parse(window.UD.exportJSON()) }).then(function(r) {
+        S.error = "";
+        if (r && r.data && r.data.v === 1) window.UD.importJSON(r.data, false);
+        S.state = "in";
+      }, function(e) {
+        if (e.status === 401 || e.status === 503 && 0) {
+          clear();
+          return;
+        }
+        S.state = "in";
+        S.error = e && e.message || "sync failed";
+      }).then(function() {
+        busy = false;
+        emit();
+        if (again) {
+          again = false;
+          return run();
+        }
+      });
+    }
+    function soon() {
+      clearTimeout(deb);
+      deb = setTimeout(run, 2500);
+    }
+    function wire() {
+      if (S._wired || !window.UD) return;
+      S._wired = 1;
+      window.UD.subscribe(function() {
+        if (tok() && !busy) soon();
+      });
+      addEventListener("focus", function() {
+        if (tok()) run();
+      });
+      document.addEventListener("visibilitychange", function() {
+        if (!document.hidden && tok()) run();
+      });
+      timer = setInterval(function() {
+        if (tok()) run();
+      }, 4 * 60 * 1e3);
+    }
+    function adopt(r) {
+      if (!r || !r.token) throw new Error("no token");
+      localStorage.setItem(KT, r.token);
+      localStorage.setItem(KK, r.kind || "code");
+      localStorage.setItem(KU, JSON.stringify(r.user || null));
+      load();
+      wire();
+      emit();
+      return run().then(function() {
+        return S;
+      });
+    }
+    function clear() {
+      localStorage.removeItem(KT);
+      localStorage.removeItem(KK);
+      localStorage.removeItem(KU);
+      load();
+      emit();
+    }
+    var A = {
+      get state() {
+        return S;
+      },
+      subscribe: function(f) {
+        subs.push(f);
+        f(S);
+      },
+      status: function() {
+        return cfg || (cfg = api("status", void 0, false).catch(function() {
+          return { configured: false, tv: false };
+        }));
+      },
+      adopt,
+      syncNow: run,
+      connected: function() {
+        return !!tok();
+      },
+      signOut: function() {
+        var t = tok();
+        if (t) try {
+          fetch("/api/sync/logout", { method: "POST", headers: { Authorization: "Bearer " + t } }).catch(function() {
+          });
+        } catch (e) {
+        }
+        clear();
+      },
+      // Google web sign-in -> same server list as the TV code flow
+      googleSession: function(accessToken, user) {
+        if (S.kind === "google" && tok() && S.user && user && S.user.email === user.email) return Promise.resolve(S);
+        return A.status().then(function(c) {
+          if (!c.configured) return S;
+          return api("google/session", { access_token: accessToken, name: user && user.name, picture: user && user.picture }, false).then(adopt);
+        }).catch(function() {
+          return S;
+        });
+      },
+      deviceStart: function() {
+        return api("device/start", {}, false);
+      },
+      devicePoll: function(id) {
+        return api("device/poll", { id }, false);
+      },
+      qrStart: function() {
+        return api("qr/start", {}, false);
+      },
+      qrPoll: function(id, secret) {
+        return api("qr/poll", { id, secret }, false);
+      },
+      qrInfo: function(id) {
+        return api("qr/info", { id }, false);
+      },
+      qrApprove: function(id) {
+        return api("qr/approve", { id });
+      },
+      pairCreate: function() {
+        return api("pair/create", {});
+      },
+      pairRedeem: function(code) {
+        return api("pair/redeem", { code }, false);
+      }
+    };
+    load();
+    if (tok()) {
+      wire();
+      setTimeout(run, 1500);
+    }
+    return A;
+  }
+  if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", function(e) {
+    if (window.__fefcModal && window.__fefcModal(e)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  }, true);
   root.FEFCSyncCore = core;
+  if (typeof window !== "undefined" && window.document) window.FEFCSrv = srvClient();
   if (typeof window !== "undefined" && window.document) window.FEFCSync = browser();
 })(typeof window !== "undefined" ? window : globalThis);

@@ -14,6 +14,7 @@ const ASSETS=[
  '/userdata.js',
  '/sync.js',
  '/syncui.js',
+ '/qrgen.js',
  '/genres.js',
  '/app.js',
  '/assets/fefc-logo-carson.png',
