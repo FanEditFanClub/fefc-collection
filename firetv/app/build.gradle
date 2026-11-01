@@ -1,0 +1,37 @@
+plugins { id 'com.android.application' }
+
+def ksProps = new Properties()
+def ksFile = rootProject.file('signing.properties')
+if (ksFile.exists()) ksFile.withInputStream { ksProps.load(it) }
+
+android {
+    namespace 'com.faneditfanclub.collection'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.faneditfanclub.collection'
+        minSdk 22
+        targetSdk 33
+        versionCode 1
+        versionName '1.0'
+        // The live site URL; the app always loads this, so web changes need no reinstall.
+        buildConfigField 'String', 'START_URL', '"https://collection.faneditfanclub.com/?tv=1"'
+    }
+    buildFeatures { buildConfig true }
+    signingConfigs {
+        release {
+            if (ksFile.exists()) {
+                storeFile file(ksProps['storeFile'])
+                storePassword ksProps['storePassword']
+                keyAlias ksProps['keyAlias']
+                keyPassword ksProps['storePassword']
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ksFile.exists()) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}

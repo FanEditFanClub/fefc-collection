@@ -22,3 +22,12 @@ Live site: https://collection.faneditfanclub.com
 ## Changelog rule
 - Log every update by appending a `{ts,text}` line to `changelog/entries.jsonl` in FanEditFanClub/fanedit-daily-changelog.
 - Never touch that repo's workflow or `state/changelog.json`.
+
+## Fire TV / Android TV app
+- Source in `firetv/` (WebView wrapper that loads the live site; see `firetv/README.md`). Prebuilt APK: `firetv/FEFC-Collection.apk`, sideload steps in `firetv/SIDELOAD.md`.
+- When deploying to Pages, the zip should include ONLY `firetv/FEFC-Collection.apk` from that folder (exclude `firetv/app`, `firetv/gradle*`, `firetv/*.md`, etc.). It is then served at https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk.
+- The signing keystore is NOT in git (kept on the box at /workspace/fefc-firetv/keystore). Back it up; updates must be signed with the same key.
+
+## My List sync (Sync My List panel)
+- Server code in `_worker.js` (`/api/sync/*`), UI in `src/sync.js`, `src/syncui.js`, `src/qrgen.js` (QR lib, MIT). Zip must include `qrgen.js`.
+- Needs a KV binding `SYNC` and, for the Google TV code, secrets `GOOGLE_TV_CLIENT_ID` / `GOOGLE_TV_CLIENT_SECRET`. Full steps and design: `SYNC-SETUP.md`. Tests: `node tests/sync-server.test.mjs`.
