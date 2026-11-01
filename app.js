@@ -3272,8 +3272,9 @@ var __spreadValues = (a, b) => {
   if (hints) hints.appendChild(hb);
   const bar = document.getElementById("bar");
   if (bar) bar.insertBefore(tb, document.getElementById("q"));
+  const droid = /Android/i.test(ua) && !document.body.classList.contains("tv");
   const upd = () => {
-    const ok = !isStandalone() && (!!window.__bip || ios && !localStorage.fefcIosTipDone);
+    const ok = !isStandalone() && (!!window.__bip || ios && !localStorage.fefcIosTipDone || droid);
     hb.hidden = tb.hidden = !ok;
   };
   function doInstall() {
@@ -3295,6 +3296,14 @@ var __spreadValues = (a, b) => {
       t.querySelector("button").onclick = () => t.remove();
       localStorage.fefcIosTipDone = "1";
       upd();
+      return;
+    }
+    if (droid) {
+      const t = document.createElement("div");
+      t.className = "ios-tip";
+      t.innerHTML = 'To install: tap the Chrome <b>\u22EE</b> menu, then <b>Install app</b> (or <b>Add to Home screen</b>).<button type="button">OK</button>';
+      document.body.appendChild(t);
+      t.querySelector("button").onclick = () => t.remove();
     }
   }
   addEventListener("beforeinstallprompt", (e) => {

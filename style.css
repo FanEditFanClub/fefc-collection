@@ -188,9 +188,13 @@ body.tv #hub{width:calc(66vh*1.55)}body.tv .mc>img{transition-duration:1.6s;anim
  font:400 clamp(14px,2.3vmin,34px) 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:.04em;color:#e8f1ff;text-shadow:0 0 14px #2fa8ff99,0 2px 4px #000;padding:0 4vw;visibility:hidden}
 #tagline span{display:inline-block;padding:.35em 1.1em;border-radius:3px;background:linear-gradient(180deg,#0b0f16cc,#05070bcc);border:1px solid #6d7c8f88;box-shadow:inset 0 1px 0 #ffffff22}
 /* in intro: reveal after logo resolves (~72% of --d) */
-body:not(.intro-done) #tagline{visibility:visible;animation:tagin var(--d,3.2s) ease-out both}
+body:not(.intro-done) #tagline{visibility:visible}
+/* title (wordmark) wipes in first; the subtitle waits until the title has fully landed, then fades in */
+body:not(.intro-done) #tagline #wordmark{animation:tagin var(--d,3.2s) ease-out both}
+body:not(.intro-done) #tagline span{animation:tagsub .9s ease-out calc(var(--d,3.2s)*.92 + .6s) both}
+@keyframes tagsub{0%{opacity:0}100%{opacity:1}}
 @keyframes tagin{0%,70%{opacity:0;clip-path:inset(0 100% 0 0)}92%{opacity:1;clip-path:inset(0 0 0 0)}100%{opacity:1;clip-path:inset(0 0 0 0)}}
-body.frozen #tagline{animation-play-state:paused;animation-delay:var(--tf)}
+body.frozen #tagline #wordmark,body.frozen #tagline span{animation-play-state:paused}
 body.intro-done.at-home #tagline{visibility:visible;opacity:1}
 body.intro-done:not(.at-home) #tagline{visibility:hidden}
 #intro img{position:relative;top:0}
@@ -899,3 +903,20 @@ body.tv #intro canvas,body.lite #intro canvas{transform:translateZ(0);will-chang
 body.tv #intro.done,body.lite #intro.done{animation:introFadeTv .5s linear forwards}
 @keyframes introFadeTv{0%{opacity:1}100%{opacity:0;visibility:hidden}}
 body.tv #intro .isnd,body.tv #intro .ihint{box-shadow:none;text-shadow:none}
+
+/* ---- Sync My List panel: fit any viewport (Pixel Fold, phones), wrap text, title above description ---- */
+#syncpanel{box-sizing:border-box;padding:16px;align-items:center;justify-content:center;overflow-y:auto;overscroll-behavior:contain}
+#syncpanel .sp-card{box-sizing:border-box;width:min(640px,calc(100vw - 32px));max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);max-height:calc(100vh - 32px);margin:auto;overflow-y:auto;overflow-x:hidden;overflow-wrap:anywhere}
+@supports (height:100dvh){#syncpanel .sp-card{max-height:calc(100dvh - 32px)}}
+#syncpanel .sp-opts{min-width:0}
+#syncpanel .sp-opt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;white-space:normal;min-height:0;height:auto;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere;letter-spacing:0}
+#syncpanel .sp-opt b{display:block;width:100%;font-size:18px;line-height:1.25;white-space:normal}
+#syncpanel .sp-opt span{display:block;width:100%;font-size:13.5px;line-height:1.35;color:#9fb6cf;margin:0;font-weight:400;white-space:normal}
+#syncpanel .sp-sub,#syncpanel .sp-note,#syncpanel .sp-card p{white-space:normal;overflow-wrap:anywhere;max-width:100%}
+#syncpanel .sp-b{white-space:normal;max-width:100%}
+#syncpanel .sp-btns{max-width:100%}
+@media (max-width:420px){#syncpanel{padding:12px}#syncpanel .sp-card{padding:18px 16px}#syncpanel .sp-pad{grid-template-columns:repeat(3,minmax(0,1fr));width:100%}#syncpanel .sp-card h2{font-size:24px}}
+body.tv #syncpanel .sp-card{width:min(900px,calc(100vw - 32px))}
+body.tv #syncpanel .sp-opt b{font-size:2.8vh}body.tv #syncpanel .sp-opt span{font-size:2.1vh}
+#syncpanel .sp-opts{display:flex;flex-direction:column;align-items:stretch;width:100%}
+#syncpanel .sp-opt{width:100%;flex:0 0 auto;align-self:stretch}

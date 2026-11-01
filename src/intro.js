@@ -29,7 +29,10 @@ function create(opt){
  function sky(a){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#000');g.addColorStop(1,'#141a24');c.fillStyle=g;c.fillRect(0,0,W,H);c.fillStyle='#fff';for(const s of stars){c.globalAlpha=a*(.25+.75*s[2]);const r=s[2]>.9?1.6:.9;c.fillRect(s[0]*W,s[1]*H,r,r)}
   if(curS>12&&curS<22){const p=(curS-12)/10,startX=W*(-0.2+p*1.4),startY=H*(0.08+p*0.12);c.fillStyle='#88ccff';for(let i=0;i<12;i++){const sx=startX-i*(W*0.014),sy=startY-i*(H*0.005);if(sx>0&&sx<W&&sy>0&&sy<H){c.globalAlpha=a*0.75;c.fillRect(sx,sy,1.8,1.8)}}}
   c.globalAlpha=1}
- function drawLogo(s,a,sc,rot,dx,dy,tinted){if(!logo.complete)return;const L=H*.46*sc;c.save();c.globalAlpha=a;c.translate(W/2+dx,H/2+dy);c.rotate(rot);if(!tv){c.shadowColor='rgba(255,255,255,.35)';c.shadowBlur=30*sc}c.drawImage(logo,-L/2,-L/2,L,L);c.restore()}
+ const LU=()=>Math.min(H*.46,W*.62);
+ const tgEl=()=>document.getElementById('tagline');const LY=()=>{const t=tgEl();if(!t)return 0;const r=t.getBoundingClientRect();return Math.max(0,r.bottom+H*.03+LU()*.68-H/2)}; // push the logo down so the header (wordmark + subtitle) never overlaps it
+ // logo box: never wider than the viewport (phone portrait)
+ function drawLogo(s,a,sc,rot,dx,dy,tinted){if(!logo.complete)return;const L=LU()*sc;c.save();c.globalAlpha=a;c.translate(W/2+dx,H/2+LY()+dy);c.rotate(rot);if(!tv){c.shadowColor='rgba(255,255,255,.35)';c.shadowBlur=30*sc}c.drawImage(logo,-L/2,-L/2,L,L);c.restore()}
  function ribbon(s){ // 0-5: blurred glowing orange ribbons sweeping right->left, then zooming back into the mark
   const p=s/2,z=s<2?1:lerp(1,.18,eo((s-2)/1.6)),fade=sm(0,.5,s)*(1-sm(2.5,3.3,s));if(fade<=0)return;
   c.save();c.translate(W/2,H/2);c.scale(z,z);c.rotate(s<2?0:-(s-2)*.5);c.globalCompositeOperation='lighter';
@@ -38,7 +41,7 @@ function create(opt){
    c.strokeStyle=g;c.lineWidth=H*(k?.34:.48);if(!tv&&'filter' in c)c.filter='blur('+Math.round(H*.018)+'px)';c.globalAlpha=fade*(k?.55:.9);if(!tv){c.shadowColor='#dfe6f0';c.shadowBlur=60}
    c.beginPath();c.arc(cx,cy,R,Math.PI*(.9+k*.3+p*.25),Math.PI*(1.7+k*.3+p*.25));c.stroke()}
   c.filter='none';c.restore()}
- function sheen(s){const t=(s-3.8)/1;if(t<0||t>1||!logo.complete)return;const L=H*.46;c.save();c.beginPath();c.rect(W/2-L/2,H/2-L/2,L,L);c.clip();c.globalCompositeOperation='lighter';const x=W/2-L+t*2*L,g=c.createLinearGradient(x-L*.15,0,x+L*.15,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.globalCompositeOperation='source-atop';c.restore();
+ function sheen(s){const t=(s-3.8)/1;if(t<0||t>1||!logo.complete)return;const L=LU();c.save();c.beginPath();c.rect(W/2-L/2,H/2+LY()-L/2,L,L);c.clip();c.globalCompositeOperation='lighter';const x=W/2-L+t*2*L,g=c.createLinearGradient(x-L*.15,0,x+L*.15,0);g.addColorStop(0,'rgba(255,255,255,0)');g.addColorStop(.5,'rgba(255,255,255,.55)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.globalCompositeOperation='source-atop';c.restore();
   // apply sheen only on the logo pixels using buf
   if(sbuf.width!==(L|0)||sbuf.height!==(L|0)){sbuf.width=L|0;sbuf.height=L|0}const bc=sbc;bc.globalCompositeOperation='source-over';bc.clearRect(0,0,L,L);bc.drawImage(logo,0,0,L,L);bc.globalCompositeOperation='source-in';const g2=bc.createLinearGradient(t*2*L-L*.65,0,t*2*L-L*.35,0);g2.addColorStop(0,'rgba(255,255,255,0)');g2.addColorStop(.5,'rgba(235,240,250,.9)');g2.addColorStop(1,'rgba(255,255,255,0)');bc.fillStyle=g2;bc.fillRect(0,0,L,L);bc.globalCompositeOperation='source-over';
   c.save();c.globalCompositeOperation='lighter';c.drawImage(sbuf,W/2-L/2,H/2-L/2);c.restore()}
@@ -82,14 +85,18 @@ function create(opt){
     const ly=H/2+pr*.55;c.beginPath();c.arc(W/2,ly+pr*3,pr*3,0,Math.PI*2);c.fillStyle='#2b3542';c.fill();c.strokeStyle='rgba(150,210,255,.9)';c.lineWidth=Math.max(1.5,pr*.03);if(!tv){c.shadowColor='#4aa8ff';c.shadowBlur=24}c.stroke();c.restore()}
    if(la>0)drawLogo(s,la*(s>11?1-sm(11.3,11.8,s):1),sc*dive,rot,0,dy*dive,true);
    if(s>3.7&&s<5)sheen(s);
-   const wa=sm(5.6,6.6,s)*(1-sm(8,8.6,s));if(wa>0){c.save();c.globalAlpha=wa;c.fillStyle='#f2f2f2';c.font=`600 ${Math.round(H*.065)}px 'Source Sans 3',sans-serif`;c.textAlign='center';c.textBaseline='middle';if(c.letterSpacing!==undefined)c.letterSpacing=Math.round(H*.006)+'px';c.fillText('The Fan Edit Fan Club',W/2,H/2+H*.24);c.restore()}
+   const wa=sm(5.6,6.6,s)*(1-sm(8,8.6,s));if(wa>0){c.save();c.globalAlpha=wa;c.fillStyle='#f2f2f2';{const T='The Fan Edit Fan Club';let fs=Math.round(H*.065),ls=Math.round(H*.006);c.textAlign='center';c.textBaseline='middle';
+    const fit=()=>{c.font=`600 ${fs}px 'Source Sans 3',sans-serif`;if(c.letterSpacing!==undefined)c.letterSpacing=ls+'px';return c.measureText(T).width+(c.letterSpacing!==undefined?0:ls*T.length)};
+    let tw=fit();const max=W*.88;if(tw>max){const k=max/tw;fs=Math.max(10,Math.floor(fs*k));ls=Math.floor(ls*k);tw=fit();if(tw>max){fs=Math.max(10,Math.floor(fs*max/tw));fit()}}
+    /* letter-spacing adds trailing space after the last glyph: shift so the whole title (incl. the final "b") is centred and never clipped */
+    c.textAlign='left';c.fillText(T,W/2-(tw-(c.letterSpacing!==undefined?ls:0))/2,Math.min(H*.93,H/2+LY()+Math.min(H*.24,LU()*.52+fs)));}c.restore()}
    if(s>11.4){const st=sm(11.4,11.8,s)*(1-sm(11.9,12.2,s));c.save();c.globalCompositeOperation='lighter';const g=c.createLinearGradient(0,0,W,0);g.addColorStop(0,'rgba(60,140,255,0)');g.addColorStop(.5,'rgba(190,230,255,1)');g.addColorStop(1,'rgba(60,140,255,0)');c.fillStyle=g;c.globalAlpha=st;const hh=H*lerp(.004,.05,st);c.fillRect(0,H*.56-hh/2,W,hh);c.restore()}
   }
   if(s>=11.95&&s<22.95)planet(s); // topdown is fully opaque from 22.9
   if(s>22.1)topdown(s);
   if(fa>0&&!fx){c.globalAlpha=fa;c.fillStyle='#fff';c.fillRect(0,0,W,H);c.globalAlpha=1}
-  // tagline: fades in at its exact dashboard position (real DOM element)
-  const tg=opt.tagline;if(tg){const a=+sm(17.4,18.6,s).toFixed(3),cp=`inset(0 ${(100-100*eo(cl((s-17.4)/1.4))).toFixed(1)}% 0 0)`;if(tg._a!==a){tg._a=a;tg.style.opacity=a}if(tg._cp!==cp){tg._cp=cp;tg.style.clipPath=cp}if(!tg._v){tg._v=1;tg.style.visibility='visible'}}}
+  // tagline: title + subtitle are driven by CSS (style.css #tagline #wordmark / span) so the title is never clipped and the subtitle follows it
+  {const tg=opt.tagline;if(tg&&!tg._v){tg._v=1;tg.style.visibility='visible'}}}
  // adaptive: if the device can't hold frame rate, drop to the low-cost path mid-intro (same timeline)
  // tier 1: drop blur/shadow path; tier 2: lower the ground resolution; tier 3: step the canvas down (never below ~1280px wide)
  const degrade=()=>{tier++;if(tier===1&&!tv){tv=true;gs=.6;dpr=pickDpr();size();if(warmed)warm();return true}

@@ -3,10 +3,10 @@
  "short_name": "FEFC Collection",
  "start_url": "/",
  "scope": "/",
- "display": "fullscreen",
+ "display": "standalone",
  "display_override": [
-  "fullscreen",
-  "standalone"
+  "standalone",
+  "minimal-ui"
  ],
  "orientation": "any",
  "background_color": "#000000",
@@ -35,6 +35,27 @@
  "description": "The Fan Edit Fan Club Collection: browse, star and watch thousands of fan edits, organized by collection, genre, actor and director.",
  "screenshots": [
   {
+   "src": "/assets/screenshots/narrow.png",
+   "sizes": "412x915",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "New Arrivals on a phone"
+  },
+  {
+   "src": "/assets/screenshots/narrow-home.png",
+   "sizes": "412x915",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Home"
+  },
+  {
+   "src": "/assets/screenshots/narrow-genres.png",
+   "sizes": "412x915",
+   "type": "image/png",
+   "form_factor": "narrow",
+   "label": "Genres"
+  },
+  {
    "src": "/assets/screenshots/wide.png",
    "sizes": "1440x900",
    "type": "image/png",
@@ -42,11 +63,18 @@
    "label": "Home"
   },
   {
-   "src": "/assets/screenshots/narrow.png",
-   "sizes": "412x915",
+   "src": "/assets/screenshots/wide-genres.png",
+   "sizes": "1440x900",
    "type": "image/png",
-   "form_factor": "narrow",
-   "label": "New Arrivals on a phone"
+   "form_factor": "wide",
+   "label": "Genres"
   }
+ ],
+ "prefer_related_applications": false,
+ "lang": "en",
+ "dir": "ltr",
+ "categories": [
+  "entertainment",
+  "video"
  ]
 }

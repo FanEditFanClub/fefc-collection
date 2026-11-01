@@ -882,9 +882,11 @@ showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))rout
  const mk=(id,cls)=>{const b=document.createElement('button');b.id=id;b.type='button';b.className=cls;b.hidden=true;b.innerHTML='<i class="g g-inst">⤓</i>Install App';b.onclick=doInstall;return b};
  const hb=mk('hinstall','hint-btn inst-btn'),tb=mk('tinstall','mi inst-btn top-inst');
  const hints=document.getElementById('hints');if(hints)hints.appendChild(hb);const bar=document.getElementById('bar');if(bar)bar.insertBefore(tb,document.getElementById('q'));
- const upd=()=>{const ok=!isStandalone()&&(!!window.__bip||(ios&&!localStorage.fefcIosTipDone));hb.hidden=tb.hidden=!ok};
+ const droid=/Android/i.test(ua)&&!document.body.classList.contains('tv');
+ const upd=()=>{const ok=!isStandalone()&&(!!window.__bip||(ios&&!localStorage.fefcIosTipDone)||droid);hb.hidden=tb.hidden=!ok};
  function doInstall(){if(window.__bip){const e=window.__bip;e.prompt();e.userChoice.then(c=>{if(c&&c.outcome==='accepted')window.__bip=null;upd()}).catch(()=>{});return}
-  if(ios){const t=document.createElement('div');t.className='ios-tip';t.innerHTML='To install: tap <b>Share</b> <span class="ios-share">⬆︎</span> then <b>Add to Home Screen</b>.<button type="button">OK</button>';document.body.appendChild(t);t.querySelector('button').onclick=()=>t.remove();localStorage.fefcIosTipDone='1';upd()}}
+  if(ios){const t=document.createElement('div');t.className='ios-tip';t.innerHTML='To install: tap <b>Share</b> <span class="ios-share">⬆︎</span> then <b>Add to Home Screen</b>.<button type="button">OK</button>';document.body.appendChild(t);t.querySelector('button').onclick=()=>t.remove();localStorage.fefcIosTipDone='1';upd();return}
+  if(droid){const t=document.createElement('div');t.className='ios-tip';t.innerHTML='To install: tap the Chrome <b>⋮</b> menu, then <b>Install app</b> (or <b>Add to Home screen</b>).<button type="button">OK</button>';document.body.appendChild(t);t.querySelector('button').onclick=()=>t.remove()}}
  addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.__bip=e;upd()});
  addEventListener('appinstalled',()=>{window.__bip=null;upd()});matchMedia('(display-mode: standalone)').addEventListener&&matchMedia('(display-mode: standalone)').addEventListener('change',upd);upd()})();
 /* ---------- INSTALL (PWA) ---------- */

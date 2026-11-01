@@ -124,12 +124,20 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       }
       c.globalAlpha = 1;
     }
+    const LU = () => Math.min(H * 0.46, W * 0.62);
+    const tgEl = () => document.getElementById("tagline");
+    const LY = () => {
+      const t = tgEl();
+      if (!t) return 0;
+      const r = t.getBoundingClientRect();
+      return Math.max(0, r.bottom + H * 0.03 + LU() * 0.68 - H / 2);
+    };
     function drawLogo(s, a, sc, rot, dx, dy, tinted) {
       if (!logo.complete) return;
-      const L = H * 0.46 * sc;
+      const L = LU() * sc;
       c.save();
       c.globalAlpha = a;
-      c.translate(W / 2 + dx, H / 2 + dy);
+      c.translate(W / 2 + dx, H / 2 + LY() + dy);
       c.rotate(rot);
       if (!tv) {
         c.shadowColor = "rgba(255,255,255,.35)";
@@ -171,10 +179,10 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     function sheen(s) {
       const t = (s - 3.8) / 1;
       if (t < 0 || t > 1 || !logo.complete) return;
-      const L = H * 0.46;
+      const L = LU();
       c.save();
       c.beginPath();
-      c.rect(W / 2 - L / 2, H / 2 - L / 2, L, L);
+      c.rect(W / 2 - L / 2, H / 2 + LY() - L / 2, L, L);
       c.clip();
       c.globalCompositeOperation = "lighter";
       const x = W / 2 - L + t * 2 * L, g = c.createLinearGradient(x - L * 0.15, 0, x + L * 0.15, 0);
@@ -416,11 +424,31 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
           c.save();
           c.globalAlpha = wa;
           c.fillStyle = "#f2f2f2";
-          c.font = "600 ".concat(Math.round(H * 0.065), "px 'Source Sans 3',sans-serif");
-          c.textAlign = "center";
-          c.textBaseline = "middle";
-          if (c.letterSpacing !== void 0) c.letterSpacing = Math.round(H * 6e-3) + "px";
-          c.fillText("The Fan Edit Fan Club", W / 2, H / 2 + H * 0.24);
+          {
+            const T = "The Fan Edit Fan Club";
+            let fs = Math.round(H * 0.065), ls = Math.round(H * 6e-3);
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            const fit = () => {
+              c.font = "600 ".concat(fs, "px 'Source Sans 3',sans-serif");
+              if (c.letterSpacing !== void 0) c.letterSpacing = ls + "px";
+              return c.measureText(T).width + (c.letterSpacing !== void 0 ? 0 : ls * T.length);
+            };
+            let tw = fit();
+            const max = W * 0.88;
+            if (tw > max) {
+              const k = max / tw;
+              fs = Math.max(10, Math.floor(fs * k));
+              ls = Math.floor(ls * k);
+              tw = fit();
+              if (tw > max) {
+                fs = Math.max(10, Math.floor(fs * max / tw));
+                fit();
+              }
+            }
+            c.textAlign = "left";
+            c.fillText(T, W / 2 - (tw - (c.letterSpacing !== void 0 ? ls : 0)) / 2, Math.min(H * 0.93, H / 2 + LY() + Math.min(H * 0.24, LU() * 0.52 + fs)));
+          }
           c.restore();
         }
         if (s > 11.4) {
@@ -446,18 +474,9 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
         c.fillRect(0, 0, W, H);
         c.globalAlpha = 1;
       }
-      const tg = opt.tagline;
-      if (tg) {
-        const a = +sm(17.4, 18.6, s).toFixed(3), cp = "inset(0 ".concat((100 - 100 * eo(cl((s - 17.4) / 1.4))).toFixed(1), "% 0 0)");
-        if (tg._a !== a) {
-          tg._a = a;
-          tg.style.opacity = a;
-        }
-        if (tg._cp !== cp) {
-          tg._cp = cp;
-          tg.style.clipPath = cp;
-        }
-        if (!tg._v) {
+      {
+        const tg = opt.tagline;
+        if (tg && !tg._v) {
           tg._v = 1;
           tg.style.visibility = "visible";
         }
