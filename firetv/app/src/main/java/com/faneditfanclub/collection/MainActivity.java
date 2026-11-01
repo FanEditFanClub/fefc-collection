@@ -48,6 +48,7 @@ public class MainActivity extends Activity {
     private Button retry;
     private boolean failed;
     private long lastBack;
+    private Chrome chrome;
     private final Handler ui = new Handler(Looper.getMainLooper());
 
     @Override
@@ -70,7 +71,8 @@ public class MainActivity extends Activity {
         setContentView(root);
 
         web.setWebViewClient(new Client());
-        web.setWebChromeClient(new Chrome());
+        chrome = new Chrome();
+        web.setWebChromeClient(chrome);
         if (b != null) web.restoreState(b); else load();
         web.requestFocus();
     }
@@ -80,7 +82,9 @@ public class MainActivity extends Activity {
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
         s.setDatabaseEnabled(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
+        s.setMediaPlaybackRequiresUserGesture(false); // embedded Drive player can start without a prior tap
+        s.setAllowContentAccess(true);
+        s.setJavaScriptCanOpenWindowsAutomatically(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT); // honours the site's no-cache headers, so updates show
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
@@ -193,6 +197,13 @@ public class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
             return handleUrl(r.getUrl());
+        }
+
+        @Override
+        public boolean onRenderProcessGone(WebView v, android.webkit.RenderProcessGoneDetail d) {
+            // The WebView renderer died (memory pressure on the TV): rebuild instead of crashing the app.
+            ui.post(() -> recreate());
+            return true;
         }
 
         @Override
@@ -310,8 +321,15 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
-        if (customView != null) return super.dispatchKeyEvent(e);
         int k = e.getKeyCode();
+        if (customView != null) {
+            // Fullscreen video from the embedded player: Back leaves fullscreen instead of quitting the app.
+            if (k == KeyEvent.KEYCODE_BACK) {
+                if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) chrome.onHideCustomView();
+                return true;
+            }
+            return super.dispatchKeyEvent(e);
+        }
         boolean down = e.getAction() == KeyEvent.ACTION_DOWN;
         switch (k) {
             case KeyEvent.KEYCODE_BACK:

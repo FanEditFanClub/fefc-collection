@@ -4,7 +4,7 @@ A minimal native Android WebView wrapper around the live site
 <https://collection.faneditfanclub.com>. The app always loads the live site, so any change deployed to
 the web app shows up on the TV the next time the app opens (no reinstall needed).
 
-- Package `com.faneditfanclub.collection`, label "FEFC Collection", versionCode 1.
+- Package `com.faneditfanclub.collection`, label "FEFC Collection", versionCode 3 (1.0.2).
 - Leanback launcher (`LEANBACK_LAUNCHER`) with a 320x180 banner; touchscreen not required; landscape, fullscreen, keeps the screen on.
 - WebView with JavaScript, DOM storage, autoplay allowed, hardware acceleration. The user agent adds `Android TV FEFCFireTV/1.0`, and the start URL has `?tv=1`, so the web app uses its TV layout.
 - Remote: D-pad and Select go to the page (focus navigation). Back sends the web app's own Back (`GoBack`, which closes the player or details page or goes up a level using history); on the Home screen, press Back twice to exit. Home exits as usual. Play/Pause, Next and Previous are passed to the page. Menu (or gamepad Y) opens search (Y).
