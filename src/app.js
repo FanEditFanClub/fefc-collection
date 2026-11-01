@@ -14,7 +14,11 @@ function parse(n){const base=n.replace(/\.[a-z0-9]{2,4}$/i,'');const parts=base.
 const sz=b=>b?(b/1e9).toFixed(2)+' GB':'';
 /* ---------- INTRO ---------- */
 (function(){var d=document.createElement('div').style;if(!('perspective' in d||'webkitPerspective' in d))document.documentElement.classList.add('no3d')})();
-function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElementById('wordmark');if(wmi&&!wmi.complete)wmi.addEventListener('load',placeHeader);const el=$('#intro');if(P.get('nointro')){el.remove();document.body.classList.add('intro-done','no-intro');return}
+function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElementById('wordmark');if(wmi&&!wmi.complete)wmi.addEventListener('load',placeHeader);const el=$('#intro');
+ /* the intro plays ONCE per app start: never again on reload (service-worker update, WebView restore/recreate), sync, focus or navigation. Marked in sessionStorage (tab/app life) and a short localStorage window (WebView restore after process death). */
+ let seenNow=false;try{const t=+localStorage.fefcIntroAt||0;seenNow=!!sessionStorage.fefcIntro||(t>0&&Date.now()-t<3*60*1000)}catch(e){}
+ if(!P.get('introframe')&&!P.get('shortintro')){if(seenNow){el.remove();document.body.classList.add('intro-done','no-intro');return}try{sessionStorage.fefcIntro='1';localStorage.fefcIntroAt=String(Date.now())}catch(e){}}
+ if(P.get('nointro')){el.remove();document.body.classList.add('intro-done','no-intro');return}
  const short=!!P.get('shortintro'),tv=document.body.classList.contains('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|BRAVIA|Android TV|GoogleTV/i.test(navigator.userAgent);
  document.body.classList.add('cintro');const tg=$('#tagline');
  const lite=!tv&&(/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1)||matchMedia('(prefers-reduced-motion: reduce)').matches||(navigator.hardwareConcurrency||8)<=4||!!P.get('lite'));if(lite)document.body.classList.add('lite');
@@ -25,7 +29,7 @@ function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElemen
  let done=false,raf=0,ia=null;const end=skipped=>{if(done)return;done=true;cancelAnimationFrame(raf);localStorage.fefcSeen='1';sndHint(false);if(skipped){S.introStop();if(ia){try{ia.pause()}catch(e){}}}
   tg.style.opacity='';tg.style.clipPath='';tg.style.visibility='';document.body.classList.remove('cintro');el.classList.add('done');document.body.classList.add('intro-done');window.__ie=Date.now();$('#home').classList.add('enter');setTimeout(()=>{S.ambience($('#player').hidden&&$('#details').hidden);el.remove()},skipped?600:1870)};
  let t0=performance.now(),last=0;const hint=el.querySelector('.ihint');let sndOn=false;
- const fd=[];let pn=0,dg=0;const loop=now=>{if(pn&&!dg){fd.push(now-pn);if(fd.length>12)fd.shift();if(fd.length>=3){const m=fd.slice().sort((a,b)=>a-b)[fd.length>>1];if(m>26&&R.degrade){dg=1;if(R.degrade())document.body.classList.add('lite')}}}pn=now;const r=(now-t0)/1000,s=short?R.mapC(r):R.mapF(r);last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
+ const fd=[];let pn=0,dg=0;const loop=now=>{if(pn&&dg<3){fd.push(now-pn);if(fd.length>12)fd.shift();if(fd.length>=3){const m=fd.slice().sort((a,b)=>a-b)[fd.length>>1];if(m>26&&R.degrade){fd.length=0;dg++;if(R.degrade())document.body.classList.add('lite')}}}pn=now;const r=(now-t0)/1000,s=short?R.mapC(r):R.mapF(r);last=r;R.frame(s);if(s>=24.2)return end(false);raf=requestAnimationFrame(loop)};
  const off=()=>(performance.now()-t0)/1000;
  const hEl=document.createElement('div');hEl.className='isnd';hEl.textContent='Click or press any key for sound';el.appendChild(hEl);
  function sndHint(on){hEl.classList.toggle('on',!!on)}
@@ -177,7 +181,7 @@ function showHome(gm){
  clearTimeout(homeHideTimer);
  closeRF();
  if(!$('#details').hidden){$('#details').hidden=true;document.body.classList.remove('details-open')}
- if(!$('#player').hidden){stopPlayerTimer();$('#player').hidden=true;killFrame();document.body.classList.remove('shuf-player');$('#player').classList.remove('floating')}
+ if(!$('#player').hidden)closePlayer();
  const home=$('#home'),main=$('#main'),bar=$('#bar');
  home.classList.remove('leaving');main.classList.remove('entering');bar.classList.remove('entering');
  document.body.classList.toggle('genres-mode',!!gm);view=gm?'genres':'home';cur=ROOT;home.hidden=false;document.body.classList.add('at-home');main.hidden=true;bar.hidden=true;hub();const lay=()=>{const r=$('#hub').getBoundingClientRect(),k=Math.round(r.left)+'x'+Math.round(r.top)+'x'+Math.round(r.width);if($('#mosaic')._k!==k){$('#mosaic')._k=k;mosaic()}};requestAnimationFrame(lay);setTimeout(lay,500);setTimeout(lay,1500);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(lay);
@@ -315,11 +319,18 @@ function itemOr(id){return items.get(id)||{id:id,name:'Fan edit',mimeType:'video
 let baseKey=null;
 function route(){const r=parseH(),k=r[0]||'';
  // overlays
- if(k!=='play'&&!$('#player').hidden){stopPlayerTimer();$('#player').hidden=true;killFrame();document.body.classList.remove('shuf-player');$('#player').classList.remove('floating');window.__shufPrevHash=null;if(started())S.ambience(true)}
+ if(k!=='play')closedFor=null;
+ if(k!=='play'&&!$('#player').hidden){closePlayer();window.__shufPrevHash=null;if(started())S.ambience(true)}
  if(k!=='edit'&&k!=='play'&&!$('#details').hidden){$('#details').hidden=true;document.body.classList.remove('details-open')}
  if(k!=='readfirst')closeRF();
  if(k==='edit'){details(itemOr(r[1]),false);if(baseKey===null)renderBase('');return}
- if(k==='play'){if(baseKey===null)renderBase('');play(itemOr(r[1]));return}
+ if(k==='play'){
+  /* the player was just closed for this exact hash (Back/close/Esc): never reopen it, step up to the parent instead */
+  if(closedFor===location.hash){closedFor=null;history.replaceState({fefc:1},'',parentHash()||'#/');return route()}
+  if(baseKey===null)renderBase('');
+  /* same video already showing: a stray route() (index/links/sync refresh) must not rebuild the frame */
+  if(!$('#player').hidden&&$('#player').dataset.pid===r[1])return;
+  play(itemOr(r[1]));return}
  if(k==='readfirst'){if(baseKey===null||baseKey!=='')renderBase('');readFirst();return}
  renderBase(location.hash);if(view==='home'||k==='')S.ambience(true)}
 function renderBase(h){baseKey=h;const r=(h.replace(/^#\/?/,'').replace(/\?.*$/,'')||'').split('/').map(decodeURIComponent),k=(r[0]==='newarrivals'?'arena':r[0])||'';
@@ -377,10 +388,11 @@ function genrePage(G,slug){hideHome();cur='virtual';view='folder';const C=genreC
   virtual(fl.concat(vs),c.name);const n=collVids(c).length;$('#sec2').textContent=G+' · '+NA.plural(c.folders.length,'folder')+' · '+fmtN(n)+' fan edit'+(n===1?'':'s');return}
  window.__gscope=G;window.__gtitle=G;$('#crumb').textContent=G;$('#arena').innerHTML='';
  const inColl={},big=C.filter(c=>collVids(c).length>=2);big.forEach(c=>collVids(c).forEach(f=>inColl[target(f)]=1));
- const seen={},loose=genreList(G).filter(f=>{const t=target(f);if(inColl[t]||seen[t])return false;return seen[t]=1}).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
+ /* FAN EDITS = every individual edit in this genre: the loose ones PLUS the edits that live inside the collections/franchises above (collections are shortcuts into them, not replacements) */
+ const seen={},loose=genreList(G).concat(...big.map(c=>collVids(c))).filter(f=>{const t=target(f);if(seen[t])return false;return seen[t]=1}).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}));
  const ctile=c=>{const fid=c.folders[0],n=collVids(c).length;return tile({id:fid,targetId:fid,name:c.name,mimeType:FOLDER,parent:ROOT}).replace(/data-id="/,`data-gc="#/genres/${encodeURIComponent(G)}/${c.slug}" data-id="`).replace('COLLECTION',c.folders.length>1||(c.extra||[]).length?'FRANCHISE · '+fmtN(n):'COLLECTION · '+fmtN(n))};
  const Q=[loose.slice(FIRST_TILES)];
- $('#sec2').textContent=NA.plural(big.length,'collection')+' · '+fmtN(loose.length+Object.keys(inColl).length)+' fan edits';
+ $('#sec2').textContent=NA.plural(big.length,'collection')+' · '+fmtN(loose.length)+' fan edits';
  const g=$('#grid');g.className='sectioned';g.innerHTML=(big.length||loose.length?`<div class="sortbar csort" role="toolbar">${shufBtn(G)}</div>`:'')+
   (big.length?`<div class="ol-div"><span>COLLECTIONS</span><i></i><b>${big.length}</b></div><div class="sgrid folds gcolls">${big.map(ctile).join('')}</div>`:'')+
   (loose.length?`<div class="ol-div"><span>FAN EDITS</span><i></i><b>${fmtN(loose.length)}</b></div><div class="sgrid vids" data-q="0">${loose.slice(0,FIRST_TILES).map(f=>tile(f)).join('')}</div>`:'');
@@ -507,7 +519,7 @@ async function details(f,push=true){S.open();S.ambience(false);
  else if(isJura){S.fx(['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a'])}
  else if(isDexter){S.fx(['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a'])}
  $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
- <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play">▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
+ <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
  <div class="lc-body"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
   ${desc?`<h3 class="lc-h">Fan edit</h3><p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
   <h3 class="lc-h l">Source ${F&&F.tv?'series':'film'}</h3><p><b>${esc(film.title||'Unknown')}</b>${film.year?' ('+esc(film.year)+')':''}${film.director?'<br>Directed by '+esc(film.director):''}${F&&F.genres?'<br><span class="src">'+esc(F.genres.join(' · '))+'</span>':''}${m.editor?'<br><span class="src">Fan edit by '+esc(m.editor)+'</span>':''}</p>
@@ -524,6 +536,9 @@ async function details(f,push=true){S.open();S.ambience(false);
  }
  $('#details').querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>{S.chirp(2);const t=$('#lc-'+b.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}));
  let n=0;$('#details').querySelectorAll('.pill,.rt a,.bigplay').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)))}
+let playerTimer=null,closedFor=null;
+function stopPlayerTimer(){if(playerTimer){clearTimeout(playerTimer);clearInterval(playerTimer);playerTimer=null}}
+function closePlayer(){try{stopPlayerTimer()}catch(e){}const pl=$('#player');if(pl){pl.hidden=true;pl.classList.remove('floating')}try{killFrame()}catch(e){}document.body.classList.remove('shuf-player');window.__shufPlay=0}
 function killFrame(){const o=$('#pframe');if(o){const n=o.cloneNode(false);n.removeAttribute('src');o.replaceWith(n)}}
 function newFrame(u){const o=$('#pframe'),n=o.cloneNode(false);n.src=u;o.replaceWith(n)}
 function started(){return !!window._u&&document.body.classList.contains('intro-done')}
@@ -531,7 +546,7 @@ function play(f){
  const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}
  const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();
  const isShuf=!!(window.__shufPlay||sessionStorage.fefcShufScope);document.body.classList.toggle('shuf-player',isShuf);$('#player').classList.toggle('floating',isShuf);
- $('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;
+ $('#player').dataset.pid=f.id;$('#ptitle').textContent=parse(f.name).raw;newFrame(`https://drive.google.com/file/d/${id}/preview`);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
@@ -645,7 +660,8 @@ function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).fi
   const main=dir==='left'||dir==='right'?Math.abs(dx):Math.abs(dy),off=dir==='left'||dir==='right'?Math.abs(dy):Math.abs(dx),d=main+off*2.5;if(d<bd){bd=d;best=e}});
  if(best)focusEl(best)}
 function focusEl(e){e.focus({preventScroll:true});if(e.scrollIntoView)e.scrollIntoView({block:'nearest',inline:'nearest'})}
-function goBack(){S.back();if(!$('#rfpanel').hidden)return rfDismiss();if(!$('#player').hidden){const fb=window.__shufPrevHash||parentHash()||'#/';window.__shufPrevHash=null;return back(fb)}back(parentHash())}
+let gbT=0;
+function goBack(){const nw=Date.now();if(nw-gbT<250)return;gbT=nw;S.back();if(!$('#rfpanel').hidden)return rfDismiss();if(!$('#player').hidden){const fb=window.__shufPrevHash||parentHash()||'#/';window.__shufPrevHash=null;closedFor=location.hash;closePlayer();return back(fb)}back(parentHash())}
 document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('#q');{const it=document.getElementById('intro');if(it&&(!it.classList.contains('done')||Date.now()-(window.__ie||0)<900))return}
  const dir={37:'left',38:'up',39:'right',40:'down'}[k];
  if(dir&&!$('#rfpanel').hidden&&(k===38||k===40)){e.preventDefault();const w=$('.rf-scroll');if(w)w.scrollBy(0,k===40?220:-220);return}
@@ -840,7 +856,7 @@ window.FEFCSpot={open:openSpot,close:closeSpot};
 // focus first item after views open
 const _render=render;render=function(){_render.apply(this,arguments);if(document.body.classList.contains('tv')){const t=document.querySelector('#arena .ol-tile,#grid .ol-tile');if(t)focusEl(t)}};
 const _details=details;details=async function(){await _details.apply(this,arguments);const p=document.querySelector('#details .bigplay')||document.querySelector('#details [data-act="play"]');if(p){const id=$('#details').dataset.id;if(id&&window.UD&&!p.parentNode.querySelector('.star-btn')){const on=UD.isStarred(id);p.insertAdjacentHTML('afterend',`<button class="pill p4 star-btn${on?' on':''}" data-star="${id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`)}const B=document.body.classList,D=$('#details');if(B.contains('tv')||B.contains('kbd')){try{p.focus({preventScroll:true})}catch(e){p.focus()}}else if(document.activeElement&&D.contains(document.activeElement))document.activeElement.blur();D.scrollTop=0;D.querySelectorAll('.lc-body').forEach(x=>x.scrollTop=0)}};
-const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>focusEl($('#back')),50)};
+const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;if(/FEFCFireTV/.test(navigator.userAgent)){const fr=$('#pframe');try{fr.setAttribute('tabindex','0');fr.focus({preventScroll:true})}catch(e){focusEl($('#back'))}}else focusEl($('#back'))},/FEFCFireTV/.test(navigator.userAgent)?900:50)};
 if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
 document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once:true});
 /* ---------- BOOT ---------- */
@@ -876,7 +892,7 @@ showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))rout
  const isTV=document.body.classList.contains('tv'),mobile=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/.test(ua)&&'ontouchend' in document);
  const ios=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),snoozed=+localStorage.fefcInstallSnooze>Date.now();
  let deferred=null;const box=document.getElementById('install');
- if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});if('serviceWorker' in navigator){let rl=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(rl)return;rl=true;location.reload()})}
+ if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
  const allowed=()=>(mobile||new URLSearchParams(location.search).get('installdemo'))&&!standalone&&!isTV&&!snoozed;
  function show(){if(!allowed()||!box.hidden)return;const go=document.getElementById('ins-go'),msg=document.getElementById('ins-msg');
   if(ios){msg.innerHTML='Tap <b>Share</b> <span class="ios-share">⬆︎</span> then <b>Add to Home Screen</b>.';go.hidden=true}

@@ -55,6 +55,24 @@ var __spreadValues = (a, b) => {
     const wmi = document.getElementById("wordmark");
     if (wmi && !wmi.complete) wmi.addEventListener("load", placeHeader);
     const el = $("#intro");
+    let seenNow = false;
+    try {
+      const t = +localStorage.fefcIntroAt || 0;
+      seenNow = !!sessionStorage.fefcIntro || t > 0 && Date.now() - t < 3 * 60 * 1e3;
+    } catch (e) {
+    }
+    if (!P.get("introframe") && !P.get("shortintro")) {
+      if (seenNow) {
+        el.remove();
+        document.body.classList.add("intro-done", "no-intro");
+        return;
+      }
+      try {
+        sessionStorage.fefcIntro = "1";
+        localStorage.fefcIntroAt = String(Date.now());
+      } catch (e) {
+      }
+    }
     if (P.get("nointro")) {
       el.remove();
       document.body.classList.add("intro-done", "no-intro");
@@ -117,13 +135,14 @@ var __spreadValues = (a, b) => {
     const fd = [];
     let pn = 0, dg = 0;
     const loop = (now) => {
-      if (pn && !dg) {
+      if (pn && dg < 3) {
         fd.push(now - pn);
         if (fd.length > 12) fd.shift();
         if (fd.length >= 3) {
           const m = fd.slice().sort((a, b) => a - b)[fd.length >> 1];
           if (m > 26 && R.degrade) {
-            dg = 1;
+            fd.length = 0;
+            dg++;
             if (R.degrade()) document.body.classList.add("lite");
           }
         }
@@ -836,13 +855,7 @@ var __spreadValues = (a, b) => {
       $("#details").hidden = true;
       document.body.classList.remove("details-open");
     }
-    if (!$("#player").hidden) {
-      stopPlayerTimer();
-      $("#player").hidden = true;
-      killFrame();
-      document.body.classList.remove("shuf-player");
-      $("#player").classList.remove("floating");
-    }
+    if (!$("#player").hidden) closePlayer();
     const home = $("#home"), main = $("#main"), bar = $("#bar");
     home.classList.remove("leaving");
     main.classList.remove("entering");
@@ -1380,12 +1393,9 @@ var __spreadValues = (a, b) => {
   let baseKey = null;
   function route() {
     const r = parseH(), k = r[0] || "";
+    if (k !== "play") closedFor = null;
     if (k !== "play" && !$("#player").hidden) {
-      stopPlayerTimer();
-      $("#player").hidden = true;
-      killFrame();
-      document.body.classList.remove("shuf-player");
-      $("#player").classList.remove("floating");
+      closePlayer();
       window.__shufPrevHash = null;
       if (started()) S.ambience(true);
     }
@@ -1400,7 +1410,13 @@ var __spreadValues = (a, b) => {
       return;
     }
     if (k === "play") {
+      if (closedFor === location.hash) {
+        closedFor = null;
+        history.replaceState({ fefc: 1 }, "", parentHash() || "#/");
+        return route();
+      }
       if (baseKey === null) renderBase("");
+      if (!$("#player").hidden && $("#player").dataset.pid === r[1]) return;
       play(itemOr(r[1]));
       return;
     }
@@ -1650,9 +1666,9 @@ var __spreadValues = (a, b) => {
     $("#arena").innerHTML = "";
     const inColl = {}, big = C2.filter((c) => collVids(c).length >= 2);
     big.forEach((c) => collVids(c).forEach((f) => inColl[target(f)] = 1));
-    const seen = {}, loose = genreList(G).filter((f) => {
+    const seen = {}, loose = genreList(G).concat(...big.map((c) => collVids(c))).filter((f) => {
       const t = target(f);
-      if (inColl[t] || seen[t]) return false;
+      if (seen[t]) return false;
       return seen[t] = 1;
     }).sort((a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }));
     const ctile = (c) => {
@@ -1660,7 +1676,7 @@ var __spreadValues = (a, b) => {
       return tile({ id: fid, targetId: fid, name: c.name, mimeType: FOLDER, parent: ROOT }).replace(/data-id="/, 'data-gc="#/genres/'.concat(encodeURIComponent(G), "/").concat(c.slug, '" data-id="')).replace("COLLECTION", c.folders.length > 1 || (c.extra || []).length ? "FRANCHISE \xB7 " + fmtN(n) : "COLLECTION \xB7 " + fmtN(n));
     };
     const Q = [loose.slice(FIRST_TILES)];
-    $("#sec2").textContent = NA.plural(big.length, "collection") + " \xB7 " + fmtN(loose.length + Object.keys(inColl).length) + " fan edits";
+    $("#sec2").textContent = NA.plural(big.length, "collection") + " \xB7 " + fmtN(loose.length) + " fan edits";
     const g = $("#grid");
     g.className = "sectioned";
     g.innerHTML = (big.length || loose.length ? '<div class="sortbar csort" role="toolbar">'.concat(shufBtn(G), "</div>") : "") + (big.length ? '<div class="ol-div"><span>COLLECTIONS</span><i></i><b>'.concat(big.length, '</b></div><div class="sgrid folds gcolls">').concat(big.map(ctile).join(""), "</div>") : "") + (loose.length ? '<div class="ol-div"><span>FAN EDITS</span><i></i><b>'.concat(fmtN(loose.length), '</b></div><div class="sgrid vids" data-q="0">').concat(loose.slice(0, FIRST_TILES).map((f) => tile(f)).join(""), "</div>") : "");
@@ -2216,7 +2232,7 @@ var __spreadValues = (a, b) => {
     } else if (isDexter) {
       S.fx(["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"]);
     }
-    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play">\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
+    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
     })(), '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
@@ -2244,6 +2260,31 @@ var __spreadValues = (a, b) => {
     }));
     let n = 0;
     $("#details").querySelectorAll(".pill,.rt a,.bigplay").forEach((el) => el.addEventListener("pointerenter", () => S.chirp(n++)));
+  }
+  let playerTimer = null, closedFor = null;
+  function stopPlayerTimer() {
+    if (playerTimer) {
+      clearTimeout(playerTimer);
+      clearInterval(playerTimer);
+      playerTimer = null;
+    }
+  }
+  function closePlayer() {
+    try {
+      stopPlayerTimer();
+    } catch (e) {
+    }
+    const pl = $("#player");
+    if (pl) {
+      pl.hidden = true;
+      pl.classList.remove("floating");
+    }
+    try {
+      killFrame();
+    } catch (e) {
+    }
+    document.body.classList.remove("shuf-player");
+    window.__shufPlay = 0;
   }
   function killFrame() {
     const o = $("#pframe");
@@ -2280,6 +2321,7 @@ var __spreadValues = (a, b) => {
     const isShuf = !!(window.__shufPlay || sessionStorage.fefcShufScope);
     document.body.classList.toggle("shuf-player", isShuf);
     $("#player").classList.toggle("floating", isShuf);
+    $("#player").dataset.pid = f.id;
     $("#ptitle").textContent = parse(f.name).raw;
     newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
@@ -2519,12 +2561,18 @@ var __spreadValues = (a, b) => {
     e.focus({ preventScroll: true });
     if (e.scrollIntoView) e.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
+  let gbT = 0;
   function goBack() {
+    const nw = Date.now();
+    if (nw - gbT < 250) return;
+    gbT = nw;
     S.back();
     if (!$("#rfpanel").hidden) return rfDismiss();
     if (!$("#player").hidden) {
       const fb = window.__shufPrevHash || parentHash() || "#/";
       window.__shufPrevHash = null;
+      closedFor = location.hash;
+      closePlayer();
       return back(fb);
     }
     back(parentHash());
@@ -3076,7 +3124,18 @@ var __spreadValues = (a, b) => {
       window.__shufPlay = 0;
       b.hidden = !sc;
     })();
-    setTimeout(() => focusEl($("#back")), 50);
+    setTimeout(() => {
+      if ($("#player").hidden) return;
+      if (/FEFCFireTV/.test(navigator.userAgent)) {
+        const fr = $("#pframe");
+        try {
+          fr.setAttribute("tabindex", "0");
+          fr.focus({ preventScroll: true });
+        } catch (e) {
+          focusEl($("#back"));
+        }
+      } else focusEl($("#back"));
+    }, /FEFCFireTV/.test(navigator.userAgent) ? 900 : 50);
   };
   if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
   document.addEventListener("keydown", () => document.body.classList.add("kbd"), { once: true });
@@ -3255,14 +3314,6 @@ var __spreadValues = (a, b) => {
   const box = document.getElementById("install");
   if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((r) => r.update()).catch(() => {
   });
-  if ("serviceWorker" in navigator) {
-    let rl = false;
-    navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (rl) return;
-      rl = true;
-      location.reload();
-    });
-  }
   const allowed = () => (mobile || new URLSearchParams(location.search).get("installdemo")) && !standalone && !isTV && !snoozed;
   function show() {
     if (!allowed() || !box.hidden) return;
