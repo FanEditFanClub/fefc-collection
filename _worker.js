@@ -254,9 +254,115 @@ async function syncApi(req, env, url) {
   return json({ error: 'not_found' }, 404);
 }
 
+
+/* ---------- Community feed: GET /api/feed (Reddit RSS live; X / Discord optional tokens; snapshot + Join items as fallback) ---------- */
+const COMM = {
+  reddit: { name: 'Reddit', url: 'https://www.reddit.com/r/FanEditFanClub', sub: 'FanEditFanClub' },
+  x: { name: 'X', url: 'https://x.com/FanEditFanClub', uid: '2072539271450312704' },
+  discord: { name: 'Discord', url: 'https://discord.gg/d8A9xHTey7', guild: '1529915531736383702' },
+  facebook: { name: 'Facebook', url: 'https://www.facebook.com/groups/faneditfanclub' }
+};
+const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const unent = t => String(t || '').replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (m, e) => e[0] === '#' ? (() => { try { return String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : +e.slice(1)); } catch (_) { return ''; } })() : (ENT[e.toLowerCase()] || m));
+const clip = (t, n) => { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t; };
+async function tfetch(u, opt, ms) {
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms || 4500);
+  try { return await fetch(u, Object.assign({ signal: ac.signal }, opt || {})); } finally { clearTimeout(t); }
+}
+async function feedReddit() {
+  const r = await tfetch('https://www.reddit.com/r/' + COMM.reddit.sub + '/new/.rss?limit=10', { headers: { 'user-agent': 'Mozilla/5.0 (compatible; FEFCCollection/1.0; +https://collection.faneditfanclub.com)', accept: 'application/atom+xml,application/xml;q=0.9,*/*;q=0.5' }, cf: { cacheTtl: 300, cacheEverything: true } });
+  if (!r.ok) throw new Error('reddit ' + r.status);
+  const x = await r.text(), out = [];
+  for (const e of x.match(/<entry>[\s\S]*?<\/entry>/g) || []) {
+    const t = (e.match(/<title>([\s\S]*?)<\/title>/) || [])[1], l = (e.match(/<link[^>]*href="([^"]+)"/) || [])[1], d = (e.match(/<(?:updated|published)>([^<]+)</) || [])[1];
+    if (t && l && d) out.push({ src: 'reddit', title: clip(unent(t), 140), url: unent(l), ts: Date.parse(d) || 0 });
+  }
+  if (!out.length) throw new Error('reddit empty');
+  return out;
+}
+function xClean(text) {
+  let t = unent(text).replace(/https?:\/\/t\.co\/\w+/g, '').replace(/^\s*\d+\/\d+\s+/, '').trim(), lab = '';
+  const m = t.match(/^New Post in The Fan Edit Fan Club Reddit Feed\s*-\s*/i);
+  if (m) { t = t.slice(m[0].length); lab = 'Reddit Feed'; }
+  return { title: clip(t.replace(/\.\s*$/, ''), 140), label: lab };
+}
+async function feedX(env) {
+  if (!env.X_BEARER_TOKEN) throw new Error('no x token');
+  const r = await tfetch('https://api.x.com/2/users/' + COMM.x.uid + '/tweets?max_results=30&exclude=retweets,replies&tweet.fields=created_at,referenced_tweets', { headers: { authorization: 'Bearer ' + env.X_BEARER_TOKEN } });
+  if (!r.ok) throw new Error('x ' + r.status);
+  const j = await r.json(), out = [];
+  for (const p of j.data || []) {
+    if ((p.referenced_tweets || []).some(q => q.type === 'replied_to')) continue;
+    const c = xClean(p.text); if (c.title) out.push({ src: 'x', title: c.title, label: c.label, url: 'https://x.com/FanEditFanClub/status/' + p.id, ts: Date.parse(p.created_at) || 0 });
+  }
+  if (!out.length) throw new Error('x empty');
+  return out;
+}
+async function feedDiscord(env) {
+  // Public widget (no token): invite + online count. Optional bot token + channel: real newest messages.
+  const out = { posts: [], online: 0 };
+  try {
+    const r = await tfetch('https://discord.com/api/guilds/' + COMM.discord.guild + '/widget.json', {}, 3500);
+    if (r.ok) { const w = await r.json(); out.online = +w.presence_count || (w.members || []).length || 0; }
+  } catch (_) {}
+  if (env.DISCORD_BOT_TOKEN && env.DISCORD_FEED_CHANNEL_ID) {
+    const r = await tfetch('https://discord.com/api/v10/channels/' + env.DISCORD_FEED_CHANNEL_ID + '/messages?limit=10', { headers: { authorization: 'Bot ' + env.DISCORD_BOT_TOKEN } });
+    if (!r.ok) throw new Error('discord ' + r.status);
+    for (const m of await r.json()) {
+      const t = clip(m.content || (m.embeds && m.embeds[0] && (m.embeds[0].title || m.embeds[0].description)) || '', 140);
+      if (t) out.posts.push({ src: 'discord', title: t, url: 'https://discord.com/channels/' + COMM.discord.guild + '/' + env.DISCORD_FEED_CHANNEL_ID + '/' + m.id, ts: Date.parse(m.timestamp) || 0 });
+    }
+  }
+  return out;
+}
+const JOIN = {
+  discord: n => ({ src: 'discord', join: 1, title: 'Join our Discord' + (n ? ' · ' + n + ' online now' : ' server'), url: COMM.discord.url }),
+  x: () => ({ src: 'x', join: 1, title: 'Follow @FanEditFanClub on X', url: COMM.x.url }),
+  facebook: () => ({ src: 'facebook', join: 1, title: 'Join our Facebook Group', url: COMM.facebook.url }),
+  reddit: () => ({ src: 'reddit', join: 1, title: 'Join r/FanEditFanClub on Reddit', url: COMM.reddit.url })
+};
+function mergeFeed(posts, online) {
+  const seen = {}, now = Date.now(), per = {};
+  posts = posts.filter(p => p.ts && p.ts <= now + 3600e3 && now - p.ts < 180 * 864e5).sort((a, b) => b.ts - a.ts).filter(p => {
+    const k = p.title.toLowerCase().replace(/\W+/g, '').slice(0, 60); if (seen[k]) return false; seen[k] = 1;
+    per[p.src] = (per[p.src] || 0) + 1; return per[p.src] <= 4;
+  }).slice(0, 14);
+  const ctas = [JOIN.discord(online), JOIN.x(), JOIN.facebook(), JOIN.reddit()], out = [];
+  posts.forEach((p, i) => { out.push(p); if ((i + 1) % 3 === 0 && ctas.length) out.push(ctas.shift()); });
+  return out.concat(ctas);
+}
+let feedMem = null;
+async function buildFeed(env, url) {
+  const [rd, xx, dc] = await Promise.allSettled([feedReddit(), feedX(env), feedDiscord(env)]);
+  let snap = { posts: [] };
+  try { const r = await env.ASSETS.fetch(new URL('/data/community-feed.json', url)); if (r.ok) snap = await r.json(); } catch (_) {}
+  const sp = (src) => (snap.posts || []).filter(p => p.src === src);
+  const status = {}, posts = [];
+  const take = (src, res) => { if (res.status === 'fulfilled' && res.value.length) { status[src] = 'live'; posts.push(...res.value); } else { const s = sp(src); status[src] = s.length ? 'snapshot' : 'none'; posts.push(...s); } };
+  take('reddit', rd); take('x', xx);
+  if (dc.status === 'fulfilled') { status.discord = dc.value.posts.length ? 'live' : 'join-only'; posts.push(...dc.value.posts); } else { status.discord = 'join-only'; posts.push(...sp('discord')); }
+  status.facebook = 'join-only';
+  return { updated: new Date().toISOString(), status, items: mergeFeed(posts, dc.status === 'fulfilled' ? dc.value.online : 0) };
+}
+async function feedApi(req, env, ctx, url) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
+  const H = { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300, s-maxage=600', 'access-control-allow-origin': '*' };
+  const cache = typeof caches !== 'undefined' && caches.default, key = new Request(url.origin + '/api/feed');
+  if (cache) { const hit = await cache.match(key); if (hit) return hit; }
+  if (feedMem && Date.now() - feedMem.t < 600e3) return new Response(feedMem.b, { headers: H });
+  const b = JSON.stringify(await buildFeed(env, url));
+  feedMem = { t: Date.now(), b };
+  const res = new Response(b, { headers: H });
+  if (cache) ctx.waitUntil(cache.put(key, res.clone()));
+  return res;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    if (url.pathname === '/api/feed') {
+      try { return await feedApi(req, env, ctx, url); } catch (e) { console.log('feed error:', String(e && e.message || e).slice(0, 120)); return json({ updated: new Date().toISOString(), status: {}, items: mergeFeed([], 0) }); }
+    }
     if (url.pathname === '/api/ai-search') {
       if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
       try { return await aiSearch(req, env); } catch (e) { console.log('ai-search error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }

@@ -31,3 +31,15 @@ Live site: https://collection.faneditfanclub.com
 ## My List sync (Sync My List panel)
 - Server code in `_worker.js` (`/api/sync/*`), UI in `src/sync.js`, `src/syncui.js`, `src/qrgen.js` (QR lib, MIT). Zip must include `qrgen.js`.
 - Needs a KV binding `SYNC` and, for the Google TV code, secrets `GOOGLE_TV_CLIENT_ID` / `GOOGLE_TV_CLIENT_SECRET`. Full steps and design: `SYNC-SETUP.md`. Tests: `node tests/sync-server.test.mjs`.
+
+## Community ticker (Home screen) — `GET /api/feed`
+Slim news-style bar at the bottom of Home (`src/ticker.js` + `#ticker` CSS in `style.css`): newest posts from our communities, each with the service's icon, plus "Join" items so every service always shows. Links open in a new tab (same as Support Us). On TV it is reached with D-pad Down from the bottom tile row (Left/Right between items, OK/Enter opens); auto-scroll pauses on hover/focus/touch and is off with `prefers-reduced-motion`.
+
+Community links: Discord https://discord.gg/d8A9xHTey7 (guild 1529915531736383702, widget enabled) · X https://x.com/FanEditFanClub (user id 2072539271450312704) · Facebook Group https://www.facebook.com/groups/faneditfanclub (Page: https://www.facebook.com/FanEditFanClub/) · Reddit https://www.reddit.com/r/FanEditFanClub
+
+Worker (`_worker.js`, `feedApi`): Cloudflare Cache API + `s-maxage=600`, merges newest first (max 4 posts/source), inserts a Join item after every 3 posts.
+- **Reddit**: live, public Atom RSS `/r/FanEditFanClub/new/.rss` (no token). If Reddit blocks Cloudflare's IPs it falls back to the snapshot.
+- **X**: live only if the Pages secret `X_BEARER_TOKEN` is set (X API v2 user timeline, originals only). Otherwise uses the snapshot.
+- **Discord**: widget gives "Join our Discord · N online" (no token). Real messages need Pages secrets `DISCORD_BOT_TOKEN` (the existing bot's token works if it can read the channel) + `DISCORD_FEED_CHANNEL_ID` (e.g. an announcements channel).
+- **Facebook**: anonymous reads redirect to the login wall, and the Groups Graph API is closed to new apps, so this is a "Join our Facebook Group" item only.
+- Snapshot `data/community-feed.json` (refresh with `python3 tools/refresh_feed.py`; Reddit needs no token, X needs `X_BEARER_TOKEN` in env, otherwise existing entries are kept) is the fallback for the worker and for the client when `/api/feed` is unavailable (static hosting).

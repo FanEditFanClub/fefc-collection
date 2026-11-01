@@ -16,6 +16,7 @@ const ASSETS=[
  '/syncui.js',
  '/qrgen.js',
  '/genres.js',
+ '/ticker.js',
  '/app.js',
  '/assets/fefc-logo-carson.png',
  '/manifest.json',
