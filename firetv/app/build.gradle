@@ -11,8 +11,8 @@ android {
         applicationId 'com.faneditfanclub.collection'
         minSdk 22
         targetSdk 33
-        versionCode 6
-        versionName '1.0.5'
+        versionCode 7
+        versionName '1.0.6'
         // The live site URL; the app always loads this, so web changes need no reinstall.
         buildConfigField 'String', 'START_URL', '"https://collection.faneditfanclub.com/?tv=1"'
     }
@@ -39,3 +39,28 @@ android {
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
+
+// Every release build also publishes the update manifest the in-app updater reads:
+//   firetv/FEFC-Collection.apk  (copy of the signed APK, served at /firetv/FEFC-Collection.apk)
+//   firetv/version.json         {versionCode, versionName, url, notes, size, sha256}  (served at /firetv/version.json)
+// Release notes come from firetv/release-notes.txt. The APK must be signed (signing.properties present), otherwise nothing is published.
+tasks.register('publishUpdateMeta') {
+    doLast {
+        def apk = file("$buildDir/outputs/apk/release/app-release.apk")
+        if (!apk.exists()) { logger.warn('publishUpdateMeta: no signed release APK, skipped'); return }
+        def dest = rootProject.file('FEFC-Collection.apk')
+        java.nio.file.Files.copy(apk.toPath(), dest.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        def md = java.security.MessageDigest.getInstance('SHA-256')
+        dest.withInputStream { is -> byte[] b = new byte[65536]; int n; while ((n = is.read(b)) > 0) md.update(b, 0, n) }
+        def notesFile = rootProject.file('release-notes.txt')
+        def meta = [versionCode: android.defaultConfig.versionCode,
+                    versionName: android.defaultConfig.versionName,
+                    url        : 'https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk',
+                    notes      : notesFile.exists() ? notesFile.text.trim() : '',
+                    size       : dest.length(),
+                    sha256     : md.digest().collect { String.format('%02x', it) }.join('')]
+        rootProject.file('version.json').text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(meta)) + '\n'
+        logger.lifecycle("publishUpdateMeta: wrote firetv/version.json (versionCode ${meta.versionCode}) and firetv/FEFC-Collection.apk")
+    }
+}
+afterEvaluate { tasks.named('assembleRelease').configure { finalizedBy 'publishUpdateMeta' } }

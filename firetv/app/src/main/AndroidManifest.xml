@@ -3,6 +3,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -36,5 +37,11 @@
             android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden|navigation|smallestScreenSize|screenLayout|uiMode"
             android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen" />
+        <!-- serves the downloaded update APK to the system installer (see ApkProvider) -->
+        <provider
+            android:name=".ApkProvider"
+            android:authorities="com.faneditfanclub.collection.apkprovider"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>

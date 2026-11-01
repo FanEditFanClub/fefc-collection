@@ -1,0 +1,8 @@
+{
+    "versionCode": 7,
+    "versionName": "1.0.6",
+    "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
+    "notes": "In-app updates: the app now checks for new versions when it starts and can update itself.\nFaster start of the native player.",
+    "size": 80801,
+    "sha256": "957a878fa17081d7a4b9c0ac2dbf941cb2100d00832b3a5a45b5a301d838bf2b"
+}

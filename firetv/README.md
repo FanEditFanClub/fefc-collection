@@ -24,6 +24,21 @@ echo "sdk.dir=/path/to/android-sdk" > local.properties
 
 The signing keystore and its password are NOT in this repo. Keep a copy; an update must be signed with the same key to install over the old one.
 
+## In-app updater (1.0.6+)
+
+- `Updater` checks `https://collection.faneditfanclub.com/firetv/version.json` (`{versionCode, versionName, url, notes, size, sha256}`, never cached) once per launch after the intro. A higher versionCode shows an Update / Later dialog (D-pad focusable, Back = Later).
+- Update downloads to the app's external files dir (`updates/`), verifies size/sha256, package name and signing certificate, then starts the installer with a content URI from `ApkProvider` (our own minimal FileProvider; ACTION_VIEW, fallback ACTION_INSTALL_PACKAGE). If "Install unknown apps" isn't allowed yet it opens Settings (`ACTION_MANAGE_UNKNOWN_APP_SOURCES`) and continues when you come back.
+- The download URL must be https on collection.faneditfanclub.com; a version.json can't redirect the updater elsewhere.
+- Publishing: `./gradlew --offline assembleRelease` (needs `signing.properties`) also writes `version.json` and `FEFC-Collection.apk` into `firetv/`; release text comes from `release-notes.txt`. The APK must be signed with the same key and have a higher versionCode, or Android rejects the update.
+- Tests without a device: `tests/run-update-tests.sh` (JDK + org.json jar). The dialog, permission flow and installer hand-off are Android UI and are NOT covered; they have not been run on a device or emulator from the build box.
+
+## Version notes
+
+- 1.0.6: in-app updater.
+- 1.0.5: the TV player is launched natively straight from the Play button (fixes the black picture / slow start); stream proxy pre-warm.
+- 1.0.4: native player tries the `/api/stream` proxy first.
+- The site loads `?tv=1`; D-pad uses a model-based navigator in the web app (no native key handling needed).
+
 ## Limitations
 
 - Direct Google sign-in (the web button's popup flow) can't run in an embedded WebView: Google rejects it (`disallowed_useragent`). On the TV the site hides that option and offers Google TV code, QR code and 6-digit sync code instead. These need the Cloudflare KV binding (and, for the TV code, the Google TV OAuth client secrets) from `SYNC-SETUP.md`.

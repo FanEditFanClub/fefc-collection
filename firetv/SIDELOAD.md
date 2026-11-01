@@ -13,7 +13,7 @@
 6. When the download finishes, choose **Install**, then **Open** (or **Done**). When asked, delete the APK file to free up space.
 7. Find the app: Home > Your Apps & Channels > FEFC Collection (also in the app row). Hold the Home button to move it to the front.
 
-**Updates:** the web app updates itself, so nothing to do. Only a new APK (rare) needs the same steps; it installs over the old one.
+**Updates:** the web app updates itself. From version 1.0.6 the app also checks for a new APK when it starts and offers an Update button (the first time, Fire OS asks you to allow FEFC Collection to install apps: turn it on, then press Back). Older versions need these steps once more; the APK installs over the old one.
 
 **Controls:** D-pad and Select to browse. Back goes back (twice on the Home screen to exit). Menu (three lines) opens search. Play/Pause works in the player.
 

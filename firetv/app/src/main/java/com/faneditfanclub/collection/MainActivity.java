@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     private boolean failed;
     private long lastBack;
     private Chrome chrome;
+    private Updater updater;
     private final Handler ui = new Handler(Looper.getMainLooper());
 
     @Override
@@ -78,6 +79,24 @@ public class MainActivity extends Activity {
         web.setWebChromeClient(chrome);
         if (b != null) web.restoreState(b); else load();
         web.requestFocus();
+        updater = new Updater(this);
+        if (b == null) waitForIntroThenCheck(0);
+    }
+
+    /** The update dialog must not sit on top of the site's intro: poll until the intro is gone (or ~60 s), then check for an update. */
+    private void waitForIntroThenCheck(final int tries) {
+        ui.postDelayed(() -> {
+            if (isFinishing() || web == null) return;
+            web.evaluateJavascript("(function(){var i=document.getElementById('intro');return !i||i.classList.contains('done')||i.hidden||getComputedStyle(i).display==='none'})()", val -> {
+                if ("true".equals(val) || tries >= 40) updater.check(false); else waitForIntroThenCheck(tries + 1);
+            });
+        }, tries == 0 ? 3000 : 1500);
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        super.onActivityResult(req, res, data);
+        if (updater != null) updater.onActivityResult(req);
     }
 
     private void configure(WebView w) {
@@ -294,6 +313,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public int version() { return BuildConfig.VERSION_CODE; }
 
+        /** Lets the web app offer a manual "Check for app update" action. */
+        @JavascriptInterface
+        public void checkUpdate() { ui.post(() -> { if (updater != null) updater.check(true); }); }
+
         /** Taps the WebView at CSS-pixel (x, y); vw/vh are the page's innerWidth/innerHeight, used to scale to screen pixels. */
         @JavascriptInterface
         public void tap(final double x, final double y, final double vw, final double vh) {
@@ -442,6 +465,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (updater != null) updater.dispose();
         root.removeAllViews();
         web.destroy();
         super.onDestroy();
