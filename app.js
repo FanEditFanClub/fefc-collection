@@ -451,7 +451,7 @@ var __spreadValues = (a, b) => {
   const FOLD = { readFirst: "1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT", collections: "1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB", tbc: "1503Wl56hzRppaIFcQisvQksOaeYOEjnk", actors: "1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS", directors: "1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib" };
   const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<svg viewBox="0 0 24 24"><circle cx="15" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" fill="currentColor"/></svg>' }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub", sub: "One-time donation", logo: "<b>P</b>" }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: "<b>V</b>" }];
   let posters = {}, people = {}, mosaicList = [], mosaicTimer = null, genreMap = {}, fthumbs = {};
-  const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
+  const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Crime", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
   function topFolder(f) {
     let x = f, guard = 0;
     while (x && x.parent && x.parent !== ROOT && guard++ < 30) x = items.get(x.parent);
