@@ -135,7 +135,7 @@ body.tv .ol-tile .nm{font-size:1.9vh}body.tv .ol-tile .kind{font-size:1.3vh}
 body.tv #details{padding:4vh 5vw}body.tv .lc-body p{font-size:2vh}body.tv .pill{font-size:2.1vh;min-height:6vh}
 body.tv .rt a,body.tv .rt .na{font-size:1.9vh;min-height:5.5vh}body.tv .cast span{font-size:1.9vh}body.tv .lc-h{font-size:2vh}
 body.tv .lc-title{font-size:4vh}
-body.tv .ol-tile{-webkit-box-reflect:none;transition:transform .12s}
+body.tv .ol-tile{-webkit-box-reflect:initial;transition:transform .12s}
 body.tv #player{padding:3vh 4vw}
 /* ---------- ONLIVE HOME HUB ---------- */
 [hidden]{display:none!important}
@@ -336,7 +336,7 @@ body.overlay #tagline{visibility:hidden!important}
 #grid.support-grid .sup .sup-nm{color:#fff!important;text-shadow:0 2px 8px #000}
 #grid.support-grid .sup small{color:#ffa31a!important;opacity:1}
 #grid.support-grid .sup>*{position:relative;z-index:3}
-#grid.support-grid .sup{-webkit-box-reflect:none!important}
+#grid.support-grid .sup{-webkit-box-reflect:initial!important}
 /* tagline: plain glowing text, no panel; edge clips show through */
 #tagline span,#tagline span{background:none!important;border:0!important;box-shadow:none!important;border-radius:0}
 #tagline span{color:#f4f6fa;text-shadow:0 0 .5em rgba(255,255,255,.35),0 0 1.2em rgba(120,170,255,.25),0 2px 4px #000,0 0 3px #000,0 0 14px rgba(0,0,0,.9)}
@@ -947,3 +947,19 @@ body.tv #ptap span{position:absolute;left:50%;bottom:4%;transform:translateX(-50
 body.tv #ptap:focus{box-shadow:inset 0 0 0 .7vh #ffb02e}body.tv #ptap:focus span{opacity:1}
 #pnative[hidden]{display:none}
 #ptapnote{position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:5;padding:.6em 1.4em;border-radius:10px;background:#000e;border:2px solid #ffb02e;color:#fff;font:700 clamp(14px,2.6vh,28px) 'Source Sans 3',sans-serif;opacity:0;pointer-events:none;transition:opacity .2s}#ptapnote.on{opacity:1}
+
+/* ---- TV performance + focus visibility (Fire TV / smart TVs): no blur, no big shadows, no scaled focus ---- */
+body.tv *,body.tv *:before,body.tv *:after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;text-shadow:none}
+body.tv #main{scroll-behavior:auto;scroll-padding:16vh 0 18vh}
+body.tv .ol-tile{box-shadow:none!important;transition:none!important;-webkit-box-reflect:initial!important}
+body.tv .ol-tile .nm{text-shadow:0 1px 2px #000}
+body.tv .ol-tile:hover{transform:none}
+body.tv .ol-tile:focus,body.tv .ol-tile:focus-visible{transform:none!important;border-color:#fff;box-shadow:0 0 0 .5vh #fff,0 0 0 1vh #2fa8ff!important;outline:0;z-index:3}
+body.tv #bar .mi:focus,body.tv #bar .mi:focus-visible{transform:none;box-shadow:0 0 0 3px #fff,0 0 0 6px #2fa8ff}
+body.tv .sortpill.shuf-btn:focus{transform:none;box-shadow:0 0 0 4px #fff,0 0 0 8px #2fa8ff}
+body.tv .ol-tile.person img.pbg{filter:none;opacity:.55;transform:none}
+body.tv .ol-tile .star{transition:none;transform:none}
+body.tv #home.leaving{filter:none;transform:none}
+body.tv #home.enter{animation:none}
+body.tv #hints{background:#0b0e13;box-shadow:none;bottom:2.4vh}
+body.tv #player.floating{background:#000}

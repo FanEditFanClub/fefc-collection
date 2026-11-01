@@ -376,6 +376,29 @@ var __spreadValues = (a, b) => {
       return n > 90 ? "c4" : n > 55 ? "c3" : n > 30 ? "c2" : "c1";
     })(), '">').concat(esc(p.raw), "</div>") : "").concat(fold && typeof isDenied === "function" && isDenied(target(f)) ? '<span class="lockb" title="Private library" aria-label="Private">\u{1F512}</span>' : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
   }
+  const THUMBO = /* @__PURE__ */ new Map();
+  function thumbUrl(u) {
+    if (!u || typeof u !== "string") return u;
+    let n = u;
+    let m = u.match(/^https:\/\/upload\.wikimedia\.org\/wikipedia\/(en|commons)\/([0-9a-f]\/[0-9a-f]{2})\/([^\/?#]+\.(?:jpe?g|png|webp))(?:\?.*)?$/i);
+    if (m && !/\.svg/i.test(m[3])) n = "https://upload.wikimedia.org/wikipedia/" + m[1] + "/thumb/" + m[2] + "/" + m[3] + "/330px-" + m[3];
+    else if (m = u.match(/^(https:\/\/static\.tvmaze\.com\/uploads\/images\/)original_untouched(\/.*)$/)) n = m[1] + "medium_portrait" + m[2];
+    if (n !== u) THUMBO.set(n, u);
+    return n;
+  }
+  function seriesPoster(f) {
+    if (isFolder(f)) return null;
+    const p = parse(f.name);
+    if (!p.series) return null;
+    const sb = kids.get(f.parent) || [];
+    for (const x of sb) {
+      if (x === f || isFolder(x) || !isVid(x)) continue;
+      if (parse(x.name).series !== p.series) continue;
+      const q = posters[x.id] || posters[target(x)];
+      if (q) return q;
+    }
+    return null;
+  }
   async function art(el, f) {
     if (el.dataset && el.dataset.fecc) return;
     if (!f || el.classList.contains("sup") || el.classList.contains("mainc")) return;
@@ -390,9 +413,9 @@ var __spreadValues = (a, b) => {
           if (q) return q;
         }
         return null;
-      })() : null);
+      })() : null) || seriesPoster(f);
       if (!ps) return;
-      src = ps.url;
+      src = thumbUrl(ps.url);
       el.classList.add("has-poster");
     } else if (isFolder(f)) {
       const fid = target(f);
@@ -425,6 +448,15 @@ var __spreadValues = (a, b) => {
       const im = new Image();
       im.alt = "";
       im.referrerPolicy = "no-referrer";
+      im.decoding = "async";
+      im.onerror = () => {
+        const o = THUMBO.get(src);
+        if (o) {
+          THUMBO.delete(src);
+          src = o;
+          im.src = o;
+        }
+      };
       im.onload = () => {
         if (im.naturalWidth > 40) {
           const a = el.querySelector(".art");
@@ -1495,6 +1527,11 @@ var __spreadValues = (a, b) => {
     }), { root: null, rootMargin: "800px 0px" });
     artIO.observe(el);
   }
+  function tvGate() {
+    if (!document.body.classList.contains("tv")) return true;
+    const m = $("#main");
+    return !m || m.scrollTop + m.clientHeight * 3 > m.scrollHeight - m.clientHeight * 0.5;
+  }
   function drain(Q, isNew) {
     const gen = ++drainGen, idle = window.requestIdleCallback ? (cb) => requestIdleCallback(cb, { timeout: 400 }) : (cb) => setTimeout(cb, 30);
     let qi = 0;
@@ -1518,6 +1555,11 @@ var __spreadValues = (a, b) => {
     };
     drainOne = one;
     const step = () => {
+      if (gen !== drainGen) return;
+      if (!tvGate()) {
+        setTimeout(step, 300);
+        return;
+      }
       if (one()) idle(step);
     };
     setTimeout(() => idle(step), 700);
@@ -1961,8 +2003,12 @@ var __spreadValues = (a, b) => {
     });
     const step = () => {
       if (job !== sortJob || !q.length) return;
+      if (!tvGate()) {
+        setTimeout(step, 300);
+        return;
+      }
       const t = Date.now();
-      while (q.length && Date.now() - t < 12) {
+      while (q.length && Date.now() - t < 12 && tvGate()) {
         const [el, a] = q.shift();
         el.insertAdjacentHTML("beforeend", a.map((f) => tile(f)).join(""));
         el.querySelectorAll(".ol-tile:not([data-arted])").forEach((e) => {
@@ -1970,7 +2016,7 @@ var __spreadValues = (a, b) => {
           lazyArt(e);
         });
       }
-      if (q.length) requestAnimationFrame(step);
+      if (q.length) tvGate() ? requestAnimationFrame(step) : setTimeout(step, 300);
     };
     const first = q.shift();
     if (first) {
@@ -1980,6 +2026,16 @@ var __spreadValues = (a, b) => {
         lazyArt(e);
       });
     }
+    drainOne = () => {
+      if (job !== sortJob || !q.length) return false;
+      const [el, a] = q.shift();
+      el.insertAdjacentHTML("beforeend", a.map((f) => tile(f)).join(""));
+      el.querySelectorAll(".ol-tile:not([data-arted])").forEach((e) => {
+        e.dataset.arted = 1;
+        lazyArt(e);
+      });
+      return true;
+    };
     requestAnimationFrame(step);
   }
   document.addEventListener("click", (e) => {
@@ -2558,11 +2614,41 @@ var __spreadValues = (a, b) => {
         best = e;
       }
     });
-    if (best) focusEl(best);
+    if (best) {
+      focusEl(best);
+      return;
+    }
+    if (dir === "down" && !mvRetry && typeof drainOne === "function" && document.body.classList.contains("tv")) {
+      mvRetry = 1;
+      let n = 0;
+      try {
+        while (n++ < 3 && drainOne()) ;
+      } catch (e) {
+      }
+      requestAnimationFrame(() => {
+        mvRetry = 0;
+        move(dir);
+      });
+    }
+  }
+  let mvRetry = 0;
+  function tvReveal(m, e) {
+    const R = (x) => x && x.getClientRects().length ? x.getBoundingClientRect() : null, r = e.getBoundingClientRect(), bar = R($("#bar")), hn = R($("#hints")), tk = R($("#ticker")), pad = Math.round(innerHeight * 0.025);
+    let top = Math.max(m.getBoundingClientRect().top, bar ? bar.bottom : 0) + pad, bot = innerHeight - pad;
+    if (hn) bot = Math.min(bot, hn.top - pad);
+    if (tk) bot = Math.min(bot, tk.top - pad);
+    if (r.height > bot - top || r.top < top) m.scrollTop += r.top - top;
+    else if (r.bottom > bot) m.scrollTop += r.bottom - bot;
   }
   function focusEl(e) {
     e.focus({ preventScroll: true });
-    if (e.scrollIntoView) e.scrollIntoView({ block: "nearest", inline: "nearest" });
+    if (!e.scrollIntoView) return;
+    const m = document.body.classList.contains("tv") && e.closest && e.closest("#main");
+    if (m && m.scrollHeight > m.clientHeight) {
+      tvReveal(m, e);
+      return;
+    }
+    e.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
   let gbT = 0;
   function goBack() {
@@ -2684,7 +2770,7 @@ var __spreadValues = (a, b) => {
     const tile2 = a && a.closest && a.closest(".ol-tile");
     if (tile2) lastTile = tile2;
     if (k === 38 && tile2) {
-      const r = tile2.getBoundingClientRect(), above = [].slice.call(document.querySelectorAll("#arena .ol-tile,#grid .ol-tile,#grid .sortpill")).some((x) => x !== tile2 && x.offsetParent && x.getBoundingClientRect().bottom <= r.top + 4 && x.getBoundingClientRect().bottom > r.top - r.height * 1.6);
+      const r = tile2.getBoundingClientRect(), above = [].slice.call(document.querySelectorAll("#arena .ol-tile,#grid .ol-tile,#grid .sortpill")).some((x) => x !== tile2 && x.getClientRects().length && x.getBoundingClientRect().bottom <= r.top + 4);
       if (!above) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -3168,31 +3254,33 @@ var __spreadValues = (a, b) => {
     reArt();
   }).catch(() => {
   });
-  tmo("data/genres.json", 1e4).then((g) => {
+  const TVB = /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || !!P.get("tv");
+  const later = (fn, ms) => TVB ? setTimeout(fn, ms) : fn();
+  later(() => tmo("data/genres.json", 1e4).then((g) => {
     GC = g.__collections || {};
     delete g.__collections;
     genreMap = g;
     if (!$("#home").hidden) hub();
     else if (/^#\/genres?\/./.test(location.hash)) route();
   }).catch(() => {
-  });
+  }), 1500);
   tmo("data/mosaic.json", 1e4).then((m) => {
     mosaicList = m;
     if (!$("#home").hidden) mosaic();
   }).catch(() => {
   });
-  tmo("data/dates.json", 15e3).then((m) => {
+  later(() => tmo("data/dates.json", 15e3).then((m) => {
     NA.dates = m;
     (window.requestIdleCallback || setTimeout)(() => NA.top(rootVids()));
     if (!$("#home").hidden) hub();
     else if (/^#\/(newarrivals|arena|folder)/.test(location.hash)) route();
-  }).catch((e) => console.warn(e));
-  tmo("data/metadata.json", 8e3).then((m) => meta = m).catch((e) => console.warn(e));
-  {
+  }).catch((e) => console.warn(e)), 3e3);
+  later(() => tmo("data/metadata.json", 8e3).then((m) => meta = m).catch((e) => console.warn(e)), 5e3);
+  later(() => {
     const sx = document.createElement("script");
     sx.src = "details-extra.js";
     document.head.appendChild(sx);
-  }
+  }, 8e3);
   tmo("data/index.json", 15e3).then((d) => {
     window._idx = d.items;
     if (!live) add(d.items);
