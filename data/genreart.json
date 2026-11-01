@@ -76,5 +76,17 @@
   "folder": "",
   "img": "assets/genres/uncategorized.webp?v=1",
   "credit": "Supplied image (messy media desk)"
+ },
+ "Crime": {
+  "folder": "The Defenders Mini-Series - Season 1 - Part 3 - Fan Edit",
+  "img": "assets/genres/thriller.jpg?v=2",
+  "src0": "assets/clips/94.jpg",
+  "credit": "TMDB backdrop, North by Northwest (1959), crop-duster scene (https://www.themoviedb.org/movie/213), image https://image.tmdb.org/t/p/original/4epZ5uclCBEdIpVYUFpK3JUHsp.jpg (shared with Thriller until dedicated art is picked)"
+ },
+ "War": {
+  "folder": "She-Hulk: Attorney at Law - Episode 5-6 - Titania Cut - Fan Edit",
+  "img": "assets/genres/action.webp?v=3",
+  "src0": "assets/clips/9.jpg",
+  "credit": "Still from Die Hard (1988) via TMDB (themoviedb.org) backdrops (shared with Action until dedicated art is picked)"
  }
 }

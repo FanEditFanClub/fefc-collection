@@ -27,7 +27,25 @@ def top(f):
     while x and x.get('parent') and x['parent'] != ROOT and g < 30: x = by.get(x['parent']); g += 1
     return x['id'] if x and x.get('parent') == ROOT else None
 vids = [f for f in items if f.get('kind') == 'video']
-genres = sorted({g for v in G.values() for g in v['genres']})
+# --- pinned genre overrides (data/genre-overrides.json): applied every run, after the Wikidata map, so nothing can undo them ---
+OV = json.load(open(os.path.join(D, 'genre-overrides.json')))
+RULES = [(re.compile(r['match'], re.I), r['genres']) for r in OV.get('rules', [])]
+SKIPTOP = re.compile(r'^\d+\s*-\s|\bfan edits?\b.*$|\bseries\b - .*fan edits|^(actors|directors)$', re.I)
+def override(name):
+    for rx, gs in RULES:
+        if rx.search(name): return gs
+added = changed = 0
+for f in items:
+    if f.get('parent') != ROOT or f['mimeType'] != 'application/vnd.google-apps.folder': continue
+    gs = override(f['name'])
+    if gs is None: continue
+    if f['id'] in G:
+        if sorted(G[f['id']]['genres']) != sorted(gs): changed += 1
+        G[f['id']]['genres'] = sorted(gs); G[f['id']]['source'] = dict(G[f['id']].get('source') or {}, pinned=True)
+    else:
+        added += 1; G[f['id']] = {'folder': f['name'], 'genres': sorted(gs), 'source': {'pinned': True}}
+print('genre overrides: %d folders added, %d changed' % (added, changed))
+genres = sorted({g for v in G.values() for g in v['genres']} | {e['genre'] for e in OV.get('edits', [])})
 out = {}
 for g in genres:
     groups = defaultdict(list)
@@ -45,6 +63,13 @@ for g in genres:
                 if t in seen or top(f) in fids: continue
                 if rx.match(key(f['name'])): seen.add(t); extra.append(f['id'])
         colls.append({'slug': slug(name), 'name': name, 'folders': fids, 'extra': extra})
+    for e in OV.get('edits', []):
+        if e['genre'] != g or any(c['name'].lower() == e['name'].lower() for c in colls): continue
+        rx, seen, ids = re.compile(e['match'], re.I), set(), []
+        for f in vids:
+            t = f.get('targetId') or f['id']
+            if t not in seen and rx.search(f['name']): seen.add(t); ids.append(f['id'])
+        if ids: colls.append({'slug': slug(e['name']), 'name': e['name'], 'folders': [], 'extra': ids})
     colls.sort(key=lambda c: c['name'].lower())
     out[g] = colls
 G['__collections'] = out

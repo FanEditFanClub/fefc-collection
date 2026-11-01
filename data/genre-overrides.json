@@ -1,0 +1,1005 @@
+{
+ "_doc": "Pinned genre overrides, applied by tools/genre_collections.py on every (nightly) run AFTER genres.json is built, so Wikidata/regex classification can never undo them. 'rules': first regex that matches a top-level folder name (case-insensitive) REPLACES that folder's genres (new folders matching a rule are added to genres.json). 'edits': extra per-edit collections (file-name regex) added to a genre without adding the whole folder. Genres: Action, Adventure, Animation, Comedy, Crime, Documentary, Drama, Family, Fantasy, Horror, Sci-Fi, Superhero, Thriller, War, Western.",
+ "rules": [
+  {
+   "match": "^breaking bad, better call saul",
+   "genres": [
+    "Crime",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^breaking bad",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^better call saul|^el camino",
+   "genres": [
+    "Crime",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^marvel|^avengers|^captain america|^iron man|^thor\\b|^hulk|^black widow|^hawkeye|^spider-?man|^x-men|^venom|^guardians of the galaxy|^ant-?man|^black panther|^doctor strange|^shang|^eternals|^fantastic four|^wandavision|^loki",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^deadpool",
+   "genres": [
+    "Action",
+    "Comedy",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^agents of s\\.?h\\.?i\\.?e\\.?l\\.?d",
+   "genres": [
+    "Action",
+    "Drama",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^daredevil|^luke cage|^the punisher|^punisher|^the defenders|^jessica jones",
+   "genres": [
+    "Action",
+    "Crime",
+    "Drama",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^iron fist",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Fantasy",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^(dc\\b|dc series|dawn of justice|dceu)",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^dcau",
+   "genres": [
+    "Action",
+    "Animation",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^batman",
+   "genres": [
+    "Action",
+    "Crime",
+    "Superhero",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^superman|^man of steel|^justice league",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^the flash",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^smallville",
+   "genres": [
+    "Drama",
+    "Fantasy",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^arrow\\b",
+   "genres": [
+    "Action",
+    "Crime",
+    "Drama",
+    "Superhero",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^green lantern",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^(the suicide squad|james gunn'?s the suicide squad)",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Comedy",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^the matrix",
+   "genres": [
+    "Action",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^star vs",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Animation",
+    "Comedy",
+    "Family",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^alien",
+   "genres": [
+    "Action",
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^predator",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^terminator: the sarah connor",
+   "genres": [
+    "Action",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^terminator",
+   "genres": [
+    "Action",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^blade runner",
+   "genres": [
+    "Drama",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^blade\\b",
+   "genres": [
+    "Action",
+    "Fantasy",
+    "Horror",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^back to the future",
+   "genres": [
+    "Adventure",
+    "Comedy",
+    "Family",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^star trek",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^star wars: the clone wars|^star wars - the clone wars",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Animation",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^star wars",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Fantasy",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^stargate",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^battlestar",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^flash gordon",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Fantasy",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^dune",
+   "genres": [
+    "Adventure",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^tron",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^robocop",
+   "genres": [
+    "Action",
+    "Crime",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^mad max",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^the planet of the apes|^planet of the apes",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^fallout",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^twisted metal",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Comedy",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^westworld",
+   "genres": [
+    "Drama",
+    "Sci-Fi",
+    "Thriller",
+    "Western"
+   ]
+  },
+  {
+   "match": "^for all mankind",
+   "genres": [
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^severance",
+   "genres": [
+    "Drama",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^rick (&|and) morty",
+   "genres": [
+    "Adventure",
+    "Animation",
+    "Comedy",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^love, death",
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Fantasy",
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^the man in the high castle",
+   "genres": [
+    "Drama",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^the orville",
+   "genres": [
+    "Adventure",
+    "Comedy",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^space force",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "^the hunger games",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^the twilight zone|^twilight zone",
+   "genres": [
+    "Fantasy",
+    "Horror",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^lost\\b",
+   "genres": [
+    "Adventure",
+    "Drama",
+    "Fantasy",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^stranger things",
+   "genres": [
+    "Drama",
+    "Fantasy",
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^alias",
+   "genres": [
+    "Action",
+    "Drama",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^cowboy bebop",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Animation",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^tetsuo",
+   "genres": [
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^neon genesis",
+   "genres": [
+    "Action",
+    "Animation",
+    "Drama",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^naruto|^demon slayer",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Animation",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^power rangers",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Family",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "^teenage mutant",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Animation",
+    "Comedy",
+    "Family"
+   ]
+  },
+  {
+   "match": "^(godzilla|the monsterverse|kong)",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^jurassic park: the game",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^jurassic park",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^indiana jones",
+   "genres": [
+    "Action",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "^pirates of the caribbean",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Comedy",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^the lord of the rings|^the hobbit",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^harry potter",
+   "genres": [
+    "Adventure",
+    "Family",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^game of thrones",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^the witcher",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^vikings",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^black sails",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^highlander",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "^a nightmare on elm|^friday the 13th|^halloween|^chucky|^creepshow|^insidious|^paranormal activity|^the exorcist|^v/h/s|^all of us are dead",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "^evil dead|^ash vs evil dead",
+   "genres": [
+    "Comedy",
+    "Fantasy",
+    "Horror"
+   ]
+  },
+  {
+   "match": "^the thing",
+   "genres": [
+    "Horror",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^the return of the living dead",
+   "genres": [
+    "Comedy",
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^gremlins",
+   "genres": [
+    "Comedy",
+    "Fantasy",
+    "Horror"
+   ]
+  },
+  {
+   "match": "^psycho",
+   "genres": [
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^it: welcome to derry|^it\\b",
+   "genres": [
+    "Fantasy",
+    "Horror"
+   ]
+  },
+  {
+   "match": "^the walking dead",
+   "genres": [
+    "Drama",
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^supernatural",
+   "genres": [
+    "Drama",
+    "Fantasy",
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^universal monsters",
+   "genres": [
+    "Fantasy",
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^buffy",
+   "genres": [
+    "Action",
+    "Drama",
+    "Fantasy",
+    "Horror"
+   ]
+  },
+  {
+   "match": "^preacher",
+   "genres": [
+    "Comedy",
+    "Drama",
+    "Fantasy",
+    "Horror"
+   ]
+  },
+  {
+   "match": "^jaws",
+   "genres": [
+    "Adventure",
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^parasyte",
+   "genres": [
+    "Horror",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^28 days",
+   "genres": [
+    "Horror",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^die hard",
+   "genres": [
+    "Action",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^lethal weapon|^rush hour",
+   "genres": [
+    "Action",
+    "Comedy",
+    "Crime"
+   ]
+  },
+  {
+   "match": "^rambo",
+   "genres": [
+    "Action",
+    "Adventure",
+    "War"
+   ]
+  },
+  {
+   "match": "^rocky",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "^fast & furious|^fast and furious",
+   "genres": [
+    "Action",
+    "Crime",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^james bond",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^kill bill",
+   "genres": [
+    "Action",
+    "Crime",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^reacher",
+   "genres": [
+    "Action",
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^bourne",
+   "genres": [
+    "Action",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^ocean'?s",
+   "genres": [
+    "Comedy",
+    "Crime",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^the godfather|^the sopranos",
+   "genres": [
+    "Crime",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^pulp fiction",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^no country for old men",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^dexter",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^twin peaks",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Fantasy",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^sherlock holmes",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Crime",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^revenge",
+   "genres": [
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^l\\.a\\. noire",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^the last of us",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Horror",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "^(seinfeld|the office|parks and recreation|key and peele|whose line|airplane|austin powers)",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "^californication",
+   "genres": [
+    "Comedy",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^south park",
+   "genres": [
+    "Animation",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "^the naked gun",
+   "genres": [
+    "Comedy",
+    "Crime"
+   ]
+  },
+  {
+   "match": "^yellowstone",
+   "genres": [
+    "Drama",
+    "Western"
+   ]
+  },
+  {
+   "match": "^landman",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "^chernobyl",
+   "genres": [
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^band of brothers",
+   "genres": [
+    "Action",
+    "Drama",
+    "War"
+   ]
+  },
+  {
+   "match": "^world war ll|^world war ii",
+   "genres": [
+    "Documentary",
+    "War"
+   ]
+  },
+  {
+   "match": "^firefly",
+   "genres": [
+    "Adventure",
+    "Drama",
+    "Sci-Fi",
+    "Western"
+   ]
+  },
+  {
+   "match": "^the x-files",
+   "genres": [
+    "Drama",
+    "Horror",
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^ocean",
+   "genres": [
+    "Comedy",
+    "Crime",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^house of the dragon",
+   "genres": [
+    "Action",
+    "Adventure",
+    "Drama",
+    "Fantasy"
+   ]
+  }
+ ],
+ "edits": [
+  {
+   "genre": "Western",
+   "name": "Back to the Future Part III",
+   "match": "back to the future(?!.*part (i|ii|1|2)\\b).*(part )?(iii|3)\\b|^bttf.*(iii|3)\\b",
+   "folders": "^back to the future"
+  },
+  {
+   "genre": "Sci-Fi",
+   "name": "Stargate",
+   "match": "^stargate\\b",
+   "folders": "(no Stargate folder yet - collect the loose Stargate edits from anywhere in the library)"
+  },
+  {
+   "genre": "Action",
+   "name": "Stargate",
+   "match": "^stargate\\b",
+   "folders": "(no Stargate folder yet - collect the loose Stargate edits from anywhere in the library)"
+  },
+  {
+   "genre": "Adventure",
+   "name": "Stargate",
+   "match": "^stargate\\b",
+   "folders": "(no Stargate folder yet - collect the loose Stargate edits from anywhere in the library)"
+  }
+ ]
+}

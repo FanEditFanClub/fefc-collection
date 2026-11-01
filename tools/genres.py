@@ -10,8 +10,8 @@ def j(u):
         except Exception:time.sleep(2)
     return {}
 BUCK=[('Action',r'action'),('Sci-Fi',r'science fiction|cyberpunk|space opera|dystopian'),('Horror',r'horror|slasher|zombie'),('Comedy',r'comed|sitcom|parody'),
- ('Animation',r'anim|cartoon|anime'),('Drama',r'drama'),('Fantasy',r'fantasy'),('Superhero',r'superhero'),('Thriller',r'thriller|crime|mystery|neo-noir|heist'),
- ('Adventure',r'adventure'),('War',r'war film|war drama|military'),('Western',r'western'),('Family',r'family|children'),('Musical',r'music'),('Documentary',r'documentary')]
+ ('Animation',r'anim|cartoon|anime'),('Drama',r'drama'),('Fantasy',r'fantasy'),('Superhero',r'superhero'),('Thriller',r'thriller|mystery|neo-noir'),('Crime',r'crime|gangster|heist'),
+ ('Adventure',r'adventure'),('War',r'war film|war drama|military'),('Western',r'(?<!contemporary )(?<!neo-)western'),('Family',r'family|children'),('Musical',r'music'),('Documentary',r'documentary')]
 skip=re.compile(r'^\d+\s*-\s*|^z\s*-',re.I)
 out={}
 for f in idx['items']:
