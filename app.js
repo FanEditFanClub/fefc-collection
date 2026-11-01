@@ -2528,7 +2528,7 @@ var __spreadValues = (a, b) => {
     openSpot("");
   }));
   setTimeout(sm2, 0);
-  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#pframe,.tk-i:not(.tk-dup)";
+  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap,.tk-i:not(.tk-dup)";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -2604,7 +2604,7 @@ var __spreadValues = (a, b) => {
       goBack();
       return;
     }
-    if (k === 13 && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav],[data-href]")) {
+    if ((k === 13 || k === 23) && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav],[data-href]")) {
       e.preventDefault();
       S.unlock();
       document.activeElement.click();
@@ -3129,16 +3129,10 @@ var __spreadValues = (a, b) => {
     })();
     setTimeout(() => {
       if ($("#player").hidden) return;
-      if (/FEFCFireTV/.test(navigator.userAgent)) {
-        const fr = $("#pframe");
-        try {
-          fr.setAttribute("tabindex", "0");
-          fr.focus({ preventScroll: true });
-        } catch (e) {
-          focusEl($("#back"));
-        }
-      } else focusEl($("#back"));
-    }, /FEFCFireTV/.test(navigator.userAgent) ? 900 : 50);
+      const pt = $("#ptap");
+      if (document.body.classList.contains("tv") && pt && pt.offsetParent) focusEl(pt);
+      else focusEl($("#back"));
+    }, 50);
   };
   if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
   document.addEventListener("keydown", () => document.body.classList.add("kbd"), { once: true });

@@ -649,7 +649,7 @@ const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
 let qt;$('#q').readOnly=true;['focus','click'].forEach(ev=>$('#q').addEventListener(ev,e=>{if(spOpen())return;e.preventDefault();$('#q').blur();openSpot('')}));
 setTimeout(sm2,0);
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-const FOC='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#pframe,.tk-i:not(.tk-dup)';
+const FOC='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap,.tk-i:not(.tk-dup)';
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
 function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).filter(visible),a=document.activeElement;
@@ -667,7 +667,7 @@ document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('
  if(dir&&!$('#rfpanel').hidden&&(k===38||k===40)){e.preventDefault();const w=$('.rf-scroll');if(w)w.scrollBy(0,k===40?220:-220);return}
  if(dir&&!(inInput&&(k===37||k===39))){e.preventDefault();S.unlock();move(dir);return}
  if(k===10009||k===461||k===27||(k===8&&!inInput)||e.key==='GoBack'||e.key==='BrowserBack'){e.preventDefault();goBack();return}
- if(k===13&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href]')){e.preventDefault();S.unlock();document.activeElement.click()}});
+ if((k===13||k===23)&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href]')){e.preventDefault();S.unlock();document.activeElement.click()}});
 /* ---------- Top menu bar D-pad navigation (TV / keyboard) ---------- */
 let lastTile=null;
 const barItems=()=>[].slice.call(document.querySelectorAll('#bar .mi,#bar #tvq,#bar #q,#bar #aiq')).filter(x=>x.offsetParent&&!x.hidden&&getComputedStyle(x).display!=='none');
@@ -856,7 +856,7 @@ window.FEFCSpot={open:openSpot,close:closeSpot};
 // focus first item after views open
 const _render=render;render=function(){_render.apply(this,arguments);if(document.body.classList.contains('tv')){const t=document.querySelector('#arena .ol-tile,#grid .ol-tile');if(t)focusEl(t)}};
 const _details=details;details=async function(){await _details.apply(this,arguments);const p=document.querySelector('#details .bigplay')||document.querySelector('#details [data-act="play"]');if(p){const id=$('#details').dataset.id;if(id&&window.UD&&!p.parentNode.querySelector('.star-btn')){const on=UD.isStarred(id);p.insertAdjacentHTML('afterend',`<button class="pill p4 star-btn${on?' on':''}" data-star="${id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`)}const B=document.body.classList,D=$('#details');if(B.contains('tv')||B.contains('kbd')){try{p.focus({preventScroll:true})}catch(e){p.focus()}}else if(document.activeElement&&D.contains(document.activeElement))document.activeElement.blur();D.scrollTop=0;D.querySelectorAll('.lc-body').forEach(x=>x.scrollTop=0)}};
-const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;if(/FEFCFireTV/.test(navigator.userAgent)){const fr=$('#pframe');try{fr.setAttribute('tabindex','0');fr.focus({preventScroll:true})}catch(e){focusEl($('#back'))}}else focusEl($('#back'))},/FEFCFireTV/.test(navigator.userAgent)?900:50)};
+const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
 document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once:true});
 /* ---------- BOOT ---------- */

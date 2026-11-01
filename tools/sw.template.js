@@ -17,6 +17,7 @@ const ASSETS=[
  '/qrgen.js',
  '/genres.js',
  '/ticker.js',
+ '/tvplayer.js',
  '/app.js',
  '/assets/fefc-logo-carson.png',
  '/manifest.json',

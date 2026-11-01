@@ -938,3 +938,12 @@ body.tv #syncpanel .sp-opt b{font-size:2.8vh}body.tv #syncpanel .sp-opt span{fon
 .tk-i:focus{box-shadow:inset 0 0 0 3px #ffb02e,0 0 18px #ff9c00cc;position:relative;z-index:1}
 body.tk-on #hints{bottom:calc(clamp(24px,3.7vh,46px) + env(safe-area-inset-bottom,0px) + .9vh)!important}
 @media (prefers-reduced-motion:reduce){#ticker{scroll-behavior:auto}}
+
+/* ---------- TV player: focusable overlay so OK can start/pause Drive's iframe (see src/tvplayer.js) ---------- */
+#ptap{display:none}
+.pwrap{position:relative}
+body.tv #ptap{display:block;position:absolute;inset:0;z-index:2;background:transparent;outline:0;pointer-events:none}
+body.tv #ptap span{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);padding:.35em 1.2em;border-radius:99px;background:#000c;color:#fff;font:700 clamp(14px,2.6vh,28px) 'Source Sans 3',sans-serif;letter-spacing:.06em;opacity:0}
+body.tv #ptap:focus{box-shadow:inset 0 0 0 .7vh #ffb02e}body.tv #ptap:focus span{opacity:1}
+#pnative[hidden]{display:none}
+#ptapnote{position:absolute;left:50%;top:14%;transform:translateX(-50%);z-index:5;padding:.6em 1.4em;border-radius:10px;background:#000e;border:2px solid #ffb02e;color:#fff;font:700 clamp(14px,2.6vh,28px) 'Source Sans 3',sans-serif;opacity:0;pointer-events:none;transition:opacity .2s}#ptapnote.on{opacity:1}

@@ -14,6 +14,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.view.MotionEvent;
+import android.webkit.JavascriptInterface;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -98,6 +101,7 @@ public class MainActivity extends Activity {
         CookieManager cm = CookieManager.getInstance();
         cm.setAcceptCookie(true);
         cm.setAcceptThirdPartyCookies(w, true);
+        w.addJavascriptInterface(new Bridge(), "FEFCNative");
     }
 
     private void load() {
@@ -283,6 +287,48 @@ public class MainActivity extends Activity {
             web.setVisibility(View.VISIBLE);
             web.requestFocus();
         }
+    }
+
+    /** Small bridge for the web app (window.FEFCNative): tap inside the embedded Drive player, or play a Drive file natively. */
+    private class Bridge {
+        @JavascriptInterface
+        public int version() { return BuildConfig.VERSION_CODE; }
+
+        /** Taps the WebView at CSS-pixel (x, y); vw/vh are the page's innerWidth/innerHeight, used to scale to screen pixels. */
+        @JavascriptInterface
+        public void tap(final double x, final double y, final double vw, final double vh) {
+            ui.post(() -> {
+                if (customView != null || web == null || vw <= 0) return;
+                float sc = (float) (web.getWidth() / vw);
+                tapAt((float) (x * sc), (float) (y * sc));
+            });
+        }
+
+        @JavascriptInterface
+        public void playVideo(final String driveId, final String title) {
+            if (driveId == null || !driveId.matches("[A-Za-z0-9_-]{10,100}")) return;
+            ui.post(() -> {
+                Intent i = new Intent(MainActivity.this, PlayerActivity.class);
+                i.putExtra("id", driveId);
+                i.putExtra("title", title == null ? "" : title);
+                startActivity(i);
+            });
+        }
+    }
+
+    private void tapAt(float x, float y) {
+        long t = SystemClock.uptimeMillis();
+        MotionEvent d = MotionEvent.obtain(t, t, MotionEvent.ACTION_DOWN, x, y, 0);
+        d.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+        web.dispatchTouchEvent(d);
+        d.recycle();
+        ui.postDelayed(() -> {
+            long t2 = SystemClock.uptimeMillis();
+            MotionEvent u = MotionEvent.obtain(t, t2, MotionEvent.ACTION_UP, x, y, 0);
+            u.setSource(android.view.InputDevice.SOURCE_TOUCHSCREEN);
+            web.dispatchTouchEvent(u);
+            u.recycle();
+        }, 70);
     }
 
     // ---- remote control mapping ----
