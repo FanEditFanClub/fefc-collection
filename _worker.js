@@ -357,11 +357,55 @@ async function feedApi(req, env, ctx, url) {
   return res;
 }
 
+// ---- /api/stream/:id  -> Drive file bytes via the Drive API (API key), Range-aware. Secret: GOOGLE_API_KEY (Drive API enabled).
+const DRIVE = 'https://www.googleapis.com/drive/v3/files/';
+const sidCache = new Map();                       // shortcut/file id -> { id, t }
+async function resolveDriveId(id, key) {
+  const c = sidCache.get(id); if (c && Date.now() - c.t < 6 * 3600e3) return c.id;
+  const r = await fetch(DRIVE + id + '?fields=id,mimeType,shortcutDetails&supportsAllDrives=true&key=' + encodeURIComponent(key), { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) { const e = new Error('meta ' + r.status); e.status = r.status; e.body = await r.text().catch(() => ''); throw e; }
+  const m = await r.json();
+  const out = m.mimeType === 'application/vnd.google-apps.shortcut' && m.shortcutDetails && m.shortcutDetails.targetId ? m.shortcutDetails.targetId : m.id;
+  if (sidCache.size > 5000) sidCache.clear(); sidCache.set(id, { id: out, t: Date.now() });
+  return out;
+}
+function driveErr(status, body) {
+  let reason = ''; try { reason = JSON.parse(body).error.errors[0].reason; } catch (_) {}
+  if (status === 403 && /quota|rateLimit|download/i.test(reason + body.slice(0, 400))) return json({ error: 'quota_exceeded', hint: 'Drive download quota for this file is used up; use the Drive preview player.' }, 429);
+  if (status === 403 || status === 401) return json({ error: 'not_shared', hint: 'The file owner has not shared this file with "anyone with the link".' }, 403);
+  if (status === 404) return json({ error: 'not_found' }, 404);
+  if (status === 429) return json({ error: 'quota_exceeded' }, 429);
+  return json({ error: 'upstream', status }, 502);
+}
+async function streamApi(req, env, url) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
+  const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range,accept-ranges,content-length' };
+  const id = decodeURIComponent(url.pathname.slice('/api/stream/'.length)).trim();
+  if (!/^[\w-]{10,80}$/.test(id)) return json({ error: 'bad_id' }, 400);
+  const key = env.GOOGLE_API_KEY;
+  if (!key) return json({ error: 'not_configured', hint: 'Set the Pages secret GOOGLE_API_KEY (Drive API key, Drive API enabled in project 965770773324).' }, 503);
+  let tid;
+  try { tid = await resolveDriveId(id, key); } catch (e) { return driveErr(e.status || 502, e.body || ''); }
+  const h = new Headers(); const rg = req.headers.get('range'); if (rg && /^bytes=\d*-\d*(,.*)?$/.test(rg)) h.set('range', rg.split(',')[0]);
+  const ir = req.headers.get('if-range'); if (ir && rg) h.set('if-range', ir);
+  const up = await fetch(DRIVE + tid + '?alt=media&supportsAllDrives=true&acknowledgeAbuse=true&key=' + encodeURIComponent(key), { method: 'GET', headers: h });
+  if (up.status === 416) return new Response(null, { status: 416, headers: { ...CORS, 'content-range': up.headers.get('content-range') || '' } });
+  if (!up.ok) { const b = await up.text().catch(() => ''); return driveErr(up.status, b); }
+  const o = new Headers(CORS);
+  for (const k of ['content-length', 'content-range', 'etag', 'last-modified']) { const v = up.headers.get(k); if (v) o.set(k, v); }
+  let ct = up.headers.get('content-type') || ''; if (!/^video\//.test(ct)) ct = 'video/mp4';
+  o.set('content-type', ct); o.set('accept-ranges', 'bytes'); o.set('cache-control', 'private, max-age=3600');
+  return new Response(req.method === 'HEAD' ? null : up.body, { status: up.status, headers: o });
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
     if (url.pathname === '/api/feed') {
       try { return await feedApi(req, env, ctx, url); } catch (e) { console.log('feed error:', String(e && e.message || e).slice(0, 120)); return json({ updated: new Date().toISOString(), status: {}, items: mergeFeed([], 0) }); }
+    }
+    if (url.pathname.startsWith('/api/stream/')) {
+      try { return await streamApi(req, env, url); } catch (e) { console.log('stream error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }
     }
     if (url.pathname === '/api/ai-search') {
       if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
