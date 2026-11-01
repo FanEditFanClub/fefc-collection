@@ -1233,6 +1233,22 @@
    ],
    "random": true,
    "source": "DC: Superman/Batman"
+  },
+  {
+   "path": true,
+   "regex": "^severance$",
+   "files": [
+    "assets/sfx/severance-theme.mp3"
+   ],
+   "source": "Severance main title theme (Theodore Shapiro), piano motif, trimmed from YouTube"
+  },
+  {
+   "path": true,
+   "regex": "^blade$",
+   "files": [
+    "assets/sfx/blade-only-one.mp3"
+   ],
+   "source": "Deadpool & Wolverine: Wesley Snipes \"There's only been one Blade... only ever gonna be one Blade\", trimmed from YouTube"
   }
  ],
  "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ": [
