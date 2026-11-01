@@ -220,7 +220,7 @@ window.SFX = (() => {
             S.stopFx();
             const a = new Audio(list[0]);
             S._fxAud = a;
-            a.volume = muted ? 0 : 0.8;
+            a.volume = muted ? 0 : 0.6;
             a.play().catch(() => {
             });
           } catch (_) {
@@ -252,7 +252,7 @@ window.SFX = (() => {
           S.stopFx();
           const a = new Audio(list[0]);
           S._fxAud = a;
-          a.volume = muted ? 0 : 0.8;
+          a.volume = muted ? 0 : 0.6;
           a.play().catch(() => {
           });
         } catch (_) {
