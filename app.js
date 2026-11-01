@@ -590,8 +590,11 @@ var __spreadValues = (a, b) => {
         if (isFolder(f)) {
           const t = target(f);
           if (t === f.id && !f.targetId && (items.get(t) || f).parent === x && t !== ROOT && !Object.values(FOLD).includes(t)) st.push(t);
-        } else if (!JUNK.test(f.name || "") && !fs[target(f)]) {
+        } else if (!JUNK.test(f.name || "") && isVid(f) && !fs[target(f)]) {
           fs[target(f)] = 1;
+          const ck = vcanon(f);
+          if (ck === null || fs["c:" + ck]) return;
+          fs["c:" + ck] = 1;
           n++;
           sz2 += f.size || 0;
           const m = mdate(f);
@@ -1585,7 +1588,7 @@ var __spreadValues = (a, b) => {
     }
   };
   function csortFn(k) {
-    const nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), dc = (f) => isFolder(f) ? sortCounts(target(f)) : { n: 1, sz: f.size || 0, nw: mdate(f) }, own = mdate;
+    const nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), dc = (f) => isFolder(f) ? sortCounts(target(f)) : { n: isVid(f) ? 1 : 0, sz: f.size || 0, nw: mdate(f) }, own = mdate;
     const by = (g) => (a, b) => {
       const x = g(a), y = g(b);
       return x < y ? 1 : x > y ? -1 : nat(a, b);
@@ -1824,7 +1827,7 @@ var __spreadValues = (a, b) => {
       if (NA.isNew(f)) isNew[f.id] = 1;
     });
     const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
-    $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : cur === ROOT || cur === FOLD.collections || cur === FOLD.tbc ? countsLine(cur) : "".concat(fold.length, " collections \xB7 ").concat(vids2.length, " fan edits");
+    $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : cur === ROOT || cur === FOLD.collections || cur === FOLD.tbc ? countsLine(cur) : cur === "virtual" ? "".concat(fold.length, " collections \xB7 ").concat(fmtN(vids2.filter(isVid).length), " files") : "".concat(fold.length, " ").concat(fold.length === 1 ? "collection" : "collections", " \xB7 ").concat(fmtN(sortCounts(cur).n), " ").concat(sortCounts(cur).n === 1 ? "file" : "files");
     const isAd = (f) => !isVid(f) && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name), nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), docs = vids2.filter((f) => !isVid(f) && !isAd(f)), ck = mode === "arena" ? "az" : csortGet(cur), evs = csortList(vids2.filter((f) => isVid(f) || isAd(f)), ck, isAd), Q = [], sec = (k, l, a) => {
       if (!a.length) return "";
       const qi = Q.length;
