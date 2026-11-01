@@ -2,8 +2,8 @@
   var NA = window.NA = {
     dates: {},
     d: function(f) {
-      var x = NA.dates[f.id] || NA.dates[f.targetId];
-      return x && (x.c || x.m) || f.modified || "";
+      var x = NA.dates[f.id], y = NA.dates[f.targetId];
+      return x && (x.c || x.a || x.m) || f.modified || y && (y.c || y.a || y.m) || "";
     },
     fmt: function(s) {
       if (!s) return "";
@@ -16,13 +16,23 @@
     top: function(list) {
       var k = list.length + ":" + Object.keys(NA.dates).length;
       if (NA._tk === k) return NA._top;
-      var seen = {}, out = [];
-      NA.sort(list).forEach(function(f) {
-        var t = f.targetId || f.id;
-        if (out.length >= NA.CAP || seen[t] || !NA.d(f)) return;
-        seen[t] = 1;
-        out.push(f);
+      var first = {}, rep = {};
+      list.forEach(function(f) {
+        var t = f.targetId || f.id, d = NA.d(f);
+        if (!d) return;
+        if (!(t in first) || d < first[t]) {
+          first[t] = d;
+        }
+        if (!rep[t] || NA.d(rep[t]) > d || NA.d(rep[t]) === d && f.id === t) rep[t] = f;
       });
+      var out = Object.keys(rep).map(function(t) {
+        return rep[t];
+      });
+      out.sort(function(a, b) {
+        var x = first[a.targetId || a.id], y = first[b.targetId || b.id];
+        return x < y ? 1 : x > y ? -1 : a.name.localeCompare(b.name);
+      });
+      if (out.length > NA.CAP) out.length = NA.CAP;
       NA._tk = k;
       NA._top = out;
       NA._set = {};

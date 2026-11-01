@@ -1,10 +1,16 @@
 /* New Arrivals + top menu. Plain script loaded before app.js; uses app.js globals at call time. */
 (function(){
 var NA=window.NA={dates:{},
- d:function(f){var x=NA.dates[f.id]||NA.dates[f.targetId];return (x&&(x.c||x.m))||f.modified||''},
+ d:function(f){/* when the video was ADDED to the collection: Drive createdTime of this entry itself (a shortcut's own createdTime, never its target's modified time) > first-seen by the nightly resync > listing date of this entry > (last resort) the target's listing date */
+  var x=NA.dates[f.id],y=NA.dates[f.targetId];return (x&&(x.c||x.a||x.m))||f.modified||(y&&(y.c||y.a||y.m))||''},
  fmt:function(s){if(!s)return'';var t=new Date(s.length<=10?s+'T12:00:00':s);return isNaN(t)?'':'Added '+t.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})},
  CAP:500,_tk:null,_top:null,
- top:function(list){var k=list.length+':'+Object.keys(NA.dates).length;if(NA._tk===k)return NA._top;var seen={},out=[];NA.sort(list).forEach(function(f){var t=f.targetId||f.id;if(out.length>=NA.CAP||seen[t]||!NA.d(f))return;seen[t]=1;out.push(f)});NA._tk=k;NA._top=out;NA._set={};out.forEach(function(f){NA._set[f.id]=1;NA._set[f.targetId||f.id]=1});return out},
+ top:function(list){var k=list.length+':'+Object.keys(NA.dates).length;if(NA._tk===k)return NA._top;
+  /* dedupe shortcuts / copies: one tile per target video, ranked by the EARLIEST time any of its entries was added */
+  var first={},rep={};list.forEach(function(f){var t=f.targetId||f.id,d=NA.d(f);if(!d)return;if(!(t in first)||d<first[t]){first[t]=d}if(!rep[t]||NA.d(rep[t])>d||(NA.d(rep[t])===d&&f.id===t))rep[t]=f});
+  var out=Object.keys(rep).map(function(t){return rep[t]});out.sort(function(a,b){var x=first[a.targetId||a.id],y=first[b.targetId||b.id];return x<y?1:x>y?-1:a.name.localeCompare(b.name)});
+  if(out.length>NA.CAP)out.length=NA.CAP;
+  NA._tk=k;NA._top=out;NA._set={};out.forEach(function(f){NA._set[f.id]=1;NA._set[f.targetId||f.id]=1});return out},
  isNew:function(f){return !!(NA._set&&(NA._set[f.id]||NA._set[f.targetId||f.id]))},
  newCount:function(list){return NA.top(list).length},
  sort:function(list){return list.slice().sort(function(a,b){var x=NA.d(a),y=NA.d(b);return x<y?1:x>y?-1:a.name.localeCompare(b.name)})},
