@@ -470,6 +470,769 @@
     "1D3k5iJYvA8NNHRufgtzTFA8W3QVUcSYB",
     "1xubVBwzg113U866eZLhrAR1o_Jv-lEbA"
    ]
+  },
+  {
+   "path": true,
+   "regex": "^arrow\\b",
+   "files": [
+    "assets/sfx/arrow-failed-city.mp3"
+   ],
+   "source": "Arrow: \"You have failed this city\""
+  },
+  {
+   "path": true,
+   "regex": "blade runner",
+   "file": [
+    [
+     "assets/sfx/blade-runner-lonely.mp3"
+    ],
+    [
+     "assets/sfx/blade-runner-vangelis.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Blade Runner: Vangelis themes"
+  },
+  {
+   "path": true,
+   "regex": "^bourne$",
+   "file": [
+    [
+     "assets/sfx/bourne-extreme-ways.mp3"
+    ],
+    [
+     "assets/sfx/bourne-jason.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Bourne: Extreme Ways / \"Jason Bourne\""
+  },
+  {
+   "path": true,
+   "regex": "breaking bad|better call saul|el camino",
+   "file": [
+    [
+     "assets/sfx/bb-say-my-name.mp3"
+    ],
+    [
+     "assets/sfx/bb-right.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Breaking Bad: \"Say my name\" / \"I am the one who knocks\" style bits"
+  },
+  {
+   "path": true,
+   "regex": "cowboy bebop",
+   "file": [
+    [
+     "assets/sfx/bebop-lets-jam.mp3"
+    ],
+    [
+     "assets/sfx/bebop-theme.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Cowboy Bebop: \"Let's jam\" / Tank!"
+  },
+  {
+   "path": true,
+   "regex": "^gibson$",
+   "files": [
+    "assets/sfx/braveheart-freedom.mp3"
+   ],
+   "source": "Gibson: Braveheart \"FREEDOM!\""
+  },
+  {
+   "path": true,
+   "regex": "^brooks$",
+   "files": [
+    "assets/sfx/brooks-schwartz.mp3"
+   ],
+   "source": "Mel Brooks: Spaceballs \"May the Schwartz be with you\""
+  },
+  {
+   "path": true,
+   "regex": "^buffy",
+   "files": [
+    "assets/sfx/buffy-theme.mp3"
+   ],
+   "source": "Buffy theme"
+  },
+  {
+   "path": true,
+   "regex": "^californication",
+   "files": [
+    "assets/sfx/californication-riff.mp3"
+   ],
+   "source": "Californication: Red Hot Chili Peppers riff"
+  },
+  {
+   "path": true,
+   "regex": "^captain america",
+   "files": [
+    "assets/sfx/captain-america-allday.mp3"
+   ],
+   "source": "Captain America: \"I can do this all day\""
+  },
+  {
+   "path": true,
+   "regex": "^chernobyl",
+   "files": [
+    "assets/sfx/chernobyl-geiger.mp3"
+   ],
+   "source": "Chernobyl: Geiger counter"
+  },
+  {
+   "path": true,
+   "regex": "^costner$",
+   "files": [
+    "assets/sfx/costner-build-it.mp3"
+   ],
+   "source": "Costner: Field of Dreams \"If you build it\""
+  },
+  {
+   "path": true,
+   "regex": "^daredevil",
+   "files": [
+    "assets/sfx/daredevil-theme.mp3"
+   ],
+   "source": "Daredevil theme"
+  },
+  {
+   "path": true,
+   "regex": "^28 days",
+   "files": [
+    "assets/sfx/days28-theme.mp3"
+   ],
+   "source": "28 Days Later: In the House"
+  },
+  {
+   "path": true,
+   "regex": "dcau",
+   "files": [
+    "assets/sfx/dcau-batman.mp3"
+   ],
+   "source": "DCAU: Batman TAS theme"
+  },
+  {
+   "path": true,
+   "regex": "^deadpool",
+   "files": [
+    "assets/sfx/deadpool-max-effort.mp3"
+   ],
+   "source": "Deadpool: \"Maximum effort\""
+  },
+  {
+   "path": true,
+   "regex": "^dune\\b",
+   "files": [
+    "assets/sfx/dune-fear.mp3"
+   ],
+   "source": "Dune: Litany against fear"
+  },
+  {
+   "path": true,
+   "regex": "exorcist",
+   "files": [
+    "assets/sfx/exorcist-tubular-bells.mp3"
+   ],
+   "source": "The Exorcist: Tubular Bells"
+  },
+  {
+   "path": true,
+   "regex": "neon genesis",
+   "files": [
+    "assets/sfx/eva-cruel-angel.mp3"
+   ],
+   "source": "Evangelion: A Cruel Angel's Thesis"
+  },
+  {
+   "path": true,
+   "regex": "^fallout",
+   "file": [
+    [
+     "assets/sfx/fallout-war.mp3"
+    ],
+    [
+     "assets/sfx/fallout-inkspots.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Fallout: \"War never changes\" / Ink Spots"
+  },
+  {
+   "path": true,
+   "regex": "^firefly",
+   "files": [
+    "assets/sfx/firefly-theme.mp3"
+   ],
+   "source": "Firefly theme"
+  },
+  {
+   "path": true,
+   "regex": "^the flash\\b",
+   "files": [
+    "assets/sfx/flash-barry.mp3"
+   ],
+   "source": "The Flash: \"fastest man alive\""
+  },
+  {
+   "path": true,
+   "regex": "^ford$",
+   "files": [
+    "assets/sfx/ford-plane.mp3"
+   ],
+   "source": "Harrison Ford: \"Get off my plane!\""
+  },
+  {
+   "path": true,
+   "regex": "\\bgoonies\\b",
+   "files": [
+    "assets/sfx/goonies-never-say-die.mp3"
+   ],
+   "source": "Goonies never say die"
+  },
+  {
+   "path": true,
+   "regex": "green lantern",
+   "files": [
+    "assets/sfx/greenlantern-oath.mp3"
+   ],
+   "source": "Green Lantern oath"
+  },
+  {
+   "path": true,
+   "regex": "^gremlins",
+   "files": [
+    "assets/sfx/gremlins-rag.mp3"
+   ],
+   "source": "Gremlins theme"
+  },
+  {
+   "path": true,
+   "regex": "^highlander",
+   "file": [
+    [
+     "assets/sfx/highlander-one.mp3"
+    ],
+    [
+     "assets/sfx/highlander-one-b.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Highlander: \"There can be only one\""
+  },
+  {
+   "path": true,
+   "regex": "^the hunger games",
+   "file": [
+    [
+     "assets/sfx/hungergames-whistle.mp3"
+    ],
+    [
+     "assets/sfx/hungergames-cannon.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Hunger Games: mockingjay whistle / cannon"
+  },
+  {
+   "path": true,
+   "regex": "^insidious",
+   "files": [
+    "assets/sfx/insidious-violins.mp3"
+   ],
+   "source": "Insidious: screeching violins"
+  },
+  {
+   "path": true,
+   "regex": "^key (and|&) peele",
+   "files": [
+    "assets/sfx/keypeele-aaron.mp3"
+   ],
+   "source": "Key & Peele: Aaron"
+  },
+  {
+   "path": true,
+   "regex": "^kill bill",
+   "files": [
+    "assets/sfx/killbill-whistle.mp3"
+   ],
+   "source": "Kill Bill: Twisted Nerve whistle"
+  },
+  {
+   "path": true,
+   "regex": "^king$",
+   "files": [
+    "assets/sfx/king-heres-johnny.mp3"
+   ],
+   "source": "Stephen King: The Shining \"Here's Johnny!\""
+  },
+  {
+   "path": true,
+   "regex": "monsterverse|\\bkong\\b",
+   "file": [
+    [
+     "assets/sfx/godzilla-roar.mp3"
+    ],
+    [
+     "assets/sfx/kong-roar.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Monsterverse: roars"
+  },
+  {
+   "path": true,
+   "regex": "^lethal weapon",
+   "files": [
+    "assets/sfx/lethal-too-old.mp3"
+   ],
+   "source": "Lethal Weapon: \"too old for this\""
+  },
+  {
+   "path": true,
+   "regex": "^lost( -|$)",
+   "files": [
+    "assets/sfx/lost-title.mp3"
+   ],
+   "source": "Lost title sting"
+  },
+  {
+   "path": true,
+   "regex": "^mr\\.? robot",
+   "files": [
+    "assets/sfx/mrrobot-hello.mp3"
+   ],
+   "source": "Mr. Robot: \"Hello, friend\""
+  },
+  {
+   "path": true,
+   "regex": "^naruto",
+   "file": [
+    [
+     "assets/sfx/naruto-sadness.mp3"
+    ],
+    [
+     "assets/sfx/naruto-fighting.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Naruto themes"
+  },
+  {
+   "path": true,
+   "regex": "^no country for old men",
+   "files": [
+    "assets/sfx/nco-callit.mp3"
+   ],
+   "source": "No Country: \"Call it\""
+  },
+  {
+   "path": true,
+   "regex": "naked gun",
+   "files": [
+    "assets/sfx/nakedgun-love-it.mp3"
+   ],
+   "source": "Naked Gun"
+  },
+  {
+   "path": true,
+   "regex": "^airplane!?",
+   "files": [
+    "assets/sfx/airplane-shirley.mp3"
+   ],
+   "source": "Airplane!: \"Don't call me Shirley\""
+  },
+  {
+   "path": true,
+   "regex": "^alias$",
+   "files": [
+    "assets/sfx/alias-theme.mp3"
+   ],
+   "source": "Alias theme"
+  },
+  {
+   "path": true,
+   "regex": "planet of the apes|^the planet of",
+   "files": [
+    "assets/sfx/apes-paws.mp3"
+   ],
+   "source": "Planet of the Apes: \"Take your stinking paws off me\""
+  },
+  {
+   "path": true,
+   "regex": "black sails",
+   "files": [
+    "assets/sfx/blacksails-theme.mp3"
+   ],
+   "source": "Black Sails theme"
+  },
+  {
+   "path": true,
+   "regex": "^the office",
+   "files": [
+    "assets/sfx/office-she-said.mp3"
+   ],
+   "source": "The Office: \"That's what she said\""
+  },
+  {
+   "path": true,
+   "regex": "^ocean'?s",
+   "files": [
+    "assets/sfx/oceans-theme.mp3"
+   ],
+   "source": "Ocean's theme"
+  },
+  {
+   "path": true,
+   "regex": "^parks and rec",
+   "files": [
+    "assets/sfx/parks-treat-yo-self.mp3"
+   ],
+   "source": "Parks and Rec: Treat Yo Self"
+  },
+  {
+   "path": true,
+   "regex": "^power rangers",
+   "files": [
+    "assets/sfx/powerrangers-morphin.mp3"
+   ],
+   "source": "Power Rangers: \"It's morphin time\""
+  },
+  {
+   "path": true,
+   "regex": "^psycho$",
+   "files": [
+    "assets/sfx/psycho-screech.mp3"
+   ],
+   "source": "Psycho: shower violins"
+  },
+  {
+   "path": true,
+   "regex": "^pulp fiction",
+   "file": [
+    [
+     "assets/sfx/pulp-theme.mp3"
+    ],
+    [
+     "assets/sfx/pulp-jules.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Pulp Fiction: Misirlou / Jules"
+  },
+  {
+   "path": true,
+   "regex": "^rambo",
+   "files": [
+    "assets/sfx/rambo-long-road.mp3"
+   ],
+   "source": "Rambo: \"long road\""
+  },
+  {
+   "path": true,
+   "regex": "rick (&|and) morty",
+   "files": [
+    "assets/sfx/rickmorty-wubba.mp3"
+   ],
+   "source": "Rick & Morty: Wubba lubba dub dub"
+  },
+  {
+   "path": true,
+   "regex": "wile e\\. coyote|road ?runner",
+   "files": [
+    "assets/sfx/roadrunner-meep.mp3"
+   ],
+   "source": "Road Runner: Meep meep"
+  },
+  {
+   "path": true,
+   "regex": "^rush hour",
+   "files": [
+    "assets/sfx/rushhour-words.mp3"
+   ],
+   "source": "Rush Hour: \"words coming out of my mouth\""
+  },
+  {
+   "path": true,
+   "regex": "^scor(c|s)ese$",
+   "file": [
+    [
+     "assets/sfx/scorsese-talking.mp3"
+    ],
+    [
+     "assets/sfx/scorsese-gangster.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Scorsese: Taxi Driver / Goodfellas"
+  },
+  {
+   "path": true,
+   "regex": "agents of s\\.?h\\.?i\\.?e\\.?l\\.?d|^black widow|^hawkeye",
+   "files": [
+    "assets/sfx/avengers-assemble-short.mp3"
+   ],
+   "source": "Avengers theme (6s trim)"
+  },
+  {
+   "path": true,
+   "regex": "^sherlock holmes",
+   "files": [
+    "assets/sfx/sherlock-bbc.mp3"
+   ],
+   "source": "Sherlock theme"
+  },
+  {
+   "path": true,
+   "regex": "^the simpsons",
+   "files": [
+    "assets/sfx/simpsons-doh.mp3"
+   ],
+   "source": "Simpsons: D'oh"
+  },
+  {
+   "path": true,
+   "regex": "^smallville",
+   "files": [
+    "assets/sfx/smallville-save-me.mp3"
+   ],
+   "source": "Smallville: Save Me"
+  },
+  {
+   "path": true,
+   "regex": "^the sopranos",
+   "files": [
+    "assets/sfx/sopranos-woke-up.mp3"
+   ],
+   "source": "Sopranos: Woke Up This Morning"
+  },
+  {
+   "path": true,
+   "regex": "^south park",
+   "file": [
+    [
+     "assets/sfx/southpark-intro.mp3"
+    ],
+    [
+     "assets/sfx/southpark-authority.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "South Park intro / \"Respect my authoritah\""
+  },
+  {
+   "path": true,
+   "regex": "^spider-?man",
+   "files": [
+    "assets/sfx/spiderman-1967.mp3"
+   ],
+   "source": "Spider-Man 1967 theme"
+  },
+  {
+   "path": true,
+   "regex": "^statham$",
+   "files": [
+    "assets/sfx/statham-rule-one.mp3"
+   ],
+   "source": "Statham: Transporter rule one"
+  },
+  {
+   "path": true,
+   "regex": "^stranger things",
+   "files": [
+    "assets/sfx/strangerthings-theme.mp3"
+   ],
+   "source": "Stranger Things theme"
+  },
+  {
+   "path": true,
+   "regex": "^supernatural",
+   "files": [
+    "assets/sfx/supernatural-family-business.mp3"
+   ],
+   "source": "Supernatural: \"family business\""
+  },
+  {
+   "path": true,
+   "regex": "^(the )?thing\\b|^the thing",
+   "files": [
+    "assets/sfx/thing-carpenter.mp3"
+   ],
+   "source": "The Thing: Carpenter theme"
+  },
+  {
+   "path": true,
+   "regex": "^thor$",
+   "files": [
+    "assets/sfx/thor-another.mp3"
+   ],
+   "source": "Thor: \"Another!\""
+  },
+  {
+   "path": true,
+   "regex": "the last of us",
+   "files": [
+    "assets/sfx/tlou-clicker.mp3"
+   ],
+   "source": "TLOU: Clicker"
+  },
+  {
+   "path": true,
+   "regex": "walking dead",
+   "files": [
+    "assets/sfx/twd-theme.mp3"
+   ],
+   "source": "Walking Dead theme"
+  },
+  {
+   "path": true,
+   "regex": "twilight zone",
+   "file": [
+    [
+     "assets/sfx/twilightzone-a.mp3"
+    ],
+    [
+     "assets/sfx/twilightzone-b.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Twilight Zone: theme"
+  },
+  {
+   "path": true,
+   "regex": "^twin peaks",
+   "files": [
+    "assets/sfx/twinpeaks-laura.mp3"
+   ],
+   "source": "Twin Peaks: Laura Palmer theme"
+  },
+  {
+   "path": true,
+   "regex": "^universal monsters",
+   "files": [
+    "assets/sfx/universal-alive.mp3"
+   ],
+   "source": "Frankenstein: \"It's alive!\""
+  },
+  {
+   "path": true,
+   "regex": "^venom",
+   "files": [
+    "assets/sfx/venom-we-are.mp3"
+   ],
+   "source": "Venom: \"We are Venom\""
+  },
+  {
+   "path": true,
+   "regex": "^vikings?$",
+   "files": [
+    "assets/sfx/vikings-heart.mp3"
+   ],
+   "source": "Vikings"
+  },
+  {
+   "path": true,
+   "regex": "^westworld",
+   "file": [
+    [
+     "assets/sfx/westworld-welcome.mp3"
+    ],
+    [
+     "assets/sfx/westworld-theme.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Westworld"
+  },
+  {
+   "path": true,
+   "regex": "^whose line",
+   "files": [
+    "assets/sfx/whoseline.mp3"
+   ],
+   "source": "Whose Line"
+  },
+  {
+   "path": true,
+   "regex": "^willis$",
+   "files": [
+    "assets/sfx/willis-dead-people.mp3"
+   ],
+   "source": "Willis: Sixth Sense \"I see dead people\""
+  },
+  {
+   "path": true,
+   "regex": "^the witcher",
+   "files": [
+    "assets/sfx/witcher-coin.mp3"
+   ],
+   "source": "Witcher: Toss a Coin"
+  },
+  {
+   "path": true,
+   "regex": "x-files",
+   "files": [
+    "assets/sfx/xfiles-theme.mp3"
+   ],
+   "source": "X-Files theme"
+  },
+  {
+   "path": true,
+   "regex": "^x-men",
+   "files": [
+    "assets/sfx/xmen-theme.mp3"
+   ],
+   "source": "X-Men theme"
+  },
+  {
+   "path": true,
+   "regex": "^yellowstone",
+   "files": [
+    "assets/sfx/yellowstone-theme.mp3"
+   ],
+   "source": "Yellowstone theme"
+  },
+  {
+   "path": true,
+   "regex": "^tarantino$",
+   "file": [
+    [
+     "assets/sfx/pulp-jules.mp3"
+    ],
+    [
+     "assets/sfx/pulp-theme.mp3"
+    ],
+    [
+     "assets/sfx/killbill-whistle.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "Tarantino"
+  },
+  {
+   "path": true,
+   "regex": "band of brothers",
+   "files": [
+    "assets/sfx/band-of-brothers.mp3"
+   ],
+   "source": "Band of Brothers"
+  },
+  {
+   "path": true,
+   "regex": "^dc$|^dc series$|dceu|snyderverse|dawn of justice",
+   "file": [
+    [
+     "assets/sfx/superman-theme-short.mp3"
+    ],
+    [
+     "assets/sfx/im-batman.mp3"
+    ]
+   ],
+   "random": true,
+   "source": "DC: Superman/Batman"
   }
  ],
  "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ": [
