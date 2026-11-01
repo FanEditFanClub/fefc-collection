@@ -4,7 +4,7 @@ import json,cv2,sys
 P=json.load(open('data/people.json'));d=sys.argv[1]
 casc=[cv2.CascadeClassifier(cv2.data.haarcascades+n) for n in ('haarcascade_frontalface_default.xml','haarcascade_frontalface_alt2.xml','haarcascade_profileface.xml')]
 for k,v in P.items():
-  im=cv2.imread(f'{d}/{k}.jpg');H,W=im.shape[:2];g=cv2.equalizeHist(cv2.cvtColor(im,cv2.COLOR_BGR2GRAY));f=[]
+  im=cv2.imread(f'{d}/{v["folder"]}.jpg');H,W=im.shape[:2];g=cv2.equalizeHist(cv2.cvtColor(im,cv2.COLOR_BGR2GRAY));f=[]
   for c in casc:
     f=c.detectMultiScale(g,1.08,5,minSize=(W//10,W//10))
     if len(f):break

@@ -286,9 +286,11 @@ function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supp
  rfInPlace=true;S.click();p.hidden=false;void p.offsetWidth;RFX.open(p);setTimeout(()=>focusEl($('#rfclose')),60)}
 /* ---------- HASH ROUTER ---------- */
 /* per-folder sound effects (data/folder-sfx.json: folder id or name -> files) */
-let FSFX={};tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{});
+let FSFX={};tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m._genres||{}).forEach(g=>S.loadFx&&S.loadFx(m._genres[g]));Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{});
 let _lastSfxId=null,_lastSfxAt=0,_sandlerLast=-1,_cruiseLast=-1;
 const DIR_IDS={'1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP':1,'1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4':1,'13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v':1,'1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2':1,'1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg':1,'1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o':1,'1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF':1,'1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el':1,'1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t':1,'1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC':1};
+let _gsfx={k:'',t:0};
+function genreSfx(G){if(navBack||!G)return;const L=(FSFX._genres||{})[G];if(!L)return;const now=Date.now();if(_gsfx.k===G&&now-_gsfx.t<1500)return;_gsfx={k:G,t:now};if(window.S&&S.unlock)try{S.unlock()}catch(e){};if(S.fx)S.fx(L)}
 function folderSfx(id){
  if(navBack||!id||id===ROOT)return;
  const now=Date.now();
@@ -404,7 +406,7 @@ let GC={};const _cv={};
 function genreColls(G){return GC[G]||[]}
 function collVids(c){const k=c.slug+'|'+items.size;if(_cv[k])return _cv[k];const fs={},seen={};c.folders.forEach(x=>fs[x]=1);const out=[];
  vids().forEach(f=>{const t=target(f);if(!seen[t]&&fs[topFolder(f)]){seen[t]=1;out.push(f)}});(c.extra||[]).forEach(id=>{const f=items.get(id);if(f&&!seen[target(f)]){seen[target(f)]=1;out.push(f)}});return _cv[k]=out}
-function genrePage(G,slug){hideHome();cur='virtual';view='folder';const C=genreColls(G);
+function genrePage(G,slug){if(!slug)genreSfx(G);hideHome();cur='virtual';view='folder';const C=genreColls(G);
  if(slug){const c=C.find(x=>x.slug===slug);if(!c){if(!Object.keys(GC).length)return status('Loading…');return go('#/genres/'+encodeURIComponent(G))}
   window.__gscope='gc:'+G+'/'+slug;window.__gtitle=c.name;const fl=c.folders.map(x=>items.get(x)).filter(Boolean),vs=collVids(c).filter(f=>c.folders.indexOf(topFolder(f))<0);
   virtual(fl.concat(vs),c.name);const n=collVids(c).length;$('#sec2').textContent=G+' · '+NA.plural(c.folders.length,'folder')+' · '+fmtN(n)+' fan edit'+(n===1?'':'s');return}

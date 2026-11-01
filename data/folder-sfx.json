@@ -165,7 +165,7 @@
     "assets/sfx/die-hard-yippee.mp3"
    ],
    "path": true,
-   "source": "myinstants yippy_mf-13464909\u2026mp3",
+   "source": "myinstants yippy_mf-13464909…mp3",
    "match": "die hard"
   },
   {
@@ -265,7 +265,7 @@
    ],
    "path": true,
    "source": "myinstants xenomorph-screech.mp3",
-   "regex": "^(alien|aliens|alien 3|alien\u00b3|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
+   "regex": "^(alien|aliens|alien 3|alien³|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
   },
   {
    "files": [
@@ -1278,5 +1278,104 @@
  "Dexter": [
   "assets/sfx/dexter-tonights-the-night.mp3",
   "assets/sfx/dexter-tonights-the-night.m4a"
- ]
+ ],
+ "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP": [
+  "assets/sfx/lost-title.mp3"
+ ],
+ "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4": [
+  "assets/sfx/bay-autobots.m4a",
+  "assets/sfx/bay-autobots.mp3"
+ ],
+ "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v": [
+  "assets/sfx/cameron-king.m4a",
+  "assets/sfx/cameron-king.mp3"
+ ],
+ "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2": [
+  "assets/sfx/id4-welcome.m4a",
+  "assets/sfx/id4-welcome.mp3"
+ ],
+ "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg": [
+  "assets/sfx/nolan-braaam.m4a",
+  "assets/sfx/nolan-braaam.mp3"
+ ],
+ "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o": [
+  "assets/sfx/ritchie-sherlock.m4a",
+  "assets/sfx/ritchie-sherlock.mp3"
+ ],
+ "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF": [
+  "assets/sfx/scott-entertained.m4a",
+  "assets/sfx/scott-entertained.mp3"
+ ],
+ "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el": [
+  "assets/sfx/mos-theme.m4a",
+  "assets/sfx/mos-theme.mp3"
+ ],
+ "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t": [
+  "assets/sfx/spielberg-boat.m4a",
+  "assets/sfx/spielberg-boat.mp3"
+ ],
+ "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC": [
+  "assets/sfx/verhoeven-know-more.m4a",
+  "assets/sfx/verhoeven-know-more.mp3"
+ ],
+ "_genres": {
+  "Western": [
+   "assets/sfx/gbu-coyote.m4a",
+   "assets/sfx/gbu-coyote.mp3"
+  ],
+  "Sci-Fi": [
+   "assets/sfx/scifi-tones.m4a",
+   "assets/sfx/scifi-tones.mp3"
+  ],
+  "Comedy": [
+   "assets/sfx/rimshot.m4a",
+   "assets/sfx/rimshot.mp3"
+  ],
+  "Action": [
+   "assets/sfx/die-hard-yippee.m4a",
+   "assets/sfx/die-hard-yippee.mp3"
+  ],
+  "Horror": [
+   "assets/sfx/halloween-theme.m4a",
+   "assets/sfx/halloween-theme.mp3"
+  ],
+  "Superhero": [
+   "assets/sfx/avengers-assemble-short.mp3"
+  ],
+  "Thriller": [
+   "assets/sfx/psycho-screech.mp3"
+  ],
+  "War": [
+   "assets/sfx/war-napalm.m4a",
+   "assets/sfx/war-napalm.mp3"
+  ],
+  "Crime": [
+   "assets/sfx/crime-scarface.m4a",
+   "assets/sfx/crime-scarface.mp3"
+  ],
+  "Drama": [
+   "assets/sfx/drama-shawshank.m4a",
+   "assets/sfx/drama-shawshank.mp3"
+  ],
+  "Adventure": [
+   "assets/sfx/adventure-raiders.m4a",
+   "assets/sfx/adventure-raiders.mp3"
+  ],
+  "Animation": [
+   "assets/sfx/animation-folks.m4a",
+   "assets/sfx/animation-folks.mp3"
+  ],
+  "Documentary": [
+   "assets/sfx/doc-attenborough.m4a",
+   "assets/sfx/doc-attenborough.mp3"
+  ],
+  "Family": [
+   "assets/sfx/family-et.m4a",
+   "assets/sfx/family-et.mp3"
+  ],
+  "Fantasy": [
+   "assets/sfx/harry-potter.m4a",
+   "assets/sfx/harry-potter.mp3"
+  ]
+ }
 }
