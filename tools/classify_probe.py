@@ -1,8 +1,11 @@
 import json,subprocess,concurrent.futures as cf,re,os
-d=json.load(open('/tmp/wt8/data/index.json'))['items'];F='application/vnd.google-apps.folder'
-T=sorted({x.get('targetId') or x['id'] for x in d if x['mimeType']!=F})
+import pathlib
+REPO=pathlib.Path(__file__).resolve().parent.parent
+TMP=os.environ.get('FEFC_TMP') or str(REPO/'tools'/'cache');os.makedirs(TMP,exist_ok=True)
+d=json.load(open(os.environ.get('FEFC_INDEX') or str(REPO/'data'/'index.json')))['items'];F='application/vnd.google-apps.folder'
+T=sorted({x.get('targetId') or x['id'] for x in d if x['mimeType']!=F and (os.environ.get('FEFC_RECLASSIFY')=='1' or not x.get('kind'))})
 out={}
-if os.path.exists('/tmp/probe_all.json'): out=json.load(open('/tmp/probe_all.json'))
+if os.path.exists(os.path.join(TMP,'probe_all.json')): out=json.load(open(os.path.join(TMP,'probe_all.json')))
 T=[t for t in T if t not in out or not out[t].get('st')]
 def probe(t):
   for i in range(2):
@@ -17,5 +20,5 @@ n=0
 with cf.ThreadPoolExecutor(24) as ex:
   for t,r in ex.map(probe,T):
     out[t]=r;n+=1
-    if n%500==0: json.dump(out,open('/tmp/probe_all.json','w'));print(n,flush=True)
-json.dump(out,open('/tmp/probe_all.json','w'));print('done',n,flush=True)
+    if n%500==0: json.dump(out,open(os.path.join(TMP,'probe_all.json'),'w'));print(n,flush=True)
+json.dump(out,open(os.path.join(TMP,'probe_all.json'),'w'));print('done',n,flush=True)

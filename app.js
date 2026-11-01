@@ -29,7 +29,7 @@ var __spreadValues = (a, b) => {
     return Math.abs(h);
   };
   const esc = (s) => String(s != null ? s : "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
-  const isFolder = (f) => f.mimeType === FOLDER || f.mimeType === SC && f.targetMime === FOLDER;
+  const isFolder = (f) => !!f && (f.mimeType === FOLDER || f.targetMime === FOLDER || f.mimeType === SC && f.targetMime === FOLDER || !!f.targetId && f.targetId !== f.id && (items.get(f.targetId) || {}).mimeType === FOLDER);
   const target = (f) => f.targetId || f.id;
   function add(list) {
     for (const f of list) {
@@ -552,7 +552,7 @@ var __spreadValues = (a, b) => {
   }
   const DOCX = /\.(pdf|docx?|txt|xlsx?|pptx?|url|html?|rtf|csv|md|webloc|lnk|json|xml|zip|rar|7z|jpe?g|png|gif|mp3|flac|wav|srt)$/i;
   function isVid(f, d) {
-    if (!f) return false;
+    if (!f || isFolder(f)) return false;
     if (f.kind) return f.kind === "video";
     const t = f.targetId;
     if (t && t !== f.id && (d | 0) < 3) {
@@ -1466,6 +1466,10 @@ var __spreadValues = (a, b) => {
     if (k !== "readfirst") closeRF();
     if (k === "edit") {
       details(itemOr(r[1]), false);
+      try {
+        warmStream(itemOr(r[1]));
+      } catch (e) {
+      }
       if (baseKey === null) renderBase("");
       return;
     }
@@ -1477,6 +1481,26 @@ var __spreadValues = (a, b) => {
       }
       if (baseKey === null) renderBase("");
       if (!$("#player").hidden && $("#player").dataset.pid === r[1]) return;
+      {
+        const nf = itemOr(r[1]), nb = window.FEFCNative;
+        if (nf && nb && nb.playVideo && !window.__shufPlay) {
+          let ok = false;
+          try {
+            nb.playVideo(target(nf), parse(nf.name).raw);
+            ok = true;
+          } catch (e) {
+          }
+          if (ok) {
+            try {
+              window.UD && UD.opened(nf.id, nf.name);
+            } catch (e) {
+            }
+            S.ambience(false);
+            history.replaceState({ fefc: 1 }, "", "#/edit/" + encodeURIComponent(nf.id));
+            return route();
+          }
+        }
+      }
       play(itemOr(r[1]));
       return;
     }
@@ -2264,7 +2288,12 @@ var __spreadValues = (a, b) => {
     if (d < 30) return d + "d ago";
     return new Date(ts).toLocaleDateString();
   }
+  function fitMode() {
+    document.body.classList.toggle("fit", document.body.classList.contains("tv") || innerWidth >= 1100 && innerHeight >= 640 && !document.body.classList.contains("touch"));
+  }
+  addEventListener("resize", fitMode);
   async function details(f, push = true) {
+    fitMode();
     S.open();
     S.ambience(false);
     $("#bar").hidden = false;
@@ -2319,7 +2348,7 @@ var __spreadValues = (a, b) => {
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, '</div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     $("#details").hidden = false;
     $("#details").dataset.id = f.id;
     detBackdrop(f, PU);
@@ -2463,6 +2492,21 @@ var __spreadValues = (a, b) => {
   }
   function started() {
     return !!window._u && document.body.classList.contains("intro-done");
+  }
+  const _warm = {};
+  function warmStream(f) {
+    const nb = window.FEFCNative;
+    if (!f || !nb || !nb.playVideo || isFolder(f) || !isVid(f)) return;
+    const id = target(f);
+    if (_warm[id]) return;
+    _warm[id] = 1;
+    try {
+      const ac = new AbortController();
+      fetch("/api/stream/" + id, { headers: { Range: "bytes=0-0" }, signal: ac.signal, cache: "no-store" }).then(() => ac.abort(), () => {
+      }).catch(() => {
+      });
+    } catch (e) {
+    }
   }
   function play(f) {
     const E = episodes(f), pn = $("#pprev"), nx = $("#pnext");
@@ -2800,6 +2844,112 @@ var __spreadValues = (a, b) => {
       document.activeElement.click();
     }
   });
+  let tvGoalX = null;
+  function tvRows() {
+    const c = [$("#arena"), $("#grid")].find((x) => x && !x.hidden && x.getClientRects().length);
+    if (!c) return null;
+    const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
+    els.forEach((e) => {
+      const g = e.closest(".sgrid") || e.parentElement;
+      if (!groups.has(g)) groups.set(g, []);
+      groups.get(g).push(e);
+    });
+    const rows = [];
+    groups.forEach((a, g) => {
+      if (getComputedStyle(g).display === "grid") {
+        const n = Math.max(1, getComputedStyle(g).gridTemplateColumns.split(" ").filter((x) => x && x !== "none").length);
+        for (let i = 0; i < a.length; i += n) rows.push(a.slice(i, i + n));
+      } else {
+        const by = {};
+        a.forEach((e) => {
+          const y = Math.round((e.offsetTop || 0) / 8);
+          (by[y] = by[y] || []).push(e);
+        });
+        Object.keys(by).map(Number).sort((x, y) => x - y).forEach((y) => rows.push(by[y]));
+      }
+    });
+    return rows;
+  }
+  function tvGridNav(k, a) {
+    if (!a || !a.closest) return false;
+    const cur2 = a.closest(".ol-tile,.sortpill,#na-more");
+    if (!cur2) return false;
+    let rows = tvRows();
+    if (!rows) return false;
+    const find = () => {
+      for (let i = 0; i < rows.length; i++) {
+        const j = rows[i].indexOf(cur2);
+        if (j >= 0) return [i, j];
+      }
+      return null;
+    };
+    let p = find();
+    if (!p) return false;
+    let [ri, ci] = p;
+    const cx = (e) => {
+      const r = e.getBoundingClientRect();
+      return r.left + r.width / 2;
+    }, nearest = (row, x) => {
+      let b = row[0], bd = 1e9;
+      row.forEach((e) => {
+        const d = Math.abs(cx(e) - x);
+        if (d < bd) {
+          bd = d;
+          b = e;
+        }
+      });
+      return b;
+    };
+    if (k === 37 || k === 39) {
+      const n = rows[ri][ci + (k === 39 ? 1 : -1)];
+      if (n) {
+        focusEl(n);
+        tvGoalX = cx(n);
+      }
+      return true;
+    }
+    if (tvGoalX == null) tvGoalX = cx(cur2);
+    if (k === 38) {
+      if (ri === 0) {
+        tvGoalX = null;
+        toMenu();
+        return true;
+      }
+      const t = nearest(rows[ri - 1], tvGoalX);
+      focusEl(t);
+      tvEnsure(t);
+      return true;
+    }
+    if (ri >= rows.length - 1 && typeof drainOne === "function") {
+      let n = 0;
+      try {
+        while (n++ < 3 && drainOne()) ;
+      } catch (er) {
+      }
+      rows = tvRows() || rows;
+      p = find();
+      if (p) ri = p[0];
+    }
+    if (ri < rows.length - 1) {
+      const t = nearest(rows[ri + 1], tvGoalX);
+      focusEl(t);
+      tvEnsure(t);
+    }
+    return true;
+  }
+  function tvEnsure(t) {
+    requestAnimationFrame(() => {
+      const m = $("#main");
+      if (!m || !t.isConnected) return;
+      const r = t.getBoundingClientRect(), bar = $("#bar").getBoundingClientRect();
+      if (r.bottom < bar.bottom || r.top > innerHeight - 10) {
+        m.scrollTop += r.top - (bar.bottom + Math.round(innerHeight * 0.1));
+      }
+    });
+  }
+  document.addEventListener("click", () => {
+    tvGoalX = null;
+  }, true);
   let lastTile = null;
   const barItems = () => [].slice.call(document.querySelectorAll("#bar .mi,#bar #tvq,#bar #q,#bar #aiq")).filter((x) => x.offsetParent && !x.hidden && getComputedStyle(x).display !== "none");
   const menuCurrent = () => {
@@ -2873,6 +3023,13 @@ var __spreadValues = (a, b) => {
     }
     const tile2 = a && a.closest && a.closest(".ol-tile");
     if (tile2) lastTile = tile2;
+    if (tv && k >= 37 && k <= 40) {
+      e.preventDefault();
+      if (tvGridNav(k, a)) {
+        e.stopImmediatePropagation();
+        return;
+      }
+    }
     if (k === 38 && tile2) {
       const r = tile2.getBoundingClientRect(), above = [].slice.call(document.querySelectorAll("#arena .ol-tile,#grid .ol-tile,#grid .sortpill")).some((x) => x !== tile2 && x.getClientRects().length && x.getBoundingClientRect().bottom <= r.top + 4);
       if (!above) {

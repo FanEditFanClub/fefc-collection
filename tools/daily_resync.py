@@ -72,6 +72,7 @@ def main():
 
     # 2. File classification
     try:
+        run_cmd("python3 tools/classify_probe.py")
         run_cmd("python3 tools/classify.py")
     except Exception as e:
         print(f"Warning during classify: {e}", flush=True)

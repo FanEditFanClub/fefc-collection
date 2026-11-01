@@ -6,7 +6,8 @@ const HUES=[205,190,220,265,30,160,340,15];
 let token=null,items=new Map(),kids=new Map(),meta={},cur=ROOT,live=false,view='home';
 const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const isFolder=f=>f.mimeType===FOLDER||(f.mimeType===SC&&f.targetMime===FOLDER);
+/* a folder is anything whose mimeType is the folder type, OR a shortcut whose targetMime / target item is a folder; never decided by name or extension */
+const isFolder=f=>!!f&&(f.mimeType===FOLDER||f.targetMime===FOLDER||(f.mimeType===SC&&f.targetMime===FOLDER)||(!!f.targetId&&f.targetId!==f.id&&(items.get(f.targetId)||{}).mimeType===FOLDER));
 const target=f=>f.targetId||f.id;
 function add(list){for(const f of list){items.set(f.id,f);const p=f.parent||ROOT;if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);if(!a.some(x=>x.id===f.id))a.push(f)}}
 function parse(n){const base=n.replace(/\.[a-z0-9]{2,4}$/i,'');const parts=base.split(' - ').map(s=>s.trim()).filter(s=>!/^fan edit$/i.test(s));
@@ -106,7 +107,7 @@ document.addEventListener('click',e=>{const g=e.target.closest('[data-genre]');i
 const allVids=()=>vids();let _vc=null,_vk=-1;function vids(){if(_vk!==items.size){_vk=items.size;_vc=Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f))}return _vc}
 let _rvc=null,_rvk=-1;function rootVids(){if(_rvk!==items.size){_rvk=items.size;_rvc=Array.from(items.values()).filter(f=>!isFolder(f)&&isVid(f)&&(f.parent===ROOT||(!f.parent&&f.id!==ROOT)))}return _rvc}
 const DOCX=/\.(pdf|docx?|txt|xlsx?|pptx?|url|html?|rtf|csv|md|webloc|lnk|json|xml|zip|rar|7z|jpe?g|png|gif|mp3|flac|wav|srt)$/i;
-function isVid(f,d){if(!f)return false;if(f.kind)return f.kind==='video';/* resolved type stored by tools/classify.py */
+function isVid(f,d){if(!f||isFolder(f))return false;if(f.kind)return f.kind==='video';/* resolved type stored by tools/classify.py */
  const t=f.targetId;if(t&&t!==f.id&&(d|0)<3){const x=items.get(t);if(x)return isVid(x,(d|0)+1)}
  const m=f.mimeType||'';if(/^\._|^\./.test(f.name||''))return false;if(/^application\/vnd\.google-apps\.(?!shortcut)/.test(m)||/^(text|image|audio)\/|pdf|html|url/.test(m)||DOCX.test(f.name))return false;
  return /^video\//.test(m)||/\.(mkv|mp4|m4v|avi|mov|webm|ts|m2ts|mts|mpg|mpeg|wmv|flv|3gp|ogv|vob|divx)$/i.test(f.name)}
@@ -339,13 +340,16 @@ function route(){const r=parseH(),k=r[0]||'';
  if(k!=='play'&&!$('#player').hidden){closePlayer();window.__shufPrevHash=null;if(started())S.ambience(true)}
  if(k!=='edit'&&k!=='play'&&!$('#details').hidden){$('#details').hidden=true;document.body.classList.remove('details-open')}
  if(k!=='readfirst')closeRF();
- if(k==='edit'){details(itemOr(r[1]),false);if(baseKey===null)renderBase('');return}
+ if(k==='edit'){details(itemOr(r[1]),false);try{warmStream(itemOr(r[1]))}catch(e){}if(baseKey===null)renderBase('');return}
  if(k==='play'){
   /* the player was just closed for this exact hash (Back/close/Esc): never reopen it, step up to the parent instead */
   if(closedFor===location.hash){closedFor=null;history.replaceState({fefc:1},'',parentHash()||'#/');return route()}
   if(baseKey===null)renderBase('');
   /* same video already showing: a stray route() (index/links/sync refresh) must not rebuild the frame */
   if(!$('#player').hidden&&$('#player').dataset.pid===r[1])return;
+  /* Fire TV app (FEFCNative bridge): Play launches the native full-screen TV PLAYER directly (the WebView popup can show audio with a black picture); web/phone keep the popup */
+  {const nf=itemOr(r[1]),nb=window.FEFCNative;if(nf&&nb&&nb.playVideo&&!window.__shufPlay){let ok=false;try{nb.playVideo(target(nf),parse(nf.name).raw);ok=true}catch(e){}
+   if(ok){try{window.UD&&UD.opened(nf.id,nf.name)}catch(e){}S.ambience(false);history.replaceState({fefc:1},'','#/edit/'+encodeURIComponent(nf.id));return route()}}}
   play(itemOr(r[1]));return}
  if(k==='readfirst'){if(baseKey===null||baseKey!=='')renderBase('');readFirst();return}
  renderBase(location.hash);if(view==='home'||k==='')S.ambience(true)}
@@ -510,7 +514,10 @@ function detBackdrop(f,pu){const d=$('#details');let c=d.querySelector('canvas.l
  const x=c.getContext('2d');x.clearRect(0,0,40,24);c.classList.remove('on');const src=detCover(f)||pu;if(!src)return;const im=new Image(),want=f.id;
  im.onload=()=>{if(d.dataset.id!==want)return;const r=Math.max(40/im.width,24/im.height),w=im.width*r,h=im.height*r;x.drawImage(im,(40-w)/2,(24-h)/2,w,h);c.classList.add('on')};im.onerror=()=>{if(pu&&src!==pu&&!im.dataset.fb){im.dataset.fb=1;im.src=pu}};im.src=src}
 function timeAgo(ts){if(!ts)return'';const diff=Math.max(0,Date.now()-ts),m=Math.floor(diff/60000),h=Math.floor(m/60),d=Math.floor(h/24);if(m<1)return'just now';if(m<60)return m+'m ago';if(h<24)return h+'h ago';if(d===1)return'yesterday';if(d<30)return d+'d ago';return new Date(ts).toLocaleDateString()}
-async function details(f,push=true){S.open();S.ambience(false);
+/* one-screen detail layout: TV and large non-touch desktops (see body.fit in style.css) */
+function fitMode(){document.body.classList.toggle('fit',document.body.classList.contains('tv')||(innerWidth>=1100&&innerHeight>=640&&!document.body.classList.contains('touch')))}
+addEventListener('resize',fitMode);
+async function details(f,push=true){fitMode();S.open();S.ambience(false);
  $('#bar').hidden=false;document.body.classList.add('details-open');
  if(window.NA&&NA.menuHTML)try{menu()}catch(e){}
  const b=$('#bar');if(b)document.documentElement.style.setProperty('--barh',(b.offsetHeight||56)+'px');
@@ -538,7 +545,7 @@ async function details(f,push=true){S.open();S.ambience(false);
  else if(isDexter){S.fx(['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a'])}
  $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
  <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
- <div class="lc-body"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
+ <div class="lc-body${PU?'':' nopo'}"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
   ${desc?`<h3 class="lc-h">Fan edit</h3><p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
   <h3 class="lc-h l">Source ${F&&F.tv?'series':'film'}</h3><p><b>${esc(film.title||'Unknown')}</b>${film.year?' ('+esc(film.year)+')':''}${film.director?'<br>Directed by '+esc(film.director):''}${F&&F.genres?'<br><span class="src">'+esc(F.genres.join(' · '))+'</span>':''}${m.editor?'<br><span class="src">Fan edit by '+esc(m.editor)+'</span>':''}</p>
   ${plot?`<p>${esc(plot)}</p>${F.wiki?`<p class="src">Plot: <a href="${esc(F.wiki)}" target="_blank" rel="noopener">Wikipedia</a></p>`:''}`:''}
@@ -576,6 +583,8 @@ function startStream(id){
  }).catch(()=>{clearTimeout(to);if(tok===streamTok)previewFallback(id)})}
 function newFrame(u){const o=$('#pframe'),n=o.cloneNode(false);n.src=u;o.replaceWith(n)}
 function started(){return !!window._u&&document.body.classList.contains('intro-done')}
+/* Fire TV: when a details page opens, warm the streaming proxy (shortcut resolve cache + TLS) so the native player starts faster */
+const _warm={};function warmStream(f){const nb=window.FEFCNative;if(!f||!nb||!nb.playVideo||isFolder(f)||!isVid(f))return;const id=target(f);if(_warm[id])return;_warm[id]=1;try{const ac=new AbortController();fetch('/api/stream/'+id,{headers:{Range:'bytes=0-0'},signal:ac.signal,cache:'no-store'}).then(()=>ac.abort(),()=>{}).catch(()=>{})}catch(e){}}
 function play(f){
  const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}
  const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();
@@ -708,6 +717,28 @@ document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('
  if(dir&&!(inInput&&(k===37||k===39))){e.preventDefault();S.unlock();move(dir);return}
  if(k===10009||k===461||k===27||(k===8&&!inInput)||e.key==='GoBack'||e.key==='BrowserBack'){e.preventDefault();goBack();return}
  if((k===13||k===23)&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href]')){e.preventDefault();S.unlock();document.activeElement.click()}});
+/* ---------- TV grid navigation, MODEL-BASED (not viewport geometry) ----------
+   rows are rebuilt from DOM order + each grid's column count (computed track list) and offsetTop, so they never depend on what is on screen,
+   on scroll position, or on whether the WebView skipped layout/paint of offscreen rows. Up from row N always goes to row N-1 (scrolled into view);
+   the menu bar is reached only from the FIRST row of the page. Arrow keys are always preventDefault'ed on TV so the WebView's native focus search never runs. */
+let tvGoalX=null;
+function tvRows(){const c=[$('#arena'),$('#grid')].find(x=>x&&!x.hidden&&x.getClientRects().length);if(!c)return null;
+ const els=[].slice.call(c.querySelectorAll('.sortpill,.ol-tile,#na-more')).filter(e=>!e.hidden&&!e.closest('[hidden]')&&getComputedStyle(e).display!=='none'),groups=new Map();
+ els.forEach(e=>{const g=e.closest('.sgrid')||e.parentElement;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(e)});
+ const rows=[];groups.forEach((a,g)=>{if(getComputedStyle(g).display==='grid'){const n=Math.max(1,getComputedStyle(g).gridTemplateColumns.split(' ').filter(x=>x&&x!=='none').length);for(let i=0;i<a.length;i+=n)rows.push(a.slice(i,i+n))}
+  else{const by={};a.forEach(e=>{const y=Math.round((e.offsetTop||0)/8);(by[y]=by[y]||[]).push(e)});Object.keys(by).map(Number).sort((x,y)=>x-y).forEach(y=>rows.push(by[y]))}});
+ return rows}
+function tvGridNav(k,a){if(!a||!a.closest)return false;const cur=a.closest('.ol-tile,.sortpill,#na-more');if(!cur)return false;let rows=tvRows();if(!rows)return false;
+ const find=()=>{for(let i=0;i<rows.length;i++){const j=rows[i].indexOf(cur);if(j>=0)return[i,j]}return null};let p=find();if(!p)return false;let[ri,ci]=p;
+ const cx=e=>{const r=e.getBoundingClientRect();return r.left+r.width/2},nearest=(row,x)=>{let b=row[0],bd=1e9;row.forEach(e=>{const d=Math.abs(cx(e)-x);if(d<bd){bd=d;b=e}});return b};
+ if(k===37||k===39){const n=rows[ri][ci+(k===39?1:-1)];if(n){focusEl(n);tvGoalX=cx(n)}return true}
+ if(tvGoalX==null)tvGoalX=cx(cur);
+ if(k===38){if(ri===0){tvGoalX=null;toMenu();return true}const t=nearest(rows[ri-1],tvGoalX);focusEl(t);tvEnsure(t);return true}
+ if(ri>=rows.length-1&&typeof drainOne==='function'){let n=0;try{while(n++<3&&drainOne());}catch(er){}rows=tvRows()||rows;p=find();if(p)ri=p[0]}
+ if(ri<rows.length-1){const t=nearest(rows[ri+1],tvGoalX);focusEl(t);tvEnsure(t)}return true}
+/* belt and braces: after a vertical jump make sure the target really is inside the visible band of #main */
+function tvEnsure(t){requestAnimationFrame(()=>{const m=$('#main');if(!m||!t.isConnected)return;const r=t.getBoundingClientRect(),bar=$('#bar').getBoundingClientRect();if(r.bottom<bar.bottom||r.top>innerHeight-10){m.scrollTop+=r.top-(bar.bottom+Math.round(innerHeight*.1))}})}
+document.addEventListener('click',()=>{tvGoalX=null},true);
 /* ---------- Top menu bar D-pad navigation (TV / keyboard) ---------- */
 let lastTile=null;
 const barItems=()=>[].slice.call(document.querySelectorAll('#bar .mi,#bar #tvq,#bar #q,#bar #aiq')).filter(x=>x.offsetParent&&!x.hidden&&getComputedStyle(x).display!=='none');
@@ -726,6 +757,7 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
   if(k===13&&a.matches('button')){e.preventDefault();e.stopImmediatePropagation();S.unlock();a.click();return}
   return}
  const tile=a&&a.closest&&a.closest('.ol-tile');if(tile)lastTile=tile;
+ if(tv&&k>=37&&k<=40){e.preventDefault();if(tvGridNav(k,a)){e.stopImmediatePropagation();return}}
  if(k===38&&tile){const r=tile.getBoundingClientRect(),above=[].slice.call(document.querySelectorAll('#arena .ol-tile,#grid .ol-tile,#grid .sortpill')).some(x=>x!==tile&&x.getClientRects().length&&x.getBoundingClientRect().bottom<=r.top+4);
   if(!above){e.preventDefault();e.stopImmediatePropagation();toMenu();return}}
  if(back&&tv&&$('#details').hidden&&$('#rfpanel').hidden&&tile){e.preventDefault();e.stopImmediatePropagation();toMenu()}},true);

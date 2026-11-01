@@ -84,6 +84,8 @@ public class PlayerActivity extends Activity {
         ui.postDelayed(hideInfo, 6000);
         video.setOnPreparedListener(mp -> {
             prepared = true;
+            if (!triedDirect) getSharedPreferences("player", MODE_PRIVATE).edit().remove("proxyBad").apply();
+            bar.setVisibility(View.GONE);
             spin.setVisibility(View.GONE);
             mp.setOnInfoListener((m, what, extra) -> {
                 if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START) spin.setVisibility(View.VISIBLE);
@@ -96,6 +98,7 @@ public class PlayerActivity extends Activity {
         video.setOnErrorListener((mp, what, extra) -> {
             if (!triedDirect && !prepared) {   // /api/stream proxy unavailable (not configured, quota, 403): fall back to the direct Drive URL
                 triedDirect = true;
+                getSharedPreferences("player", MODE_PRIVATE).edit().putLong("proxyBad", System.currentTimeMillis()).apply();
                 video.setVideoURI(Uri.parse(DIRECT_PREFIX + vid + "&export=download&confirm=t"));
                 return true;
             }
@@ -105,8 +108,18 @@ public class PlayerActivity extends Activity {
             return true;
         });
         vid = id;
-        // 1st choice: the site's Range-aware streaming proxy (no virus-scan page, works for big files); falls back to the direct URL on error.
-        video.setVideoURI(Uri.parse(PROXY + id));
+        // Start with the best known source: the Range-aware streaming proxy (no virus-scan page, works for big files), unless it failed
+        // within the last 30 minutes (not configured / quota), in which case go straight to the direct URL instead of wasting a round trip.
+        android.content.SharedPreferences sp = getSharedPreferences("player", MODE_PRIVATE);
+        boolean proxyBad = System.currentTimeMillis() - sp.getLong("proxyBad", 0) < 30 * 60 * 1000L;
+        bar.setText("Loading\u2026");
+        bar.setVisibility(View.VISIBLE);
+        if (proxyBad) {
+            triedDirect = true;
+            video.setVideoURI(Uri.parse(DIRECT_PREFIX + id + "&export=download&confirm=t"));
+        } else {
+            video.setVideoURI(Uri.parse(PROXY + id));
+        }
         ui.post(tick);
     }
 
