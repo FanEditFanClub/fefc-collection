@@ -414,6 +414,15 @@ export default {
     if (url.pathname.startsWith('/api/sync/')) {
       try { return await syncApi(req, env, url); } catch (e) { const st = e && e.status || 500; if (st >= 500) console.log('sync error:', String(e && e.message || e).slice(0, 120)); return json({ error: st === 500 ? 'server' : e.message }, st); }
     }
+    // Fire TV APK: tolerate typed links (case, _ vs -, missing .apk, short aliases) and never serve the SPA's HTML for an unknown .apk path
+    {
+      const lp = url.pathname.toLowerCase().replace(/\/+$/, '');
+      if (/^\/(firetv\/fefc[-_ ]?collection(\.apk)?|firetv\/app(\.apk)?|firetv|tv\.apk|tv|fefc\.apk|fefc|apk|app\.apk)$/.test(lp) && !/^\/firetv$/.test(lp) || lp === '/firetv/fefc-collection.apk') {
+        if (url.pathname !== '/firetv/FEFC-Collection.apk') return env.ASSETS.fetch(new Request(new URL('/firetv/FEFC-Collection.apk', url), req));
+      } else if (lp.endsWith('.apk') && url.pathname !== '/firetv/FEFC-Collection.apk') {
+        return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
+      }
+    }
     return env.ASSETS.fetch(req);
   }
 };
