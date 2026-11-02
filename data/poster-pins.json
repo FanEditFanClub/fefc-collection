@@ -152,6 +152,30 @@
     "cowboy-bebop-2021": {
       "tmdb": "tv/94603",
       "title": "Cowboy Bebop (Netflix live-action TV series, 2021)"
+    },
+    "alien-covenant": {
+      "tmdb": "movie/126889",
+      "title": "Alien: Covenant"
+    },
+    "elektra-2005": {
+      "tmdb": "movie/9947",
+      "title": "Elektra (2005)"
+    },
+    "geostorm": {
+      "tmdb": "movie/274854",
+      "title": "Geostorm"
+    },
+    "john-wick-2014": {
+      "tmdb": "movie/245891",
+      "title": "John Wick (2014)"
+    },
+    "raid-2": {
+      "tmdb": "movie/180299",
+      "title": "The Raid 2"
+    },
+    "spy-2015": {
+      "tmdb": "movie/238636",
+      "title": "Spy (2015)"
     }
   },
   "rules": [
@@ -331,6 +355,32 @@
     {
       "match": "(?i)^Cowboy Bebop\\b",
       "art": "cowboy-bebop-2021"
+    },
+    {
+      "match": "(?i)^Alien:\\s*Covenant",
+      "art": "alien-covenant"
+    },
+    {
+      "match": "(?i)^Elektra\\b",
+      "art": "elektra-2005"
+    },
+    {
+      "match": "(?i)^Geostorm\\b",
+      "art": "geostorm"
+    },
+    {
+      "match": "(?i)^John Wick\\b",
+      "not": "(?i)Chapter|Ballerina|(?<!\\d-)(?<!1-)(?:\\b2\\b|\\b3\\b|\\b4\\b)(?!-)",
+      "art": "john-wick-2014"
+    },
+    {
+      "match": "(?i)^The Raid 2\\b|^Raid 2\\b",
+      "art": "raid-2"
+    },
+    {
+      "match": "(?i)^Spy\\b",
+      "not": "(?i)Kids|x Family|Who\\b|Game",
+      "art": "spy-2015"
     }
   ]
 }

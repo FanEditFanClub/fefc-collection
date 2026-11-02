@@ -1088,6 +1088,10 @@ COVER_MANUAL={
 "1rO2aS7sVi0BFX61qVeLphreshCGAatw7":"assets/covers/cowboy-bebop-netflix-2021.jpg",
 # 28 Days folder: clean theatrical poster instead of Official Trailer YouTube frame
 "11mTK_piAwHaTAePeNA5rRoI3MsgOzD8p":"assets/covers/28-days-later.jpg",
+# thecuddlyninja Fan Edits: was Getaway trailer mp4 frame
+"1Vm8fQF42MJGwshe8M2rVTht1XQwA6ozL":"assets/covers/getaway.jpg",
+# Alan Wake Promo Media: was Live Teaser mp4 frame
+"16xekfpYMsmH23Ny6CUUlRzgOzOspI0b8":"assets/covers/alan-wake.jpg",
 }
 def covers(force=False):
     os.makedirs(os.path.join(D,'..','assets','covers'),exist_ok=True)

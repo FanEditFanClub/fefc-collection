@@ -190,16 +190,16 @@ body.tv #hub{width:calc(66vh*1.55)}body.tv .mc>img{transition-duration:1.6s;anim
 /* in intro: reveal after logo resolves (~72% of --d) */
 body:not(.intro-done) #tagline{visibility:visible}
 /* title (wordmark) wipes in first; the subtitle waits until the title has fully landed, then fades in */
-/* title/subtitle entrance starts when the intro clock starts (body.tg-run), AFTER the opening build: full canvas intro title at 6.9s (logo settled), subtitle +1.1s; TV intro same cues. */
+/* HTML title/subtitle stay hidden for the whole full intro (canvas + TV); reveal only after intro-done. Short intro still fades mid-sequence. */
 body.cintro:not(.tg-run) #tagline #wordmark,body.cintro:not(.tg-run) #tagline span{opacity:0}
-/* Fire TV / TV video intro: keep HTML tagline fully hidden until intro-done (video already has titles baked in) */
 body.cintro.tvintro #tagline{visibility:hidden!important;opacity:0!important;pointer-events:none}
 body.cintro.tvintro.tg-run #tagline{visibility:hidden!important;opacity:0!important}
-
-body.cintro.tg-run #tagline #wordmark{animation:tagin .9s ease-out 6.9s both}
-body.cintro.tg-run #tagline span{animation:tagsub .9s ease-out 8s both}
-body.cintro.tg-short #tagline #wordmark{animation-delay:1.3s}body.cintro.tg-short #tagline span{animation-delay:2.3s}
-@keyframes tagsub{0%{opacity:0}100%{opacity:1}}
+@keyframes tagsub{0%{opacity:0;transform:translateY(.35em)}100%{opacity:1;transform:none}}
+/* After intro ends, soft fade-in (no mid-intro 6.9s delay) */
+body.intro-done.at-home #tagline #wordmark{animation:tagin .7s ease-out both}
+body.intro-done.at-home #tagline span{animation:tagsub .7s ease-out .15s both}
+body.cintro.tg-short #tagline #wordmark{animation:tagin .9s ease-out 1.3s both}
+body.cintro.tg-short #tagline span{animation:tagsub .9s ease-out 2.3s both}
 @keyframes tagin{0%{opacity:0;clip-path:inset(0 100% 0 0)}100%{opacity:1;clip-path:inset(0 0 0 0)}}
 body.frozen #tagline #wordmark,body.frozen #tagline span{animation-play-state:paused}
 body.intro-done.at-home #tagline{visibility:visible;opacity:1}

@@ -93,7 +93,6 @@ var __spreadValues = (a, b) => {
     let vfb = false, vEl = null, tEnd = vid ? 26.2 : TVI.end;
     const tviLayers = () => {
       el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
-      requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("tg-run")));
     };
     if (tvl) {
       document.body.classList.add("tvintro");
@@ -117,8 +116,7 @@ var __spreadValues = (a, b) => {
           t0 = performance.now();
         }, { once: true });
       } else tviLayers();
-    } else if (!short) document.body.classList.add("tg-run");
-    else document.body.classList.add("tg-run", "tg-short");
+    } else if (short) document.body.classList.add("tg-run", "tg-short");
     const lite = !tv && (/iPhone|iPad|iPod/.test(navigator.userAgent) || /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1 || matchMedia("(prefers-reduced-motion: reduce)").matches || (navigator.hardwareConcurrency || 8) <= 4 || !!P.get("lite"));
     if (lite) document.body.classList.add("lite");
     const R = tvl ? { canvas: document.createElement("i"), frame() {
@@ -165,7 +163,8 @@ var __spreadValues = (a, b) => {
       tg.style.opacity = "";
       tg.style.clipPath = "";
       tg.style.visibility = "";
-      document.body.classList.remove("cintro");
+      document.body.classList.add("tg-run");
+      document.body.classList.remove("cintro", "tvintro");
       el.classList.add("done");
       document.body.classList.add("intro-done");
       window.__ie = Date.now();
