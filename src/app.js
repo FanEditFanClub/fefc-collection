@@ -2,6 +2,8 @@
 const tmo=(u,ms)=>Promise.race([fetch(u).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),new Promise((_,rj)=>setTimeout(()=>rj(Error('timeout '+u)),ms))]);
 const C=window.FEFC_CONFIG||{},ROOT=C.ROOT_ID,FOLDER='application/vnd.google-apps.folder',SC='application/vnd.google-apps.shortcut',S=window.SFX;
 const $=s=>document.querySelector(s),P=new URLSearchParams(location.search);
+const isTvEnv=()=>!!(document.body.classList.contains('tv')||document.body.classList.contains('firetv')||window.FEFCNative||P.get('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT\w|CrKey|BRAVIA|Android TV|GoogleTV|Silk|FEFCFireTV|Fire TV/i.test(navigator.userAgent));
+if(isTvEnv())document.body.classList.add('tv');
 const HUES=[205,190,220,265,30,160,340,15];
 let token=null,items=new Map(),kids=new Map(),meta={},cur=ROOT,live=false,view='home';
 const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
@@ -16,7 +18,7 @@ const sz=b=>b?(b/1e9).toFixed(2)+' GB':'';
 /* ---------- INTRO ---------- */
 (function(){var d=document.createElement('div').style;if(!('perspective' in d||'webkitPerspective' in d))document.documentElement.classList.add('no3d')})();
 const IQ=[];function afterIntro(fn){const c=document.body.classList;if((c.contains('tvintro')||c.contains('cintro'))&&!c.contains('intro-done'))IQ.push(fn);else fn()}/* Boot data work (JSON parse/index/posters/mosaic) waits until the intro hands off — canvas globe and TV video both need an idle main thread */
-const TVI={end:9.6};/* TV intro timeline (s): 0-5.7 glow/rings build to the audio hit, 5.75 flash + logo, 6.9 title, 7.9 subtitle, 9.6 hand-off to Home (matches style.css .tvi-*) */
+const TVI={end:26.2};/* TV CSS intro: hold logo through full intro audio (~26.2s), then hand-off to Home (matches style.css .tvi-* fill-mode:both) */
 function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElementById('wordmark');if(wmi&&!wmi.complete)wmi.addEventListener('load',placeHeader);const el=$('#intro');
  /* the intro plays ONCE per app start: never again on reload (service-worker update, WebView restore/recreate), sync, focus or navigation. Marked in sessionStorage (tab/app life) and a short localStorage window (WebView restore after process death). */
  let seenNow=false;try{const t=+localStorage.fefcIntroAt||0;seenNow=!!sessionStorage.fefcIntro||(t>0&&Date.now()-t<3*60*1000)}catch(e){}
@@ -151,17 +153,28 @@ function hub(){if(document.body.classList.contains('genres-mode')&&window.FEFCGe
 function syncTag(){placeHeader()}
 /* Home/Genres header: one full row of 3 clip tiles above the text, text between that row and the 3x3 grid */
 function placeHeader(){const tg=$('#tagline'),hb=$('#hub'),sp=$('#tagline span'),wm=$('#wordmark');if(!tg||!hb||!sp)return;
- const W=innerWidth,H=innerHeight;tg.style.fontSize='';if(wm)wm.style.height='';hb.style.width='';hb.style.top='';
+ const W=innerWidth,H=innerHeight;tg.style.fontSize='';if(wm)wm.style.height='';hb.style.width='';hb.style.top='';hb.style.left='';
  let natW=hb.offsetWidth||W*.6;const cs=getComputedStyle(tg),base=parseFloat(cs.fontSize)||20,wmH=wm?wm.offsetHeight:0;
  const g=parseFloat(getComputedStyle(hb).columnGap)||Math.min(W,H)*.014,s=Math.max(6,Math.min(14,H*.014)),top0=Math.max(4,H*.012);
- const hi=$('#hints'),hr=hi&&hi.offsetHeight?hi.getBoundingClientRect():null,bot=(hr&&hr.top>H*.5?H-hr.top+Math.max(6,H*.01):H*.08)+H*.035;
+ const hi=$('#hints'),hr=hi&&hi.offsetHeight&&!hi.hidden&&getComputedStyle(hi).display!=='none'?hi.getBoundingClientRect():null;
+ const tk=$('#ticker'),tkOn=document.body.classList.contains('tk-on')&&tk&&tk.classList.contains('on');
+ const tkH=tkOn?(tk.offsetHeight||Math.round(H*0.037)):0;
+ /* Bottom reserve = controls bar (+ ticker). Prefer live hints top; else estimate. */
+ let bot=H*.08+H*.035;if(hr&&hr.top>H*.4)bot=H-hr.top+Math.max(6,H*.01);else if(tkH)bot=tkH+Math.max(36,H*.045)+H*.02;
  const SW=w=>Math.round(H<520?Math.min(W*.9,Math.max(w,w*1.9)):w)+'px';let k=1,hw,h;for(let i=0;i<6;i++){sp.style.width=SW(hw||natW);sp.style.maxWidth='none';h=tg.offsetHeight;
   const hh=(H-top0-bot-2*s-h+2*g/3)*3/4;hw=Math.min(natW,hh*1.55,W*.94);sp.style.width=SW(hw);h=tg.offsetHeight;
   const hh2=(H-top0-bot-2*s-h+2*g/3)*3/4;hw=Math.min(natW,hh2*1.55,W*.94);if(hw>=natW*.86||k<=.62)break;
   k-=.08;tg.style.fontSize=(base*k).toFixed(1)+'px';if(wm&&wmH)wm.style.height=(wmH*k).toFixed(1)+'px'}
  sp.style.width=SW(hw);h=tg.offsetHeight;const hh=hw/1.55,th=(hh-2*g)/3,HR=$('#home').hidden?{top:0}:$('#home').getBoundingClientRect();
- const D=2*s+h;hb.style.width=Math.round(hw)+'px';hb.style.top=Math.round(top0+th+D+hh/2-HR.top)+'px';hb._hdr={D,s,h,top0};
- tg.style.top=Math.round(top0+th+s)+'px';fitHeader()}
+ const D=2*s+h;/* TV: leave a clear gap above the remote bar (+ ticker); 3D tilt expands painted bounds. */
+ if(document.body.classList.contains('tv')){bot=Math.max(bot,Math.round(H*0.13)+(tkH||0));hw=Math.min(hw,H*0.42*1.55,W*0.50)}
+ const hhUse=hw/1.55,block=th+D+hhUse,avail=Math.max(block,H-top0-bot),y0=top0+Math.max(0,(avail-block)/2);
+ hb.style.width=Math.round(hw)+'px';hb.style.left='50%';hb.style.top=Math.round(y0+th+D+hhUse/2-HR.top)+'px';hb._hdr={D,s,h,top0:y0};
+ tg.style.top=Math.round(y0+th+s)+'px';fitHeader();
+ requestAnimationFrame(()=>{const hi2=$('#hints'),hb2=$('#hub'),tg2=$('#tagline');if(!hi2||!hb2||$('#home').hidden)return;
+  const gap=Math.max(10,innerHeight*0.012),br=hb2.getBoundingClientRect(),ir=hi2.getBoundingClientRect();
+  const floor=(ir.top>innerHeight*0.4?ir.top:innerHeight*0.88)-gap,over=br.bottom-floor;
+  if(over>1){const t=parseFloat(hb2.style.top)||0;hb2.style.top=Math.round(t-over)+'px';if(tg2){const tt=parseFloat(tg2.style.top)||0;tg2.style.top=Math.round(tt-over)+'px'}fitHeader()}})}
 /* correct for the 3D tilt: measure the real top-row bottom and grid top, keep the text centred between them */
 function fitHeader(){const tg=$('#tagline'),hb=$('#hub');if(!tg||!hb||!hb._hdr)return;const row=[].slice.call(hb.querySelectorAll('.mc.toprow')),b=hb.querySelector('.hb');
  if(!row.length||!b||$('#home').hidden)return;const H=hb._hdr;let rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom)),gt=b.getBoundingClientRect().top,h=tg.offsetHeight;
@@ -655,7 +668,7 @@ document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br)
  const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return back('#/');S.chirp(1);go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.rfhome){S.click();readFirst();return}if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
-document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog'+(document.body.classList.contains('tv')?'':',.tk-i:not(.tk-dup)')))S.move()});
+document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog'+(isTvEnv()?'':',.tk-i:not(.tk-dup)')))S.move()});
 /* ---------- Semantic concept search (instant local fallback for concept queries like "Space Movies") ---------- */
 const SEMANTIC_MAP = {
   space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
@@ -751,10 +764,10 @@ const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
 let qt;$('#q').readOnly=true;['focus','click'].forEach(ev=>$('#q').addEventListener(ev,e=>{if(spOpen())return;e.preventDefault();$('#q').blur();openSpot('')}));
 setTimeout(sm2,0);
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-const FOC='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap'+(document.body.classList.contains('tv')?'':',.tk-i:not(.tk-dup)');
+function focSel(){const base='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,#brand,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap';return (isTvEnv()||document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative)?base:base+',.tk-i:not(.tk-dup)'}
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
-function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).filter(visible),a=document.activeElement;
+function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(focSel())).filter(visible),a=document.activeElement;
  if(!a||!L.contains(a)||a===document.body){if(els[0])focusEl(els[0]);return}
  const r=a.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let best=null,bd=1e9;
  els.forEach(e=>{if(e===a)return;const q=e.getBoundingClientRect(),x=q.left+q.width/2,y=q.top+q.height/2,dx=x-cx,dy=y-cy;
@@ -800,14 +813,14 @@ function tvEnsure(t){requestAnimationFrame(()=>{const m=$('#main');if(!m||!t.isC
 document.addEventListener('click',()=>{tvGoalX=null},true);
 /* ---------- Top menu bar D-pad navigation (TV / keyboard) ---------- */
 let lastTile=null,lastDet=null;
-const barItems=()=>[].slice.call(document.querySelectorAll('#bar .mi,#bar #tvq,#bar #q,#bar #aiq')).filter(x=>x.offsetParent&&!x.hidden&&getComputedStyle(x).display!=='none');
+const barItems=()=>[].slice.call(document.querySelectorAll('#bar #brand,#bar .mi,#bar #tvq,#bar #q,#bar #aiq')).filter(x=>x.offsetParent&&!x.hidden&&getComputedStyle(x).display!=='none');
 const menuCurrent=()=>{const L=barItems();return document.querySelector('#menu .mi.on')||L.find(x=>x.closest('#menu'))||L[0]};
 const inBar=el=>el&&el.closest&&el.closest('#bar');
 const pageVisible=()=>$('#player').hidden&&$('#bar').offsetHeight>0&&($('#home').hidden||!$('#details').hidden);
 function toMenu(){const m=menuCurrent();if(m){focusEl(m);m.scrollIntoView({block:'nearest',inline:'center'});return true}return false}
 function toGrid(){if(!$('#details').hidden){const t=(lastDet&&lastDet.isConnected&&lastDet.offsetParent)?lastDet:document.querySelector('#details .bigplay,#details [data-act="play"],#details .pill');if(t){focusEl(t);return true}}const t=(lastTile&&document.contains(lastTile)&&lastTile.offsetParent)?lastTile:document.querySelector('#details:not([hidden]) [data-act],#arena .ol-tile,#grid .ol-tile');if(t){focusEl(t);return true}return false}
 /* true when some other focusable in scope sits above el (D-pad Up still has somewhere to go inside the page) */
-function focusAbove(scope,el){if(!scope||!el||!el.getClientRects().length)return false;const r=el.getBoundingClientRect();return [].some.call(scope.querySelectorAll(FOC),e=>{if(e===el||!e.getClientRects().length||getComputedStyle(e).visibility==='hidden')return false;const q=e.getBoundingClientRect();return q.width>0&&q.height>0&&q.bottom<=r.top+4})}
+function focusAbove(scope,el){if(!scope||!el||!el.getClientRects().length)return false;const r=el.getBoundingClientRect();return [].some.call(scope.querySelectorAll(focSel()),e=>{if(e===el||!e.getClientRects().length||getComputedStyle(e).visibility==='hidden')return false;const q=e.getBoundingClientRect();return q.width>0&&q.height>0&&q.bottom<=r.top+4})}
 addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=document.activeElement,tv=document.body.classList.contains('tv');
  const back=k===10009||k===461||k===27||e.key==='GoBack'||e.key==='BrowserBack';
  if(a&&a.id==='q'){if(k===40||back){e.preventDefault();e.stopImmediatePropagation();a.blur();if(k===40)toGrid();else toMenu()}return}
@@ -815,7 +828,7 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
   if(k===37||k===39){e.preventDefault();e.stopImmediatePropagation();const n=L[Math.max(0,Math.min(L.length-1,i+(k===39?1:-1)))];if(n){focusEl(n);n.scrollIntoView({block:'nearest',inline:'nearest'})}return}
   if(k===40){e.preventDefault();e.stopImmediatePropagation();toGrid();return}
   if(k===38){e.preventDefault();e.stopImmediatePropagation();return}
-  if((k===13||k===23)&&a.matches('button')){e.preventDefault();e.stopImmediatePropagation();S.unlock();a.click();return}
+  if((k===13||k===23)&&(a.matches('button')||a.id==='brand'||a.closest&&a.closest('#brand'))){e.preventDefault();e.stopImmediatePropagation();S.unlock();(a.id==='brand'?a:a.closest('#brand')||a).click();return}
   return}
  /* Video details: Up from the topmost control moves into the top menu so those items can be selected. Other arrows stay inside the details page (the grid underneath is not the navigation model). */
  if(!$('#details').hidden&&a&&a.closest&&a.closest('#details')){
@@ -826,7 +839,7 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
  if(k===38&&tile){const r=tile.getBoundingClientRect(),above=[].slice.call(document.querySelectorAll('#arena .ol-tile,#grid .ol-tile,#grid .sortpill')).some(x=>x!==tile&&x.getClientRects().length&&x.getBoundingClientRect().bottom<=r.top+4);
   if(!above){e.preventDefault();e.stopImmediatePropagation();toMenu();return}}
  if(back&&tv&&$('#details').hidden&&$('#rfpanel').hidden&&tile){e.preventDefault();e.stopImmediatePropagation();toMenu()}},true);
-document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('.ol-tile');if(t)lastTile=t;if(e.target.closest&&e.target.closest('#details')&&e.target.matches&&e.target.matches(FOC))lastDet=e.target});
+document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('.ol-tile');if(t)lastTile=t;if(e.target.closest&&e.target.closest('#details')&&e.target.matches&&e.target.matches(focSel()))lastDet=e.target});
 /* TV: search input becomes a 'Search' button that opens an on-screen search overlay */
 (function(){const b=document.createElement('button');b.id='tvq';b.type='button';b.className='mi tv-only';b.textContent='⌕ Search';$('#bar').insertBefore(b,$('#q'));b.onclick=()=>{S.click();openSpot('')}})();
 /* ---------- Spotlight search: one box, instant local results + automatic Smart picks (AI) ---------- */
@@ -998,9 +1011,9 @@ window.FEFCSpot={open:openSpot,close:closeSpot};
 const _render=render;render=function(){_render.apply(this,arguments);if(document.body.classList.contains('tv')){const t=document.querySelector('#arena .ol-tile,#grid .ol-tile');if(t)focusEl(t)}};
 const _details=details;details=async function(){await _details.apply(this,arguments);const p=document.querySelector('#details .bigplay')||document.querySelector('#details [data-act="play"]');if(p){const id=$('#details').dataset.id;if(id&&window.UD&&!p.parentNode.querySelector('.star-btn')){const on=UD.isStarred(id);p.insertAdjacentHTML('afterend',`<button class="pill p4 star-btn${on?' on':''}" data-star="${id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`)}const B=document.body.classList,D=$('#details');if(B.contains('tv')||B.contains('kbd')){try{p.focus({preventScroll:true})}catch(e){p.focus()}}else if(document.activeElement&&D.contains(document.activeElement))document.activeElement.blur();D.scrollTop=0;D.querySelectorAll('.lc-body').forEach(x=>x.scrollTop=0)}};
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
-if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
+if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.3';
+const HOME_VER_FALLBACK='0.8.4';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}
@@ -1028,7 +1041,11 @@ later(()=>tmo('data/genres.json',10000).then(g=>{GC=g.__collections||{};delete g
 afterIntro(()=>{tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});});
 later(()=>tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));if(!$('#home').hidden)hub();else if(/^#\/(newarrivals|arena|folder)/.test(location.hash))route()}).catch(e=>console.warn(e)),3000);
 later(()=>tmo('data/metadata.json',8000).then(m=>meta=m).catch(e=>console.warn(e)),5000);later(()=>{const sx=document.createElement('script');sx.src='details-extra.js';document.head.appendChild(sx)},8000);
-afterIntro(()=>{tmo('data/index.json',15000).then(d=>{window._idx=d.items;if(!live)add(d.items);if(!live)tmo('data/links.json',15000).then(L=>{for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(()=>{});if(d.partial!==false&&!live)tmo('data/index.interim.json',20000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
+/* Prefetch the 6.7MB index during the TV CSS intro (no canvas). Longer timeout + one retry — Fire TV WebView often exceeds 15s download/parse and was leaving every hub count at 0. */
+const idxMs=isTvEnv()?90000:30000;
+const idxFetch=()=>tmo('data/index.json',idxMs).catch(e=>{console.warn('index retry',e);return tmo('data/index.json',idxMs)});
+const idxP=(isTvEnv()||document.body.classList.contains('tvintro'))?idxFetch():null;
+afterIntro(()=>{(idxP||idxFetch()).then(d=>{window._idx=d.items;if(!live)add(d.items);if(!live)tmo('data/links.json',30000).then(L=>{for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(()=>{});if(d.partial!==false&&!live)tmo('data/index.interim.json',30000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
  if(P.get('focus')){setTimeout(()=>{document.body.classList.add('kbd');const t=document.querySelectorAll('.ol-tile,.hb')[+P.get('focus')];if(t)focusEl(t)},300)}
  const e=P.get('edit');if(e)go('#/edit/'+e);const pp=P.get('play');if(pp)go('#/play/'+pp);if(P.get('readfirst'))go('#/readfirst')});});
 $('#back').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();goBack()});

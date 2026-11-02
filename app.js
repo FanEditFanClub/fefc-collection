@@ -21,6 +21,8 @@ var __spreadValues = (a, b) => {
   }), new Promise((_, rj) => setTimeout(() => rj(Error("timeout " + u)), ms))]);
   const C = window.FEFC_CONFIG || {}, ROOT = C.ROOT_ID, FOLDER = "application/vnd.google-apps.folder", SC = "application/vnd.google-apps.shortcut", S = window.SFX;
   const $ = (s) => document.querySelector(s), P = new URLSearchParams(location.search);
+  const isTvEnv = () => !!(document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative || P.get("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT\w|CrKey|BRAVIA|Android TV|GoogleTV|Silk|FEFCFireTV|Fire TV/i.test(navigator.userAgent));
+  if (isTvEnv()) document.body.classList.add("tv");
   const HUES = [205, 190, 220, 265, 30, 160, 340, 15];
   let token = null, items = /* @__PURE__ */ new Map(), kids = /* @__PURE__ */ new Map(), meta = {}, cur = ROOT, live = false, view = "home";
   const hash = (s) => {
@@ -56,7 +58,7 @@ var __spreadValues = (a, b) => {
     if ((c.contains("tvintro") || c.contains("cintro")) && !c.contains("intro-done")) IQ.push(fn);
     else fn();
   }
-  const TVI = { end: 9.6 };
+  const TVI = { end: 26.2 };
   function intro() {
     requestAnimationFrame(placeHeader);
     const wmi = document.getElementById("wordmark");
@@ -830,10 +832,16 @@ var __spreadValues = (a, b) => {
     if (wm) wm.style.height = "";
     hb.style.width = "";
     hb.style.top = "";
+    hb.style.left = "";
     let natW = hb.offsetWidth || W * 0.6;
     const cs = getComputedStyle(tg), base = parseFloat(cs.fontSize) || 20, wmH = wm ? wm.offsetHeight : 0;
     const g = parseFloat(getComputedStyle(hb).columnGap) || Math.min(W, H) * 0.014, s = Math.max(6, Math.min(14, H * 0.014)), top0 = Math.max(4, H * 0.012);
-    const hi = $("#hints"), hr = hi && hi.offsetHeight ? hi.getBoundingClientRect() : null, bot = (hr && hr.top > H * 0.5 ? H - hr.top + Math.max(6, H * 0.01) : H * 0.08) + H * 0.035;
+    const hi = $("#hints"), hr = hi && hi.offsetHeight && !hi.hidden && getComputedStyle(hi).display !== "none" ? hi.getBoundingClientRect() : null;
+    const tk = $("#ticker"), tkOn = document.body.classList.contains("tk-on") && tk && tk.classList.contains("on");
+    const tkH = tkOn ? tk.offsetHeight || Math.round(H * 0.037) : 0;
+    let bot = H * 0.08 + H * 0.035;
+    if (hr && hr.top > H * 0.4) bot = H - hr.top + Math.max(6, H * 0.01);
+    else if (tkH) bot = tkH + Math.max(36, H * 0.045) + H * 0.02;
     const SW = (w) => Math.round(H < 520 ? Math.min(W * 0.9, Math.max(w, w * 1.9)) : w) + "px";
     let k = 1, hw, h;
     for (let i = 0; i < 6; i++) {
@@ -855,11 +863,32 @@ var __spreadValues = (a, b) => {
     h = tg.offsetHeight;
     const hh = hw / 1.55, th = (hh - 2 * g) / 3, HR = $("#home").hidden ? { top: 0 } : $("#home").getBoundingClientRect();
     const D = 2 * s + h;
+    if (document.body.classList.contains("tv")) {
+      bot = Math.max(bot, Math.round(H * 0.13) + (tkH || 0));
+      hw = Math.min(hw, H * 0.42 * 1.55, W * 0.5);
+    }
+    const hhUse = hw / 1.55, block = th + D + hhUse, avail = Math.max(block, H - top0 - bot), y0 = top0 + Math.max(0, (avail - block) / 2);
     hb.style.width = Math.round(hw) + "px";
-    hb.style.top = Math.round(top0 + th + D + hh / 2 - HR.top) + "px";
-    hb._hdr = { D, s, h, top0 };
-    tg.style.top = Math.round(top0 + th + s) + "px";
+    hb.style.left = "50%";
+    hb.style.top = Math.round(y0 + th + D + hhUse / 2 - HR.top) + "px";
+    hb._hdr = { D, s, h, top0: y0 };
+    tg.style.top = Math.round(y0 + th + s) + "px";
     fitHeader();
+    requestAnimationFrame(() => {
+      const hi2 = $("#hints"), hb2 = $("#hub"), tg2 = $("#tagline");
+      if (!hi2 || !hb2 || $("#home").hidden) return;
+      const gap = Math.max(10, innerHeight * 0.012), br = hb2.getBoundingClientRect(), ir = hi2.getBoundingClientRect();
+      const floor = (ir.top > innerHeight * 0.4 ? ir.top : innerHeight * 0.88) - gap, over = br.bottom - floor;
+      if (over > 1) {
+        const t = parseFloat(hb2.style.top) || 0;
+        hb2.style.top = Math.round(t - over) + "px";
+        if (tg2) {
+          const tt = parseFloat(tg2.style.top) || 0;
+          tg2.style.top = Math.round(tt - over) + "px";
+        }
+        fitHeader();
+      }
+    });
   }
   function fitHeader() {
     const tg = $("#tagline"), hb = $("#hub");
@@ -2979,7 +3008,7 @@ var __spreadValues = (a, b) => {
     }
   });
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches(".ol-tile,.mi,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog" + (document.body.classList.contains("tv") ? "" : ",.tk-i:not(.tk-dup)"))) S.move();
+    if (e.target.matches(".ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog" + (isTvEnv() ? "" : ",.tk-i:not(.tk-dup)"))) S.move();
   });
   const SEMANTIC_MAP = {
     space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
@@ -3109,7 +3138,10 @@ var __spreadValues = (a, b) => {
     openSpot("");
   }));
   setTimeout(sm2, 0);
-  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap" + (document.body.classList.contains("tv") ? "" : ",.tk-i:not(.tk-dup)");
+  function focSel() {
+    const base = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,#brand,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap";
+    return isTvEnv() || document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative ? base : base + ",.tk-i:not(.tk-dup)";
+  }
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -3121,7 +3153,7 @@ var __spreadValues = (a, b) => {
     return $("#app");
   }
   function move(dir) {
-    const L = layer(), els = [].slice.call(L.querySelectorAll(FOC)).filter(visible), a = document.activeElement;
+    const L = layer(), els = [].slice.call(L.querySelectorAll(focSel())).filter(visible), a = document.activeElement;
     if (!a || !L.contains(a) || a === document.body) {
       if (els[0]) focusEl(els[0]);
       return;
@@ -3328,7 +3360,7 @@ var __spreadValues = (a, b) => {
     tvGoalX = null;
   }, true);
   let lastTile = null, lastDet = null;
-  const barItems = () => [].slice.call(document.querySelectorAll("#bar .mi,#bar #tvq,#bar #q,#bar #aiq")).filter((x) => x.offsetParent && !x.hidden && getComputedStyle(x).display !== "none");
+  const barItems = () => [].slice.call(document.querySelectorAll("#bar #brand,#bar .mi,#bar #tvq,#bar #q,#bar #aiq")).filter((x) => x.offsetParent && !x.hidden && getComputedStyle(x).display !== "none");
   const menuCurrent = () => {
     const L = barItems();
     return document.querySelector("#menu .mi.on") || L.find((x) => x.closest("#menu")) || L[0];
@@ -3362,7 +3394,7 @@ var __spreadValues = (a, b) => {
   function focusAbove(scope, el) {
     if (!scope || !el || !el.getClientRects().length) return false;
     const r = el.getBoundingClientRect();
-    return [].some.call(scope.querySelectorAll(FOC), (e) => {
+    return [].some.call(scope.querySelectorAll(focSel()), (e) => {
       if (e === el || !e.getClientRects().length || getComputedStyle(e).visibility === "hidden") return false;
       const q = e.getBoundingClientRect();
       return q.width > 0 && q.height > 0 && q.bottom <= r.top + 4;
@@ -3405,11 +3437,11 @@ var __spreadValues = (a, b) => {
         e.stopImmediatePropagation();
         return;
       }
-      if ((k === 13 || k === 23) && a.matches("button")) {
+      if ((k === 13 || k === 23) && (a.matches("button") || a.id === "brand" || a.closest && a.closest("#brand"))) {
         e.preventDefault();
         e.stopImmediatePropagation();
         S.unlock();
-        a.click();
+        (a.id === "brand" ? a : a.closest("#brand") || a).click();
         return;
       }
       return;
@@ -3453,7 +3485,7 @@ var __spreadValues = (a, b) => {
   document.addEventListener("focusin", (e) => {
     const t = e.target.closest && e.target.closest(".ol-tile");
     if (t) lastTile = t;
-    if (e.target.closest && e.target.closest("#details") && e.target.matches && e.target.matches(FOC)) lastDet = e.target;
+    if (e.target.closest && e.target.closest("#details") && e.target.matches && e.target.matches(focSel())) lastDet = e.target;
   });
   (function() {
     const b = document.createElement("button");
@@ -3926,8 +3958,8 @@ var __spreadValues = (a, b) => {
       else focusEl($("#back"));
     }, 50);
   };
-  if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.3";
+  if (isTvEnv()) document.body.classList.add("tv");
+  const HOME_VER_FALLBACK = "0.8.4";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4056,11 +4088,17 @@ var __spreadValues = (a, b) => {
     sx.src = "details-extra.js";
     document.head.appendChild(sx);
   }, 8e3);
+  const idxMs = isTvEnv() ? 9e4 : 3e4;
+  const idxFetch = () => tmo("data/index.json", idxMs).catch((e) => {
+    console.warn("index retry", e);
+    return tmo("data/index.json", idxMs);
+  });
+  const idxP = isTvEnv() || document.body.classList.contains("tvintro") ? idxFetch() : null;
   afterIntro(() => {
-    tmo("data/index.json", 15e3).then((d) => {
+    (idxP || idxFetch()).then((d) => {
       window._idx = d.items;
       if (!live) add(d.items);
-      if (!live) tmo("data/links.json", 15e3).then((L) => {
+      if (!live) tmo("data/links.json", 3e4).then((L) => {
         for (const p in L) {
           if (!kids.has(p)) kids.set(p, []);
           const a = kids.get(p);
@@ -4073,7 +4111,7 @@ var __spreadValues = (a, b) => {
         else if (!$("#home").hidden) hub();
       }).catch(() => {
       });
-      if (d.partial !== false && !live) tmo("data/index.interim.json", 2e4).then((x) => {
+      if (d.partial !== false && !live) tmo("data/index.interim.json", 3e4).then((x) => {
         add(x.items.filter((f) => !items.has(f.id)));
         window._idx = Array.from(items.values());
         route();

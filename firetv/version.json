@@ -1,8 +1,8 @@
 {
-    "versionCode": 11,
-    "versionName": "0.8.3",
+    "versionCode": 12,
+    "versionName": "0.8.4",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.3: Fire TV \u2014 skip black-frame intro video (CSS+audio; ?forcevideo=1 to force mp4); My List D-pad + Check for updates; Back from Genres/inner screens returns Home (double-back exit only on true Home); news ticker scrolls on Home + non-focusable on TV; ticker flush to bottom edge with remote bar sitting directly on top (no gap); lighter TV UI (less blur/shadow/mosaic); faster Genres hub load.",
-    "size": 59205,
-    "sha256": "f6e03add68aa0a285c891db67dcba1aef076afecc00a686a12e11c53f5d281d5"
+    "notes": "Beta 0.8.4: Fire TV \u2014 fix hub counts stuck at 0 (index prefetch + 90s timeout/retry for 6.7MB JSON); full-length TV CSS intro (~26s with audio); official FEFC app icon in top bar with Home beside it; ticker on all screens except video details, non-focusable on TV/FEFCNative; remote bar full-width flush on ticker; version pill top-right clear of tiles; home hub centered between title and controls; Fan Edit Collections removed from top menu (folder + home tile kept).",
+    "size": 59197,
+    "sha256": "0eb34f91f7affe9fb7a63202a207747ddd5ec56182f47947a917e2ac0ecefbbf"
 }

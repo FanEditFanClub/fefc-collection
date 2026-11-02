@@ -14,7 +14,7 @@ function merge(posts){var c=CTA.slice(),out=[];posts.forEach(function(p,i){out.p
 function get(u,ms){return new Promise(function(res,rej){var x=new XMLHttpRequest();x.open('GET',u);x.timeout=ms;x.onload=function(){try{x.status<300?res(JSON.parse(x.responseText)):rej()}catch(e){rej()}};x.onerror=x.ontimeout=function(){rej()};x.send()})}
 function load(){return get('/api/feed',8000).then(function(j){if(!j||!j.items||!j.items.length)throw 0;return j.items}).catch(function(){return get('data/community-feed.json',8000).then(function(j){var p=(j.posts||[]).filter(function(x){return x.ts&&Date.now()-x.ts<180*864e5}).sort(function(a,b){return b.ts-a.ts}).slice(0,12);return merge(p)}).catch(function(){return CTA})})}
 var bar,track,rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches,pos=0,last=0,hold=0,raf=0,half=0;
-function tvMode(){return !!(document.body&&document.body.classList.contains('tv'))}
+function tvMode(){var b=document.body;if(!b)return false;var ua=navigator.userAgent||'';return !!(b.classList.contains('tv')||b.classList.contains('firetv')||window.FEFCNative||/\bFEFCFireTV\b|\bAFT\w|Android TV|Fire TV|Silk/i.test(ua)||/(?:[?&]tv=1(?:&|$))/.test(location.search||''))}
 function html(items,dup){var tv=tvMode();return items.map(function(p){var meta=p.join?'':(p.ts?'<em>'+ago(p.ts)+'</em>':'');
  var inert=dup||tv;return '<'+(tv?'span':'a')+' class="tk-i'+(p.join?' tk-join':'')+(dup?' tk-dup':'')+'"'+(tv?'':' href="'+esc(p.url)+'" target="_blank" rel="noopener"')+(inert?' tabindex="-1" aria-hidden="true"':(' aria-label="'+esc(NAME[p.src]+': '+p.title)+' (opens in a new tab)"'))+'>'+icon(p.src)+'<b>'+esc(p.title)+'</b>'+meta+(p.join?'<u>JOIN</u>':'')+'</'+(tv?'span':'a')+'>'}).join('')}
 function render(items){track.innerHTML=html(items,0)+(rm?'':html(items,1));bar.classList.add('ready');pos=0;bar.scrollLeft=0;measure()}
@@ -28,10 +28,18 @@ function mount(){if(bar)return;var home=$('#home');if(!home)return;bar=document.
  bar.addEventListener('wheel',function(){pos=bar.scrollLeft},{passive:true});
  bar.addEventListener('keydown',function(e){if(tvMode())return;var a=e.target;if(e.keyCode===13&&a&&a.classList&&a.classList.contains('tk-i')){e.preventDefault();e.stopPropagation();a.click()}},true);
  track.innerHTML=html(CTA,0);bar.classList.add('ready');
- load().then(render);setInterval(function(){if(!$('#home').hidden&&!document.hidden&&!bar.contains(document.activeElement))load().then(function(it){if(it&&it.length>CTA.length-1)render(it)})},10*6e4);
+ load().then(render);setInterval(function(){if(bar.classList.contains('on')&&!document.hidden&&!bar.contains(document.activeElement))load().then(function(it){if(it&&it.length>CTA.length-1)render(it)})},10*6e4);
  addEventListener('resize',measure);raf=requestAnimationFrame(step)}
-function sync(){var on=!$('#home').hidden;mount();if(bar)bar.classList.toggle('on',on);document.body.classList.toggle('tk-on',on);if(on){setHold(0);setTimeout(function(){measure();dispatchEvent(new Event('resize'))},60);setTimeout(measure,400)}}
-function init(){var h=$('#home');if(!h)return;new MutationObserver(sync).observe(h,{attributes:true,attributeFilter:['hidden']});
+function sync(){var det=$('#details'),pl=$('#player'),rf=$('#rfpanel');
+ /* All screens except video details; also hide over the player and Read First overlay. */
+ var on=!(!document.body.classList.contains('intro-done'));
+ if(on&&det&&!det.hidden)on=false;
+ if(on&&pl&&!pl.hidden)on=false;
+ if(on&&rf&&!rf.hidden)on=false;
+ mount();if(bar)bar.classList.toggle('on',on);document.body.classList.toggle('tk-on',on);if(on){setHold(0);setTimeout(function(){measure();dispatchEvent(new Event('resize'))},60);setTimeout(measure,400)}}
+function init(){var h=$('#home');if(!h)return;
+ ['details','player','rfpanel'].forEach(function(id){var el=document.getElementById(id);if(el)new MutationObserver(sync).observe(el,{attributes:true,attributeFilter:['hidden','class']})});
+ new MutationObserver(sync).observe(h,{attributes:true,attributeFilter:['hidden']});
  new MutationObserver(function(){if(document.body.classList.contains('intro-done')){sync();measure()}}).observe(document.body,{attributes:true,attributeFilter:['class']});
  sync()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

@@ -65,7 +65,10 @@
   }
   var bar, track, rm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches, pos = 0, last = 0, hold = 0, raf = 0, half = 0;
   function tvMode() {
-    return !!(document.body && document.body.classList.contains("tv"));
+    var b = document.body;
+    if (!b) return false;
+    var ua = navigator.userAgent || "";
+    return !!(b.classList.contains("tv") || b.classList.contains("firetv") || window.FEFCNative || /\bFEFCFireTV\b|\bAFT\w|Android TV|Fire TV|Silk/i.test(ua) || /(?:[?&]tv=1(?:&|$))/.test(location.search || ""));
   }
   function html(items, dup) {
     var tv = tvMode();
@@ -156,7 +159,7 @@
     bar.classList.add("ready");
     load().then(render);
     setInterval(function() {
-      if (!$("#home").hidden && !document.hidden && !bar.contains(document.activeElement)) load().then(function(it) {
+      if (bar.classList.contains("on") && !document.hidden && !bar.contains(document.activeElement)) load().then(function(it) {
         if (it && it.length > CTA.length - 1) render(it);
       });
     }, 10 * 6e4);
@@ -164,7 +167,11 @@
     raf = requestAnimationFrame(step);
   }
   function sync() {
-    var on = !$("#home").hidden;
+    var det = $("#details"), pl = $("#player"), rf = $("#rfpanel");
+    var on = !!document.body.classList.contains("intro-done");
+    if (on && det && !det.hidden) on = false;
+    if (on && pl && !pl.hidden) on = false;
+    if (on && rf && !rf.hidden) on = false;
     mount();
     if (bar) bar.classList.toggle("on", on);
     document.body.classList.toggle("tk-on", on);
@@ -180,6 +187,10 @@
   function init() {
     var h = $("#home");
     if (!h) return;
+    ["details", "player", "rfpanel"].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ["hidden", "class"] });
+    });
     new MutationObserver(sync).observe(h, { attributes: true, attributeFilter: ["hidden"] });
     new MutationObserver(function() {
       if (document.body.classList.contains("intro-done")) {

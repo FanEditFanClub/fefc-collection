@@ -55,7 +55,7 @@
       });
     },
     MENU: function(F) {
-      return [["#/", "Home"], ["#/supportus", "Support Us"], ["#/all", "Main Collection"], ["#/folder/" + F.collections, "Fan Edit Collections"], ["#/newarrivals", "New Arrivals"], ["#/people", "Actors & Directors"], ["#/genres", "Genres"], ["#/mylist", "My List"]];
+      return [["#/", "Home"], ["#/supportus", "Support Us"], ["#/all", "Main Collection"], ["#/newarrivals", "New Arrivals"], ["#/people", "Actors & Directors"], ["#/genres", "Genres"], ["#/mylist", "My List"]];
     },
     menuHTML: function(F, back) {
       var h = location.hash || "#/";

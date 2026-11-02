@@ -165,7 +165,7 @@ body.tv #player{padding:3vh 4vw}
 .ol-tile.link{text-decoration:none}
 @media (orientation:portrait){#mosaic{grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(6,1fr)}#hub{width:94vw;top:46%}.hb{font-size:clamp(14px,4vw,22px)}}
 @media (orientation:landscape) and (max-height:520px){#hub{width:calc(76vh*1.55);top:45%}#hints{bottom:2vh}}
-body.tv #hub{width:calc(66vh*1.55)}body.tv .mc>img{transition-duration:1.6s;animation-duration:12s}
+body.tv #hub{width:min(50vw,calc(42vh*1.55))}body.tv .mc>img{transition-duration:1.6s;animation-duration:12s}
 #genres{position:absolute;left:0;right:0;top:1.6vh;z-index:3;display:flex;gap:.8vmin;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;padding:.6vmin 2vw;scrollbar-width:none;background:linear-gradient(180deg,#000d,#0000)}
 #genres::-webkit-scrollbar{display:none}
 .glab{align-self:center;color:#ffa31a;font:600 clamp(12px,1.6vmin,24px) 'Source Sans 3',sans-serif;letter-spacing:.15em;text-transform:uppercase;margin-right:.6vmin}
@@ -366,7 +366,7 @@ body.tv .sgrid.vids .ol-tile.vid .nm{font-size:1.6vh}
 /* keep the 3x3 grid clear of the wordmark + tagline header */
 #hub{top:calc(50% + 7vh);width:min(60vw,calc(58vh*1.55))}
 @media (orientation:landscape) and (max-height:520px){#hub{top:calc(50% + 10vh);width:calc(56vh*1.55)}#tagline{font-size:clamp(11px,min(3vh,1.9vw),22px)}#wordmark{height:clamp(20px,7vh,34px)}}
-body.tv #hub{top:calc(50% + 7vh);width:calc(58vh*1.55)}
+body.tv #hub{top:50%;width:min(50vw,calc(42vh*1.55))}
 /* bottom legend (incl. Sound control) is global on every page */
 #hints{position:fixed;z-index:70}
 #main{padding-bottom:calc(9vh + 40px)}
@@ -957,8 +957,9 @@ body.tv #syncpanel .sp-opt b{font-size:2.8vh}body.tv #syncpanel .sp-opt span{fon
 #home-ver{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:90;margin:0;padding:5px 12px;pointer-events:none;font:600 clamp(11px,1.45vh,15px)/1.2 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:.06em;color:#d5dde8;opacity:.92;text-shadow:0 1px 2px #000c;user-select:none;-webkit-user-select:none;background:#000a;border:1px solid #6d7c8f66;border-radius:999px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 body.intro-done.at-home #home-ver{display:block}
 body.tk-on #home-ver{bottom:calc(var(--tkh,36px) + 8px + env(safe-area-inset-bottom,0px))}
+body.tv.tk-on #home-ver,body.tv #home-ver{bottom:auto!important}
 body.overlay #home-ver,body:not(.intro-done) #home-ver,body:not(.at-home) #home-ver{display:none!important}
-body.tv #home-ver{opacity:.85;font-size:clamp(12px,1.55vh,16px);bottom:calc(1.2vh + env(safe-area-inset-bottom,0px))}
+body.tv #home-ver{opacity:.9;font-size:clamp(12px,1.55vh,16px);left:auto;right:1.4vw;transform:none;top:1.6vh;bottom:auto;z-index:88}
 
 /* ---------- Home community ticker (src/ticker.js) ---------- */
 #ticker{--tkh:clamp(24px,3.7vh,46px);position:fixed;left:0;right:0;bottom:0;z-index:69;display:none;height:calc(var(--tkh) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none;background:linear-gradient(180deg,#0e1620f2,#04070cfa);border-top:1px solid #35506b;box-shadow:0 -6px 18px #0009;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 2.5%,#000 97.5%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 2.5%,#000 97.5%,transparent 100%)}
@@ -1178,7 +1179,9 @@ body.touch.kbd:not(.tv){--dock:0px}
 body.tk-on.touch #hints{bottom:calc(var(--tkh,28px) + env(safe-area-inset-bottom,0px))!important;padding-bottom:4px!important}
 body.touch:not(.tk-on) #hints{bottom:0!important}
 /* When touch hides the remote bar (rare / shuf), ticker still sits on the bottom edge. */
-body.tv.tk-on #hints{left:50%;right:auto;transform:translateX(-50%)!important;bottom:calc(var(--tkh,clamp(24px,3.7vh,46px)) + env(safe-area-inset-bottom,0px))!important}
+body.tv #hints,body.tv.tk-on #hints{position:fixed!important;left:0!important;right:0!important;width:auto!important;max-width:none!important;transform:none!important;border-radius:0!important;justify-content:space-around;align-items:center;gap:0;padding:.55vh 1vw;box-sizing:border-box}
+body.tv.tk-on #hints{bottom:calc(var(--tkh,clamp(24px,3.7vh,46px)) + env(safe-area-inset-bottom,0px))!important}
+body.tv:not(.tk-on) #hints{bottom:0!important}
 
 /* ---- Fire TV / TV mode performance (0.8.3) ---- */
 body.tv .ol-tile,body.tv .hb,body.tv .gnr{transition:none!important;box-shadow:0 2px 6px #0008!important;-webkit-box-reflect:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
@@ -1192,3 +1195,9 @@ body.tv #grid.gnrs{perspective:none!important}
 body.tv #grid.gnrs .ol-tile.gnr{transform:none!important}
 body.tv .tk-i{pointer-events:none!important;cursor:default}
 
+
+/* brand official icon */
+#brand img{height:34px;width:34px;border-radius:8px;object-fit:cover;flex:none}
+body.tv #brand img{height:4.6vh;width:4.6vh;border-radius:0.7vh}
+#brand{gap:10px}
+body.tv #brand span{display:none}
