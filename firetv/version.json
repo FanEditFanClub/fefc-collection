@@ -1,8 +1,8 @@
 {
-  "versionCode": 9,
-  "versionName": "1.0.8",
-  "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-  "notes": "Full-bleed Fire TV home tile (opaque black banner). Home D-pad focus plays the same move sound as folders. Larger launcher icon. Reinstall or restart Fire TV if the old tile is cached.",
-  "size": 59071,
-  "sha256": "59c16679cb544598b37362dd9706c0db2989ab58d91720ad4e21c0cbfd4018e6"
+    "versionCode": 10,
+    "versionName": "0.8.1",
+    "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
+    "notes": "Beta 0.8.1: home screen shows subtle \"v0.8.1 beta\" version badge (native FEFCNative.version / version.json). Same signing key as 1.0.8 \u2014 updater accepts via versionCode 10.",
+    "size": 59078,
+    "sha256": "4bdb8d17013db4853ea62ef054ff38af7c10657c31071757f86dbd632f45d403"
 }

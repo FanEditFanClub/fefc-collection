@@ -1038,6 +1038,10 @@ var __spreadValues = (a, b) => {
         if (t) focusEl(t);
       }
     }, 30);
+    try {
+      resolveHomeVer();
+    } catch (e) {
+    }
   }
   function hideHome() {
     clearTimeout(homeHideTimer);
@@ -3792,6 +3796,47 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
+  const HOME_VER_FALLBACK = "0.8.1";
+  function formatHomeVer(name) {
+    const n = String(name || "").trim();
+    if (!n) return "";
+    const base = n.replace(/\s*beta$/i, "").trim();
+    return "v" + base + " beta";
+  }
+  function paintHomeVer(name) {
+    const el = $("#home-ver");
+    if (!el) return;
+    const label = formatHomeVer(name);
+    if (label) {
+      el.textContent = label;
+      el.dataset.ver = String(name || "");
+    }
+  }
+  function resolveHomeVer() {
+    const el = $("#home-ver");
+    if (!el) return;
+    try {
+      const nb = window.FEFCNative;
+      if (nb && typeof nb.version === "function") {
+        const v = nb.version();
+        if (v != null && String(v).trim() !== "") {
+          paintHomeVer(v);
+          el.dataset.src = "native";
+          return;
+        }
+      }
+    } catch (e) {
+    }
+    if (!el.dataset.ver) paintHomeVer(HOME_VER_FALLBACK);
+    if (el.dataset.src === "native" || resolveHomeVer._once) return;
+    resolveHomeVer._once = 1;
+    tmo("firetv/version.json", 8e3).then((m) => {
+      if (m && m.versionName) paintHomeVer(m.versionName);
+    }).catch(() => {
+    });
+  }
+  resolveHomeVer();
+  afterIntro(resolveHomeVer);
   if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
     document.body.classList.add("firetv");
     const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20 11H7.83l4.58-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H20v-2z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>';

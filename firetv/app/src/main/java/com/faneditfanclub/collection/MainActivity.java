@@ -327,7 +327,8 @@ public class MainActivity extends Activity {
     /** Small bridge for the web app (window.FEFCNative): tap inside the embedded Drive player, or play a Drive file natively. */
     private class Bridge {
         @JavascriptInterface
-        public int version() { return BuildConfig.VERSION_CODE; }
+        /** App versionName for the web UI (e.g. home "v0.8.1 beta" badge). */
+        public String version() { return BuildConfig.VERSION_NAME; }
 
         /** Lets the web app offer a manual "Check for app update" action. */
         @JavascriptInterface

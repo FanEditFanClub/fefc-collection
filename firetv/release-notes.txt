@@ -1,1 +1,1 @@
-Full-bleed Fire TV home tile (opaque black banner). Home D-pad focus plays the same move sound as folders. Larger launcher icon. Reinstall or restart Fire TV if the old tile is cached.
+Beta 0.8.1: home screen shows subtle "v0.8.1 beta" version badge (native FEFCNative.version / version.json). Same signing key as 1.0.8 — updater accepts via versionCode 10.

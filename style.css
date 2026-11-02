@@ -924,6 +924,14 @@ body.tv #syncpanel .sp-opt b{font-size:2.8vh}body.tv #syncpanel .sp-opt span{fon
 #syncpanel .sp-opts{display:flex;flex-direction:column;align-items:stretch;width:100%}
 #syncpanel .sp-opt{width:100%;flex:0 0 auto;align-self:stretch}
 
+
+/* subtle app/web version on home (bottom corner; sits above community ticker when present) */
+#home-ver{display:none;position:fixed;right:calc(1.1vw + env(safe-area-inset-right,0px));bottom:calc(.7vh + env(safe-area-inset-bottom,0px));z-index:68;margin:0;padding:0;pointer-events:none;font:500 clamp(10px,1.35vh,14px)/1.2 'Source Sans 3','Segoe UI',sans-serif;letter-spacing:.04em;color:#8b97a8;opacity:.55;text-shadow:0 1px 2px #000c;user-select:none;-webkit-user-select:none}
+body.intro-done.at-home #home-ver{display:block}
+body.tk-on #home-ver{bottom:calc(var(--tkh,36px) + .55vh + env(safe-area-inset-bottom,0px))}
+body.overlay #home-ver,body:not(.intro-done) #home-ver{display:none!important}
+body.tv #home-ver{opacity:.45;font-size:clamp(11px,1.5vh,15px)}
+
 /* ---------- Home community ticker (src/ticker.js) ---------- */
 #ticker{--tkh:clamp(24px,3.7vh,46px);position:fixed;left:0;right:0;bottom:0;z-index:69;display:none;height:calc(var(--tkh) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);overflow-x:auto;overflow-y:hidden;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none;background:linear-gradient(180deg,#0e1620f2,#04070cfa);border-top:1px solid #35506b;box-shadow:0 -6px 18px #0009;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 2.5%,#000 97.5%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 2.5%,#000 97.5%,transparent 100%)}
 #ticker::-webkit-scrollbar{display:none}
