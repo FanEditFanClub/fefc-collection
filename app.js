@@ -1504,7 +1504,11 @@ var __spreadValues = (a, b) => {
   tmo("data/folder-sfx.json", 1e4).then((m) => {
     FSFX = m;
     const pre = () => {
-      Object.keys(m._genres || {}).forEach((g) => S.loadFx && S.loadFx(m._genres[g]));
+      Object.keys(m._genres || {}).forEach((g) => {
+        const L = m._genres[g];
+        const V = Array.isArray(L) && L.length && Array.isArray(L[0]) ? L : [L];
+        V.forEach((x) => S.loadFx && S.loadFx(x));
+      });
       Object.keys(m).forEach((k) => Array.isArray(m[k]) && S.loadFx && S.loadFx(m[k]));
       (m._rules || []).forEach((r) => {
         if (!S.loadFx) return;
@@ -1520,11 +1524,17 @@ var __spreadValues = (a, b) => {
   let _gsfx = { k: "", t: 0 };
   function genreSfx(G) {
     if (navBack || !G) return;
-    const L = (FSFX._genres || {})[G];
-    if (!L) return;
+    const raw = (FSFX._genres || {})[G];
+    if (!raw) return;
     const now = Date.now();
     if (_gsfx.k === G && now - _gsfx.t < 1500) return;
-    _gsfx = { k: G, t: now };
+    let L = raw, i = _gsfx.i;
+    if (Array.isArray(raw) && raw.length && Array.isArray(raw[0])) {
+      i = Math.random() * raw.length | 0;
+      if (raw.length > 1 && i === _gsfx.i) i = (i + 1 + (Math.random() * (raw.length - 1) | 0)) % raw.length;
+      L = raw[i];
+    }
+    _gsfx = { k: G, t: now, i };
     if (window.S && S.unlock) try {
       S.unlock();
     } catch (e) {
@@ -1562,7 +1572,10 @@ var __spreadValues = (a, b) => {
     const gm = typeof genreMap === "object" && genreMap && (genreMap[id] || f && genreMap[f.id]) || null;
     if (gm && gm.genres) {
       const g = gm.genres.find((x) => G[x]);
-      if (g) return G[g];
+      if (g) {
+        const L = G[g];
+        return Array.isArray(L) && L.length && Array.isArray(L[0]) ? L[Math.random() * L.length | 0] : L;
+      }
     }
     const names = [];
     let c = f, n = 0;
@@ -1572,7 +1585,10 @@ var __spreadValues = (a, b) => {
     }
     const txt = names.join(" | ");
     for (const [g, rx] of SFX_GENRE_RX) {
-      if (G[g] && rx.test(txt)) return G[g];
+      if (G[g] && rx.test(txt)) {
+        const L = G[g];
+        return Array.isArray(L) && L.length && Array.isArray(L[0]) ? L[Math.random() * L.length | 0] : L;
+      }
     }
     let h = 0;
     for (let i = 0; i < id.length; i++) h = h * 31 + id.charCodeAt(i) >>> 0;
@@ -3907,7 +3923,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.1";
+  const HOME_VER_FALLBACK = "0.8.2";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

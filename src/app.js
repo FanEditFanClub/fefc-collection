@@ -307,11 +307,11 @@ function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supp
 /* ---------- HASH ROUTER ---------- */
 /* per-folder sound effects (data/folder-sfx.json: folder id or name -> files) */
 let FER={};tmo('data/fanedit-ratings.json',10000).then(j=>{FER=(j&&j.items)||{}}).catch(()=>{});
-let FSFX={};tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m._genres||{}).forEach(g=>S.loadFx&&S.loadFx(m._genres[g]));Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{});
+let FSFX={};tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m._genres||{}).forEach(g=>{const L=m._genres[g];const V=Array.isArray(L)&&L.length&&Array.isArray(L[0])?L:[L];V.forEach(x=>S.loadFx&&S.loadFx(x))});Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{});
 let _lastSfxId=null,_lastSfxAt=0,_sandlerLast=-1,_cruiseLast=-1;
 const DIR_IDS={'1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP':1,'1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4':1,'13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v':1,'1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2':1,'1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg':1,'1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o':1,'1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF':1,'1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el':1,'1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t':1,'1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC':1};
 let _gsfx={k:'',t:0};
-function genreSfx(G){if(navBack||!G)return;const L=(FSFX._genres||{})[G];if(!L)return;const now=Date.now();if(_gsfx.k===G&&now-_gsfx.t<1500)return;_gsfx={k:G,t:now};if(window.S&&S.unlock)try{S.unlock()}catch(e){};if(S.fx)S.fx(L)}
+function genreSfx(G){if(navBack||!G)return;const raw=(FSFX._genres||{})[G];if(!raw)return;const now=Date.now();if(_gsfx.k===G&&now-_gsfx.t<1500)return;let L=raw,i=_gsfx.i;if(Array.isArray(raw)&&raw.length&&Array.isArray(raw[0])){i=Math.random()*raw.length|0;if(raw.length>1&&i===_gsfx.i)i=(i+1+(Math.random()*(raw.length-1)|0))%raw.length;L=raw[i]}_gsfx={k:G,t:now,i:i};if(window.S&&S.unlock)try{S.unlock()}catch(e){};if(S.fx)S.fx(L)}
 /* navBack marks a Back/popstate navigation (suppresses sounds, restores scroll). It was only cleared by restoreScroll(), so after Back to a page without it (home, details) every later folder open stayed silent. Always expire it, and clear it on explicit forward navigation (go()). */
 let _bcT=0;function clearBack(){clearTimeout(_bcT);_bcT=setTimeout(()=>{navBack=false},2500)}
 function folderSfx(id){
@@ -328,10 +328,10 @@ const SFX_GENRE_RX=[['Horror',/horror|slasher|nasties|schlock|monster|creepshow|
 /* Last-resort layers so EVERY collection has a clip: (1) the collection's catalogued genre, (2) a genre inferred from its own and its ancestors' names, (3) a deterministic generic projector/clapper/chime sound. */
 function sfxFallback(id,f){const G=FSFX._genres||{};
  const gm=(typeof genreMap==='object'&&genreMap&&(genreMap[id]||(f&&genreMap[f.id])))||null;
- if(gm&&gm.genres){const g=gm.genres.find(x=>G[x]);if(g)return G[g]}
+ if(gm&&gm.genres){const g=gm.genres.find(x=>G[x]);if(g){const L=G[g];return Array.isArray(L)&&L.length&&Array.isArray(L[0])?L[Math.random()*L.length|0]:L}}
  const names=[];let c=f,n=0;while(c&&n++<12){names.push(c.name||'');c=items.get(c.parent)}
  const txt=names.join(' | ');
- for(const [g,rx] of SFX_GENRE_RX){if(G[g]&&rx.test(txt))return G[g]}
+ for(const [g,rx] of SFX_GENRE_RX){if(G[g]&&rx.test(txt)){const L=G[g];return Array.isArray(L)&&L.length&&Array.isArray(L[0])?L[Math.random()*L.length|0]:L}}
  let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return SFX_DEFAULTS[h%SFX_DEFAULTS.length]}
 function sfxResolve(id){
  const f=items.get(id);let L=FSFX[id]||(f&&FSFX[f.name]);
@@ -999,7 +999,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.1';
+const HOME_VER_FALLBACK='0.8.2';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}

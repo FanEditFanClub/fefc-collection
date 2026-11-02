@@ -14,7 +14,11 @@ test('every file referenced by data/folder-sfx.json exists, and id/name keys hol
         const L=r.files||r.file;assert.ok(L&&flat(L).length,'rule '+i+' has no files');
         flat(L).forEach(f=>{if(!exists(f))bad.push('rule '+i+': '+f)})});
     }else if(k==='_genres'){
-      Object.entries(v).forEach(([g,L])=>{assert.ok(Array.isArray(L)&&L.every(x=>typeof x==='string'),'_genres.'+g);L.forEach(f=>{if(!exists(f))bad.push('genre '+g+': '+f)})});
+      // Genres may be a plain path array OR a list-of-lists (multi-variant playlist, same shape as _rules[].file)
+      Object.entries(v).forEach(([g,L])=>{
+        assert.ok(Array.isArray(L)&&flat(L).length,'_genres.'+g);
+        flat(L).forEach(f=>{if(!exists(f))bad.push('genre '+g+': '+f)});
+      });
     }else{
       assert.ok(Array.isArray(v)&&v.every(x=>typeof x==='string'),'key '+k+' must be an array of paths');
       v.forEach(f=>{if(!exists(f))bad.push(k+': '+f)});
@@ -41,7 +45,7 @@ test('every actor and director has a sound',()=>{
 });
 
 test('every genre page has a sound (incl. Uncategorized)',()=>{
-  for(const g of h.allGenres){const L=h.FSFX._genres[g];assert.ok(L&&L.some(exists),'genre '+g+' has no sound')}
+  for(const g of h.allGenres){const L=h.FSFX._genres[g];assert.ok(L&&flat(L).some(exists),'genre '+g+' has no sound')}
 });
 
 test('known pairs resolve to their signature clips',()=>{
