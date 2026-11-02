@@ -1,0 +1,8 @@
+# Cloudflare Pages (direct upload). Large Fire TV APK lives in R2 (Pages file limit is 25 MiB).
+name = "fefc-collection"
+compatibility_date = "2026-10-21"
+pages_build_output_dir = "."
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "fan-edit-media"

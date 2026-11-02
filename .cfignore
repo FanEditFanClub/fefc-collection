@@ -1,0 +1,9 @@
+node_modules
+.git
+firetv/app
+firetv/FEFC-Collection.apk
+shots
+tools/cache
+.wrangler
+__pycache__
+*.apk

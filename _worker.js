@@ -414,12 +414,39 @@ export default {
     if (url.pathname.startsWith('/api/sync/')) {
       try { return await syncApi(req, env, url); } catch (e) { const st = e && e.status || 500; if (st >= 500) console.log('sync error:', String(e && e.message || e).slice(0, 120)); return json({ error: st === 500 ? 'server' : e.message }, st); }
     }
-    // Fire TV APK: tolerate typed links (case, _ vs -, missing .apk, short aliases) and never serve the SPA's HTML for an unknown .apk path
+    // Fire TV APK: tolerate typed aliases; body may live in R2 (MEDIA) or GitHub Releases when >25MiB Pages limit.
     {
       const lp = url.pathname.toLowerCase().replace(/\/+$/, '');
-      if (/^\/(firetv\/fefc[-_ ]?collection(\.apk)?|firetv\/app(\.apk)?|firetv|tv\.apk|tv|fefc\.apk|fefc|apk|app\.apk)$/.test(lp) && !/^\/firetv$/.test(lp) || lp === '/firetv/fefc-collection.apk') {
-        if (url.pathname !== '/firetv/FEFC-Collection.apk') return env.ASSETS.fetch(new Request(new URL('/firetv/FEFC-Collection.apk', url), req));
-      } else if (lp.endsWith('.apk') && url.pathname !== '/firetv/FEFC-Collection.apk') {
+      const wantApk = (/^\/(firetv\/fefc[-_ ]?collection(\.apk)?|firetv\/app(\.apk)?|firetv|tv\.apk|tv|fefc\.apk|fefc|apk|app\.apk)$/.test(lp) && !/^\/firetv$/.test(lp)) || lp === '/firetv/fefc-collection.apk' || url.pathname === '/firetv/FEFC-Collection.apk';
+      if (wantApk) {
+        const apkPath = '/firetv/FEFC-Collection.apk';
+        const headers = { 'content-type': 'application/vnd.android.package-archive', 'cache-control': 'public, max-age=300', 'content-disposition': 'attachment; filename="FEFC-Collection.apk"' };
+        // Prefer R2 binding when configured (wrangler.toml [[r2_buckets]] MEDIA).
+        if (env.MEDIA) {
+          const obj = await env.MEDIA.get('firetv/FEFC-Collection.apk');
+          if (obj) {
+            const h = new Headers(headers);
+            if (obj.httpEtag) h.set('etag', obj.httpEtag);
+            if (obj.size != null) h.set('content-length', String(obj.size));
+            return new Response(obj.body, { status: 200, headers: h });
+          }
+        }
+        // Pages static asset (legacy thin APKs under 25MiB).
+        const asset = await env.ASSETS.fetch(new Request(new URL(apkPath, url), req));
+        if (asset.ok) {
+          const h = new Headers(asset.headers);
+          h.set('content-type', headers['content-type']);
+          h.set('cache-control', headers['cache-control']);
+          return new Response(asset.body, { status: asset.status, headers: h });
+        }
+        // Fallback: proxy GitHub Release asset (same host URL for in-app updater allowlist).
+        const gh = 'https://github.com/FanEditFanClub/fefc-collection/releases/download/firetv-v0.8.7/FEFC-Collection.apk';
+        const up = await fetch(gh, { redirect: 'follow', headers: { 'user-agent': 'FEFC-Pages-APK-Proxy' } });
+        if (!up.ok) return new Response('APK unavailable', { status: 502, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
+        const h = new Headers(headers);
+        const cl = up.headers.get('content-length'); if (cl) h.set('content-length', cl);
+        return new Response(up.body, { status: 200, headers: h });
+      } else if (lp.endsWith('.apk')) {
         return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
       }
     }
