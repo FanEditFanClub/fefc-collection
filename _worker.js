@@ -440,7 +440,7 @@ export default {
           return new Response(asset.body, { status: asset.status, headers: h });
         }
         // Fallback: proxy GitHub Release asset (same host URL for in-app updater allowlist).
-        const gh = 'https://github.com/FanEditFanClub/fefc-collection/releases/download/firetv-v0.8.9/FEFC-Collection.apk';
+        const gh = 'https://github.com/FanEditFanClub/fefc-collection/releases/download/firetv-v0.8.10/FEFC-Collection.apk';
         const up = await fetch(gh, { redirect: 'follow', headers: { 'user-agent': 'FEFC-Pages-APK-Proxy' } });
         if (!up.ok) return new Response('APK unavailable', { status: 502, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
         const h = new Headers(headers);

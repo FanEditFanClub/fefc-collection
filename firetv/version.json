@@ -1,8 +1,8 @@
 {
-    "versionCode": 18,
-    "versionName": "0.8.9",
+    "versionCode": 19,
+    "versionName": "0.8.10",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.9: Performance/reliability \u2014 TV tile thumbs at display size (w320), fetch retry/backoff, D-pad focus SFX debounce, SW unregister on Fire TV + Media3 player prewarm, LocalAssets refresh retry, WebView preraster/black bg, Player prepare crash guard; web defer non-critical JS, SW cache-first for fonts/static assets, content-visibility + less TV overdraw. Player: CC/chapters/scale/audio track (web+TV). No features removed. Web + Fire TV version sync.",
-    "size": 95742065,
-    "sha256": "9324a31811eb0c1447b728153a392234f5f3ac8fce17f91cba3b5a1cdc60b3fb"
+    "notes": "Beta 0.8.10: P0 mosaic fill on Fire TV \u2014 fix #app height (100vh fallback; old WebView lacks dvh), explicit mosaic tile heights (no aspect-ratio collapse), viewport Ht fallback + larger TV ring budget so tiles surround hub top/sides/bottom. Banner/icon full-bleed unchanged. Idle Collection softRefresh unchanged. Artwork local-first counts unchanged. Web + Fire TV sync.",
+    "size": 95742442,
+    "sha256": "fc83b551b0202f6770ba5c4053aa9393e4015daa8b6cfa6dc13d7a4b9d0cc54d"
 }

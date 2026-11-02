@@ -997,7 +997,7 @@ var __spreadValues = (a, b) => {
     const H = $("#home"), hb = $("#hub");
     const _tf = hb.style.transform;
     hb.style.transform = "translate(-50%,-50%)";
-    const W = H.clientWidth, Ht = H.clientHeight, HR = H.getBoundingClientRect(), BR = hb.getBoundingClientRect(), hw = BR.width, hh = BR.height;
+    const W = H.clientWidth || innerWidth || document.documentElement.clientWidth || 960, Ht = H.clientHeight || innerHeight || document.documentElement.clientHeight || 540, HR = H.getBoundingClientRect(), BR = hb.getBoundingClientRect(), hw = BR.width, hh = BR.height;
     const hx = BR.left - HR.left, hy = BR.top - HR.top, g = parseFloat(getComputedStyle(hb).columnGap) || 8;
     const tw = (hw - 2 * g) / 3, th = (hh - 2 * g) / 3;
     const hr = H.getBoundingClientRect(), tr = (() => {
@@ -1017,7 +1017,7 @@ var __spreadValues = (a, b) => {
     hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 2;
-    let budget = fire ? 24 : tv ? 40 : 90;
+    let budget = fire ? 36 : tv ? 48 : 90;
     const cands = [];
     for (let r = -rows; r < 3 + rows; r++) for (let c = -cols; c < 3 + cols; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
@@ -1051,9 +1051,10 @@ var __spreadValues = (a, b) => {
         el._top = (D) => "calc(".concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px - ").concat(Math.max(0, D - 2 * g), "px)");
         el.style.top = el._top(hb._hdr && hb._hdr.D || 2 * g);
       }
-      el.style.height = "auto";
-      el.style.aspectRatio = "16 / 9";
-      el.style.marginTop = (th - tw * 9 / 16) / 2 + "px";
+      const tileH = Math.max(1, Math.round(tw * 9 / 16));
+      el.style.height = tileH + "px";
+      el.style.aspectRatio = "auto";
+      el.style.marginTop = Math.max(0, Math.round((th - tileH) / 2)) + "px";
       el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
       hb.appendChild(el);
       cells.push(el);
@@ -4528,7 +4529,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.9";
+  const HOME_VER_FALLBACK = "0.8.10";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
