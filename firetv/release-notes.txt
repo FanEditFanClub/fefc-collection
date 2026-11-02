@@ -1,1 +1,1 @@
-Intro video plays on Fire TV. Menu button opens search. Check for updates is at the bottom of My List. Home tile art fills the icon.
+Full-bleed Fire TV home tile (opaque black banner). Home D-pad focus plays the same move sound as folders. Larger launcher icon. Reinstall or restart Fire TV if the old tile is cached.

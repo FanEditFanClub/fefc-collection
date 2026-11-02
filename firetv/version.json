@@ -1,8 +1,8 @@
 {
-    "versionCode": 8,
-    "versionName": "1.0.7",
-    "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Intro video plays on Fire TV. Menu button opens search. Check for updates is at the bottom of My List. Home tile art fills the icon.",
-    "size": 139196,
-    "sha256": "9b82f99b7aada32d6d97365d950e31475600ff29cf62f50cfa830b3befa34d0e"
+  "versionCode": 9,
+  "versionName": "1.0.8",
+  "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
+  "notes": "Full-bleed Fire TV home tile (opaque black banner). Home D-pad focus plays the same move sound as folders. Larger launcher icon. Reinstall or restart Fire TV if the old tile is cached.",
+  "size": 59071,
+  "sha256": "59c16679cb544598b37362dd9706c0db2989ab58d91720ad4e21c0cbfd4018e6"
 }

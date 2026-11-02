@@ -2844,7 +2844,7 @@ var __spreadValues = (a, b) => {
     }
   });
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches(".ol-tile,.mi")) S.move();
+    if (e.target.matches(".ol-tile,.mi,.hb,.hint-btn,[data-nav],.tk-i:not(.tk-dup),.gnr,.sortpill")) S.move();
   });
   const SEMANTIC_MAP = {
     space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
