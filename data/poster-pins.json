@@ -23,7 +23,7 @@
     },
     "upinsmoke": {
       "wiki": "Up in Smoke (1978 film)",
-      "title": "Cheech & Chong\u2019s Up in Smoke (1978)"
+      "title": "Cheech & Chong’s Up in Smoke (1978)"
     },
     "madmax-1979": {
       "wiki": "Mad Max",
@@ -176,6 +176,22 @@
     "spy-2015": {
       "tmdb": "movie/238636",
       "title": "Spy (2015)"
+    },
+    "dexter-tv": {
+      "tmdb": "tv/1405",
+      "title": "Dexter (TV series, 2006–2013)"
+    },
+    "dexter-new-blood": {
+      "tmdb": "tv/131927",
+      "title": "Dexter: New Blood (2021)"
+    },
+    "dexter-original-sin": {
+      "tmdb": "tv/219937",
+      "title": "Dexter: Original Sin (2024)"
+    },
+    "dexter-resurrection": {
+      "tmdb": "tv/259909",
+      "title": "Dexter: Resurrection (2025)"
     }
   },
   "rules": [
@@ -381,6 +397,27 @@
       "match": "(?i)^Spy\\b",
       "not": "(?i)Kids|x Family|Who\\b|Game",
       "art": "spy-2015"
+    },
+    {
+      "match": "^Dexter:\\s*Original Sin\\b|^Dexter\\s*-\\s*Original Sin\\b",
+      "art": "dexter-original-sin"
+    },
+    {
+      "match": "^Dexter:\\s*Resurrection\\b|^Dexter\\s*-\\s*Resurrection\\b",
+      "art": "dexter-resurrection"
+    },
+    {
+      "match": "^Dexter:\\s*New Blood\\b|^Dexter\\s*-\\s*New Blood\\b|Dexter.*New Blood",
+      "art": "dexter-new-blood"
+    },
+    {
+      "match": "^Dexter:\\s*Early Cuts\\b|^Dexter\\s*[-–:]\\s*Early Cuts\\b|^Dexter Early Cuts\\b",
+      "art": "dexter-tv"
+    },
+    {
+      "match": "^Dexter\\b",
+      "not": "Lab(oratory)?|Dexter'?s\\s+Lab",
+      "art": "dexter-tv"
     }
   ]
 }
