@@ -1080,7 +1080,15 @@ COVER_PINS={
 ]
 }
 # Manual still overrides (win over COVER_PINS on re-runs). James Bond: Dr. No (1962) gun barrel, en.wikipedia File:Dr_No_trailer.jpg
-COVER_MANUAL={"1DEWGPeFVQYiB-Yj6wYwAWv_jZ4j0fPAQ":"assets/covers/james-bond-gunbarrel.webp"}
+COVER_MANUAL={
+"1DEWGPeFVQYiB-Yj6wYwAWv_jZ4j0fPAQ":"assets/covers/james-bond-gunbarrel.webp",
+# And Not To Yield: was wrongly pinned to House of Cards S5 Netflix trailer (UW8Zyt8SF_U)
+"17IPhh8eXnHgzfxXZmTBpWgy3h63C11t0":"assets/covers/and-not-to-yield.jpg",
+# Cowboy Bebop: Netflix live-action 2021 (TMDB tv/94603), not anime Funimation trailer
+"1rO2aS7sVi0BFX61qVeLphreshCGAatw7":"assets/covers/cowboy-bebop-netflix-2021.jpg",
+# 28 Days folder: clean theatrical poster instead of Official Trailer YouTube frame
+"11mTK_piAwHaTAePeNA5rRoI3MsgOzD8p":"assets/covers/28-days-later.jpg",
+}
 def covers(force=False):
     os.makedirs(os.path.join(D,'..','assets','covers'),exist_ok=True)
     out=json.load(open(os.path.join(D,'folderthumbs.json')))

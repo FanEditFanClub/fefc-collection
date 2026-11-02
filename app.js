@@ -98,6 +98,10 @@ var __spreadValues = (a, b) => {
     if (tvl) {
       document.body.classList.add("tvintro");
       el.classList.add("tvi");
+      if (tg) {
+        tg.style.visibility = "hidden";
+        tg.style.opacity = "0";
+      }
       if (vid) {
         vEl = document.createElement("video");
         vEl.className = "tvi-video";
@@ -1378,11 +1382,21 @@ var __spreadValues = (a, b) => {
     if (!e.target.closest(".rf-in")) rfDismiss();
   });
   const RF_IDS = { "1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk": 1 };
+  function isReadFirst(f) {
+    if (!f) return false;
+    const n = f.name || "";
+    if (/\bread (first|me)\b/i.test(n)) return true;
+    return /^\s*\d{0,2}[A-Z]?\s*-\s*read first\b/i.test(n);
+  }
   function rfKind(f) {
     if (!f || isFolder(f) || isMedia(f)) return null;
     if (/support|patreon|paypal|venmo/i.test(f.name)) return "support";
-    if (/\bread (first|me)\b/i.test(f.name)) return "readfirst";
+    if (isReadFirst(f)) return "readfirst";
     return null;
+  }
+  const RF_HOME_TILE = '<button class="ol-tile rfhome" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>';
+  function stripReadFirst(list) {
+    return list.filter((f) => !isReadFirst(f));
   }
   function openDocTile(f) {
     const k = rfKind(f);
@@ -2095,7 +2109,9 @@ var __spreadValues = (a, b) => {
     shuffle(b.dataset.shuffle);
   });
   function render(list, title, mode) {
-    const fold = list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
+    const _list = cur === ROOT ? stripReadFirst(list) : list;
+    const fold = _list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = _list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
+    const showRF = cur === ROOT && (mode === "all" || mode === "home" || !mode);
     $("#crumb").textContent = title;
     hideHome();
     $("#arena").innerHTML = "";
@@ -2123,7 +2139,8 @@ var __spreadValues = (a, b) => {
       g.className = "sectioned";
       const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === FOLD.tbc || underTBC(cur) || /to be catalogued/i.test(title) ? "tbc" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
-      g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
+      const _rf = cur === ROOT && mode !== "arena" ? RF_HOME_TILE : "";
+      g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/, "$1" + _rf) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach(lazyArt);
     if (mode !== "arena" && !(mode === "all" && cur === ROOT)) drain(Q, isNew);
@@ -2199,6 +2216,8 @@ var __spreadValues = (a, b) => {
   }
   let sortJob = 0;
   function sortedAll(fold, vids2, g, extra) {
+    fold = stripReadFirst(fold);
+    vids2 = stripReadFirst(vids2);
     const k = curSort(), layout = allLayout(), list = [...fold, ...vids2], nm = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" });
     const dt = (f) => NA.d(f) || "", film = (f) => {
       const mm = meta.map && meta.films && meta.films[meta.map[f.id] || meta.map[target(f)]];
@@ -2223,9 +2242,12 @@ var __spreadValues = (a, b) => {
     const job = ++sortJob, q = [];
     if (layout === "sections") {
       const folders = fold.slice().sort(cmp), files = vids2.slice().sort(cmp);
-      g.innerHTML = bar + (folders.length ? '<div class="ol-div"><span>COLLECTIONS</span><i></i><b>'.concat(folders.length, '</b></div><div class="sgrid folds" data-g="cols"></div>') : "") + (files.length ? "<div data-files-slot></div>" : "");
+      g.innerHTML = bar + '<div class="ol-div"><span>COLLECTIONS</span><i></i><b>'.concat(folders.length + 1, '</b></div><div class="sgrid folds" data-g="cols"></div>') + (files.length ? "<div data-files-slot></div>" : "");
       const colEl = g.querySelector('[data-g="cols"]');
-      if (colEl) for (let i = 0; i < folders.length; i += 60) q.push([colEl, folders.slice(i, i + 60)]);
+      if (colEl) {
+        colEl.insertAdjacentHTML("afterbegin", RF_HOME_TILE);
+        for (let i = 0; i < folders.length; i += 60) q.push([colEl, folders.slice(i, i + 60)]);
+      }
       if (files.length) q.push([{ files }, []]);
     } else {
       let groups;
@@ -2816,6 +2838,11 @@ var __spreadValues = (a, b) => {
     }
     const t = e.target.closest(".ol-tile");
     if (t && !t.dataset.genre && !t.classList.contains("link")) {
+      if (t.dataset.rfhome) {
+        S.click();
+        readFirst();
+        return;
+      }
       if (t.dataset.sup) {
         S.click();
         go("#/supportus");
@@ -3991,8 +4018,9 @@ var __spreadValues = (a, b) => {
   if (hints) hints.appendChild(hb);
   const droid = /Android/i.test(ua) && !document.body.classList.contains("tv");
   const upd = () => {
-    const ok = !isStandalone() && (!!window.__bip || ios && !localStorage.fefcIosTipDone || droid);
+    const ok = !isStandalone() && !document.body.classList.contains("tv") && (!!window.__bip || ios && !localStorage.fefcIosTipDone || droid);
     hb.hidden = !ok;
+    hb.setAttribute("aria-hidden", ok ? "false" : "true");
   };
   function doInstall() {
     if (window.__bip) {

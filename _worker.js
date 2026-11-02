@@ -423,6 +423,15 @@ export default {
         return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
       }
     }
-    return env.ASSETS.fetch(req);
+    const res = await env.ASSETS.fetch(req);
+    const path = url.pathname;
+    // Pages advanced-mode (_worker) can ignore _headers; pin no-cache on install-critical assets so Pixel/Chrome PWA can update.
+    if (path === '/sw.js' || path === '/manifest.json' || path === '/' || path === '/index.html' || /\.(?:js|css)$/.test(path)) {
+      const h = new Headers(res.headers);
+      h.set('cache-control', 'no-cache');
+      if (path === '/manifest.json') h.set('content-type', 'application/manifest+json');
+      return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
+    }
+    return res;
   }
 };
