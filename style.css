@@ -1030,3 +1030,11 @@ body.fit #details #lc-eps{max-height:14vh;overflow:hidden}
 body.sp-lock{overscroll-behavior:none}
 
 .fer-h{margin:10px 0 4px;font:700 12px/1 'Source Sans 3',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ff9e3d}body.tv .fer-h{font-size:1.5vh;margin:1vh 0 .4vh}
+
+/* Fire TV remote glyphs in the bottom hint bar (Back arrow, Menu = three lines). Gamepad Y/B stay on other TVs. */
+body.firetv #hints .g-ftv{width:1.85em;height:1.35em;border-radius:5px;background:linear-gradient(180deg,#4a4a4a,#161616);color:#fff;box-shadow:inset 0 1px 0 #ffffff55,0 0 0 1px #000,0 1px 2px #000}
+body.firetv #hints .g-ftv svg{width:78%;height:78%;display:block}
+.ml-upd-wrap{display:flex;justify-content:center;padding:28px 12px 40px}
+.ml-upd{border:2px solid #6d7c8f;border-radius:8px;background:#1a1f28;font-size:16px;padding:10px 22px}
+body.tv .ml-upd{font-size:2.1vh;min-height:48px;padding:1vh 2.6vh}
+body.tv .ml-upd:focus,body.tv .ml-upd:focus-visible{outline:0;color:#000;background:linear-gradient(180deg,#fff,#cfe9ff);box-shadow:0 0 0 4px #fff,0 0 0 8px #2fa8ff}

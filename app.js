@@ -90,7 +90,7 @@ var __spreadValues = (a, b) => {
     const tg = $("#tagline");
     const tvl = tv && !P.get("fullintro") && !P.get("introframe") && !short;
     const vid = tvl && !P.get("novideo");
-    let vfb = false, vEl = null, tEnd = vid ? 26.1 : TVI.end;
+    let vfb = false, vEl = null, tEnd = vid ? 26.2 : TVI.end;
     const tviLayers = () => {
       el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
       requestAnimationFrame(() => requestAnimationFrame(() => document.body.classList.add("tg-run")));
@@ -101,8 +101,9 @@ var __spreadValues = (a, b) => {
       if (vid) {
         vEl = document.createElement("video");
         vEl.className = "tvi-video";
-        vEl.src = "assets/intro-tv.mp4?v=1";
+        vEl.src = "assets/intro-tv.mp4?v=2";
         vEl.setAttribute("playsinline", "");
+        vEl.playsInline = true;
         vEl.preload = "auto";
         vEl.disablePictureInPicture = true;
         el.prepend(vEl);
@@ -211,6 +212,7 @@ var __spreadValues = (a, b) => {
     const fd = [];
     let pn = 0, dg = 0;
     const loop = (now) => {
+      if (vid && !vfb && vEl && vEl.ended) return end(false);
       if (tvl && ia) {
         const r0 = (now - t0) / 1e3;
         if (r0 > tEnd - 1) try {
@@ -1109,7 +1111,7 @@ var __spreadValues = (a, b) => {
     const g = $("#grid");
     g.className = "sectioned mylist";
     const vids_ = (a) => a.filter((f) => !isFolder(f)), fold_ = (a) => a.filter(isFolder);
-    g.innerHTML = '<div id="ml-sync"></div>' + secHTML("vids", "HISTORY", H, H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "") + (H.length ? "" : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
+    g.innerHTML = '<div id="ml-sync"></div>' + secHTML("vids", "HISTORY", H, H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "") + (H.length ? "" : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>' + (document.body.classList.contains("tv") && window.FEFCNative && typeof FEFCNative.checkUpdate === "function" ? '<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>' : "");
     if (window.FEFCSync) {
       const c = $("#ml-sync");
       c && FEFCSync.subscribe && 0;
@@ -1121,6 +1123,13 @@ var __spreadValues = (a, b) => {
     if (!b) return;
     S.click();
     const k = b.dataset.ml;
+    if (k === "update") {
+      try {
+        window.FEFCNative && FEFCNative.checkUpdate();
+      } catch (err) {
+      }
+      return;
+    }
     if (k === "clear") {
       if (confirm("Clear your watch history?")) UD.clearHistory();
     } else {
@@ -1307,7 +1316,8 @@ var __spreadValues = (a, b) => {
       return;
     }
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
-    if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403) {
+    const menuKey = e.key === "Menu" || e.key === "ContextMenu" || e.keyCode === 93 || e.keyCode === 82 && e.key !== "r" && e.key !== "R";
+    if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403 || menuKey) {
       e.preventDefault();
       doSearch();
     } else if (e.key === "m" || e.key === "M" || e.keyCode === 404) {
@@ -2176,9 +2186,16 @@ var __spreadValues = (a, b) => {
     const m = location.hash.match(/[?&]sort=([a-z]+)/);
     return m && SORTS.some((s) => s[0] === m[1]) ? m[1] : "az";
   }
+  function allLayout() {
+    try {
+      return localStorage.getItem("fefcAllLayout") === "mixed" ? "mixed" : "sections";
+    } catch (e) {
+      return "sections";
+    }
+  }
   let sortJob = 0;
   function sortedAll(fold, vids2, g, extra) {
-    const k = curSort(), list = [...fold, ...vids2], nm = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" });
+    const k = curSort(), layout = allLayout(), list = [...fold, ...vids2], nm = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" });
     const dt = (f) => NA.d(f) || "", film = (f) => {
       const mm = meta.map && meta.films && meta.films[meta.map[f.id] || meta.map[target(f)]];
       return mm && mm.title || (isFolder(f) ? f.name.replace(/^\s*\d+[A-Z]?\s*-\s*/, "") : parse(f.name).film) || f.name;
@@ -2186,43 +2203,88 @@ var __spreadValues = (a, b) => {
       const x = isFolder(f) ? (genreMap[target(f)] || {}).genres : genresOf(f);
       return x && x[0] || "Uncategorized";
     };
-    let groups;
-    if (k === "az" || k === "za") {
-      list.sort(k === "az" ? nm : (a, b) => nm(b, a));
-      const L = (f) => {
-        const c = (f.name || "").trim().charAt(0).normalize("NFD").charAt(0).toUpperCase();
-        return /[A-Z]/.test(c) ? c : "#";
-      };
-      const by = /* @__PURE__ */ new Map();
-      list.forEach((f) => {
-        const x = L(f);
-        if (!by.has(x)) by.set(x, []);
-        by.get(x).push(f);
-      });
-      groups = [...by.entries()].map(([x, a]) => [x, a, 1]);
-    } else if (k === "newest" || k === "oldest") {
-      const s = k === "newest" ? -1 : 1;
-      groups = [["", list.sort((a, b) => (dt(a) < dt(b) ? -s : dt(a) > dt(b) ? s : 0) || nm(a, b))]];
-    } else if (k === "size") groups = [["", list.sort((a, b) => (+b.size || 0) - (+a.size || 0) || nm(a, b))]];
-    else {
-      const by = /* @__PURE__ */ new Map(), key = k === "film" ? film : gen;
-      list.forEach((f) => {
-        const x = key(f);
-        if (!by.has(x)) by.set(x, []);
-        by.get(x).push(f);
-      });
-      groups = [...by.entries()].sort((a, b) => (a[0] === "Uncategorized") - (b[0] === "Uncategorized") || a[0].localeCompare(b[0], void 0, { sensitivity: "base" })).map(([x, a]) => [x, a.sort(nm)]);
-    }
-    const bar = '<div class="sortbar" role="toolbar" aria-label="Sort">'.concat(extra || "").concat(SORTS.map(([v, l]) => '<button class="sortpill'.concat(v === k ? " on" : "", '" data-sort="').concat(v, '" aria-pressed="').concat(v === k, '">').concat(l, "</button>")).join(""), "</div>");
-    g.innerHTML = bar + groups.map(([x, a, lt], n) => (x ? '<div class="ol-div'.concat(lt ? " letter" : "", '" id="').concat(lt ? "L-" + (x === "#" ? "num" : x) : "", '"><span>').concat(esc(x), "</span><i></i><b>").concat(a.length, "</b></div>") : "") + '<div class="sgrid folds" data-g="'.concat(n, 'f"></div><div class="sgrid vids" data-g="').concat(n, 'v"></div>')).join("");
+    const cmp = (a, b) => {
+      if (k === "az") return nm(a, b);
+      if (k === "za") return nm(b, a);
+      if (k === "newest" || k === "oldest") {
+        const s = k === "newest" ? -1 : 1;
+        return (dt(a) < dt(b) ? -s : dt(a) > dt(b) ? s : 0) || nm(a, b);
+      }
+      if (k === "size") return (+b.size || 0) - (+a.size || 0) || nm(a, b);
+      const x = k === "film" ? film(a) : gen(a), y = k === "film" ? film(b) : gen(b);
+      return (x === "Uncategorized") - (y === "Uncategorized") || x.localeCompare(y, void 0, { sensitivity: "base" }) || nm(a, b);
+    };
+    const layoutBtn = '<button class="sortpill'.concat(layout === "mixed" ? " on" : "", '" data-layout="1" aria-pressed="').concat(layout === "mixed", '" title="Mixed lists folders and files together. Off: all collections, then all files.">Mixed</button>');
+    const bar = '<div class="sortbar" role="toolbar" aria-label="Sort">'.concat(extra || "").concat(SORTS.map(([v, l]) => '<button class="sortpill'.concat(v === k ? " on" : "", '" data-sort="').concat(v, '" aria-pressed="').concat(v === k, '">').concat(l, "</button>")).join("")).concat(layoutBtn, "</div>");
     const job = ++sortJob, q = [];
-    groups.forEach(([x, a], n) => {
-      [["f", a.filter((f) => !isMedia(f))], ["v", a.filter((f) => isMedia(f))]].forEach(([t, b]) => {
-        const el = g.querySelector('[data-g="'.concat(n).concat(t, '"]'));
-        if (!b.length) el.remove();
-        for (let i = 0; i < b.length; i += 60) q.push([el, b.slice(i, i + 60)]);
+    if (layout === "sections") {
+      const folders = fold.slice().sort(cmp), files = vids2.slice().sort(cmp);
+      g.innerHTML = bar + (folders.length ? '<div class="ol-div"><span>COLLECTIONS</span><i></i><b>'.concat(folders.length, '</b></div><div class="sgrid folds" data-g="cols"></div>') : "") + (files.length ? "<div data-files-slot></div>" : "");
+      const colEl = g.querySelector('[data-g="cols"]');
+      if (colEl) for (let i = 0; i < folders.length; i += 60) q.push([colEl, folders.slice(i, i + 60)]);
+      if (files.length) q.push([{ files }, []]);
+    } else {
+      let groups;
+      if (k === "az" || k === "za") {
+        list.sort(k === "az" ? nm : (a, b) => nm(b, a));
+        const L = (f) => {
+          const c = (f.name || "").trim().charAt(0).normalize("NFD").charAt(0).toUpperCase();
+          return /[A-Z]/.test(c) ? c : "#";
+        };
+        const by = /* @__PURE__ */ new Map();
+        list.forEach((f) => {
+          const x = L(f);
+          if (!by.has(x)) by.set(x, []);
+          by.get(x).push(f);
+        });
+        groups = [...by.entries()].map(([x, a]) => [x, a, 1]);
+      } else if (k === "newest" || k === "oldest") {
+        const s = k === "newest" ? -1 : 1;
+        groups = [["", list.sort((a, b) => (dt(a) < dt(b) ? -s : dt(a) > dt(b) ? s : 0) || nm(a, b))]];
+      } else if (k === "size") groups = [["", list.sort((a, b) => (+b.size || 0) - (+a.size || 0) || nm(a, b))]];
+      else {
+        const by = /* @__PURE__ */ new Map(), key = k === "film" ? film : gen;
+        list.forEach((f) => {
+          const x = key(f);
+          if (!by.has(x)) by.set(x, []);
+          by.get(x).push(f);
+        });
+        groups = [...by.entries()].sort((a, b) => (a[0] === "Uncategorized") - (b[0] === "Uncategorized") || a[0].localeCompare(b[0], void 0, { sensitivity: "base" })).map(([x, a]) => [x, a.sort(nm)]);
+      }
+      g.innerHTML = bar + groups.map(([x, a, lt], n) => (x ? '<div class="ol-div'.concat(lt ? " letter" : "", '" id="').concat(lt ? "L-" + (x === "#" ? "num" : x) : "", '"><span>').concat(esc(x), "</span><i></i><b>").concat(a.length, "</b></div>") : "") + '<div class="sgrid folds" data-g="'.concat(n, 'f"></div><div class="sgrid vids" data-g="').concat(n, 'v"></div>')).join("");
+      groups.forEach(([x, a], n) => {
+        [["f", a.filter((f) => !isMedia(f))], ["v", a.filter((f) => isMedia(f))]].forEach(([t, b]) => {
+          const el = g.querySelector('[data-g="'.concat(n).concat(t, '"]'));
+          if (!b.length) el.remove();
+          for (let i = 0; i < b.length; i += 60) q.push([el, b.slice(i, i + 60)]);
+        });
       });
-    });
+    }
+    const next = () => {
+      const item = q.shift();
+      if (!item) return null;
+      if (item[0] && item[0].files) {
+        const files = item[0].files, slot = g.querySelector("[data-files-slot]");
+        if (slot) {
+          slot.outerHTML = '<div class="ol-div"><span>FILES</span><i></i><b>'.concat(files.length, '</b></div><div class="sgrid vids" data-g="files"></div>');
+          const el = g.querySelector('[data-g="files"]');
+          const chunks = [];
+          for (let i = 0; i < files.length; i += 60) chunks.push([el, files.slice(i, i + 60)]);
+          for (let i = chunks.length - 1; i >= 0; i--) q.unshift(chunks[i]);
+        }
+        return next();
+      }
+      return item;
+    };
+    const paint = (item) => {
+      if (!item || !item[0] || !item[0].insertAdjacentHTML) return;
+      const [el, a] = item;
+      el.insertAdjacentHTML("beforeend", a.map((f) => tile(f)).join(""));
+      el.querySelectorAll(".ol-tile:not([data-arted])").forEach((e) => {
+        e.dataset.arted = 1;
+        lazyArt(e);
+      });
+    };
     const step = () => {
       if (job !== sortJob || !q.length) return;
       if (!tvGate()) {
@@ -2230,32 +2292,13 @@ var __spreadValues = (a, b) => {
         return;
       }
       const t = Date.now();
-      while (q.length && Date.now() - t < 12 && tvGate()) {
-        const [el, a] = q.shift();
-        el.insertAdjacentHTML("beforeend", a.map((f) => tile(f)).join(""));
-        el.querySelectorAll(".ol-tile:not([data-arted])").forEach((e) => {
-          e.dataset.arted = 1;
-          lazyArt(e);
-        });
-      }
+      while (q.length && Date.now() - t < 12 && tvGate()) paint(next());
       if (q.length) tvGate() ? requestAnimationFrame(step) : setTimeout(step, 300);
     };
-    const first = q.shift();
-    if (first) {
-      first[0].insertAdjacentHTML("beforeend", first[1].map((f) => tile(f)).join(""));
-      first[0].querySelectorAll(".ol-tile").forEach((e) => {
-        e.dataset.arted = 1;
-        lazyArt(e);
-      });
-    }
+    paint(next());
     drainOne = () => {
       if (job !== sortJob || !q.length) return false;
-      const [el, a] = q.shift();
-      el.insertAdjacentHTML("beforeend", a.map((f) => tile(f)).join(""));
-      el.querySelectorAll(".ol-tile:not([data-arted])").forEach((e) => {
-        e.dataset.arted = 1;
-        lazyArt(e);
-      });
+      paint(next());
       return true;
     };
     requestAnimationFrame(step);
@@ -2273,6 +2316,22 @@ var __spreadValues = (a, b) => {
       const n = document.querySelector('[data-sort="'.concat(b.dataset.sort, '"]'));
       if (n) focusEl(n);
     }, 30);
+  });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-layout]");
+    if (!b) return;
+    e.preventDefault();
+    try {
+      localStorage.setItem("fefcAllLayout", allLayout() === "mixed" ? "sections" : "mixed");
+    } catch (_) {
+    }
+    S.click && S.click();
+    const sy = $("#main") ? $("#main").scrollTop : 0;
+    open(ROOT, "all").then(() => {
+      $("#main").scrollTop = sy;
+      const n = document.querySelector("[data-layout]");
+      if (n) focusEl(n);
+    });
   });
   async function omdb(title, year) {
     if (!C.OMDB_API_KEY) return null;
@@ -2915,7 +2974,7 @@ var __spreadValues = (a, b) => {
     openSpot("");
   }));
   setTimeout(sm2, 0);
-  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap,.tk-i:not(.tk-dup)";
+  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#ml-update,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap,.tk-i:not(.tk-dup)";
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -3031,7 +3090,7 @@ var __spreadValues = (a, b) => {
   function tvRows() {
     const c = [$("#arena"), $("#grid")].find((x) => x && !x.hidden && x.getClientRects().length);
     if (!c) return null;
-    const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
+    const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more,#ml-update")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
     els.forEach((e) => {
       const g = e.closest(".sgrid") || e.parentElement;
       if (!groups.has(g)) groups.set(g, []);
@@ -3133,14 +3192,14 @@ var __spreadValues = (a, b) => {
   document.addEventListener("click", () => {
     tvGoalX = null;
   }, true);
-  let lastTile = null;
+  let lastTile = null, lastDet = null;
   const barItems = () => [].slice.call(document.querySelectorAll("#bar .mi,#bar #tvq,#bar #q,#bar #aiq")).filter((x) => x.offsetParent && !x.hidden && getComputedStyle(x).display !== "none");
   const menuCurrent = () => {
     const L = barItems();
     return document.querySelector("#menu .mi.on") || L.find((x) => x.closest("#menu")) || L[0];
   };
   const inBar = (el) => el && el.closest && el.closest("#bar");
-  const pageVisible = () => $("#home").hidden && $("#player").hidden && $("#bar").offsetHeight > 0;
+  const pageVisible = () => $("#player").hidden && $("#bar").offsetHeight > 0 && ($("#home").hidden || !$("#details").hidden);
   function toMenu() {
     const m = menuCurrent();
     if (m) {
@@ -3151,12 +3210,28 @@ var __spreadValues = (a, b) => {
     return false;
   }
   function toGrid() {
+    if (!$("#details").hidden) {
+      const t2 = lastDet && lastDet.isConnected && lastDet.offsetParent ? lastDet : document.querySelector('#details .bigplay,#details [data-act="play"],#details .pill');
+      if (t2) {
+        focusEl(t2);
+        return true;
+      }
+    }
     const t = lastTile && document.contains(lastTile) && lastTile.offsetParent ? lastTile : document.querySelector("#details:not([hidden]) [data-act],#arena .ol-tile,#grid .ol-tile");
     if (t) {
       focusEl(t);
       return true;
     }
     return false;
+  }
+  function focusAbove(scope, el) {
+    if (!scope || !el || !el.getClientRects().length) return false;
+    const r = el.getBoundingClientRect();
+    return [].some.call(scope.querySelectorAll(FOC), (e) => {
+      if (e === el || !e.getClientRects().length || getComputedStyle(e).visibility === "hidden") return false;
+      const q = e.getBoundingClientRect();
+      return q.width > 0 && q.height > 0 && q.bottom <= r.top + 4;
+    });
   }
   addEventListener("keydown", (e) => {
     if (!pageVisible()) return;
@@ -3195,7 +3270,7 @@ var __spreadValues = (a, b) => {
         e.stopImmediatePropagation();
         return;
       }
-      if (k === 13 && a.matches("button")) {
+      if ((k === 13 || k === 23) && a.matches("button")) {
         e.preventDefault();
         e.stopImmediatePropagation();
         S.unlock();
@@ -3203,6 +3278,18 @@ var __spreadValues = (a, b) => {
         return;
       }
       return;
+    }
+    if (!$("#details").hidden && a && a.closest && a.closest("#details")) {
+      if (k === 38 && !focusAbove($("#details"), a)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        toMenu();
+        return;
+      }
+      if (k >= 37 && k <= 40) {
+        e.preventDefault();
+        return;
+      }
     }
     const tile2 = a && a.closest && a.closest(".ol-tile");
     if (tile2) lastTile = tile2;
@@ -3231,6 +3318,7 @@ var __spreadValues = (a, b) => {
   document.addEventListener("focusin", (e) => {
     const t = e.target.closest && e.target.closest(".ol-tile");
     if (t) lastTile = t;
+    if (e.target.closest && e.target.closest("#details") && e.target.matches && e.target.matches(FOC)) lastDet = e.target;
   });
   (function() {
     const b = document.createElement("button");
@@ -3704,6 +3792,21 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
+  if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
+    document.body.classList.add("firetv");
+    const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20 11H7.83l4.58-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H20v-2z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>';
+    const backI = document.querySelector("#hints .hb-back .g"), searchI = document.querySelector("#hints .hb-search .g");
+    if (backI) {
+      backI.className = "g g-ftv g-ftv-back";
+      backI.setAttribute("aria-hidden", "true");
+      backI.innerHTML = BK;
+    }
+    if (searchI) {
+      searchI.className = "g g-ftv g-ftv-menu";
+      searchI.setAttribute("aria-hidden", "true");
+      searchI.innerHTML = MN;
+    }
+  }
   document.addEventListener("keydown", () => document.body.classList.add("kbd"), { once: true });
   intro();
   if (C.GOOGLE_API_KEY) {

@@ -11,8 +11,8 @@ android {
         applicationId 'com.faneditfanclub.collection'
         minSdk 22
         targetSdk 33
-        versionCode 7
-        versionName '1.0.6'
+        versionCode 8
+        versionName '1.0.7'
         // The live site URL; the app always loads this, so web changes need no reinstall.
         buildConfigField 'String', 'START_URL', '"https://collection.faneditfanclub.com/?tv=1"'
     }

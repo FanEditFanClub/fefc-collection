@@ -1,2 +1,1 @@
-In-app updates: the app now checks for new versions when it starts and can update itself.
-Faster start of the native player.
+Intro video plays on Fire TV. Menu button opens search. Check for updates is at the bottom of My List. Home tile art fills the icon.

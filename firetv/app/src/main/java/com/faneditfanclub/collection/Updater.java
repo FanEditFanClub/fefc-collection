@@ -31,10 +31,11 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * In-app updater. On launch it fetches /firetv/version.json (no cache); if versionCode is higher than the installed one it shows a
- * D-pad friendly Update / Later dialog, downloads the APK to the app's external files dir with a progress bar, verifies it
- * (package name, signing certificate, size/sha256) and hands it to the system installer through ApkProvider.
- * The APK must be signed with the same key as the installed app, otherwise Android refuses the update: that is also what keeps it safe.
+ * In-app updater. On launch it fetches /firetv/version.json (no cache) in the background while the site intro plays.
+ * The Update / Later dialog is shown only after the intro has finished, and only when versionCode is higher than the installed one.
+ * A manual check (My List → Check for updates) reports the result immediately. The download goes to the app's external files dir
+ * with a progress bar, then the file is verified (package name, signing certificate, size/sha256) and handed to the system
+ * installer through ApkProvider. The APK must be signed with the same key as the installed app, otherwise Android refuses the update.
  */
 final class Updater {
     static final String VERSION_URL = "https://collection.faneditfanclub.com/firetv/version.json";
@@ -46,7 +47,21 @@ final class Updater {
     private Dialog dlg;
     private UpdateLogic.Info pending;       // waiting for the "install unknown apps" permission
     private AtomicBoolean cancel = new AtomicBoolean(false);
-    private volatile boolean busy;
+    private volatile boolean prefetching;
+    private volatile boolean prefetchDone;
+    private UpdateLogic.Info prefetched;
+    /** Set when the intro has ended but the version.json fetch is still in flight. */
+    private volatile boolean revealWhenReady;
+    /** The automatic launch prompt has already been shown (or decided) for this process. */
+    private boolean autoShown;
+    /** A manual check arrived while the launch fetch was still running. */
+    private boolean manualPending;
+    /** User asked during the intro; show their result (including the "up to date" toast) when the intro ends. */
+    private boolean manualWaiting;
+    /** True after prefetch() so a manual check during the intro is held instead of covering it. */
+    private boolean launchSequence;
+    /** revealAfterIntro has run: the intro is gone and dialogs are allowed. */
+    private boolean introCleared;
 
     Updater(Activity a) {
         act = a;
@@ -55,10 +70,55 @@ final class Updater {
 
     // ---------------------------------------------------------------- check
 
-    /** @param manual true = the user asked (tell them when there is nothing new); false = silent check on launch. */
+    /**
+     * Start the version.json fetch immediately. Does not show a dialog.
+     * Call this as the activity starts so the check overlaps the intro.
+     */
+    void prefetch() {
+        launchSequence = true;
+        startFetch(false);
+    }
+
+    /**
+     * Intro has finished. Show the update dialog if the background check found one.
+     * If the check is still running, the dialog waits for it. Never call this while the intro is on screen.
+     */
+    void revealAfterIntro() {
+        if (act.isFinishing()) return;
+        introCleared = true;
+        if (!prefetchDone) { revealWhenReady = true; return; }
+        if (autoShown) return;
+        finishLaunchCheck();
+    }
+
+    /** Show the launch result once. A manual ask (My List) gets a toast when nothing is new; the automatic path stays quiet. */
+    private void finishLaunchCheck() {
+        if (autoShown || act.isFinishing()) return;
+        autoShown = true;
+        revealWhenReady = false;
+        boolean manual = manualWaiting;
+        manualWaiting = false;
+        deliver(prefetched, manual);
+    }
+
+    /** @param manual true = the user asked (tell them when there is nothing new); false = silent check. */
     void check(final boolean manual) {
-        if (busy) return;
-        busy = true;
+        if (!manual) { startFetch(false); return; }
+        if (prefetching) { manualPending = true; return; }
+        if (prefetchDone) {
+            if (launchSequence && !introCleared) { manualWaiting = true; return; }
+            deliver(prefetched, true);
+            return;
+        }
+        startFetch(true);
+    }
+
+    private void startFetch(final boolean manual) {
+        if (prefetching) {
+            if (manual) manualPending = true;
+            return;
+        }
+        prefetching = true;
         cleanOld();
         new Thread(() -> {
             UpdateLogic.Info i = null;
@@ -67,12 +127,27 @@ final class Updater {
             } catch (Exception ignored) { /* offline / 404: stay silent */ }
             final UpdateLogic.Info found = i;
             ui.post(() -> {
-                busy = false;
+                prefetching = false;
+                prefetchDone = true;
+                prefetched = found;
                 if (act.isFinishing()) return;
-                if (UpdateLogic.isNewer(found, BuildConfig.VERSION_CODE)) prompt(found);
-                else if (manual) Toast.makeText(act, found == null ? "Couldn't check for updates" : "You have the latest version", Toast.LENGTH_LONG).show();
+                if (manualPending) { manualPending = false; manualWaiting = true; }
+                if (manual) {
+                    // A check the user started themselves. Hold it only when the launch intro is still on screen.
+                    if (launchSequence && !introCleared) { manualWaiting = true; return; }
+                    deliver(found, true);
+                    autoShown = true;
+                    return;
+                }
+                if (introCleared || revealWhenReady) finishLaunchCheck();
             });
         }, "fefc-update-check").start();
+    }
+
+    private void deliver(UpdateLogic.Info found, boolean manual) {
+        if (act.isFinishing()) return;
+        if (UpdateLogic.isNewer(found, BuildConfig.VERSION_CODE)) prompt(found);
+        else if (manual) Toast.makeText(act, found == null ? "Couldn't check for updates" : "You have the latest version", Toast.LENGTH_LONG).show();
     }
 
     /** Delete downloaded APKs that are no longer newer than what is installed (after a successful update) and stale .part files. */
