@@ -94,7 +94,9 @@ var __spreadValues = (a, b) => {
   }
   const _fetchOnce = (u, ms) => fetchJsonSmart(u, ms);
   function thumbSz() {
-    return (typeof isTvEnv === "function" ? isTvEnv() : false) || document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative ? "w320" : "w640";
+    const low = document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite");
+    const tv = (typeof isTvEnv === "function" ? isTvEnv() : false) || document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative;
+    return low ? "w160" : tv ? "w320" : "w640";
   }
   const tmo = (u, ms, tries) => {
     tries = tries == null ? 2 : tries;
@@ -114,6 +116,73 @@ var __spreadValues = (a, b) => {
   if (window.FEFCNative && P.get("nointro")) {
     document.body.classList.add("firetv", "native-waiting");
   }
+  window.__fefcPerfOn = function() {
+    try {
+      if (P.get("noperf") === "1" || P.get("perf") === "0") return false;
+      if (P.get("perf") === "1") return true;
+      const ls = localStorage.fefcPerf;
+      if (ls === "0") return false;
+      if (ls === "1") return true;
+    } catch (e) {
+    }
+    return !!(document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative);
+  };
+  window.__fefcApplyPerf = function(on) {
+    const b = document.body.classList;
+    if (on) {
+      b.add("perf");
+      try {
+        localStorage.fefcPerf = "1";
+      } catch (e) {
+      }
+    } else {
+      b.remove("perf");
+      try {
+        localStorage.fefcPerf = "0";
+      } catch (e) {
+      }
+    }
+    try {
+      window.dispatchEvent(new CustomEvent("fefc-perf", { detail: { on: !!on } }));
+    } catch (e) {
+    }
+  };
+  if (window.__fefcPerfOn()) document.body.classList.add("perf");
+  (function applyTier() {
+    try {
+      let t = null;
+      const q = new URLSearchParams(location.search).get("tier");
+      if (q && /^(LOW|MID|HIGH)$/i.test(q)) t = { tier: q.toUpperCase(), videoTiles: q.toUpperCase() === "HIGH" ? 12 : q.toUpperCase() === "MID" ? 4 : 2, reduceEffects: q.toUpperCase() === "LOW" };
+      else if (window.FEFCNative && FEFCNative.deviceTier) {
+        try {
+          t = JSON.parse(FEFCNative.deviceTier());
+        } catch (e) {
+        }
+      }
+      if (!t || !t.tier) return;
+      window.__fefcTier = t;
+      const b = document.body.classList;
+      b.remove("tier-low", "tier-mid", "tier-high", "tier-lite");
+      b.add("tier-" + String(t.tier).toLowerCase());
+      if (t.reduceEffects) b.add("tier-lite");
+      try {
+        document.documentElement.dataset.tier = t.tier;
+      } catch (e) {
+      }
+    } catch (e) {
+    }
+  })();
+  (function() {
+    try {
+      const fire = !!(window.FEFCNative || /\bFEFCFireTV\b|\bAFT\w|Fire TV/i.test(navigator.userAgent));
+      if (!fire && !document.body.classList.contains("tv")) return;
+      const w = Math.max(screen.width || 0, screen.height || 0, innerWidth || 0);
+      if (w < 1800 && !(window.devicePixelRatio > 1.5 && Math.max(innerWidth, innerHeight) >= 1080 && fire)) return;
+      const m = document.querySelector("meta[name=viewport]");
+      if (m) m.setAttribute("content", "width=1920,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover");
+    } catch (e) {
+    }
+  })();
   window.__fefcHomePaintReady = false;
   window.__fefcMarkHomeReady = function() {
     if (window.__fefcHomePaintReady) return;
@@ -1115,6 +1184,7 @@ var __spreadValues = (a, b) => {
     const M = $("#mosaic");
     const tv = document.body.classList.contains("tv");
     const fire = tv && (document.body.classList.contains("firetv") || window.FEFCNative);
+    const perf = document.body.classList.contains("perf");
     const n = fire ? 14 : tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
     let pool = mosaicList.length ? mosaicList.slice() : vids().slice(0, 40).map((f) => ({ id: f.id, target: target(f), name: f.name }));
     M.innerHTML = "";
@@ -1143,7 +1213,8 @@ var __spreadValues = (a, b) => {
     hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 2;
-    let budget = fire ? 36 : tv ? 48 : 90;
+    const lowTier = document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite");
+    let budget = lowTier ? 12 : perf ? fire ? 18 : tv ? 22 : 60 : fire ? 36 : tv ? 48 : 90;
     const cands = [];
     for (let r = -rows; r < 3 + rows; r++) for (let c = -cols; c < 3 + cols; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
@@ -1170,6 +1241,9 @@ var __spreadValues = (a, b) => {
       const { r, c, toprow, above, ex, ey } = o;
       const el = document.createElement("div");
       el.className = "mc";
+      const _dr = r < 0 ? -r : Math.max(0, r - 2), _dc2 = c < 0 ? -c : Math.max(0, c - 2);
+      el._ring = Math.max(_dr, _dc2) || 1;
+      el.dataset.ring = String(el._ring);
       el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);top:calc(").concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px);width:calc((100% - ").concat(2 * g, "px) / 3);height:calc((100% - ").concat(2 * g, "px) / 3)");
       if (above) {
         if (toprow) el.classList.add("toprow");
@@ -1189,13 +1263,15 @@ var __spreadValues = (a, b) => {
     if (hb._hdr) {
       hb._g = g;
       const D = hb._hdr.D;
-      let bb = 12;
+      let bb = perf ? 4 : 12;
       for (let c = -cols; c < 3 + cols && bb > 0; c++) {
         if (c >= 0 && c <= 2) continue;
         const ex = c < 0 ? -g : c > 2 ? g : 0, x = hx + c * (tw + g) + ex;
         if (x + tw < -tw * 0.6 || x > W + tw * 0.6) continue;
         const el = document.createElement("div");
         el.className = "mc band";
+        el._ring = 2;
+        el.dataset.ring = "2";
         el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);width:calc((100% - ").concat(2 * g, "px) / 3);top:").concat(-(D - g), "px;height:").concat(Math.max(0, D - 2 * g), "px");
         el._tw = tw;
         bandFit(el, D, g);
@@ -1212,7 +1288,7 @@ var __spreadValues = (a, b) => {
       const L = layers[on];
       if (v) {
         const ps = posters[v.id] || posters[v.target];
-        L.src = ps && ps.url && String(ps.url).startsWith("assets/") ? ps.url : "https://drive.google.com/thumbnail?sz=" + (fire ? "w240" : "w480") + "&id=" + v.target;
+        L.src = ps && ps.url && String(ps.url).startsWith("assets/") ? ps.url : "https://drive.google.com/thumbnail?sz=" + (document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite") ? "w160" : fire || perf ? "w240" : "w480") + "&id=" + v.target;
         c.dataset.id = v.id;
       } else {
         c.style.background = "radial-gradient(circle at 60% 30%,hsl(" + (Math.random() * 360 | 0) + " 70% 45%),#050a14 80%)";
@@ -1220,7 +1296,13 @@ var __spreadValues = (a, b) => {
       L.style.animationName = "none";
       void L.offsetWidth;
       L.style.animationName = "";
-      L.className = (on ? "mi2" : "mi1") + " kb" + (Math.random() * 4 | 0);
+      if (perf) {
+        L.className = on ? "mi2" : "mi1";
+        L.style.transform = "none";
+        L.style.willChange = "auto";
+      } else {
+        L.className = (on ? "mi2" : "mi1") + " kb" + (Math.random() * 4 | 0);
+      }
       layers[on].style.opacity = 1;
       layers[1 - on].style.opacity = 0;
     };
@@ -1246,9 +1328,9 @@ var __spreadValues = (a, b) => {
     mosaicTimer = setInterval(() => {
       if ($("#home").hidden || document.hidden) return;
       if (tv && document.body.classList.contains("genres-mode")) return;
-      const k = fire ? 1 : tv ? 1 : 2;
+      const k = fire || perf ? 1 : tv ? 1 : 2;
       for (let j = 0; j < k; j++) set(cells[Math.random() * cells.length | 0]);
-    }, fire ? 9e3 : tv ? 6e3 : 1800);
+    }, perf ? fire ? 14e3 : tv ? 1e4 : 4e3 : fire ? 9e3 : tv ? 6e3 : 1800);
   }
   let mosT;
   if (window.ResizeObserver) new ResizeObserver(() => {
@@ -1668,6 +1750,61 @@ var __spreadValues = (a, b) => {
     } catch (e) {
     }
   })();
+  let _menuHoldT = null, _menuHoldFired = false;
+  function ensurePerfHud() {
+    let el = $("#fefc-perfhud");
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = "fefc-perfhud";
+    el.setAttribute("aria-hidden", "true");
+    document.body.appendChild(el);
+    return el;
+  }
+  function togglePerfHud(force) {
+    const on = force == null ? !document.body.classList.contains("perfhud-on") : !!force;
+    document.body.classList.toggle("perfhud-on", on);
+    const el = ensurePerfHud();
+    if (!on) {
+      if (window.__fefcHudStop) window.__fefcHudStop();
+      return;
+    }
+    let frames = 0, last = performance.now(), fps = 0, longs = 0, longMs = 0;
+    const po = typeof PerformanceObserver === "function" ? (() => {
+      try {
+        const o = new PerformanceObserver((list) => {
+          list.getEntries().forEach((e) => {
+            longs++;
+            longMs += e.duration;
+          });
+        });
+        o.observe({ entryTypes: ["longtask"] });
+        return o;
+      } catch (e) {
+        return null;
+      }
+    })() : null;
+    let raf = 0;
+    const tick = (now) => {
+      frames++;
+      if (now - last >= 1e3) {
+        fps = frames;
+        frames = 0;
+        last = now;
+        el.textContent = "FPS " + fps + "\nlong " + longs + " (" + Math.round(longMs) + "ms)\nclips " + (window.__clipStats ? JSON.stringify(__clipStats()) : "\u2014") + "\nperf " + (document.body.classList.contains("perf") ? "ON" : "off") + "\ntier " + (window.__fefcTier && __fefcTier.tier || document.documentElement.dataset.tier || "?");
+        longs = 0;
+        longMs = 0;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    window.__fefcHudStop = () => {
+      cancelAnimationFrame(raf);
+      try {
+        po && po.disconnect();
+      } catch (e) {
+      }
+    };
+  }
   document.addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
       e.preventDefault();
@@ -1678,14 +1815,40 @@ var __spreadValues = (a, b) => {
     const menuKey = e.key === "Menu" || e.key === "ContextMenu" || e.keyCode === 93 || e.keyCode === 82 && e.key !== "r" && e.key !== "R";
     if (menuKey) {
       e.preventDefault();
-      if (document.body.classList.contains("firetv") || document.body.classList.contains("tv") && window.FEFCNative) openTvMenu();
-      else starFocused();
-    } else if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403) {
+      if (_menuHoldT) return;
+      _menuHoldFired = false;
+      _menuHoldT = setTimeout(() => {
+        _menuHoldFired = true;
+        _menuHoldT = null;
+        togglePerfHud();
+        try {
+          S.click && S.click();
+        } catch (err) {
+        }
+      }, 3e3);
+      return;
+    }
+    if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403) {
       e.preventDefault();
       doSearch();
     } else if (e.key === "m" || e.key === "M" || e.keyCode === 404) {
       doMute();
     }
+  });
+  document.addEventListener("keyup", (e) => {
+    const menuKey = e.key === "Menu" || e.key === "ContextMenu" || e.keyCode === 93 || e.keyCode === 82 && e.key !== "r" && e.key !== "R";
+    if (!menuKey) return;
+    if (_menuHoldT) {
+      clearTimeout(_menuHoldT);
+      _menuHoldT = null;
+    }
+    if (_menuHoldFired) {
+      _menuHoldFired = false;
+      return;
+    }
+    _menuHoldFired = false;
+    if (document.body.classList.contains("firetv") || document.body.classList.contains("tv") && window.FEFCNative) openTvMenu();
+    else starFocused();
   });
   const RF_DOC = "https://docs.google.com/document/d/1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk/preview";
   function readFirst() {
@@ -2244,7 +2407,7 @@ var __spreadValues = (a, b) => {
         qi++;
         return true;
       }
-      const part = Q[qi].splice(0, LEAN() ? 24 : 60), t = document.createElement("div");
+      const part = Q[qi].splice(0, LEAN() ? document.body.classList.contains("perf") ? 12 : 24 : 60), t = document.createElement("div");
       t.innerHTML = part.map((f) => tile(f, isNew[f.id])).join("");
       const fr = document.createDocumentFragment();
       const els = [].slice.call(t.children);
@@ -4747,7 +4910,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.12";
+  const HOME_VER_FALLBACK = "0.8.13";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4819,7 +4982,7 @@ var __spreadValues = (a, b) => {
       el.id = "tvmenu";
       el.setAttribute("role", "dialog");
       el.setAttribute("aria-label", "Menu");
-      el.innerHTML = '<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search"></button><button type="button" class="tvm-i" data-tm="mute"></button></div>';
+      el.innerHTML = '<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search"></button><button type="button" class="tvm-i" data-tm="mute"></button><button type="button" class="tvm-i" data-tm="perf"></button></div>';
       document.body.appendChild(el);
       el.addEventListener("click", (e) => {
         const b = e.target.closest("[data-tm]");
@@ -4845,6 +5008,24 @@ var __spreadValues = (a, b) => {
           }
           return;
         }
+        if (k === "perf") {
+          const on = !document.body.classList.contains("perf");
+          window.__fefcApplyPerf(on);
+          try {
+            if ($("#home") && !$("#home").hidden) mosaic();
+          } catch (err) {
+          }
+          try {
+            window.dispatchEvent(new Event("fefc-perf"));
+          } catch (err) {
+          }
+          paintTvMenu();
+          try {
+            b.focus({ preventScroll: true });
+          } catch (err) {
+          }
+          return;
+        }
       });
     }
     _tvMenuPrev = document.activeElement;
@@ -4863,13 +5044,13 @@ var __spreadValues = (a, b) => {
     const el = $("#tvmenu");
     if (!el) return;
     const id = focusedMediaId() || _tvMenuPrev && _tvMenuPrev.closest && _tvMenuPrev.closest(".ol-tile") && _tvMenuPrev.closest(".ol-tile").dataset.id || ($("#details").hidden ? null : $("#details").dataset.id);
-    const star = el.querySelector('[data-tm="star"]'), mute = el.querySelector('[data-tm="mute"]'), search = el.querySelector('[data-tm="search"]');
+    const star = el.querySelector('[data-tm="star"]'), mute = el.querySelector('[data-tm="mute"]'), search = el.querySelector('[data-tm="search"]'), perfBtn = el.querySelector('[data-tm="perf"]');
     let on = false;
     try {
       on = !!(id && window.UD && UD.isStarred(id));
     } catch (e) {
     }
-    const ST = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.6l2.7 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.8 5.99 21.1l1.62-6.8L2.3 9.7l7-.6L12 2.6z"/></svg>', SO = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3.2l2.4 5.8 6.2.5-4.7 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6-4.7-4.1 6.2-.5L12 3.2z"/></svg>', SE = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg>', SK = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9v6h3.2L12 19V5L7.2 9H4zm11.5 3a3.5 3.5 0 00-1.1-2.55l1.2-1.2A5.2 5.2 0 0118.2 12a5.2 5.2 0 01-2.6 4.55l-1.2-1.2A3.5 3.5 0 0015.5 12z"/></svg>', SX = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM14 3.23v2.06c1.94.6 3.5 2.1 4.06 4.06h2.08C19.4 6.04 17 3.85 14 3.23zM12 5.5l-1.91 1.91L12 9.32V5.5z"/></svg>';
+    const ST = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.6l2.7 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.8 5.99 21.1l1.62-6.8L2.3 9.7l7-.6L12 2.6z"/></svg>', SO = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3.2l2.4 5.8 6.2.5-4.7 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6-4.7-4.1 6.2-.5L12 3.2z"/></svg>', SE = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg>', SK = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9v6h3.2L12 19V5L7.2 9H4zm11.5 3a3.5 3.5 0 00-1.1-2.55l1.2-1.2A5.2 5.2 0 0118.2 12a5.2 5.2 0 01-2.6 4.55l-1.2-1.2A3.5 3.5 0 0015.5 12z"/></svg>', SX = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM14 3.23v2.06c1.94.6 3.5 2.1 4.06 4.06h2.08C19.4 6.04 17 3.85 14 3.23zM12 5.5l-1.91 1.91L12 9.32V5.5z"/></svg>', PF = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h2v-2h2v-2h-2v-2h-2v2h-2v2h2v2zm4 3h2v-4h-2v4z"/></svg>';
     const ico = (svg, lab) => '<span class="tvm-row">' + svg + '<span class="tvm-lab">' + lab + "</span></span>";
     if (star) {
       star.disabled = !id;
@@ -4878,6 +5059,10 @@ var __spreadValues = (a, b) => {
     }
     if (search) search.innerHTML = ico(SE, "Search");
     if (mute) mute.innerHTML = ico(S.muted ? SX : SK, (S.muted ? "Sound off" : "Sound on") + " \u2014 tap to toggle");
+    if (perfBtn) {
+      const pon = document.body.classList.contains("perf");
+      perfBtn.innerHTML = ico(PF, "Performance mode: " + (pon ? "ON" : "OFF") + " \u2014 tap to toggle");
+    }
   }
   if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
     document.body.classList.add("firetv");

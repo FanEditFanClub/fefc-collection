@@ -1375,3 +1375,53 @@ html body.tv #home-ver,html body.firetv #home-ver{top:48px!important;top:5vh!imp
 html body.tv #ml-sync .mi,html body.tv .sync-go,html body.firetv #ml-sync .mi,html body.firetv .sync-go{min-height:48px;min-height:5.2vh}
 html body.tv #ml-sync .mi:focus,html body.tv .sync-go:focus,html body.firetv #ml-sync .mi:focus,html body.firetv .sync-go:focus{outline:0;color:#000;background:linear-gradient(180deg,#fff,#cfe9ff);box-shadow:0 0 0 4px #fff,0 0 0 8px #2fa8ff,0 0 28px #2fa8ffcc;transform:scale(1.05)}
 html body.tv #crumb,html body.tv .ol-div,html body.tv .ml-hist-head,html body.tv .sync-card{margin-left:0;margin-right:0}
+
+/* ---- 0.8.13: brand uncropped in safe pad; hints flush on ticker; Performance mode ---- */
+/* Brand: keep full aspect, never crop with object-fit:cover; stay inside overscan pad. */
+html body.tv #bar #brand,html body.firetv #bar #brand,
+#bar #brand{flex:none;overflow:visible;min-width:0;padding:0;margin:0;align-self:center}
+html body.tv #bar #brand img,html body.firetv #bar #brand img,
+#bar #brand img{
+  width:auto!important;height:clamp(28px,4.2vh,40px)!important;max-height:85%!important;
+  aspect-ratio:1/1;object-fit:contain!important;object-position:center;border-radius:18%;
+  flex:none;display:block;background:transparent}
+html body.tv #bar,html body.firetv #bar{overflow:visible!important;align-items:center}
+/* Hints sit directly on the ticker — no 8px gap — as one bottom safe-area unit. */
+html body.tv.tk-on #hints,html body.firetv.tk-on #hints,
+body.tv.tk-on #hints,body.firetv.tk-on #hints{
+  bottom:calc(48px + var(--tkh,36px))!important;
+  bottom:calc(5vh + var(--tkh,36px))!important;
+  margin:0!important;border-bottom:0!important;border-radius:0!important}
+html body.tv #ticker,html body.firetv #ticker{
+  border-top:1px solid #35506b;margin:0!important;box-shadow:none!important;
+  -webkit-mask-image:none!important;mask-image:none!important}
+body.tk-on #hints{bottom:var(--tkh,clamp(24px,3.7vh,46px))!important;margin:0}
+body.tk-on:not(.tv):not(.firetv) #hints{bottom:calc(var(--tkh,36px) + env(safe-area-inset-bottom,0px))!important}
+
+/* Performance mode (body.perf — default ON for TV): flat paint, no Ken Burns/glow/blur/ticker rAF cost helpers */
+body.perf .mc>img,body.perf .mc .mi1,body.perf .mc .mi2{
+  animation:none!important;transition:opacity .35s linear!important;
+  will-change:auto!important;transform:none!important;filter:none!important}
+body.perf .mc{will-change:auto}
+body.perf #mosaic{opacity:.5}
+body.perf .ol-tile,body.perf .hb,body.perf .mi,body.perf .pill,body.perf .sortpill{
+  box-shadow:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  text-shadow:none!important}
+body.perf .ol-tile{content-visibility:auto;contain-intrinsic-size:auto 140px}
+body.perf #ticker{-webkit-mask-image:none!important;mask-image:none!important;box-shadow:none!important}
+body.perf #home-ver{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+/* Hidden FPS / long-task HUD (Menu hold 3s) */
+#fefc-perfhud{position:fixed;right:12px;top:12px;z-index:99999;display:none;pointer-events:none;
+  font:700 13px/1.35 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#b8f5c2;
+  background:#000c;border:1px solid #3a6;border-radius:8px;padding:8px 10px;min-width:148px;
+  text-shadow:0 1px 2px #000;white-space:pre}
+body.tv #fefc-perfhud,body.firetv #fefc-perfhud{right:5vw;top:5vh;font-size:1.5vh;padding:1vh 1.2vw}
+body.perfhud-on #fefc-perfhud{display:block}
+
+/* 0.8.13 LOW tier (Toshiba/Insignia/Stick Lite): no blur/glow, cheaper paints */
+body.tier-lite .glow,body.tier-low .glow,body.tier-lite .tvi-glow,body.tier-low .tvi-glow{display:none!important}
+body.tier-lite .tvi-ring,body.tier-low .tvi-ring,body.tier-lite .tvi-pulse,body.tier-low .tvi-pulse,body.tier-lite .tvi-flash,body.tier-low .tvi-flash{display:none!important}
+body.tier-lite #home,body.tier-low #home,body.tier-lite .mc,body.tier-low .mc,body.tier-lite .hb,body.tier-low .hb{filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.tier-lite .ol-tile,body.tier-low .ol-tile{-webkit-box-reflect:none!important}
+body.tier-lite #player.floating,body.tier-low #player.floating{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:#000e}
+body.tier-lite .hb:hover,body.tier-lite .hb:focus,body.tier-low .hb:hover,body.tier-low .hb:focus{box-shadow:inset 0 0 0 1px #000,0 0 0 2px #ff9c00}

@@ -362,10 +362,22 @@ const DRIVE = 'https://www.googleapis.com/drive/v3/files/';
 const sidCache = new Map();                       // shortcut/file id -> { id, t }
 async function resolveDriveId(id, key) {
   const c = sidCache.get(id); if (c && Date.now() - c.t < 6 * 3600e3) return c.id;
-  const r = await fetch(DRIVE + id + '?fields=id,mimeType,shortcutDetails&supportsAllDrives=true&key=' + encodeURIComponent(key), { signal: AbortSignal.timeout(8000) });
-  if (!r.ok) { const e = new Error('meta ' + r.status); e.status = r.status; e.body = await r.text().catch(() => ''); throw e; }
-  const m = await r.json();
-  const out = m.mimeType === 'application/vnd.google-apps.shortcut' && m.shortcutDetails && m.shortcutDetails.targetId ? m.shortcutDetails.targetId : m.id;
+  let out = id;
+  if (key) {
+    const r = await fetch(DRIVE + id + '?fields=id,mimeType,shortcutDetails&supportsAllDrives=true&key=' + encodeURIComponent(key), { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) { const e = new Error('meta ' + r.status); e.status = r.status; e.body = await r.text().catch(() => ''); throw e; }
+    const m = await r.json();
+    out = m.mimeType === 'application/vnd.google-apps.shortcut' && m.shortcutDetails && m.shortcutDetails.targetId ? m.shortcutDetails.targetId : m.id;
+  } else {
+    // Catalog IDs are often Drive shortcuts; usercontent fails on the shortcut id ("Can't download file" HTML).
+    // Resolve via the public file-view redirect without needing GOOGLE_API_KEY.
+    try {
+      const r = await fetch('https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view', { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(8000) });
+      const loc = r.headers.get('location') || '';
+      const m = loc.match(/\/file\/d\/([\w-]{10,80})(?:\/|$)/);
+      if (m) out = m[1];
+    } catch (_) { /* keep raw id */ }
+  }
   if (sidCache.size > 5000) sidCache.clear(); sidCache.set(id, { id: out, t: Date.now() });
   return out;
 }
@@ -383,6 +395,59 @@ function streamMimeFromName(name) {
   const map = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska', avi: 'video/x-msvideo', mpg: 'video/mpeg', mpeg: 'video/mpeg', ts: 'video/mp2t', m2ts: 'video/mp2t', vtt: 'text/vtt', srt: 'application/x-subrip', ass: 'text/plain', ssa: 'text/plain' };
   return map[ext] || '';
 }
+function streamOutHeaders(CORS, fileName, up, ctFallback) {
+  const o = new Headers(CORS);
+  for (const k of ['content-length', 'content-range', 'etag', 'last-modified']) { const v = up.headers.get(k); if (v) o.set(k, v); }
+  let ct = streamMimeFromName(fileName) || up.headers.get('content-type') || '';
+  // VLC rejects non-media Content-Types; coerce generic octet-stream to video.
+  if (!/^(video|audio|text)\//.test(ct) && !/^application\/x-subrip/.test(ct)) ct = ctFallback || 'video/mp4';
+  o.set('content-type', ct); o.set('accept-ranges', 'bytes'); o.set('cache-control', 'private, max-age=3600');
+  if (fileName) o.set('content-disposition', 'inline; filename="' + fileName.replace(/"/g, '') + '"');
+  return o;
+}
+function rangeHeaders(req) {
+  const h = new Headers();
+  const rg = req.headers.get('range');
+  // Always send a Range so Drive usercontent skips the virus-scan / quota HTML interstitial for large files.
+  // HEAD probes use a 1-byte range so Drive does not treat the request as a full multi-GB download.
+  if (rg && /^bytes=\d*-\d*(,.*)?$/.test(rg)) h.set('range', rg.split(',')[0]);
+  else if (req.method === 'HEAD') h.set('range', 'bytes=0-0');
+  else h.set('range', 'bytes=0-');
+  const ir = req.headers.get('if-range'); if (ir && h.has('range')) h.set('if-range', ir);
+  h.set('user-agent', 'FEFC-Stream-Proxy/0.8.13');
+  return h;
+}
+async function streamViaUsercontent(tid, req, fileName, CORS) {
+  const u = 'https://drive.usercontent.google.com/download?id=' + encodeURIComponent(tid) + '&export=download&confirm=t';
+  let up, lastB = '';
+  for (let attempt = 0; attempt < 3; attempt++) {
+    up = await fetch(u, { method: 'GET', headers: rangeHeaders(req), redirect: 'follow' });
+    if (up.status !== 429 && up.status !== 503) break;
+    lastB = await up.text().catch(() => '');
+    await new Promise(r => setTimeout(r, 400 * (attempt + 1) * (attempt + 1)));
+  }
+  if (up.status === 416) return new Response(null, { status: 416, headers: { ...CORS, 'content-range': up.headers.get('content-range') || '' } });
+  const ct0 = (up.headers.get('content-type') || '').toLowerCase();
+  if (!up.ok) {
+    const b = lastB || await up.text().catch(() => '');
+    if (up.status === 429 || /quota|rate.?limit|download.?quota/i.test(b + ct0)) return json({ error: 'quota_exceeded', hint: 'Drive download quota for this file is used up; try again later or set Pages secret GOOGLE_API_KEY.' }, 429);
+    return driveErr(up.status, b);
+  }
+  // HTML body = virus-scan / login / quota page — never hand that to VLC.
+  if (ct0.includes('text/html') || ct0.includes('text/plain')) {
+    const b = await up.text().catch(() => '');
+    if (/quota exceeded|too many users|downloadQuotaExceeded/i.test(b)) return json({ error: 'quota_exceeded', hint: 'Drive download quota for this file is used up; try again later or use Open in Drive.' }, 429);
+    return json({ error: 'upstream_html', hint: 'Drive returned an HTML interstitial instead of media. Set Pages secret GOOGLE_API_KEY (Drive API + acknowledgeAbuse) for reliable large-file proxying.' }, 502);
+  }
+  // If client omitted Range we forced bytes=0- → 206; rewrite to 200 when spanning whole file for picky clients.
+  let status = up.status;
+  const cr = up.headers.get('content-range') || '';
+  const o = streamOutHeaders(CORS, fileName, up, 'video/mp4');
+  if (!req.headers.get('range') && /^bytes 0-\d+\/\d+$/.test(cr)) {
+    // Keep 206 + Content-Range — VLC and ExoPlayer both accept it for open-ended plays.
+  }
+  return new Response(req.method === 'HEAD' ? null : up.body, { status, headers: o });
+}
 async function streamApi(req, env, url) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
   const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range,accept-ranges,content-length,content-type,content-disposition' };
@@ -393,21 +458,33 @@ async function streamApi(req, env, url) {
   const fileName = (slash < 0 ? '' : rest.slice(slash + 1).split('/').pop() || '').replace(/[^\w.\- ()\[\]]+/g, '_') || '';
   if (!/^[\w-]{10,80}$/.test(id)) return json({ error: 'bad_id' }, 400);
   const key = env.GOOGLE_API_KEY;
-  if (!key) return json({ error: 'not_configured', hint: 'Set the Pages secret GOOGLE_API_KEY (Drive API key, Drive API enabled in project 965770773324).' }, 503);
-  let tid;
-  try { tid = await resolveDriveId(id, key); } catch (e) { return driveErr(e.status || 502, e.body || ''); }
-  const h = new Headers(); const rg = req.headers.get('range'); if (rg && /^bytes=\d*-\d*(,.*)?$/.test(rg)) h.set('range', rg.split(',')[0]);
-  const ir = req.headers.get('if-range'); if (ir && rg) h.set('if-range', ir);
-  const up = await fetch(DRIVE + tid + '?alt=media&supportsAllDrives=true&acknowledgeAbuse=true&key=' + encodeURIComponent(key), { method: 'GET', headers: h });
-  if (up.status === 416) return new Response(null, { status: 416, headers: { ...CORS, 'content-range': up.headers.get('content-range') || '' } });
-  if (!up.ok) { const b = await up.text().catch(() => ''); return driveErr(up.status, b); }
-  const o = new Headers(CORS);
-  for (const k of ['content-length', 'content-range', 'etag', 'last-modified']) { const v = up.headers.get(k); if (v) o.set(k, v); }
-  let ct = streamMimeFromName(fileName) || up.headers.get('content-type') || '';
-  if (!/^(video|audio|text)\//.test(ct) && !/^application\/(x-subrip|octet-stream)/.test(ct)) ct = 'video/mp4';
-  o.set('content-type', ct); o.set('accept-ranges', 'bytes'); o.set('cache-control', 'private, max-age=3600');
-  if (fileName) o.set('content-disposition', 'inline; filename="' + fileName.replace(/"/g, '') + '"');
-  return new Response(req.method === 'HEAD' ? null : up.body, { status: up.status, headers: o });
+  let tid = id;
+  if (key) {
+    try { tid = await resolveDriveId(id, key); } catch (e) {
+      // Fall through to usercontent with the raw id when meta fails (still useful for public files).
+      console.log('stream meta fail', e.status || 0);
+    }
+    const h = rangeHeaders(req);
+    // Prefer Drive API alt=media + acknowledgeAbuse (bypasses virus-scan HTML for large files).
+    const up = await fetch(DRIVE + tid + '?alt=media&supportsAllDrives=true&acknowledgeAbuse=true&key=' + encodeURIComponent(key), { method: 'GET', headers: h });
+    if (up.status === 416) return new Response(null, { status: 416, headers: { ...CORS, 'content-range': up.headers.get('content-range') || '' } });
+    if (up.ok) {
+      const o = streamOutHeaders(CORS, fileName, up, 'video/mp4');
+      return new Response(req.method === 'HEAD' ? null : up.body, { status: up.status, headers: o });
+    }
+    const b = await up.text().catch(() => '');
+    // API key present but Drive refused — try usercontent before surfacing the error.
+    console.log('stream api fail', up.status, String(b).slice(0, 80));
+    try {
+      const fb = await streamViaUsercontent(tid, req, fileName, CORS);
+      if (fb.status < 400) return fb;
+    } catch (_) {}
+    return driveErr(up.status, b);
+  }
+  // No GOOGLE_API_KEY: resolve shortcuts via Drive view redirect, then proxy usercontent (Range forced).
+  // Set Pages secret GOOGLE_API_KEY for Drive API alt=media + acknowledgeAbuse (more reliable on huge files).
+  try { tid = await resolveDriveId(id, null); } catch (_) {}
+  return streamViaUsercontent(tid, req, fileName, CORS);
 }
 
 export default {
@@ -452,7 +529,7 @@ export default {
           return new Response(asset.body, { status: asset.status, headers: h });
         }
         // Fallback: proxy GitHub Release asset (same host URL for in-app updater allowlist).
-        const gh = 'https://github.com/FanEditFanClub/fefc-collection/releases/download/firetv-v0.8.12/FEFC-Collection.apk';
+        const gh = 'https://github.com/FanEditFanClub/fefc-collection/releases/download/firetv-v0.8.13/FEFC-Collection.apk';
         const up = await fetch(gh, { redirect: 'follow', headers: { 'user-agent': 'FEFC-Pages-APK-Proxy' } });
         if (!up.ok) return new Response('APK unavailable', { status: 502, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
         const h = new Headers(headers);

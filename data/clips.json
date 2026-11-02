@@ -5,7 +5,14 @@
   "target": "1ST-8xsiOSr00w2FbGvcgXnMK1o7MW0YV",
   "title": "Alien & Aliens - Double Feature - Bobson Dugnutt Cut - Mashup Fan Edit",
   "src": "assets/clips/0.mp4",
-  "poster": "assets/clips/0.jpg"
+  "poster": "assets/clips/0.jpg",
+  "frames": [
+   "assets/clips/frames/0_0.webp",
+   "assets/clips/frames/0_1.webp",
+   "assets/clips/frames/0_2.webp",
+   "assets/clips/frames/0_3.webp",
+   "assets/clips/frames/0_4.webp"
+  ]
  },
  {
   "n": 1,
@@ -13,7 +20,14 @@
   "target": "1NavWSLFeRlQsCInS8PjuQGvD__L9qxou",
   "title": "James Bond Series - Part 10 - Spectre - Fan Edit",
   "src": "assets/clips/1.mp4",
-  "poster": "assets/clips/1.jpg"
+  "poster": "assets/clips/1.jpg",
+  "frames": [
+   "assets/clips/frames/1_0.webp",
+   "assets/clips/frames/1_1.webp",
+   "assets/clips/frames/1_2.webp",
+   "assets/clips/frames/1_3.webp",
+   "assets/clips/frames/1_4.webp"
+  ]
  },
  {
   "n": 2,
@@ -21,7 +35,14 @@
   "target": "1E9WHv1ql2RCMjF5i5VWHX5n7o2ovd7dB",
   "title": "Star Trek: TOS - Season 2 Episode 21 - Tomorrow The Universe - Fan Edit",
   "src": "assets/clips/2.mp4",
-  "poster": "assets/clips/2.jpg"
+  "poster": "assets/clips/2.jpg",
+  "frames": [
+   "assets/clips/frames/2_0.webp",
+   "assets/clips/frames/2_1.webp",
+   "assets/clips/frames/2_2.webp",
+   "assets/clips/frames/2_3.webp",
+   "assets/clips/frames/2_4.webp"
+  ]
  },
  {
   "n": 3,
@@ -29,7 +50,14 @@
   "target": "1EP4no0G5rBs4cmuA8H5p2R_ZjxERGcvr",
   "title": "The Flash Mini-Series - Season 1 - Part 8 - Back In time - Fan Edit",
   "src": "assets/clips/3.mp4",
-  "poster": "assets/clips/3.jpg"
+  "poster": "assets/clips/3.jpg",
+  "frames": [
+   "assets/clips/frames/3_0.webp",
+   "assets/clips/frames/3_1.webp",
+   "assets/clips/frames/3_2.webp",
+   "assets/clips/frames/3_3.webp",
+   "assets/clips/frames/3_4.webp"
+  ]
  },
  {
   "n": 4,
@@ -37,7 +65,14 @@
   "target": "19lbhxgXEmWFUYxNUrKe3e4sZOa6Lynvc",
   "title": "Terminator: The Sarah Connor Chronicles - Season 2 Episode 4 - Alison from Palmdale - Regrade - Fan Edit",
   "src": "assets/clips/4.mp4",
-  "poster": "assets/clips/4.jpg"
+  "poster": "assets/clips/4.jpg",
+  "frames": [
+   "assets/clips/frames/4_0.webp",
+   "assets/clips/frames/4_1.webp",
+   "assets/clips/frames/4_2.webp",
+   "assets/clips/frames/4_3.webp",
+   "assets/clips/frames/4_4.webp"
+  ]
  },
  {
   "n": 5,
@@ -45,7 +80,14 @@
   "target": "1pf91iH539Z-Ezfod4F2in32Kd8lyLt43",
   "title": "Star Wars: Episode I - The Phantom Menace - Extended Edition - NumeralJ Cut - Fan Edit",
   "src": "assets/clips/5.mp4",
-  "poster": "assets/clips/5.jpg"
+  "poster": "assets/clips/5.jpg",
+  "frames": [
+   "assets/clips/frames/5_0.webp",
+   "assets/clips/frames/5_1.webp",
+   "assets/clips/frames/5_2.webp",
+   "assets/clips/frames/5_3.webp",
+   "assets/clips/frames/5_4.webp"
+  ]
  },
  {
   "n": 6,
@@ -53,7 +95,14 @@
   "target": "1YsPU2jux3OFqFz04H0jx2lM-pxF73_LP",
   "title": "Mad Max (1979) - Oil & Chrome Edition - Black & White Fan Edit",
   "src": "assets/clips/6.mp4",
-  "poster": "assets/clips/6.jpg"
+  "poster": "assets/clips/6.jpg",
+  "frames": [
+   "assets/clips/frames/6_0.webp",
+   "assets/clips/frames/6_1.webp",
+   "assets/clips/frames/6_2.webp",
+   "assets/clips/frames/6_3.webp",
+   "assets/clips/frames/6_4.webp"
+  ]
  },
  {
   "n": 7,
@@ -61,7 +110,14 @@
   "target": "1LOlbmsNtcuezJtALYJKcuV9JkK9sBrfJ",
   "title": "Star Wars Score-Only Edits; Episode III - Revenge of the Sith",
   "src": "assets/clips/7.mp4",
-  "poster": "assets/clips/7.jpg"
+  "poster": "assets/clips/7.jpg",
+  "frames": [
+   "assets/clips/frames/7_0.webp",
+   "assets/clips/frames/7_1.webp",
+   "assets/clips/frames/7_2.webp",
+   "assets/clips/frames/7_3.webp",
+   "assets/clips/frames/7_4.webp"
+  ]
  },
  {
   "n": 8,
@@ -69,7 +125,14 @@
   "target": "1cZFjPNwcIkCHXhqHGhSPRue86DKecf_J",
   "title": "The Avengers - Hybrid AR Cut - Fan Edit",
   "src": "assets/clips/8.mp4",
-  "poster": "assets/clips/8.jpg"
+  "poster": "assets/clips/8.jpg",
+  "frames": [
+   "assets/clips/frames/8_0.webp",
+   "assets/clips/frames/8_1.webp",
+   "assets/clips/frames/8_2.webp",
+   "assets/clips/frames/8_3.webp",
+   "assets/clips/frames/8_4.webp"
+  ]
  },
  {
   "n": 9,
@@ -77,7 +140,14 @@
   "target": "1IPFMh2Y6ncOzMK_ReylswoIRM5sUVpb8",
   "title": "She-Hulk: Attorney at Law - Episode 5-6 - Titania Cut - Fan Edit",
   "src": "assets/clips/9.mp4",
-  "poster": "assets/clips/9.jpg"
+  "poster": "assets/clips/9.jpg",
+  "frames": [
+   "assets/clips/frames/9_0.webp",
+   "assets/clips/frames/9_1.webp",
+   "assets/clips/frames/9_2.webp",
+   "assets/clips/frames/9_3.webp",
+   "assets/clips/frames/9_4.webp"
+  ]
  },
  {
   "n": 10,
@@ -85,7 +155,14 @@
   "target": "129fqRUW_MY4x0dWCfMy-awpDrCSWRO5Q",
   "title": "Lost - In The Detail - Part 112 - Intermission - Oceanic 6 - A Conspiracy of Lies - Chronological Fan Edit.avi",
   "src": "assets/clips/10.mp4",
-  "poster": "assets/clips/10.jpg"
+  "poster": "assets/clips/10.jpg",
+  "frames": [
+   "assets/clips/frames/10_0.webp",
+   "assets/clips/frames/10_1.webp",
+   "assets/clips/frames/10_2.webp",
+   "assets/clips/frames/10_3.webp",
+   "assets/clips/frames/10_4.webp"
+  ]
  },
  {
   "n": 11,
@@ -93,7 +170,14 @@
   "target": "1z-CN8PloHVUkrXqxxzLVQOK2E7f5EQAp",
   "title": "S7E10-A Dream of Spring",
   "src": "assets/clips/11.mp4",
-  "poster": "assets/clips/11.jpg"
+  "poster": "assets/clips/11.jpg",
+  "frames": [
+   "assets/clips/frames/11_0.webp",
+   "assets/clips/frames/11_1.webp",
+   "assets/clips/frames/11_2.webp",
+   "assets/clips/frames/11_3.webp",
+   "assets/clips/frames/11_4.webp"
+  ]
  },
  {
   "n": 12,
@@ -101,7 +185,14 @@
   "target": "1m2iDVTndJ5bwDqXJ-1N59PNxhHhQOZbJ",
   "title": "The Incredible Hulk - The Continued Cut - Fan Edit",
   "src": "assets/clips/12.mp4",
-  "poster": "assets/clips/12.jpg"
+  "poster": "assets/clips/12.jpg",
+  "frames": [
+   "assets/clips/frames/12_0.webp",
+   "assets/clips/frames/12_1.webp",
+   "assets/clips/frames/12_2.webp",
+   "assets/clips/frames/12_3.webp",
+   "assets/clips/frames/12_4.webp"
+  ]
  },
  {
   "n": 13,
@@ -109,7 +200,14 @@
   "target": "1uKXQo2fR4vNYWXSBBPC32BMXSIqxaqbB",
   "title": "Terminator: The Sarah Connor Chronicles - Season 2 Episode 9 - Complications - Regrade - Fan Edit",
   "src": "assets/clips/13.mp4",
-  "poster": "assets/clips/13.jpg"
+  "poster": "assets/clips/13.jpg",
+  "frames": [
+   "assets/clips/frames/13_0.webp",
+   "assets/clips/frames/13_1.webp",
+   "assets/clips/frames/13_2.webp",
+   "assets/clips/frames/13_3.webp",
+   "assets/clips/frames/13_4.webp"
+  ]
  },
  {
   "n": 14,
@@ -117,7 +215,14 @@
   "target": "1cpA6mpAauZyX-6h90oecHmHmowakxpWH",
   "title": "26 Captain Simian and the Space Monkeys  ApePocalypse A Little Later pt3_480p",
   "src": "assets/clips/14.mp4",
-  "poster": "assets/clips/14.jpg"
+  "poster": "assets/clips/14.jpg",
+  "frames": [
+   "assets/clips/frames/14_0.webp",
+   "assets/clips/frames/14_1.webp",
+   "assets/clips/frames/14_2.webp",
+   "assets/clips/frames/14_3.webp",
+   "assets/clips/frames/14_4.webp"
+  ]
  },
  {
   "n": 15,
@@ -125,7 +230,14 @@
   "target": "1dUhhFZQPqbtJIWvx1YCgy3QkE73MakCS",
   "title": "Superman & Lois - The Movie - Movie Fan Edit",
   "src": "assets/clips/15.mp4",
-  "poster": "assets/clips/15.jpg"
+  "poster": "assets/clips/15.jpg",
+  "frames": [
+   "assets/clips/frames/15_0.webp",
+   "assets/clips/frames/15_1.webp",
+   "assets/clips/frames/15_2.webp",
+   "assets/clips/frames/15_3.webp",
+   "assets/clips/frames/15_4.webp"
+  ]
  },
  {
   "n": 16,
@@ -133,7 +245,14 @@
   "target": "1KywPajGsOGeXfG_5iuW99d48GJhCoDt4",
   "title": "Back To The Future - Doc To The Future - Part lll - Fan Edit",
   "src": "assets/clips/16.mp4",
-  "poster": "assets/clips/16.jpg"
+  "poster": "assets/clips/16.jpg",
+  "frames": [
+   "assets/clips/frames/16_0.webp",
+   "assets/clips/frames/16_1.webp",
+   "assets/clips/frames/16_2.webp",
+   "assets/clips/frames/16_3.webp",
+   "assets/clips/frames/16_4.webp"
+  ]
  },
  {
   "n": 17,
@@ -141,7 +260,14 @@
   "target": "1yfpsN23B7DITw4r7piklSAqsamucJHxA",
   "title": "Mad Max 1 & 4 - The Desert Road - Mashup Fan Edit",
   "src": "assets/clips/17.mp4",
-  "poster": "assets/clips/17.jpg"
+  "poster": "assets/clips/17.jpg",
+  "frames": [
+   "assets/clips/frames/17_0.webp",
+   "assets/clips/frames/17_1.webp",
+   "assets/clips/frames/17_2.webp",
+   "assets/clips/frames/17_3.webp",
+   "assets/clips/frames/17_4.webp"
+  ]
  },
  {
   "n": 18,
@@ -149,7 +275,14 @@
   "target": "1krrH0LAFEaiCgFiXetTBWQIwacN_XrlP",
   "title": "James Bond Series - Part 8 - Rogue Agent - Fan Edit",
   "src": "assets/clips/18.mp4",
-  "poster": "assets/clips/18.jpg"
+  "poster": "assets/clips/18.jpg",
+  "frames": [
+   "assets/clips/frames/18_0.webp",
+   "assets/clips/frames/18_1.webp",
+   "assets/clips/frames/18_2.webp",
+   "assets/clips/frames/18_3.webp",
+   "assets/clips/frames/18_4.webp"
+  ]
  },
  {
   "n": 19,
@@ -157,7 +290,14 @@
   "target": "15Yd6P1ejWl_LGhwgw9T-zC037mMK_LwC",
   "title": "Batman Sub-Zero - Fan Edit",
   "src": "assets/clips/19.mp4",
-  "poster": "assets/clips/19.jpg"
+  "poster": "assets/clips/19.jpg",
+  "frames": [
+   "assets/clips/frames/19_0.webp",
+   "assets/clips/frames/19_1.webp",
+   "assets/clips/frames/19_2.webp",
+   "assets/clips/frames/19_3.webp",
+   "assets/clips/frames/19_4.webp"
+  ]
  },
  {
   "n": 20,
@@ -165,7 +305,14 @@
   "target": "1qgbmBZKCWal1KvsWhHZyv4A2n55hDtSO",
   "title": "The Lord of The Rings - The Reinvented Series - Season 3 Episode 6 - There And Back Again - Fan Edit",
   "src": "assets/clips/20.mp4",
-  "poster": "assets/clips/20.jpg"
+  "poster": "assets/clips/20.jpg",
+  "frames": [
+   "assets/clips/frames/20_0.webp",
+   "assets/clips/frames/20_1.webp",
+   "assets/clips/frames/20_2.webp",
+   "assets/clips/frames/20_3.webp",
+   "assets/clips/frames/20_4.webp"
+  ]
  },
  {
   "n": 21,
@@ -173,7 +320,14 @@
   "target": "16lTIavp0pSehDbx9o-JP0ee7-7R0-Op0",
   "title": "Indiana Jones and The Emperor's Tomb - Game Movie Fan Edit",
   "src": "assets/clips/21.mp4",
-  "poster": "assets/clips/21.jpg"
+  "poster": "assets/clips/21.jpg",
+  "frames": [
+   "assets/clips/frames/21_0.webp",
+   "assets/clips/frames/21_1.webp",
+   "assets/clips/frames/21_2.webp",
+   "assets/clips/frames/21_3.webp",
+   "assets/clips/frames/21_4.webp"
+  ]
  },
  {
   "n": 22,
@@ -181,7 +335,14 @@
   "target": "10kqf54DUrz6lEz15CrXxqJuuw4Uw7oX4",
   "title": "Rambo vs. Predator - First Green Blood - Mashup Fan Edit",
   "src": "assets/clips/22.mp4",
-  "poster": "assets/clips/22.jpg"
+  "poster": "assets/clips/22.jpg",
+  "frames": [
+   "assets/clips/frames/22_0.webp",
+   "assets/clips/frames/22_1.webp",
+   "assets/clips/frames/22_2.webp",
+   "assets/clips/frames/22_3.webp",
+   "assets/clips/frames/22_4.webp"
+  ]
  },
  {
   "n": 23,
@@ -189,7 +350,14 @@
   "target": "1RAq5iEsMuhwTnOL0T2OQ8AFwrA2CrAN-",
   "title": "The Lord of The Rings - The Reinvented Series - Season 3 Episode 3 - Paths of The Death - Fan Edit",
   "src": "assets/clips/23.mp4",
-  "poster": "assets/clips/23.jpg"
+  "poster": "assets/clips/23.jpg",
+  "frames": [
+   "assets/clips/frames/23_0.webp",
+   "assets/clips/frames/23_1.webp",
+   "assets/clips/frames/23_2.webp",
+   "assets/clips/frames/23_3.webp",
+   "assets/clips/frames/23_4.webp"
+  ]
  },
  {
   "n": 24,
@@ -197,7 +365,14 @@
   "target": "1XekrZa3kejUgAfEA6w7XtaqxTN2NG-RJ",
   "title": "The Flash Mini-Series - Season 4 - Part 5 - Fan Edit",
   "src": "assets/clips/24.mp4",
-  "poster": "assets/clips/24.jpg"
+  "poster": "assets/clips/24.jpg",
+  "frames": [
+   "assets/clips/frames/24_0.webp",
+   "assets/clips/frames/24_1.webp",
+   "assets/clips/frames/24_2.webp",
+   "assets/clips/frames/24_3.webp",
+   "assets/clips/frames/24_4.webp"
+  ]
  },
  {
   "n": 25,
@@ -205,7 +380,14 @@
   "target": "1wpyDgVW5U8bDV3pw4KQ7dtyQ2yRjerOe",
   "title": "The Mask - Workprint Cut - Fan Edit",
   "src": "assets/clips/25.mp4",
-  "poster": "assets/clips/25.jpg"
+  "poster": "assets/clips/25.jpg",
+  "frames": [
+   "assets/clips/frames/25_0.webp",
+   "assets/clips/frames/25_1.webp",
+   "assets/clips/frames/25_2.webp",
+   "assets/clips/frames/25_3.webp",
+   "assets/clips/frames/25_4.webp"
+  ]
  },
  {
   "n": 26,
@@ -213,7 +395,14 @@
   "target": "19jghg2c0rReQJF7b7QJD7Ii2LPsMXiqh",
   "title": "Robocop 2 workprint",
   "src": "assets/clips/26.mp4",
-  "poster": "assets/clips/26.jpg"
+  "poster": "assets/clips/26.jpg",
+  "frames": [
+   "assets/clips/frames/26_0.webp",
+   "assets/clips/frames/26_1.webp",
+   "assets/clips/frames/26_2.webp",
+   "assets/clips/frames/26_3.webp",
+   "assets/clips/frames/26_4.webp"
+  ]
  },
  {
   "n": 27,
@@ -221,7 +410,14 @@
   "target": "1oUovJSiJybojseceSCCHR7IdqKP93jPi",
   "title": "Thor: The Dark World - Convergence - Fan Edit",
   "src": "assets/clips/27.mp4",
-  "poster": "assets/clips/27.jpg"
+  "poster": "assets/clips/27.jpg",
+  "frames": [
+   "assets/clips/frames/27_0.webp",
+   "assets/clips/frames/27_1.webp",
+   "assets/clips/frames/27_2.webp",
+   "assets/clips/frames/27_3.webp",
+   "assets/clips/frames/27_4.webp"
+  ]
  },
  {
   "n": 28,
@@ -229,7 +425,14 @@
   "target": "1haWGUhjfCQVG4y8ES9zOHd4BxoVj_Qfz",
   "title": "S02e08 Vendetta And Jokers Favor",
   "src": "assets/clips/28.mp4",
-  "poster": "assets/clips/28.jpg"
+  "poster": "assets/clips/28.jpg",
+  "frames": [
+   "assets/clips/frames/28_0.webp",
+   "assets/clips/frames/28_1.webp",
+   "assets/clips/frames/28_2.webp",
+   "assets/clips/frames/28_3.webp",
+   "assets/clips/frames/28_4.webp"
+  ]
  },
  {
   "n": 29,
@@ -237,7 +440,14 @@
   "target": "1yAzxB7IHn_vK86yv8FY8pgfSVtcWyaTX",
   "title": "Iron Man 1 - The Invincible Cut - Fan Edit",
   "src": "assets/clips/29.mp4",
-  "poster": "assets/clips/29.jpg"
+  "poster": "assets/clips/29.jpg",
+  "frames": [
+   "assets/clips/frames/29_0.webp",
+   "assets/clips/frames/29_1.webp",
+   "assets/clips/frames/29_2.webp",
+   "assets/clips/frames/29_3.webp",
+   "assets/clips/frames/29_4.webp"
+  ]
  },
  {
   "n": 30,
@@ -245,7 +455,14 @@
   "target": "1YUUdzIF9uq6LhQKE6ozDoyP5ZN9BzdIF",
   "title": "Blade Runner 2049 - The '30min for Sir Ridley' Cut - Fan Edit",
   "src": "assets/clips/30.mp4",
-  "poster": "assets/clips/30.jpg"
+  "poster": "assets/clips/30.jpg",
+  "frames": [
+   "assets/clips/frames/30_0.webp",
+   "assets/clips/frames/30_1.webp",
+   "assets/clips/frames/30_2.webp",
+   "assets/clips/frames/30_3.webp",
+   "assets/clips/frames/30_4.webp"
+  ]
  },
  {
   "n": 31,
@@ -253,7 +470,14 @@
   "target": "1b1D2OZGaGmqfQQ1v4fNGZWfDJ3vG5IKR",
   "title": "Dawn of Justice Series - Part 3 - Wonder Woman - The Hard Truths - Fan Edit",
   "src": "assets/clips/31.mp4",
-  "poster": "assets/clips/31.jpg"
+  "poster": "assets/clips/31.jpg",
+  "frames": [
+   "assets/clips/frames/31_0.webp",
+   "assets/clips/frames/31_1.webp",
+   "assets/clips/frames/31_2.webp",
+   "assets/clips/frames/31_3.webp",
+   "assets/clips/frames/31_4.webp"
+  ]
  },
  {
   "n": 32,
@@ -261,7 +485,14 @@
   "target": "1iMhjS5RBj7TjGEQKtnJuGa7yLX1LvRRR",
   "title": "Superman (2025) - Hybrid AR Cut - Fan Edit",
   "src": "assets/clips/32.mp4",
-  "poster": "assets/clips/32.jpg"
+  "poster": "assets/clips/32.jpg",
+  "frames": [
+   "assets/clips/frames/32_0.webp",
+   "assets/clips/frames/32_1.webp",
+   "assets/clips/frames/32_2.webp",
+   "assets/clips/frames/32_3.webp",
+   "assets/clips/frames/32_4.webp"
+  ]
  },
  {
   "n": 33,
@@ -269,7 +500,14 @@
   "target": "1gzklBBF1OolsN3Ks8zgMrV7uthBhqcWZ",
   "title": "The.Hobbit.Maple.Films.Orcrist.Edition.Disc.2",
   "src": "assets/clips/33.mp4",
-  "poster": "assets/clips/33.jpg"
+  "poster": "assets/clips/33.jpg",
+  "frames": [
+   "assets/clips/frames/33_0.webp",
+   "assets/clips/frames/33_1.webp",
+   "assets/clips/frames/33_2.webp",
+   "assets/clips/frames/33_3.webp",
+   "assets/clips/frames/33_4.webp"
+  ]
  },
  {
   "n": 34,
@@ -277,7 +515,14 @@
   "target": "1NdG2mvAapYGWWcYPRXarkMyFASL438xc",
   "title": "2 Fast 2 Furious (Hybrid AR Edit)",
   "src": "assets/clips/34.mp4",
-  "poster": "assets/clips/34.jpg"
+  "poster": "assets/clips/34.jpg",
+  "frames": [
+   "assets/clips/frames/34_0.webp",
+   "assets/clips/frames/34_1.webp",
+   "assets/clips/frames/34_2.webp",
+   "assets/clips/frames/34_3.webp",
+   "assets/clips/frames/34_4.webp"
+  ]
  },
  {
   "n": 35,
@@ -285,7 +530,14 @@
   "target": "1C9cqT58TKFkO-5LsLmeouZNkPNDeRzeH",
   "title": "Jurassic Park: The Lost World - The Cretaceous Cut - Fan Edit",
   "src": "assets/clips/35.mp4",
-  "poster": "assets/clips/35.jpg"
+  "poster": "assets/clips/35.jpg",
+  "frames": [
+   "assets/clips/frames/35_0.webp",
+   "assets/clips/frames/35_1.webp",
+   "assets/clips/frames/35_2.webp",
+   "assets/clips/frames/35_3.webp",
+   "assets/clips/frames/35_4.webp"
+  ]
  },
  {
   "n": 36,
@@ -293,7 +545,14 @@
   "target": "1JBwCQpI70_KpUwQ0pA0nB3p341JpR6SD",
   "title": "Captain Carter and Supreme Strange",
   "src": "assets/clips/36.mp4",
-  "poster": "assets/clips/36.jpg"
+  "poster": "assets/clips/36.jpg",
+  "frames": [
+   "assets/clips/frames/36_0.webp",
+   "assets/clips/frames/36_1.webp",
+   "assets/clips/frames/36_2.webp",
+   "assets/clips/frames/36_3.webp",
+   "assets/clips/frames/36_4.webp"
+  ]
  },
  {
   "n": 37,
@@ -301,7 +560,14 @@
   "target": "1dcavUp1PXUbcVBqntM-MC8ogtyxmQPqn",
   "title": "X-Men: Apocalypse - Sync Movie - Metallica: Hardwired to Self-Destruct - Fan Edit",
   "src": "assets/clips/37.mp4",
-  "poster": "assets/clips/37.jpg"
+  "poster": "assets/clips/37.jpg",
+  "frames": [
+   "assets/clips/frames/37_0.webp",
+   "assets/clips/frames/37_1.webp",
+   "assets/clips/frames/37_2.webp",
+   "assets/clips/frames/37_3.webp",
+   "assets/clips/frames/37_4.webp"
+  ]
  },
  {
   "n": 38,
@@ -309,7 +575,14 @@
   "target": "11ZSxUKh5JYHhp8vc8mIJtVZXMFGRFZ-1",
   "title": "Lost - In The Detail - Part 100 - Day 92-93 - Chronological Fan Edit.avi",
   "src": "assets/clips/38.mp4",
-  "poster": "assets/clips/38.jpg"
+  "poster": "assets/clips/38.jpg",
+  "frames": [
+   "assets/clips/frames/38_0.webp",
+   "assets/clips/frames/38_1.webp",
+   "assets/clips/frames/38_2.webp",
+   "assets/clips/frames/38_3.webp",
+   "assets/clips/frames/38_4.webp"
+  ]
  },
  {
   "n": 39,
@@ -317,7 +590,14 @@
   "target": "1isRd_79lHoS3QNIobiULsBYz-ts64V0P",
   "title": "S10E12.HughJackman-2004.03.07.ITAS.SD",
   "src": "assets/clips/39.mp4",
-  "poster": "assets/clips/39.jpg"
+  "poster": "assets/clips/39.jpg",
+  "frames": [
+   "assets/clips/frames/39_0.webp",
+   "assets/clips/frames/39_1.webp",
+   "assets/clips/frames/39_2.webp",
+   "assets/clips/frames/39_3.webp",
+   "assets/clips/frames/39_4.webp"
+  ]
  },
  {
   "n": 40,
@@ -325,7 +605,14 @@
   "target": "1vwAoYlWHkebFAPOPoOKwotnS90wnBFSp",
   "title": "The Walking Dead - Chronological Universe - Chapter 24 - Legion - Fan Edit",
   "src": "assets/clips/40.mp4",
-  "poster": "assets/clips/40.jpg"
+  "poster": "assets/clips/40.jpg",
+  "frames": [
+   "assets/clips/frames/40_0.webp",
+   "assets/clips/frames/40_1.webp",
+   "assets/clips/frames/40_2.webp",
+   "assets/clips/frames/40_3.webp",
+   "assets/clips/frames/40_4.webp"
+  ]
  },
  {
   "n": 41,
@@ -333,7 +620,14 @@
   "target": "1AvfJx5mqSDpuhyBT_7WcBRWThRUkDJk-",
   "title": "The Punisher Mini-Series - Season 1 - Part 7 - Fan Edit",
   "src": "assets/clips/41.mp4",
-  "poster": "assets/clips/41.jpg"
+  "poster": "assets/clips/41.jpg",
+  "frames": [
+   "assets/clips/frames/41_0.webp",
+   "assets/clips/frames/41_1.webp",
+   "assets/clips/frames/41_2.webp",
+   "assets/clips/frames/41_3.webp",
+   "assets/clips/frames/41_4.webp"
+  ]
  },
  {
   "n": 42,
@@ -341,7 +635,14 @@
   "target": "1A2Zz9zy4ilU7MgJsZQcvzwlYUFDchd91",
   "title": "Click - Fast Forward - Fan Edit",
   "src": "assets/clips/42.mp4",
-  "poster": "assets/clips/42.jpg"
+  "poster": "assets/clips/42.jpg",
+  "frames": [
+   "assets/clips/frames/42_0.webp",
+   "assets/clips/frames/42_1.webp",
+   "assets/clips/frames/42_2.webp",
+   "assets/clips/frames/42_3.webp",
+   "assets/clips/frames/42_4.webp"
+  ]
  },
  {
   "n": 43,
@@ -349,7 +650,14 @@
   "target": "1n3Yy6yJc1jeVhmVM_NH8YYhNbJu2gPhx",
   "title": "DCAU Series - Womp Rat Cut - Season 12 Episode 7 - Interlude VII - Batman - Mystery of the Batwoman - Fan Edit",
   "src": "assets/clips/43.mp4",
-  "poster": "assets/clips/43.jpg"
+  "poster": "assets/clips/43.jpg",
+  "frames": [
+   "assets/clips/frames/43_0.webp",
+   "assets/clips/frames/43_1.webp",
+   "assets/clips/frames/43_2.webp",
+   "assets/clips/frames/43_3.webp",
+   "assets/clips/frames/43_4.webp"
+  ]
  },
  {
   "n": 44,
@@ -357,7 +665,14 @@
   "target": "1Z55Tk1dC-4Bv8CAQOegc5bluhtdQfwPB",
   "title": "Star Wars: The Clone Wars (2008) - Part 0.3 - The Gunray Chase - Film Cut - Movie Fan Edit",
   "src": "assets/clips/44.mp4",
-  "poster": "assets/clips/44.jpg"
+  "poster": "assets/clips/44.jpg",
+  "frames": [
+   "assets/clips/frames/44_0.webp",
+   "assets/clips/frames/44_1.webp",
+   "assets/clips/frames/44_2.webp",
+   "assets/clips/frames/44_3.webp",
+   "assets/clips/frames/44_4.webp"
+  ]
  },
  {
   "n": 45,
@@ -365,7 +680,14 @@
   "target": "1gjzPq8coabFx2F7CgFoZ4JuOvAKsrPH2",
   "title": "Batman & Robin Befriends The Joker - Fan Short Film",
   "src": "assets/clips/45.mp4",
-  "poster": "assets/clips/45.jpg"
+  "poster": "assets/clips/45.jpg",
+  "frames": [
+   "assets/clips/frames/45_0.webp",
+   "assets/clips/frames/45_1.webp",
+   "assets/clips/frames/45_2.webp",
+   "assets/clips/frames/45_3.webp",
+   "assets/clips/frames/45_4.webp"
+  ]
  },
  {
   "n": 46,
@@ -373,7 +695,14 @@
   "target": "1CMKs4a2FDIqCGRnU0cXF94yITi5cyEnQ",
   "title": "Blade Runner & Blade Runner 2049 - Blade Runners - Mashup Fan Edit",
   "src": "assets/clips/46.mp4",
-  "poster": "assets/clips/46.jpg"
+  "poster": "assets/clips/46.jpg",
+  "frames": [
+   "assets/clips/frames/46_0.webp",
+   "assets/clips/frames/46_1.webp",
+   "assets/clips/frames/46_2.webp",
+   "assets/clips/frames/46_3.webp",
+   "assets/clips/frames/46_4.webp"
+  ]
  },
  {
   "n": 47,
@@ -381,7 +710,14 @@
   "target": "1ZDYyKAyjdmHpERlPUlM4r-d3xcyPED9f",
   "title": "Giger's Alien - 1979 Documentary",
   "src": "assets/clips/47.mp4",
-  "poster": "assets/clips/47.jpg"
+  "poster": "assets/clips/47.jpg",
+  "frames": [
+   "assets/clips/frames/47_0.webp",
+   "assets/clips/frames/47_1.webp",
+   "assets/clips/frames/47_2.webp",
+   "assets/clips/frames/47_3.webp",
+   "assets/clips/frames/47_4.webp"
+  ]
  },
  {
   "n": 48,
@@ -389,7 +725,14 @@
   "target": "1ElqFICQGfNK6fSmPT2mnxZsVcyDXfnSJ",
   "title": "Halloween Homecoming - Workprint A",
   "src": "assets/clips/48.mp4",
-  "poster": "assets/clips/48.jpg"
+  "poster": "assets/clips/48.jpg",
+  "frames": [
+   "assets/clips/frames/48_0.webp",
+   "assets/clips/frames/48_1.webp",
+   "assets/clips/frames/48_2.webp",
+   "assets/clips/frames/48_3.webp",
+   "assets/clips/frames/48_4.webp"
+  ]
  },
  {
   "n": 49,
@@ -397,7 +740,14 @@
   "target": "1sSJhNVKL5Mjp5aFGuS1cewS1BmOMVk6K",
   "title": "Terminator Genisys - Genisys: A Terminator Story - Fan Edit",
   "src": "assets/clips/49.mp4",
-  "poster": "assets/clips/49.jpg"
+  "poster": "assets/clips/49.jpg",
+  "frames": [
+   "assets/clips/frames/49_0.webp",
+   "assets/clips/frames/49_1.webp",
+   "assets/clips/frames/49_2.webp",
+   "assets/clips/frames/49_3.webp",
+   "assets/clips/frames/49_4.webp"
+  ]
  },
  {
   "n": 50,
@@ -405,7 +755,14 @@
   "target": "15zxAsiRPeuniTnpujSeuf19wJhUyMj2I",
   "title": "The Avengers: Earth's Mightiest Heroes (Animated Series) - Season 1 - Movie Fan Edit",
   "src": "assets/clips/50.mp4",
-  "poster": "assets/clips/50.jpg"
+  "poster": "assets/clips/50.jpg",
+  "frames": [
+   "assets/clips/frames/50_0.webp",
+   "assets/clips/frames/50_1.webp",
+   "assets/clips/frames/50_2.webp",
+   "assets/clips/frames/50_3.webp",
+   "assets/clips/frames/50_4.webp"
+  ]
  },
  {
   "n": 51,
@@ -413,7 +770,14 @@
   "target": "1RkhqM19nRyEAvYUEcS9t6cWTRPDwj-5t",
   "title": "Die Hard - TV-14 FX Cut - Fan Edit",
   "src": "assets/clips/51.mp4",
-  "poster": "assets/clips/51.jpg"
+  "poster": "assets/clips/51.jpg",
+  "frames": [
+   "assets/clips/frames/51_0.webp",
+   "assets/clips/frames/51_1.webp",
+   "assets/clips/frames/51_2.webp",
+   "assets/clips/frames/51_3.webp",
+   "assets/clips/frames/51_4.webp"
+  ]
  },
  {
   "n": 52,
@@ -421,7 +785,14 @@
   "target": "10BNygvG0Xi0tDqItdlxQOpryi9eqpEwU",
   "title": "DCAU Series - Womp Rat Cut - Season 8 Episode 3 - Interlude III -  Superman - Braniac Attacks by Fanedit895 - Fan Edit",
   "src": "assets/clips/52.mp4",
-  "poster": "assets/clips/52.jpg"
+  "poster": "assets/clips/52.jpg",
+  "frames": [
+   "assets/clips/frames/52_0.webp",
+   "assets/clips/frames/52_1.webp",
+   "assets/clips/frames/52_2.webp",
+   "assets/clips/frames/52_3.webp",
+   "assets/clips/frames/52_4.webp"
+  ]
  },
  {
   "n": 53,
@@ -429,7 +800,14 @@
   "target": "13RcI7bw2NUiQsPWOE45d663DVoik9tAo",
   "title": "The Flash Mini-Series - Season 4 - Part 2 - Total Shway - Fan Edit",
   "src": "assets/clips/53.mp4",
-  "poster": "assets/clips/53.jpg"
+  "poster": "assets/clips/53.jpg",
+  "frames": [
+   "assets/clips/frames/53_0.webp",
+   "assets/clips/frames/53_1.webp",
+   "assets/clips/frames/53_2.webp",
+   "assets/clips/frames/53_3.webp",
+   "assets/clips/frames/53_4.webp"
+  ]
  },
  {
   "n": 54,
@@ -437,7 +815,14 @@
   "target": "1mS2yjs3wqBkKqGQNcgvPbNrzTf38Vpza",
   "title": "Back To The Future Part ll - Forward To The Future - Fan Edit",
   "src": "assets/clips/54.mp4",
-  "poster": "assets/clips/54.jpg"
+  "poster": "assets/clips/54.jpg",
+  "frames": [
+   "assets/clips/frames/54_0.webp",
+   "assets/clips/frames/54_1.webp",
+   "assets/clips/frames/54_2.webp",
+   "assets/clips/frames/54_3.webp",
+   "assets/clips/frames/54_4.webp"
+  ]
  },
  {
   "n": 55,
@@ -445,7 +830,14 @@
   "target": "15KQIs1gCMDuu11dqNdzSmB0dyuQxntAB",
   "title": "Thor - God of Thunder - Fan Edit",
   "src": "assets/clips/55.mp4",
-  "poster": "assets/clips/55.jpg"
+  "poster": "assets/clips/55.jpg",
+  "frames": [
+   "assets/clips/frames/55_0.webp",
+   "assets/clips/frames/55_1.webp",
+   "assets/clips/frames/55_2.webp",
+   "assets/clips/frames/55_3.webp",
+   "assets/clips/frames/55_4.webp"
+  ]
  },
  {
   "n": 56,
@@ -453,7 +845,14 @@
   "target": "12W_UEkF7uNAaEMw3kKKREsKpL6bs3mHP",
   "title": "113 episode 4.13 2006-2007.avi",
   "src": "assets/clips/56.mp4",
-  "poster": "assets/clips/56.jpg"
+  "poster": "assets/clips/56.jpg",
+  "frames": [
+   "assets/clips/frames/56_0.webp",
+   "assets/clips/frames/56_1.webp",
+   "assets/clips/frames/56_2.webp",
+   "assets/clips/frames/56_3.webp",
+   "assets/clips/frames/56_4.webp"
+  ]
  },
  {
   "n": 57,
@@ -461,7 +860,14 @@
   "target": "1JJoJkcC6ANX9s1or-M5TZUKyH-g2J5Yv",
   "title": "Joker - That's Life - Fan Edit",
   "src": "assets/clips/57.mp4",
-  "poster": "assets/clips/57.jpg"
+  "poster": "assets/clips/57.jpg",
+  "frames": [
+   "assets/clips/frames/57_0.webp",
+   "assets/clips/frames/57_1.webp",
+   "assets/clips/frames/57_2.webp",
+   "assets/clips/frames/57_3.webp",
+   "assets/clips/frames/57_4.webp"
+  ]
  },
  {
   "n": 58,
@@ -469,7 +875,14 @@
   "target": "1BTZFPyBAR2qWvsXOqRAmo5PSASrN9AuQ",
   "title": "X-Men Origins - First Class",
   "src": "assets/clips/58.mp4",
-  "poster": "assets/clips/58.jpg"
+  "poster": "assets/clips/58.jpg",
+  "frames": [
+   "assets/clips/frames/58_0.webp",
+   "assets/clips/frames/58_1.webp",
+   "assets/clips/frames/58_2.webp",
+   "assets/clips/frames/58_3.webp",
+   "assets/clips/frames/58_4.webp"
+  ]
  },
  {
   "n": 59,
@@ -477,7 +890,14 @@
   "target": "1C_UArsr4dagBCY2myJAcSru7OMo6NINf",
   "title": "DCAU Series - Womp Rat Cut - Season 6 Episode 8 - Double Talk, Joker's Million's & Babel - Fan Edit",
   "src": "assets/clips/59.mp4",
-  "poster": "assets/clips/59.jpg"
+  "poster": "assets/clips/59.jpg",
+  "frames": [
+   "assets/clips/frames/59_0.webp",
+   "assets/clips/frames/59_1.webp",
+   "assets/clips/frames/59_2.webp",
+   "assets/clips/frames/59_3.webp",
+   "assets/clips/frames/59_4.webp"
+  ]
  },
  {
   "n": 60,
@@ -485,7 +905,14 @@
   "target": "16dHoWdLmCBY06MIDdgo6sv1-gvS7hmdv",
   "title": "080 intermission - Find 815 pt 03.avi",
   "src": "assets/clips/60.mp4",
-  "poster": "assets/clips/60.jpg"
+  "poster": "assets/clips/60.jpg",
+  "frames": [
+   "assets/clips/frames/60_0.webp",
+   "assets/clips/frames/60_1.webp",
+   "assets/clips/frames/60_2.webp",
+   "assets/clips/frames/60_3.webp",
+   "assets/clips/frames/60_4.webp"
+  ]
  },
  {
   "n": 61,
@@ -493,7 +920,14 @@
   "target": "1mytMdk_I3ueqnmV4TDYxV6YK1PXjuLWW",
   "title": "The Lord of The Rings: The Fellowship of The Ring - Sharkey's Cut - Fan Edit (Need to Download)",
   "src": "assets/clips/61.mp4",
-  "poster": "assets/clips/61.jpg"
+  "poster": "assets/clips/61.jpg",
+  "frames": [
+   "assets/clips/frames/61_0.webp",
+   "assets/clips/frames/61_1.webp",
+   "assets/clips/frames/61_2.webp",
+   "assets/clips/frames/61_3.webp",
+   "assets/clips/frames/61_4.webp"
+  ]
  },
  {
   "n": 62,
@@ -501,7 +935,14 @@
   "target": "1Hut9TSUO8glnxymquVFn1FdzNosd0gZ6",
   "title": "Pirates_E18",
   "src": "assets/clips/62.mp4",
-  "poster": "assets/clips/62.jpg"
+  "poster": "assets/clips/62.jpg",
+  "frames": [
+   "assets/clips/frames/62_0.webp",
+   "assets/clips/frames/62_1.webp",
+   "assets/clips/frames/62_2.webp",
+   "assets/clips/frames/62_3.webp",
+   "assets/clips/frames/62_4.webp"
+  ]
  },
  {
   "n": 63,
@@ -509,7 +950,14 @@
   "target": "11ApeV7MIOryVf5wmsyq5I9Ba3p1vQxq2",
   "title": "Toy Story 3 - Especially Espa\u00f1ol - 3GB",
   "src": "assets/clips/63.mp4",
-  "poster": "assets/clips/63.jpg"
+  "poster": "assets/clips/63.jpg",
+  "frames": [
+   "assets/clips/frames/63_0.webp",
+   "assets/clips/frames/63_1.webp",
+   "assets/clips/frames/63_2.webp",
+   "assets/clips/frames/63_3.webp",
+   "assets/clips/frames/63_4.webp"
+  ]
  },
  {
   "n": 64,
@@ -517,7 +965,14 @@
   "target": "1ozIKAjuGCOhJK_YlC5e-GwWnuuNWVO2V",
   "title": "Die Hard with a Vengeance - TV-MA FX Cut - Fan Edit",
   "src": "assets/clips/64.mp4",
-  "poster": "assets/clips/64.jpg"
+  "poster": "assets/clips/64.jpg",
+  "frames": [
+   "assets/clips/frames/64_0.webp",
+   "assets/clips/frames/64_1.webp",
+   "assets/clips/frames/64_2.webp",
+   "assets/clips/frames/64_3.webp",
+   "assets/clips/frames/64_4.webp"
+  ]
  },
  {
   "n": 65,
@@ -525,7 +980,14 @@
   "target": "1TCXsDKUPWulCaHrePZ-geg6AceC7uRbw",
   "title": "Marvel Zombies - Movie Fan Edit 2",
   "src": "assets/clips/65.mp4",
-  "poster": "assets/clips/65.jpg"
+  "poster": "assets/clips/65.jpg",
+  "frames": [
+   "assets/clips/frames/65_0.webp",
+   "assets/clips/frames/65_1.webp",
+   "assets/clips/frames/65_2.webp",
+   "assets/clips/frames/65_3.webp",
+   "assets/clips/frames/65_4.webp"
+  ]
  },
  {
   "n": 66,
@@ -533,7 +995,14 @@
   "target": "179RdSgOmIlWfUtfTRM1tJKqvnXZcV3o5",
   "title": "Jurassic Park - Purrassic Park - Fan Edit",
   "src": "assets/clips/66.mp4",
-  "poster": "assets/clips/66.jpg"
+  "poster": "assets/clips/66.jpg",
+  "frames": [
+   "assets/clips/frames/66_0.webp",
+   "assets/clips/frames/66_1.webp",
+   "assets/clips/frames/66_2.webp",
+   "assets/clips/frames/66_3.webp",
+   "assets/clips/frames/66_4.webp"
+  ]
  },
  {
   "n": 67,
@@ -541,7 +1010,14 @@
   "target": "1-MOp7UVgxeJOR9H4jVU63Z_QqUZMDTkl",
   "title": "Pirates_E01",
   "src": "assets/clips/67.mp4",
-  "poster": "assets/clips/67.jpg"
+  "poster": "assets/clips/67.jpg",
+  "frames": [
+   "assets/clips/frames/67_0.webp",
+   "assets/clips/frames/67_1.webp",
+   "assets/clips/frames/67_2.webp",
+   "assets/clips/frames/67_3.webp",
+   "assets/clips/frames/67_4.webp"
+  ]
  },
  {
   "n": 68,
@@ -549,7 +1025,14 @@
   "target": "1hI9HhOjml3r9MLyQZ_HPqHffBDA9j7JD",
   "title": "Rocky V workprint",
   "src": "assets/clips/68.mp4",
-  "poster": "assets/clips/68.jpg"
+  "poster": "assets/clips/68.jpg",
+  "frames": [
+   "assets/clips/frames/68_0.webp",
+   "assets/clips/frames/68_1.webp",
+   "assets/clips/frames/68_2.webp",
+   "assets/clips/frames/68_3.webp",
+   "assets/clips/frames/68_4.webp"
+  ]
  },
  {
   "n": 69,
@@ -557,7 +1040,14 @@
   "target": "17ct1YviNDWGeV5fT8wd54qiYXfPHSgNk",
   "title": "THE LION KING (1994) WORKPRINT",
   "src": "assets/clips/69.mp4",
-  "poster": "assets/clips/69.jpg"
+  "poster": "assets/clips/69.jpg",
+  "frames": [
+   "assets/clips/frames/69_0.webp",
+   "assets/clips/frames/69_1.webp",
+   "assets/clips/frames/69_2.webp",
+   "assets/clips/frames/69_3.webp",
+   "assets/clips/frames/69_4.webp"
+  ]
  },
  {
   "n": 70,
@@ -565,7 +1055,14 @@
   "target": "1WM4LI_L0uaFqbJahreGok9WCNIDTDQYW",
   "title": "DCAU Series - Womp Rat Cut - Season 15 Episode 16 - Finale, Where's Terry & Ace In The Hole - Fan Edit",
   "src": "assets/clips/70.mp4",
-  "poster": "assets/clips/70.jpg"
+  "poster": "assets/clips/70.jpg",
+  "frames": [
+   "assets/clips/frames/70_0.webp",
+   "assets/clips/frames/70_1.webp",
+   "assets/clips/frames/70_2.webp",
+   "assets/clips/frames/70_3.webp",
+   "assets/clips/frames/70_4.webp"
+  ]
  },
  {
   "n": 71,
@@ -573,7 +1070,14 @@
   "target": "1FLfhdXNchg9MxiaH8g3lD-km30oMYgyu",
   "title": "Scary Movie - TV Version - Fan Edit",
   "src": "assets/clips/71.mp4",
-  "poster": "assets/clips/71.jpg"
+  "poster": "assets/clips/71.jpg",
+  "frames": [
+   "assets/clips/frames/71_0.webp",
+   "assets/clips/frames/71_1.webp",
+   "assets/clips/frames/71_2.webp",
+   "assets/clips/frames/71_3.webp",
+   "assets/clips/frames/71_4.webp"
+  ]
  },
  {
   "n": 72,
@@ -581,7 +1085,14 @@
   "target": "1Qw-K21df7q8BotsIvo9ue7IbSvC9WsbY",
   "title": "S04e08 - The Lion And The Unicorn And Trial",
   "src": "assets/clips/72.mp4",
-  "poster": "assets/clips/72.jpg"
+  "poster": "assets/clips/72.jpg",
+  "frames": [
+   "assets/clips/frames/72_0.webp",
+   "assets/clips/frames/72_1.webp",
+   "assets/clips/frames/72_2.webp",
+   "assets/clips/frames/72_3.webp",
+   "assets/clips/frames/72_4.webp"
+  ]
  },
  {
   "n": 73,
@@ -589,7 +1100,14 @@
   "target": "1I2y86ugpAPFvcCqzM0s9YVKuzt46aQzV",
   "title": "DC Series - Part 1 - The Dark Knight - Fan Edit",
   "src": "assets/clips/73.mp4",
-  "poster": "assets/clips/73.jpg"
+  "poster": "assets/clips/73.jpg",
+  "frames": [
+   "assets/clips/frames/73_0.webp",
+   "assets/clips/frames/73_1.webp",
+   "assets/clips/frames/73_2.webp",
+   "assets/clips/frames/73_3.webp",
+   "assets/clips/frames/73_4.webp"
+  ]
  },
  {
   "n": 74,
@@ -597,7 +1115,14 @@
   "target": "1kCbCxjx2l7-uCvnqBlknwW3GMyDPomJV",
   "title": "06 Gumby  - Too Loo_cTHLG1srl9k_360p",
   "src": "assets/clips/74.mp4",
-  "poster": "assets/clips/74.jpg"
+  "poster": "assets/clips/74.jpg",
+  "frames": [
+   "assets/clips/frames/74_0.webp",
+   "assets/clips/frames/74_1.webp",
+   "assets/clips/frames/74_2.webp",
+   "assets/clips/frames/74_3.webp",
+   "assets/clips/frames/74_4.webp"
+  ]
  },
  {
   "n": 75,
@@ -605,7 +1130,14 @@
   "target": "1PJuByCXhJkfZYW8VLwO-I0YKfKrvh8zy",
   "title": "[KatawareDoki] Dragon Ball - 035 [BD 1080p x264 AAC] [17ECF522]",
   "src": "assets/clips/75.mp4",
-  "poster": "assets/clips/75.jpg"
+  "poster": "assets/clips/75.jpg",
+  "frames": [
+   "assets/clips/frames/75_0.webp",
+   "assets/clips/frames/75_1.webp",
+   "assets/clips/frames/75_2.webp",
+   "assets/clips/frames/75_3.webp",
+   "assets/clips/frames/75_4.webp"
+  ]
  },
  {
   "n": 76,
@@ -613,7 +1145,14 @@
   "target": "1KfaSWfQ-E960pFkGTWGt0lq_M8zCSxpp",
   "title": "DCAU Series - Womp Rat Cut - Season 6 Episode 12 - Ghost In The Machine, The Hand of Fate & The Ultimate Thrill - Fan Edit",
   "src": "assets/clips/76.mp4",
-  "poster": "assets/clips/76.jpg"
+  "poster": "assets/clips/76.jpg",
+  "frames": [
+   "assets/clips/frames/76_0.webp",
+   "assets/clips/frames/76_1.webp",
+   "assets/clips/frames/76_2.webp",
+   "assets/clips/frames/76_3.webp",
+   "assets/clips/frames/76_4.webp"
+  ]
  },
  {
   "n": 77,
@@ -621,7 +1160,14 @@
   "target": "1MWMcxv-mqkzssO8-R1O-BqoyX8kmtt8W",
   "title": "Daredevil: Blind Justice Mini-Series - Season 3 - Part 4 - Fan Edit",
   "src": "assets/clips/77.mp4",
-  "poster": "assets/clips/77.jpg"
+  "poster": "assets/clips/77.jpg",
+  "frames": [
+   "assets/clips/frames/77_0.webp",
+   "assets/clips/frames/77_1.webp",
+   "assets/clips/frames/77_2.webp",
+   "assets/clips/frames/77_3.webp",
+   "assets/clips/frames/77_4.webp"
+  ]
  },
  {
   "n": 78,
@@ -629,7 +1175,14 @@
   "target": "1oh8Jker2y9byl_i39lzKAtsP82IgGQe7",
   "title": "Battlestar Galactica - Season 1 Episode 5 - You Cant Go Home Again - Extended Episode - Fan Edit",
   "src": "assets/clips/78.mp4",
-  "poster": "assets/clips/78.jpg"
+  "poster": "assets/clips/78.jpg",
+  "frames": [
+   "assets/clips/frames/78_0.webp",
+   "assets/clips/frames/78_1.webp",
+   "assets/clips/frames/78_2.webp",
+   "assets/clips/frames/78_3.webp",
+   "assets/clips/frames/78_4.webp"
+  ]
  },
  {
   "n": 79,
@@ -637,7 +1190,14 @@
   "target": "17iMUHsZj1OO-mRB2Cou3JQuztUKIQGFK",
   "title": "[KatawareDoki] Dragon Ball - 121 [BD 1080p x264 AAC] [9C448CA6]",
   "src": "assets/clips/79.mp4",
-  "poster": "assets/clips/79.jpg"
+  "poster": "assets/clips/79.jpg",
+  "frames": [
+   "assets/clips/frames/79_0.webp",
+   "assets/clips/frames/79_1.webp",
+   "assets/clips/frames/79_2.webp",
+   "assets/clips/frames/79_3.webp",
+   "assets/clips/frames/79_4.webp"
+  ]
  },
  {
   "n": 80,
@@ -645,7 +1205,14 @@
   "target": "1uaERM0CQCj8_bvPMrrrOPrWHH0Nt5PDa",
   "title": "DCEU Snyderverse Series - Part 8 - Fan Edit",
   "src": "assets/clips/80.mp4",
-  "poster": "assets/clips/80.jpg"
+  "poster": "assets/clips/80.jpg",
+  "frames": [
+   "assets/clips/frames/80_0.webp",
+   "assets/clips/frames/80_1.webp",
+   "assets/clips/frames/80_2.webp",
+   "assets/clips/frames/80_3.webp",
+   "assets/clips/frames/80_4.webp"
+  ]
  },
  {
   "n": 81,
@@ -653,7 +1220,14 @@
   "target": "1e4Gl8Hrv3kWyaBAoc3Yv9SA-p8E3bybf",
   "title": "A Look Inside the Menu -behindthescenes",
   "src": "assets/clips/81.mp4",
-  "poster": "assets/clips/81.jpg"
+  "poster": "assets/clips/81.jpg",
+  "frames": [
+   "assets/clips/frames/81_0.webp",
+   "assets/clips/frames/81_1.webp",
+   "assets/clips/frames/81_2.webp",
+   "assets/clips/frames/81_3.webp",
+   "assets/clips/frames/81_4.webp"
+  ]
  },
  {
   "n": 82,
@@ -661,7 +1235,14 @@
   "target": "1-9KOaLvWkSyATOUwaBZVUIq_xz-VSsEy",
   "title": "Star.Wars.Cloak.Of.Deception.TinyEncode",
   "src": "assets/clips/82.mp4",
-  "poster": "assets/clips/82.jpg"
+  "poster": "assets/clips/82.jpg",
+  "frames": [
+   "assets/clips/frames/82_0.webp",
+   "assets/clips/frames/82_1.webp",
+   "assets/clips/frames/82_2.webp",
+   "assets/clips/frames/82_3.webp",
+   "assets/clips/frames/82_4.webp"
+  ]
  },
  {
   "n": 83,
@@ -669,7 +1250,14 @@
   "target": "1glM3NHrwfsrwSaKaloV00Z99-ncvT6gr",
   "title": "S1E03 The Reporter (Extended)",
   "src": "assets/clips/83.mp4",
-  "poster": "assets/clips/83.jpg"
+  "poster": "assets/clips/83.jpg",
+  "frames": [
+   "assets/clips/frames/83_0.webp",
+   "assets/clips/frames/83_1.webp",
+   "assets/clips/frames/83_2.webp",
+   "assets/clips/frames/83_3.webp",
+   "assets/clips/frames/83_4.webp"
+  ]
  },
  {
   "n": 84,
@@ -677,7 +1265,14 @@
   "target": "15TaPxOXBDjXxbCBqugLqcxPIQFe6mywM",
   "title": "Deadpool - Chronological Fan Edit",
   "src": "assets/clips/84.mp4",
-  "poster": "assets/clips/84.jpg"
+  "poster": "assets/clips/84.jpg",
+  "frames": [
+   "assets/clips/frames/84_0.webp",
+   "assets/clips/frames/84_1.webp",
+   "assets/clips/frames/84_2.webp",
+   "assets/clips/frames/84_3.webp",
+   "assets/clips/frames/84_4.webp"
+  ]
  },
  {
   "n": 85,
@@ -685,7 +1280,14 @@
   "target": "1UlEcxyxQ1mnohHc_VlQ20Sw_bYUBr-hZ",
   "title": "World War ll Supercut Series - Part 9 - Flood - Mashup Fan Edit",
   "src": "assets/clips/85.mp4",
-  "poster": "assets/clips/85.jpg"
+  "poster": "assets/clips/85.jpg",
+  "frames": [
+   "assets/clips/frames/85_0.webp",
+   "assets/clips/frames/85_1.webp",
+   "assets/clips/frames/85_2.webp",
+   "assets/clips/frames/85_3.webp",
+   "assets/clips/frames/85_4.webp"
+  ]
  },
  {
   "n": 86,
@@ -693,7 +1295,14 @@
   "target": "1gvmB9qlxMxP91PsQ4vIpR9MJHyDTMWuj",
   "title": "s12e05 - Interlude V - Justice League - The Worlds Collide",
   "src": "assets/clips/86.mp4",
-  "poster": "assets/clips/86.jpg"
+  "poster": "assets/clips/86.jpg",
+  "frames": [
+   "assets/clips/frames/86_0.webp",
+   "assets/clips/frames/86_1.webp",
+   "assets/clips/frames/86_2.webp",
+   "assets/clips/frames/86_3.webp",
+   "assets/clips/frames/86_4.webp"
+  ]
  },
  {
   "n": 87,
@@ -701,7 +1310,14 @@
   "target": "11ingmYSvA_y_Dh25nFG0KBK0t7sijNyH",
   "title": "Parks and Recreation - Season 1 Episode 6 - Rock Show - Producer's Cut - Fan Edit",
   "src": "assets/clips/87.mp4",
-  "poster": "assets/clips/87.jpg"
+  "poster": "assets/clips/87.jpg",
+  "frames": [
+   "assets/clips/frames/87_0.webp",
+   "assets/clips/frames/87_1.webp",
+   "assets/clips/frames/87_2.webp",
+   "assets/clips/frames/87_3.webp",
+   "assets/clips/frames/87_4.webp"
+  ]
  },
  {
   "n": 88,
@@ -709,7 +1325,14 @@
   "target": "18jrK9p4Vf2GPqYz9WQac82Z0osvXF2Ay",
   "title": "Star.Wars.Return.Of.The.Jedi.Custom.Special.Edition.Yub.Nub.TinyEncode",
   "src": "assets/clips/88.mp4",
-  "poster": "assets/clips/88.jpg"
+  "poster": "assets/clips/88.jpg",
+  "frames": [
+   "assets/clips/frames/88_0.webp",
+   "assets/clips/frames/88_1.webp",
+   "assets/clips/frames/88_2.webp",
+   "assets/clips/frames/88_3.webp",
+   "assets/clips/frames/88_4.webp"
+  ]
  },
  {
   "n": 89,
@@ -717,7 +1340,14 @@
   "target": "1w0eBPFJsIclK9ag7-9bbJAsWldJ5EVz8",
   "title": "Quantum of Solace - A Casino Royale Epilogue",
   "src": "assets/clips/89.mp4",
-  "poster": "assets/clips/89.jpg"
+  "poster": "assets/clips/89.jpg",
+  "frames": [
+   "assets/clips/frames/89_0.webp",
+   "assets/clips/frames/89_1.webp",
+   "assets/clips/frames/89_2.webp",
+   "assets/clips/frames/89_3.webp",
+   "assets/clips/frames/89_4.webp"
+  ]
  },
  {
   "n": 90,
@@ -725,7 +1355,14 @@
   "target": "1P9XOJdYGI5RaoykIhlbO7vCog7mRS6oF",
   "title": "S2E16 Galentine's Day (Extended)",
   "src": "assets/clips/90.mp4",
-  "poster": "assets/clips/90.jpg"
+  "poster": "assets/clips/90.jpg",
+  "frames": [
+   "assets/clips/frames/90_0.webp",
+   "assets/clips/frames/90_1.webp",
+   "assets/clips/frames/90_2.webp",
+   "assets/clips/frames/90_3.webp",
+   "assets/clips/frames/90_4.webp"
+  ]
  },
  {
   "n": 91,
@@ -733,7 +1370,14 @@
   "target": "16GhHmplZhUF7fHjLKexZBJtpAgeMDcPi",
   "title": "The Sopranos - Season 3-4 - Chapter 4D - Chris & Adriana - Part 2 - No Spoiler - Movie Fan Edit",
   "src": "assets/clips/91.mp4",
-  "poster": "assets/clips/91.jpg"
+  "poster": "assets/clips/91.jpg",
+  "frames": [
+   "assets/clips/frames/91_0.webp",
+   "assets/clips/frames/91_1.webp",
+   "assets/clips/frames/91_2.webp",
+   "assets/clips/frames/91_3.webp",
+   "assets/clips/frames/91_4.webp"
+  ]
  },
  {
   "n": 92,
@@ -741,7 +1385,14 @@
   "target": "1vcKiCoKGn1_Svf-826xqcD_Wweo2QxAL",
   "title": "S2E18 The Possum (Extended)",
   "src": "assets/clips/92.mp4",
-  "poster": "assets/clips/92.jpg"
+  "poster": "assets/clips/92.jpg",
+  "frames": [
+   "assets/clips/frames/92_0.webp",
+   "assets/clips/frames/92_1.webp",
+   "assets/clips/frames/92_2.webp",
+   "assets/clips/frames/92_3.webp",
+   "assets/clips/frames/92_4.webp"
+  ]
  },
  {
   "n": 93,
@@ -749,7 +1400,14 @@
   "target": "1slMvSxDMrpJs4kworslwC1c2I8xR8eSz",
   "title": "Daredevil: Blind Justice Mini-Series - Season 2 - Part 7 - Fan Edit",
   "src": "assets/clips/93.mp4",
-  "poster": "assets/clips/93.jpg"
+  "poster": "assets/clips/93.jpg",
+  "frames": [
+   "assets/clips/frames/93_0.webp",
+   "assets/clips/frames/93_1.webp",
+   "assets/clips/frames/93_2.webp",
+   "assets/clips/frames/93_3.webp",
+   "assets/clips/frames/93_4.webp"
+  ]
  },
  {
   "n": 94,
@@ -757,7 +1415,14 @@
   "target": "1P4sHARPr9KePf48kgY_EqQ1BXeSp_DOD",
   "title": "The Defenders Mini-Series - Season 1 - Part 3 - Fan Edit",
   "src": "assets/clips/94.mp4",
-  "poster": "assets/clips/94.jpg"
+  "poster": "assets/clips/94.jpg",
+  "frames": [
+   "assets/clips/frames/94_0.webp",
+   "assets/clips/frames/94_1.webp",
+   "assets/clips/frames/94_2.webp",
+   "assets/clips/frames/94_3.webp",
+   "assets/clips/frames/94_4.webp"
+  ]
  },
  {
   "n": 95,
@@ -765,7 +1430,14 @@
   "target": "1s7dyiX3xuIpryDei9PhaVywiLWuceo_r",
   "title": "Jessica Jones: Alias Investigations Mini-Series - Season 1 - Part 2 - Girl in trouble - Fan Edit",
   "src": "assets/clips/95.mp4",
-  "poster": "assets/clips/95.jpg"
+  "poster": "assets/clips/95.jpg",
+  "frames": [
+   "assets/clips/frames/95_0.webp",
+   "assets/clips/frames/95_1.webp",
+   "assets/clips/frames/95_2.webp",
+   "assets/clips/frames/95_3.webp",
+   "assets/clips/frames/95_4.webp"
+  ]
  },
  {
   "n": 96,
@@ -773,7 +1445,14 @@
   "target": "1lHlH1rDl-09OvH5iu4ScVhPuLGtDtANM",
   "title": "Parks and Recreation - Season 2 Episode 5 - Sister City - Extended - Fan Edit",
   "src": "assets/clips/96.mp4",
-  "poster": "assets/clips/96.jpg"
+  "poster": "assets/clips/96.jpg",
+  "frames": [
+   "assets/clips/frames/96_0.webp",
+   "assets/clips/frames/96_1.webp",
+   "assets/clips/frames/96_2.webp",
+   "assets/clips/frames/96_3.webp",
+   "assets/clips/frames/96_4.webp"
+  ]
  },
  {
   "n": 97,
@@ -781,7 +1460,14 @@
   "target": "1dBurS1lfgUFC7RJL2nzj600DHn8lKJsb",
   "title": "Batman Forever - The Assembly Cut - Fan Edit",
   "src": "assets/clips/97.mp4",
-  "poster": "assets/clips/97.jpg"
+  "poster": "assets/clips/97.jpg",
+  "frames": [
+   "assets/clips/frames/97_0.webp",
+   "assets/clips/frames/97_1.webp",
+   "assets/clips/frames/97_2.webp",
+   "assets/clips/frames/97_3.webp",
+   "assets/clips/frames/97_4.webp"
+  ]
  },
  {
   "n": 98,
@@ -789,7 +1475,14 @@
   "target": "1D_RtotGIiLUvgWmMHIzDV3m6o6eKQGfF",
   "title": "Star Wars: Episode VIII - The Last Jedi - The Final Cut - Fan Edit",
   "src": "assets/clips/98.mp4",
-  "poster": "assets/clips/98.jpg"
+  "poster": "assets/clips/98.jpg",
+  "frames": [
+   "assets/clips/frames/98_0.webp",
+   "assets/clips/frames/98_1.webp",
+   "assets/clips/frames/98_2.webp",
+   "assets/clips/frames/98_3.webp",
+   "assets/clips/frames/98_4.webp"
+  ]
  },
  {
   "n": 99,
@@ -797,7 +1490,14 @@
   "target": "1M4E2qQ9zIYmQAM5ZXhs1pmzFXUcOYHSY",
   "title": "Die Hard 2 - TV-14 FX Cut - Fan Edit",
   "src": "assets/clips/99.mp4",
-  "poster": "assets/clips/99.jpg"
+  "poster": "assets/clips/99.jpg",
+  "frames": [
+   "assets/clips/frames/99_0.webp",
+   "assets/clips/frames/99_1.webp",
+   "assets/clips/frames/99_2.webp",
+   "assets/clips/frames/99_3.webp",
+   "assets/clips/frames/99_4.webp"
+  ]
  },
  {
   "n": 100,
@@ -805,7 +1505,14 @@
   "target": "1AEt5apmKpBtp16ai2g7A3lbAYimdlmxF",
   "title": "Dawn of Justice Series - Part 1 - Superman: Man of Steel - The Outsider - Fan Edit",
   "src": "assets/clips/100.mp4",
-  "poster": "assets/clips/100.jpg"
+  "poster": "assets/clips/100.jpg",
+  "frames": [
+   "assets/clips/frames/100_0.webp",
+   "assets/clips/frames/100_1.webp",
+   "assets/clips/frames/100_2.webp",
+   "assets/clips/frames/100_3.webp",
+   "assets/clips/frames/100_4.webp"
+  ]
  },
  {
   "n": 101,
@@ -813,7 +1520,14 @@
   "target": "1k2-W9jXJ6VTXNSGz93Yg0Y_WgX-9Tnrn",
   "title": "X-Men-Origins Workprint (2009)",
   "src": "assets/clips/101.mp4",
-  "poster": "assets/clips/101.jpg"
+  "poster": "assets/clips/101.jpg",
+  "frames": [
+   "assets/clips/frames/101_0.webp",
+   "assets/clips/frames/101_1.webp",
+   "assets/clips/frames/101_2.webp",
+   "assets/clips/frames/101_3.webp",
+   "assets/clips/frames/101_4.webp"
+  ]
  },
  {
   "n": 102,
@@ -821,7 +1535,14 @@
   "target": "1hid4EYq67xZ9VlYxLSS0LZ2ZSdSGyhSo",
   "title": "Back To The Future Part lll - Forward To The Future - Fan Edit",
   "src": "assets/clips/102.mp4",
-  "poster": "assets/clips/102.jpg"
+  "poster": "assets/clips/102.jpg",
+  "frames": [
+   "assets/clips/frames/102_0.webp",
+   "assets/clips/frames/102_1.webp",
+   "assets/clips/frames/102_2.webp",
+   "assets/clips/frames/102_3.webp",
+   "assets/clips/frames/102_4.webp"
+  ]
  },
  {
   "n": 103,
@@ -829,7 +1550,14 @@
   "target": "1x5mtLG8CqUTFAlGbSDqiuDsU7BdGY-Ze",
   "title": "The Amazing Spider-Man - Spectacular Cut - Fan Edit",
   "src": "assets/clips/103.mp4",
-  "poster": "assets/clips/103.jpg"
+  "poster": "assets/clips/103.jpg",
+  "frames": [
+   "assets/clips/frames/103_0.webp",
+   "assets/clips/frames/103_1.webp",
+   "assets/clips/frames/103_2.webp",
+   "assets/clips/frames/103_3.webp",
+   "assets/clips/frames/103_4.webp"
+  ]
  },
  {
   "n": 104,
@@ -837,7 +1565,14 @@
   "target": "1ImIXbnXz21jhY0YTg72FczX_vDgunNjC",
   "title": "LOTR.Fellowship.Of.The.Ring.Part.1.Kerr.EE",
   "src": "assets/clips/104.mp4",
-  "poster": "assets/clips/104.jpg"
+  "poster": "assets/clips/104.jpg",
+  "frames": [
+   "assets/clips/frames/104_0.webp",
+   "assets/clips/frames/104_1.webp",
+   "assets/clips/frames/104_2.webp",
+   "assets/clips/frames/104_3.webp",
+   "assets/clips/frames/104_4.webp"
+  ]
  },
  {
   "n": 105,
@@ -845,7 +1580,14 @@
   "target": "13U_ilK72NjmfppaUpJgkfkGTx5yJ2nG3",
   "title": "Pirates_E14",
   "src": "assets/clips/105.mp4",
-  "poster": "assets/clips/105.jpg"
+  "poster": "assets/clips/105.jpg",
+  "frames": [
+   "assets/clips/frames/105_0.webp",
+   "assets/clips/frames/105_1.webp",
+   "assets/clips/frames/105_2.webp",
+   "assets/clips/frames/105_3.webp",
+   "assets/clips/frames/105_4.webp"
+  ]
  },
  {
   "n": 106,
@@ -853,7 +1595,14 @@
   "target": "1nkqeax8wNP9ZOfUXuUfeAkUFUinR_Cmj",
   "title": "Rocky IV - Complete Cut - Fan Edit",
   "src": "assets/clips/106.mp4",
-  "poster": "assets/clips/106.jpg"
+  "poster": "assets/clips/106.jpg",
+  "frames": [
+   "assets/clips/frames/106_0.webp",
+   "assets/clips/frames/106_1.webp",
+   "assets/clips/frames/106_2.webp",
+   "assets/clips/frames/106_3.webp",
+   "assets/clips/frames/106_4.webp"
+  ]
  },
  {
   "n": 107,
@@ -861,7 +1610,14 @@
   "target": "1MqSqywq8lqqm7wc2KaXyuhhxYWR8UCW3",
   "title": "[KatawareDoki] Dragon Ball - 151 [BD 1080p x264 AAC] [0CC34133]",
   "src": "assets/clips/107.mp4",
-  "poster": "assets/clips/107.jpg"
+  "poster": "assets/clips/107.jpg",
+  "frames": [
+   "assets/clips/frames/107_0.webp",
+   "assets/clips/frames/107_1.webp",
+   "assets/clips/frames/107_2.webp",
+   "assets/clips/frames/107_3.webp",
+   "assets/clips/frames/107_4.webp"
+  ]
  },
  {
   "n": 108,
@@ -869,7 +1625,14 @@
   "target": "1pCySsTbdlHcZ3zJ4NVm68xDH0VpR0wTT",
   "title": "DD 3.1",
   "src": "assets/clips/108.mp4",
-  "poster": "assets/clips/108.jpg"
+  "poster": "assets/clips/108.jpg",
+  "frames": [
+   "assets/clips/frames/108_0.webp",
+   "assets/clips/frames/108_1.webp",
+   "assets/clips/frames/108_2.webp",
+   "assets/clips/frames/108_3.webp",
+   "assets/clips/frames/108_4.webp"
+  ]
  },
  {
   "n": 109,
@@ -877,7 +1640,14 @@
   "target": "1pdnPWgJwwHZH4rOj4fd_mvQYwPp3T2D6",
   "title": "The Defenders Saga: Refocused - Part 8 - Luke Cage: Son of a Preacher Man - soulfulbody Cut - Fan Edit",
   "src": "assets/clips/109.mp4",
-  "poster": "assets/clips/109.jpg"
+  "poster": "assets/clips/109.jpg",
+  "frames": [
+   "assets/clips/frames/109_0.webp",
+   "assets/clips/frames/109_1.webp",
+   "assets/clips/frames/109_2.webp",
+   "assets/clips/frames/109_3.webp",
+   "assets/clips/frames/109_4.webp"
+  ]
  },
  {
   "n": 110,
@@ -885,7 +1655,14 @@
   "target": "1xzL6uxmjy5_8YYWumm8mqux-iRRiZKt3",
   "title": "World War ll Supercut Series - Part 7 - Earthquake - Mashup Fan Edit",
   "src": "assets/clips/110.mp4",
-  "poster": "assets/clips/110.jpg"
+  "poster": "assets/clips/110.jpg",
+  "frames": [
+   "assets/clips/frames/110_0.webp",
+   "assets/clips/frames/110_1.webp",
+   "assets/clips/frames/110_2.webp",
+   "assets/clips/frames/110_3.webp",
+   "assets/clips/frames/110_4.webp"
+  ]
  },
  {
   "n": 111,
@@ -893,7 +1670,14 @@
   "target": "1AvwkM23cxVInwyRqPf--UxZZCez9UMRx",
   "title": "IF 1.2 \"Restore identity\u00a0\"",
   "src": "assets/clips/111.mp4",
-  "poster": "assets/clips/111.jpg"
+  "poster": "assets/clips/111.jpg",
+  "frames": [
+   "assets/clips/frames/111_0.webp",
+   "assets/clips/frames/111_1.webp",
+   "assets/clips/frames/111_2.webp",
+   "assets/clips/frames/111_3.webp",
+   "assets/clips/frames/111_4.webp"
+  ]
  },
  {
   "n": 112,
@@ -901,7 +1685,14 @@
   "target": "18Hla8mwGqwqtZdegMk_zVU2I5HgwiV80",
   "title": "Iron Fist: Rand Legacy Mini-Series - Season 1 - Part 3 - Tournament - Fan Edit",
   "src": "assets/clips/112.mp4",
-  "poster": "assets/clips/112.jpg"
+  "poster": "assets/clips/112.jpg",
+  "frames": [
+   "assets/clips/frames/112_0.webp",
+   "assets/clips/frames/112_1.webp",
+   "assets/clips/frames/112_2.webp",
+   "assets/clips/frames/112_3.webp",
+   "assets/clips/frames/112_4.webp"
+  ]
  },
  {
   "n": 113,
@@ -909,7 +1700,14 @@
   "target": "1xlazy-CYQeu2gUGgmpJuu_ixY3KdEqBf",
   "title": "Death Note L 14 (23-24)",
   "src": "assets/clips/113.mp4",
-  "poster": "assets/clips/113.jpg"
+  "poster": "assets/clips/113.jpg",
+  "frames": [
+   "assets/clips/frames/113_0.webp",
+   "assets/clips/frames/113_1.webp",
+   "assets/clips/frames/113_2.webp",
+   "assets/clips/frames/113_3.webp",
+   "assets/clips/frames/113_4.webp"
+  ]
  },
  {
   "n": 114,
@@ -917,7 +1715,14 @@
   "target": "1qvVUynMod7Vgjhym9_g0eNQt8EJxskdr",
   "title": "Barbie & Oppenheimer - Barbenheimer - Part 1 - Mashup Fan Edit",
   "src": "assets/clips/114.mp4",
-  "poster": "assets/clips/114.jpg"
+  "poster": "assets/clips/114.jpg",
+  "frames": [
+   "assets/clips/frames/114_0.webp",
+   "assets/clips/frames/114_1.webp",
+   "assets/clips/frames/114_2.webp",
+   "assets/clips/frames/114_3.webp",
+   "assets/clips/frames/114_4.webp"
+  ]
  },
  {
   "n": 115,
@@ -925,7 +1730,14 @@
   "target": "1OnNg2RqWpLqIsGcm6Qfb0PRlapp0E89w",
   "title": "DCEU Snyderverse Series - Part 3 - Fan Edit",
   "src": "assets/clips/115.mp4",
-  "poster": "assets/clips/115.jpg"
+  "poster": "assets/clips/115.jpg",
+  "frames": [
+   "assets/clips/frames/115_0.webp",
+   "assets/clips/frames/115_1.webp",
+   "assets/clips/frames/115_2.webp",
+   "assets/clips/frames/115_3.webp",
+   "assets/clips/frames/115_4.webp"
+  ]
  },
  {
   "n": 116,
@@ -933,7 +1745,14 @@
   "target": "1YySLGLzO4E2OASTDSuNvC4RKL1XPtmu3",
   "title": "108 episode 4.09 January 2005.avi",
   "src": "assets/clips/116.mp4",
-  "poster": "assets/clips/116.jpg"
+  "poster": "assets/clips/116.jpg",
+  "frames": [
+   "assets/clips/frames/116_0.webp",
+   "assets/clips/frames/116_1.webp",
+   "assets/clips/frames/116_2.webp",
+   "assets/clips/frames/116_3.webp",
+   "assets/clips/frames/116_4.webp"
+  ]
  },
  {
   "n": 117,
@@ -941,7 +1760,14 @@
   "target": "121m8bqcTagzROg0T_rCEBqJdI0adiW8H",
   "title": "tcm3wp",
   "src": "assets/clips/117.mp4",
-  "poster": "assets/clips/117.jpg"
+  "poster": "assets/clips/117.jpg",
+  "frames": [
+   "assets/clips/frames/117_0.webp",
+   "assets/clips/frames/117_1.webp",
+   "assets/clips/frames/117_2.webp",
+   "assets/clips/frames/117_3.webp",
+   "assets/clips/frames/117_4.webp"
+  ]
  },
  {
   "n": 118,
@@ -949,7 +1775,14 @@
   "target": "1uYm1D1PVfwB0PY6Pw-H1zOFqHAMopl2C",
   "title": "The Walking Dead Part 2 Pretty Much Dead Already",
   "src": "assets/clips/118.mp4",
-  "poster": "assets/clips/118.jpg"
+  "poster": "assets/clips/118.jpg",
+  "frames": [
+   "assets/clips/frames/118_0.webp",
+   "assets/clips/frames/118_1.webp",
+   "assets/clips/frames/118_2.webp",
+   "assets/clips/frames/118_3.webp",
+   "assets/clips/frames/118_4.webp"
+  ]
  },
  {
   "n": 119,
@@ -957,7 +1790,14 @@
   "target": "1-coqLgOjaDOozZpTaHooIc-pkcbr4zF9",
   "title": "Fallout - Season 1 - Brotherhood of Steel - Movie Fan Edit 2",
   "src": "assets/clips/119.mp4",
-  "poster": "assets/clips/119.jpg"
+  "poster": "assets/clips/119.jpg",
+  "frames": [
+   "assets/clips/frames/119_0.webp",
+   "assets/clips/frames/119_1.webp",
+   "assets/clips/frames/119_2.webp",
+   "assets/clips/frames/119_3.webp",
+   "assets/clips/frames/119_4.webp"
+  ]
  },
  {
   "n": 120,
@@ -965,7 +1805,14 @@
   "target": "1qbi1DPrftQxaTNz8p7g6qcTxkcaZuqcQ",
   "title": "S2E24 Freddy Spaghetti (Extended Producer's Cut)",
   "src": "assets/clips/120.mp4",
-  "poster": "assets/clips/120.jpg"
+  "poster": "assets/clips/120.jpg",
+  "frames": [
+   "assets/clips/frames/120_0.webp",
+   "assets/clips/frames/120_1.webp",
+   "assets/clips/frames/120_2.webp",
+   "assets/clips/frames/120_3.webp",
+   "assets/clips/frames/120_4.webp"
+  ]
  },
  {
   "n": 121,
@@ -973,7 +1820,14 @@
   "target": "1Od4FBYz854lSDDunviZJLrmOuDKN6nBt",
   "title": "Tim Burton's Willy Wonka and The Chocolate Factory",
   "src": "assets/clips/121.mp4",
-  "poster": "assets/clips/121.jpg"
+  "poster": "assets/clips/121.jpg",
+  "frames": [
+   "assets/clips/frames/121_0.webp",
+   "assets/clips/frames/121_1.webp",
+   "assets/clips/frames/121_2.webp",
+   "assets/clips/frames/121_3.webp",
+   "assets/clips/frames/121_4.webp"
+  ]
  },
  {
   "n": 122,
@@ -981,7 +1835,14 @@
   "target": "11h8FSCbGE7CwmdOxGe-7dB6URfuvTOVE",
   "title": "[KatawareDoki] Dragon Ball - 034 [BD 1080p x264 AAC] [33619C2E]",
   "src": "assets/clips/122.mp4",
-  "poster": "assets/clips/122.jpg"
+  "poster": "assets/clips/122.jpg",
+  "frames": [
+   "assets/clips/frames/122_0.webp",
+   "assets/clips/frames/122_1.webp",
+   "assets/clips/frames/122_2.webp",
+   "assets/clips/frames/122_3.webp",
+   "assets/clips/frames/122_4.webp"
+  ]
  },
  {
   "n": 123,
@@ -989,7 +1850,14 @@
   "target": "1d5UvxosYXoBmIQSqk533HJMOfHTdjfti",
   "title": "Star Wars: The Clone Wars (2008) - Part 3 - The Mortis - Film Cut - Movie Fan Edit",
   "src": "assets/clips/123.mp4",
-  "poster": "assets/clips/123.jpg"
+  "poster": "assets/clips/123.jpg",
+  "frames": [
+   "assets/clips/frames/123_0.webp",
+   "assets/clips/frames/123_1.webp",
+   "assets/clips/frames/123_2.webp",
+   "assets/clips/frames/123_3.webp",
+   "assets/clips/frames/123_4.webp"
+  ]
  },
  {
   "n": 124,
@@ -997,7 +1865,14 @@
   "target": "18Fr21rC-nxjTDrBp3FzMqhYd8U4YLo0U",
   "title": "X2: X-Men United - The United Last Stand - Fan Edit",
   "src": "assets/clips/124.mp4",
-  "poster": "assets/clips/124.jpg"
+  "poster": "assets/clips/124.jpg",
+  "frames": [
+   "assets/clips/frames/124_0.webp",
+   "assets/clips/frames/124_1.webp",
+   "assets/clips/frames/124_2.webp",
+   "assets/clips/frames/124_3.webp",
+   "assets/clips/frames/124_4.webp"
+  ]
  },
  {
   "n": 125,
@@ -1005,7 +1880,14 @@
   "target": "1MDXt83qCj4StvnUxbxf54t9g-uYT-OV7",
   "title": "Pirates_E09",
   "src": "assets/clips/125.mp4",
-  "poster": "assets/clips/125.jpg"
+  "poster": "assets/clips/125.jpg",
+  "frames": [
+   "assets/clips/frames/125_0.webp",
+   "assets/clips/frames/125_1.webp",
+   "assets/clips/frames/125_2.webp",
+   "assets/clips/frames/125_3.webp",
+   "assets/clips/frames/125_4.webp"
+  ]
  },
  {
   "n": 126,
@@ -1013,7 +1895,14 @@
   "target": "1S6FoiyjOGHG00vFhxu2i0ITh3b0VwEP7",
   "title": "Pirates_E08",
   "src": "assets/clips/126.mp4",
-  "poster": "assets/clips/126.jpg"
+  "poster": "assets/clips/126.jpg",
+  "frames": [
+   "assets/clips/frames/126_0.webp",
+   "assets/clips/frames/126_1.webp",
+   "assets/clips/frames/126_2.webp",
+   "assets/clips/frames/126_3.webp",
+   "assets/clips/frames/126_4.webp"
+  ]
  },
  {
   "n": 127,
@@ -1021,7 +1910,14 @@
   "target": "1AGPpzi0HPD1uQpMmGIwldBi2NAA59KNn",
   "title": "Total Recall (2012) - Blade Runner 2099 - Fan Edit",
   "src": "assets/clips/127.mp4",
-  "poster": "assets/clips/127.jpg"
+  "poster": "assets/clips/127.jpg",
+  "frames": [
+   "assets/clips/frames/127_0.webp",
+   "assets/clips/frames/127_1.webp",
+   "assets/clips/frames/127_2.webp",
+   "assets/clips/frames/127_3.webp",
+   "assets/clips/frames/127_4.webp"
+  ]
  },
  {
   "n": 128,
@@ -1029,7 +1925,14 @@
   "target": "1o5MnRCMhyAjZC3K9SpOJtIs9ycG74tjR",
   "title": "Indiana Jones and The Kingdom of the Crystal Skull and The Dial of Destiny - Arc of Time - Mashup Fan Edit",
   "src": "assets/clips/128.mp4",
-  "poster": "assets/clips/128.jpg"
+  "poster": "assets/clips/128.jpg",
+  "frames": [
+   "assets/clips/frames/128_0.webp",
+   "assets/clips/frames/128_1.webp",
+   "assets/clips/frames/128_2.webp",
+   "assets/clips/frames/128_3.webp",
+   "assets/clips/frames/128_4.webp"
+  ]
  },
  {
   "n": 129,
@@ -1037,7 +1940,14 @@
   "target": "1YyMWsqeQntR-j5QrqRaJWysXHdkmSmat",
   "title": "1. Daredevil: The Man in the Mask 4K V4 by soulfulbody",
   "src": "assets/clips/129.mp4",
-  "poster": "assets/clips/129.jpg"
+  "poster": "assets/clips/129.jpg",
+  "frames": [
+   "assets/clips/frames/129_0.webp",
+   "assets/clips/frames/129_1.webp",
+   "assets/clips/frames/129_2.webp",
+   "assets/clips/frames/129_3.webp",
+   "assets/clips/frames/129_4.webp"
+  ]
  },
  {
   "n": 130,
@@ -1045,7 +1955,14 @@
   "target": "1lRNTEIczg6qzhuVieVceCkaKeHWe9LrT",
   "title": "The Godfather Part II - Extended Edition HD",
   "src": "assets/clips/130.mp4",
-  "poster": "assets/clips/130.jpg"
+  "poster": "assets/clips/130.jpg",
+  "frames": [
+   "assets/clips/frames/130_0.webp",
+   "assets/clips/frames/130_1.webp",
+   "assets/clips/frames/130_2.webp",
+   "assets/clips/frames/130_3.webp",
+   "assets/clips/frames/130_4.webp"
+  ]
  },
  {
   "n": 131,
@@ -1053,7 +1970,14 @@
   "target": "1dpg9wsZn2UcBM_bxjb5rJjObD5ieqOZ6",
   "title": "Jurassic Park - Grindhouse Fan Edit",
   "src": "assets/clips/131.mp4",
-  "poster": "assets/clips/131.jpg"
+  "poster": "assets/clips/131.jpg",
+  "frames": [
+   "assets/clips/frames/131_0.webp",
+   "assets/clips/frames/131_1.webp",
+   "assets/clips/frames/131_2.webp",
+   "assets/clips/frames/131_3.webp",
+   "assets/clips/frames/131_4.webp"
+  ]
  },
  {
   "n": 132,
@@ -1061,7 +1985,14 @@
   "target": "15lrCVWPb9Q8jObnCI0bhVo0IPP02WzOG",
   "title": "Harry Potter and The Sorcerer's Stone - Extended Edition - ADigitalMan Cut - Fan Edit",
   "src": "assets/clips/132.mp4",
-  "poster": "assets/clips/132.jpg"
+  "poster": "assets/clips/132.jpg",
+  "frames": [
+   "assets/clips/frames/132_0.webp",
+   "assets/clips/frames/132_1.webp",
+   "assets/clips/frames/132_2.webp",
+   "assets/clips/frames/132_3.webp",
+   "assets/clips/frames/132_4.webp"
+  ]
  },
  {
   "n": 133,
@@ -1069,7 +2000,14 @@
   "target": "1ZDqG7NLaCHWc0Saljl6CT7AEvpp9IOAV",
   "title": "Aladdin Workprint #2",
   "src": "assets/clips/133.mp4",
-  "poster": "assets/clips/133.jpg"
+  "poster": "assets/clips/133.jpg",
+  "frames": [
+   "assets/clips/frames/133_0.webp",
+   "assets/clips/frames/133_1.webp",
+   "assets/clips/frames/133_2.webp",
+   "assets/clips/frames/133_3.webp",
+   "assets/clips/frames/133_4.webp"
+  ]
  },
  {
   "n": 134,
@@ -1077,7 +2015,14 @@
   "target": "12RIDKhd5gNWKLKTOm4JZ2elxcJpDcDP9",
   "title": "[KatawareDoki] Dragon Ball - 041 [BD 1080p x264 AAC] [F9DE6D0C]",
   "src": "assets/clips/134.mp4",
-  "poster": "assets/clips/134.jpg"
+  "poster": "assets/clips/134.jpg",
+  "frames": [
+   "assets/clips/frames/134_0.webp",
+   "assets/clips/frames/134_1.webp",
+   "assets/clips/frames/134_2.webp",
+   "assets/clips/frames/134_3.webp",
+   "assets/clips/frames/134_4.webp"
+  ]
  },
  {
   "n": 135,
@@ -1085,7 +2030,14 @@
   "target": "1H2XPXU8H7EIcZo5wCMRCwtiJ1IfkDHQ7",
   "title": "[KatawareDoki] Dragon Ball - 033 [BD 1080p x264 AAC] [E3A1D0DD]",
   "src": "assets/clips/135.mp4",
-  "poster": "assets/clips/135.jpg"
+  "poster": "assets/clips/135.jpg",
+  "frames": [
+   "assets/clips/frames/135_0.webp",
+   "assets/clips/frames/135_1.webp",
+   "assets/clips/frames/135_2.webp",
+   "assets/clips/frames/135_3.webp",
+   "assets/clips/frames/135_4.webp"
+  ]
  },
  {
   "n": 136,
@@ -1093,7 +2045,14 @@
   "target": "1BduOzWG5SKcOG44V3ntRcTa3LNPwRGCH",
   "title": "Madame Web - Cassies Edit - Fan Edit",
   "src": "assets/clips/136.mp4",
-  "poster": "assets/clips/136.jpg"
+  "poster": "assets/clips/136.jpg",
+  "frames": [
+   "assets/clips/frames/136_0.webp",
+   "assets/clips/frames/136_1.webp",
+   "assets/clips/frames/136_2.webp",
+   "assets/clips/frames/136_3.webp",
+   "assets/clips/frames/136_4.webp"
+  ]
  },
  {
   "n": 137,
@@ -1101,7 +2060,14 @@
   "target": "1czuyh1xlBirwbYdM-8Czc-2p0tDgvHvB",
   "title": "The Punisher Mini-Series - Season 1 - Part 2 - Fan Edit",
   "src": "assets/clips/137.mp4",
-  "poster": "assets/clips/137.jpg"
+  "poster": "assets/clips/137.jpg",
+  "frames": [
+   "assets/clips/frames/137_0.webp",
+   "assets/clips/frames/137_1.webp",
+   "assets/clips/frames/137_2.webp",
+   "assets/clips/frames/137_3.webp",
+   "assets/clips/frames/137_4.webp"
+  ]
  },
  {
   "n": 138,
@@ -1109,7 +2075,14 @@
   "target": "1B5yjBNOugLNKRhuE7CoA83WtNMlDV301",
   "title": "Jessica Jones: Alias Investigations Mini-Series - Season 1 - Part 4 - Supermax? - Fan Edit",
   "src": "assets/clips/138.mp4",
-  "poster": "assets/clips/138.jpg"
+  "poster": "assets/clips/138.jpg",
+  "frames": [
+   "assets/clips/frames/138_0.webp",
+   "assets/clips/frames/138_1.webp",
+   "assets/clips/frames/138_2.webp",
+   "assets/clips/frames/138_3.webp",
+   "assets/clips/frames/138_4.webp"
+  ]
  },
  {
   "n": 139,
@@ -1117,7 +2090,14 @@
   "target": "1cmmJ6xogdCkSovDC996hqJz_nq-ant3V",
   "title": "DD 3.7",
   "src": "assets/clips/139.mp4",
-  "poster": "assets/clips/139.jpg"
+  "poster": "assets/clips/139.jpg",
+  "frames": [
+   "assets/clips/frames/139_0.webp",
+   "assets/clips/frames/139_1.webp",
+   "assets/clips/frames/139_2.webp",
+   "assets/clips/frames/139_3.webp",
+   "assets/clips/frames/139_4.webp"
+  ]
  },
  {
   "n": 140,
@@ -1125,7 +2105,14 @@
   "target": "1-2fagIKTZ3nx25MOEO-JeX_AhaHkLQ9L",
   "title": "S4E13 Bowling For Votes (Extended)",
   "src": "assets/clips/140.mp4",
-  "poster": "assets/clips/140.jpg"
+  "poster": "assets/clips/140.jpg",
+  "frames": [
+   "assets/clips/frames/140_0.webp",
+   "assets/clips/frames/140_1.webp",
+   "assets/clips/frames/140_2.webp",
+   "assets/clips/frames/140_3.webp",
+   "assets/clips/frames/140_4.webp"
+  ]
  },
  {
   "n": 141,
@@ -1133,7 +2120,14 @@
   "target": "1t7QK1Iez8_vmGoP8AbdTivb8JYeve9xF",
   "title": "The Sopranos - Season 5-6 - Chapter 6A - Tony & Junior - Movie Fan Edit",
   "src": "assets/clips/141.mp4",
-  "poster": "assets/clips/141.jpg"
+  "poster": "assets/clips/141.jpg",
+  "frames": [
+   "assets/clips/frames/141_0.webp",
+   "assets/clips/frames/141_1.webp",
+   "assets/clips/frames/141_2.webp",
+   "assets/clips/frames/141_3.webp",
+   "assets/clips/frames/141_4.webp"
+  ]
  },
  {
   "n": 142,
@@ -1141,7 +2135,14 @@
   "target": "1RSRP6BM-crZiTp5Xmwvs_l29A4gLcfSQ",
   "title": "the penguin ep04",
   "src": "assets/clips/142.mp4",
-  "poster": "assets/clips/142.jpg"
+  "poster": "assets/clips/142.jpg",
+  "frames": [
+   "assets/clips/frames/142_0.webp",
+   "assets/clips/frames/142_1.webp",
+   "assets/clips/frames/142_2.webp",
+   "assets/clips/frames/142_3.webp",
+   "assets/clips/frames/142_4.webp"
+  ]
  },
  {
   "n": 143,
@@ -1149,7 +2150,14 @@
   "target": "1tDvXB-yiLMQlTHuBuUu61DkhJyyqJ0q9",
   "title": "World War ll Supercut Series - Part 11 - Wildfire - Mashup Fan Edit",
   "src": "assets/clips/143.mp4",
-  "poster": "assets/clips/143.jpg"
+  "poster": "assets/clips/143.jpg",
+  "frames": [
+   "assets/clips/frames/143_0.webp",
+   "assets/clips/frames/143_1.webp",
+   "assets/clips/frames/143_2.webp",
+   "assets/clips/frames/143_3.webp",
+   "assets/clips/frames/143_4.webp"
+  ]
  },
  {
   "n": 144,
@@ -1157,7 +2165,14 @@
   "target": "1R0os67Qp5s44HNGZRsLSqoBatBXIoAtI",
   "title": "Ultimate Spider-Man, (Spider-Man & X-Men) The Animated Series - Spider-Man And The X-Men: The Mutation - Mashup Fan Edit",
   "src": "assets/clips/144.mp4",
-  "poster": "assets/clips/144.jpg"
+  "poster": "assets/clips/144.jpg",
+  "frames": [
+   "assets/clips/frames/144_0.webp",
+   "assets/clips/frames/144_1.webp",
+   "assets/clips/frames/144_2.webp",
+   "assets/clips/frames/144_3.webp",
+   "assets/clips/frames/144_4.webp"
+  ]
  },
  {
   "n": 145,
@@ -1165,7 +2180,14 @@
   "target": "1FCVVOuki4W_dNXZNx67boohQp389ZYWB",
   "title": "The Lord of The Rings: The Two Towers - Kerr's Extended Edition - Part 1 - Fan Edit",
   "src": "assets/clips/145.mp4",
-  "poster": "assets/clips/145.jpg"
+  "poster": "assets/clips/145.jpg",
+  "frames": [
+   "assets/clips/frames/145_0.webp",
+   "assets/clips/frames/145_1.webp",
+   "assets/clips/frames/145_2.webp",
+   "assets/clips/frames/145_3.webp",
+   "assets/clips/frames/145_4.webp"
+  ]
  },
  {
   "n": 146,
@@ -1173,7 +2195,14 @@
   "target": "1yW25248r5qvikJfNLD1vAEN6EELgRfSI",
   "title": "Pirates_E04",
   "src": "assets/clips/146.mp4",
-  "poster": "assets/clips/146.jpg"
+  "poster": "assets/clips/146.jpg",
+  "frames": [
+   "assets/clips/frames/146_0.webp",
+   "assets/clips/frames/146_1.webp",
+   "assets/clips/frames/146_2.webp",
+   "assets/clips/frames/146_3.webp",
+   "assets/clips/frames/146_4.webp"
+  ]
  },
  {
   "n": 147,
@@ -1181,7 +2210,14 @@
   "target": "1tcC2D9wLIQeFtuPh9wA6mxFbx31d1t4A",
   "title": "The Lord of The Rings - The Reinvented Series - Season 3 Episode 5 - The End of All Things - Fan Edit",
   "src": "assets/clips/147.mp4",
-  "poster": "assets/clips/147.jpg"
+  "poster": "assets/clips/147.jpg",
+  "frames": [
+   "assets/clips/frames/147_0.webp",
+   "assets/clips/frames/147_1.webp",
+   "assets/clips/frames/147_2.webp",
+   "assets/clips/frames/147_3.webp",
+   "assets/clips/frames/147_4.webp"
+  ]
  },
  {
   "n": 148,
@@ -1189,7 +2225,14 @@
   "target": "1YYz9InnSBVrmrXpMSF_M1akiptmiwUk0",
   "title": "The Flash Mini-Series - Season 3 - Part 5 - Fan Edit",
   "src": "assets/clips/148.mp4",
-  "poster": "assets/clips/148.jpg"
+  "poster": "assets/clips/148.jpg",
+  "frames": [
+   "assets/clips/frames/148_0.webp",
+   "assets/clips/frames/148_1.webp",
+   "assets/clips/frames/148_2.webp",
+   "assets/clips/frames/148_3.webp",
+   "assets/clips/frames/148_4.webp"
+  ]
  },
  {
   "n": 149,
@@ -1197,7 +2240,14 @@
   "target": "1r4llZ0BXiqbUzA1-uxQUQo7MbJV_VSrQ",
   "title": "Die Hard 4 - Live Free or Die Hard - The B-Movie Cut - Fan Edit",
   "src": "assets/clips/149.mp4",
-  "poster": "assets/clips/149.jpg"
+  "poster": "assets/clips/149.jpg",
+  "frames": [
+   "assets/clips/frames/149_0.webp",
+   "assets/clips/frames/149_1.webp",
+   "assets/clips/frames/149_2.webp",
+   "assets/clips/frames/149_3.webp",
+   "assets/clips/frames/149_4.webp"
+  ]
  },
  {
   "n": 150,
@@ -1205,7 +2255,14 @@
   "target": "1RKCNq62aioQx3M8ylvqLqvw3ClnaI3gw",
   "title": "Pirates_E13",
   "src": "assets/clips/150.mp4",
-  "poster": "assets/clips/150.jpg"
+  "poster": "assets/clips/150.jpg",
+  "frames": [
+   "assets/clips/frames/150_0.webp",
+   "assets/clips/frames/150_1.webp",
+   "assets/clips/frames/150_2.webp",
+   "assets/clips/frames/150_3.webp",
+   "assets/clips/frames/150_4.webp"
+  ]
  },
  {
   "n": 151,
@@ -1213,7 +2270,14 @@
   "target": "1A6TEH5vdvt3l-UY4KoarRANtnfiTmqvX",
   "title": "James Bond - A View To A Kill 007: Reader Cut - Fan Edit",
   "src": "assets/clips/151.mp4",
-  "poster": "assets/clips/151.jpg"
+  "poster": "assets/clips/151.jpg",
+  "frames": [
+   "assets/clips/frames/151_0.webp",
+   "assets/clips/frames/151_1.webp",
+   "assets/clips/frames/151_2.webp",
+   "assets/clips/frames/151_3.webp",
+   "assets/clips/frames/151_4.webp"
+  ]
  },
  {
   "n": 152,
@@ -1221,7 +2285,14 @@
   "target": "1bUmaltxR8jMkwj7kBMSfgMeB2q1A9WC5",
   "title": "King Kong (2005) - IC Cut - Fan Edit",
   "src": "assets/clips/152.mp4",
-  "poster": "assets/clips/152.jpg"
+  "poster": "assets/clips/152.jpg",
+  "frames": [
+   "assets/clips/frames/152_0.webp",
+   "assets/clips/frames/152_1.webp",
+   "assets/clips/frames/152_2.webp",
+   "assets/clips/frames/152_3.webp",
+   "assets/clips/frames/152_4.webp"
+  ]
  },
  {
   "n": 153,
@@ -1229,7 +2300,14 @@
   "target": "1TwSS_egJMAVYbvKFpKfQzzB-trxs6M9k",
   "title": "Titanic - Last Minute Twist - Fan Edit",
   "src": "assets/clips/153.mp4",
-  "poster": "assets/clips/153.jpg"
+  "poster": "assets/clips/153.jpg",
+  "frames": [
+   "assets/clips/frames/153_0.webp",
+   "assets/clips/frames/153_1.webp",
+   "assets/clips/frames/153_2.webp",
+   "assets/clips/frames/153_3.webp",
+   "assets/clips/frames/153_4.webp"
+  ]
  },
  {
   "n": 154,
@@ -1237,7 +2315,14 @@
   "target": "1MfqGCjLr6rCVkyxdOF_tAR1xmJR03-2s",
   "title": "Chapter 24 - Fire",
   "src": "assets/clips/154.mp4",
-  "poster": "assets/clips/154.jpg"
+  "poster": "assets/clips/154.jpg",
+  "frames": [
+   "assets/clips/frames/154_0.webp",
+   "assets/clips/frames/154_1.webp",
+   "assets/clips/frames/154_2.webp",
+   "assets/clips/frames/154_3.webp",
+   "assets/clips/frames/154_4.webp"
+  ]
  },
  {
   "n": 155,
@@ -1245,7 +2330,14 @@
   "target": "14hCnEP7wwheD_VWss3QkkbnQKV90qGoC",
   "title": "Interstellar - The Demise - Dark Cut - Fan Edit",
   "src": "assets/clips/155.mp4",
-  "poster": "assets/clips/155.jpg"
+  "poster": "assets/clips/155.jpg",
+  "frames": [
+   "assets/clips/frames/155_0.webp",
+   "assets/clips/frames/155_1.webp",
+   "assets/clips/frames/155_2.webp",
+   "assets/clips/frames/155_3.webp",
+   "assets/clips/frames/155_4.webp"
+  ]
  },
  {
   "n": 156,
@@ -1253,7 +2345,14 @@
   "target": "1Kt5frECcfRy2puXPKFVWzzvct4b_ZjV3",
   "title": "Parks and Recreation - Season 3 Episode 4 - Ron and Tammy 2 - Extended - Fan Edit",
   "src": "assets/clips/156.mp4",
-  "poster": "assets/clips/156.jpg"
+  "poster": "assets/clips/156.jpg",
+  "frames": [
+   "assets/clips/frames/156_0.webp",
+   "assets/clips/frames/156_1.webp",
+   "assets/clips/frames/156_2.webp",
+   "assets/clips/frames/156_3.webp",
+   "assets/clips/frames/156_4.webp"
+  ]
  },
  {
   "n": 157,
@@ -1261,7 +2360,14 @@
   "target": "1EEY-VEf3LVqs4VJ0FhT9NvPW5GqHke8r",
   "title": "S01E04",
   "src": "assets/clips/157.mp4",
-  "poster": "assets/clips/157.jpg"
+  "poster": "assets/clips/157.jpg",
+  "frames": [
+   "assets/clips/frames/157_0.webp",
+   "assets/clips/frames/157_1.webp",
+   "assets/clips/frames/157_2.webp",
+   "assets/clips/frames/157_3.webp",
+   "assets/clips/frames/157_4.webp"
+  ]
  },
  {
   "n": 158,
@@ -1269,7 +2375,14 @@
   "target": "1k19tOmSK7QkojCr433_nfjwPQs3rw529",
   "title": "Chronological Simpsons S01E06",
   "src": "assets/clips/158.mp4",
-  "poster": "assets/clips/158.jpg"
+  "poster": "assets/clips/158.jpg",
+  "frames": [
+   "assets/clips/frames/158_0.webp",
+   "assets/clips/frames/158_1.webp",
+   "assets/clips/frames/158_2.webp",
+   "assets/clips/frames/158_3.webp",
+   "assets/clips/frames/158_4.webp"
+  ]
  },
  {
   "n": 159,
@@ -1277,7 +2390,14 @@
   "target": "1VpRqIb-qqddBnp4GGOI4eY-XN2qMi2C1",
   "title": "Race Saga - Fan Edit",
   "src": "assets/clips/159.mp4",
-  "poster": "assets/clips/159.jpg"
+  "poster": "assets/clips/159.jpg",
+  "frames": [
+   "assets/clips/frames/159_0.webp",
+   "assets/clips/frames/159_1.webp",
+   "assets/clips/frames/159_2.webp",
+   "assets/clips/frames/159_3.webp",
+   "assets/clips/frames/159_4.webp"
+  ]
  },
  {
   "n": 160,
@@ -1285,7 +2405,14 @@
   "target": "1b9l9mSQF2dXmixHIbhdWNc5yThPwsYNK",
   "title": "[KatawareDoki] Dragon Ball - 092 [BD 1080p x264 AAC] [F6027200]",
   "src": "assets/clips/160.mp4",
-  "poster": "assets/clips/160.jpg"
+  "poster": "assets/clips/160.jpg",
+  "frames": [
+   "assets/clips/frames/160_0.webp",
+   "assets/clips/frames/160_1.webp",
+   "assets/clips/frames/160_2.webp",
+   "assets/clips/frames/160_3.webp",
+   "assets/clips/frames/160_4.webp"
+  ]
  },
  {
   "n": 161,
@@ -1293,7 +2420,14 @@
   "target": "1M6yEFFLvtLZEli9YYi5jbnQ7TCVRF2sA",
   "title": "Game of Thrones - An Honorable Cut - Chapter 26 - Children - Fan Edit",
   "src": "assets/clips/161.mp4",
-  "poster": "assets/clips/161.jpg"
+  "poster": "assets/clips/161.jpg",
+  "frames": [
+   "assets/clips/frames/161_0.webp",
+   "assets/clips/frames/161_1.webp",
+   "assets/clips/frames/161_2.webp",
+   "assets/clips/frames/161_3.webp",
+   "assets/clips/frames/161_4.webp"
+  ]
  },
  {
   "n": 162,
@@ -1301,7 +2435,14 @@
   "target": "1D7AUEnba4jvxRyCsjH2CHDugMrSqDLeZ",
   "title": "Daredevil: Blind Justice Mini-Series - Season 3 - Part 2 - Fan Edit",
   "src": "assets/clips/162.mp4",
-  "poster": "assets/clips/162.jpg"
+  "poster": "assets/clips/162.jpg",
+  "frames": [
+   "assets/clips/frames/162_0.webp",
+   "assets/clips/frames/162_1.webp",
+   "assets/clips/frames/162_2.webp",
+   "assets/clips/frames/162_3.webp",
+   "assets/clips/frames/162_4.webp"
+  ]
  },
  {
   "n": 163,
@@ -1309,6 +2450,13 @@
   "target": "1GXnimnierhOPrNiDalO5C4i07SvU-cg-",
   "title": "[KatawareDoki] Dragon Ball - 017 [BD 1080p x264 AAC] [B8A03A11]",
   "src": "assets/clips/163.mp4",
-  "poster": "assets/clips/163.jpg"
+  "poster": "assets/clips/163.jpg",
+  "frames": [
+   "assets/clips/frames/163_0.webp",
+   "assets/clips/frames/163_1.webp",
+   "assets/clips/frames/163_2.webp",
+   "assets/clips/frames/163_3.webp",
+   "assets/clips/frames/163_4.webp"
+  ]
  }
 ]

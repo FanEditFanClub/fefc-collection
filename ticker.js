@@ -88,8 +88,11 @@
   function measure() {
     half = rm ? 0 : track.scrollWidth / 2;
   }
+  var _skip = 0;
   function step(t) {
     raf = requestAnimationFrame(step);
+    var perf = document.body.classList.contains("perf");
+    if (perf && ++_skip & 1) return;
     var dt = Math.min(64, t - (last || t));
     last = t;
     if (rm || hold || !bar || !bar.classList.contains("on")) return;
@@ -97,7 +100,7 @@
       if (bar.classList.contains("on") && bar.offsetParent !== null) measure();
       if (!half) return;
     }
-    pos += dt * 0.032 * Math.max(1, innerHeight / 720);
+    pos += dt * (perf ? 0.018 : 0.032) * Math.max(1, innerHeight / 720);
     if (pos >= half) pos -= half;
     bar.scrollLeft = pos;
   }

@@ -26,6 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
+import android.webkit.ConsoleMessage;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -47,6 +48,7 @@ import android.widget.Toast;
  */
 public class MainActivity extends Activity {
     private static final String HOST = "collection.faneditfanclub.com";
+    private DeviceTier deviceTier;
 
     private WebView web;
     private FrameLayout root;
@@ -73,6 +75,15 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        deviceTier = DeviceTier.detect(this);
+        try {
+            String force = getIntent() != null ? getIntent().getStringExtra("tier") : null;
+            if (force != null && force.matches("(?i)LOW|MID|HIGH")) {
+                deviceTier = deviceTier.withOverride(force);
+                Log.i("FEFC", "device_tier_force_early " + deviceTier.toJson());
+            }
+        } catch (Throwable ignored) {}
+        Log.i("FEFC", "device_tier " + deviceTier.toJson());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
                 | WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
         hideSystemUi();
@@ -114,7 +125,12 @@ public class MainActivity extends Activity {
 
         // Cold start: native Media3 intro fullscreen FIRST; WebView preloads underneath with ?nointro=1.
         // Process restore (b != null): skip native intro — user already saw it this session.
-        if (b == null) {
+        // QA: am start --ez skip_native_intro true (emulator tier tests).
+        boolean skipNative = false;
+        try {
+            skipNative = getIntent() != null && getIntent().getBooleanExtra("skip_native_intro", false);
+        } catch (Throwable ignored) {}
+        if (b == null && !skipNative) {
             nativeIntroUsed = true;
             nativeIntro = new NativeIntro(this, root, skipped -> {
                 // NativeIntro.finish already released ExoPlayer before this callback.
@@ -127,6 +143,12 @@ public class MainActivity extends Activity {
             updater.prefetch();
             localAssets.refreshDataInBackground();
             // Do NOT poll web INTRO_DONE_JS — native finish drives revealAfterIntro.
+        } else if (b == null) {
+            Log.i("FEFC", "skip_native_intro=true — load WebView home directly");
+            load(true);
+            updater.prefetch();
+            localAssets.refreshDataInBackground();
+            waitHomeThenReveal(0);
         } else {
             web.restoreState(b);
             web.requestFocus();
@@ -188,6 +210,24 @@ public class MainActivity extends Activity {
                             Log.i("FEFC", "home_reveal_js=" + r));
                     web.requestFocus();
                     if (updater != null) updater.revealAfterIntro();
+                    // Tier QA: kick mosaic + dump decoder budget to logcat (Bridge.log).
+                    ui.postDelayed(() -> {
+                        if (web == null) return;
+                        web.evaluateJavascript(
+                                "(function(){try{"
+                                        + "document.body.classList.remove('native-waiting');"
+                                        + "try{window.dispatchEvent(new Event('fefc-home-revealed'))}catch(e){}"
+                                        + "try{window.dispatchEvent(new Event('fefc-tier'))}catch(e){}"
+                                        + "var t=window.__fefcTier||null;"
+                                        + "var vt=(window.FEFCNative&&FEFCNative.videoTiles)?FEFCNative.videoTiles():(t&&t.videoTiles);"
+                                        + "var s=(typeof __clipStats==='function')?__clipStats():null;"
+                                        + "var line='FEFC_CLIPS_DUMP tier='+(t&&t.tier||'?')+' nativeVT='+vt+' stats='+JSON.stringify(s);"
+                                        + "console.log(line);"
+                                        + "try{if(window.FEFCNative&&FEFCNative.log)FEFCNative.log(line)}catch(e){}"
+                                        + "return line;"
+                                        + "}catch(e){return 'err:'+e}})()",
+                                r -> Log.i("FEFC", "clips_dump_cb " + r));
+                    }, 2500);
                     // Release path already dropped intro ExoPlayer; delay prewarm past first mosaic wave.
                     ui.postDelayed(this::prewarmPlayer, 5000);
                 } else {
@@ -234,6 +274,18 @@ public class MainActivity extends Activity {
         s.setJavaScriptCanOpenWindowsAutomatically(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         s.setAllowFileAccess(false);
+        // Cap layout viewport by device tier: LOW→720p (Toshiba/Stick Lite), MID/HIGH→1080p.
+        try {
+            if (deviceTier == null) deviceTier = DeviceTier.detect(this);
+            float dens = getResources().getDisplayMetrics().density;
+            int hPx = getResources().getDisplayMetrics().heightPixels;
+            int targetH = deviceTier != null ? deviceTier.webViewTargetH : 1080;
+            if (hPx > targetH + 40 && dens > 0f) {
+                int scale = Math.max(40, Math.min(100, Math.round(targetH * dens * 100f / hPx)));
+                w.setInitialScale(scale);
+                Log.i("FEFC", "webview_scale targetH=" + targetH + " scale=" + scale + " tier=" + deviceTier.tier);
+            }
+        } catch (Throwable ignored) {}
         // "Android TV" makes the web app switch on its TV layout and focus navigation.
         s.setUserAgentString(s.getUserAgentString() + " Android TV FEFCFireTV/" + BuildConfig.VERSION_NAME);
         w.setLayerType(View.LAYER_TYPE_HARDWARE, null);
@@ -258,6 +310,15 @@ public class MainActivity extends Activity {
         String url = BuildConfig.START_URL;
         url += (url.contains("?") ? "&" : "?") + "apk=" + BuildConfig.VERSION_CODE;
         if (skipWebIntro) url += "&nointro=1";
+        // Emulator / QA: am start --es tier LOW|MID|HIGH forces mosaic decoder budget.
+        try {
+            String force = getIntent() != null ? getIntent().getStringExtra("tier") : null;
+            if (force != null && force.matches("(?i)LOW|MID|HIGH")) {
+                deviceTier = DeviceTier.detect(this).withOverride(force);
+                url += "&tier=" + deviceTier.tier;
+                Log.i("FEFC", "device_tier_force " + deviceTier.toJson());
+            }
+        } catch (Throwable ignored) {}
         web.loadUrl(url);
     }
 
@@ -384,6 +445,7 @@ public class MainActivity extends Activity {
         @Override
         public void onPageFinished(WebView v, String url) {
                 try { v.evaluateJavascript(KILL_SW_JS, null); } catch (Exception ignored) {}
+                try { injectDeviceTier(v); } catch (Exception ignored) {}
 
             if (!failed && isAppHost(Uri.parse(url))) {
                 offline.setVisibility(View.GONE);
@@ -450,6 +512,32 @@ public class MainActivity extends Activity {
             web.setVisibility(View.VISIBLE);
             web.requestFocus();
         }
+
+        @Override
+        public boolean onConsoleMessage(ConsoleMessage m) {
+            if (m == null) return true;
+            String msg = m.message();
+            if (msg != null && (msg.startsWith("FEFC_") || msg.startsWith("FEFC "))) {
+                Log.i("FEFC", "console " + msg);
+            }
+            return true;
+        }
+    }
+
+    private void injectDeviceTier(WebView v) {
+        if (v == null) return;
+        if (deviceTier == null) deviceTier = DeviceTier.detect(this);
+        // deviceTier.toJson() is a JSON object literal — safe to embed (values are numbers/short strings).
+        String js = "(function(){try{var t=" + deviceTier.toJson() + ";"
+                + "window.__fefcTier=t;"
+                + "var b=document.body;if(!b)return;"
+                + "b.classList.remove('tier-low','tier-mid','tier-high','tier-lite');"
+                + "b.classList.add('tier-'+(t.tier||'MID').toLowerCase());"
+                + "if(t.reduceEffects)b.classList.add('tier-lite');"
+                + "try{document.documentElement.dataset.tier=t.tier}catch(e){}"
+                + "try{window.dispatchEvent(new CustomEvent('fefc-tier',{detail:t}))}catch(e){}"
+                + "}catch(e){}})();";
+        v.evaluateJavascript(js, null);
     }
 
     /** Small bridge for the web app (window.FEFCNative): tap inside the embedded Drive player, or play a Drive file natively. */
@@ -457,6 +545,32 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         /** App versionName for the web UI (e.g. home "v0.8.1 beta" badge). */
         public String version() { return BuildConfig.VERSION_NAME; }
+
+        /** Device tier JSON: {tier,videoTiles,ramMb,...}. Used by mosaic decoder caps. */
+        @JavascriptInterface
+        public String deviceTier() {
+            if (deviceTier == null) deviceTier = DeviceTier.detect(MainActivity.this);
+            return deviceTier.toJson();
+        }
+
+        /** Convenience: "LOW" | "MID" | "HIGH". */
+        @JavascriptInterface
+        public String tier() {
+            if (deviceTier == null) deviceTier = DeviceTier.detect(MainActivity.this);
+            return deviceTier.tier;
+        }
+
+        /** Simultaneous mosaic video-tile budget for this SoC. */
+        @JavascriptInterface
+        public int videoTiles() {
+            if (deviceTier == null) deviceTier = DeviceTier.detect(MainActivity.this);
+            return deviceTier.videoTiles;
+        }
+
+        @JavascriptInterface
+        public void log(String msg) {
+            Log.i("FEFC", msg == null ? "" : msg);
+        }
 
         /** Lets the web app offer a manual "Check for app update" action. */
         @JavascriptInterface
@@ -509,8 +623,8 @@ public class MainActivity extends Activity {
                 if (raw.isEmpty()) raw = "video";
                 raw = raw + ".mp4";
             }
-            // Keep path segment simple for VLC / proxies
-            raw = raw.replaceAll("[^A-Za-z0-9._\\- ()\\[\\]]+", "_");
+            // ASCII-only path segment: spaces/parens break some VLC builds and over-encoding (%28) 502'd the worker.
+            raw = raw.replaceAll("[^A-Za-z0-9._\\-]+", "_");
             if (raw.length() > 120) {
                 int dot = raw.lastIndexOf('.');
                 String ext = dot > 0 ? raw.substring(dot) : ".mp4";
@@ -540,25 +654,43 @@ public class MainActivity extends Activity {
                 final String fname = vlcFileName(driveId, title, fileName);
                 final String mime = vlcMime(fname);
                 // Absolute https URL with a real file extension so VLC streams bytes (Range/206), not a playlist/HTML page.
-                Uri uri = Uri.parse(PROXY + driveId + "/" + Uri.encode(fname).replace("%2F", ""));
-                Intent vlc = new Intent(Intent.ACTION_VIEW);
-                vlc.setDataAndType(uri, mime);
-                vlc.setPackage("org.videolan.vlc");
-                vlc.putExtra("title", title != null ? title : fname);
-                vlc.putExtra("from_start", true);
-                vlc.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                // fname already ASCII-safe; encode only residual unsafe bytes, leave . _ -
+                final Uri uri = Uri.parse(PROXY + driveId + "/" + Uri.encode(fname, "._-"));
+                final String uriStr = uri.toString();
+                android.util.Log.i("FEFC-VLC", "openInVlc uri=" + uriStr + " mime=" + mime + " id=" + driveId);
+                // Debug toast: exact URI handed to VLC (helps diagnose "location cannot be played").
+                Toast.makeText(MainActivity.this, "VLC → " + uriStr, Toast.LENGTH_LONG).show();
+
+                // Prefer Uri.parse + setPackage only (no mime) — typed intents fail on some VLC/Fire TV builds.
                 try {
-                    startActivity(vlc);
+                    Intent bare = new Intent(Intent.ACTION_VIEW);
+                    bare.setData(uri);
+                    bare.setPackage("org.videolan.vlc");
+                    bare.putExtra("title", title != null ? title : fname);
+                    bare.putExtra("from_start", true);
+                    bare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(bare);
                     return;
-                } catch (ActivityNotFoundException e) {
+                } catch (ActivityNotFoundException eBare) {
                     try {
-                        Intent d = new Intent(Intent.ACTION_VIEW);
-                        d.setDataAndType(uri, mime);
-                        d.putExtra("title", title != null ? title : fname);
-                        d.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(d);
+                        Intent vlc = new Intent(Intent.ACTION_VIEW);
+                        vlc.setDataAndType(uri, mime);
+                        vlc.setPackage("org.videolan.vlc");
+                        vlc.putExtra("title", title != null ? title : fname);
+                        vlc.putExtra("from_start", true);
+                        vlc.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(vlc);
                         return;
-                    } catch (ActivityNotFoundException e2) { /* fall through */ }
+                    } catch (ActivityNotFoundException e) {
+                        try {
+                            Intent d = new Intent(Intent.ACTION_VIEW);
+                            d.setDataAndType(uri, mime);
+                            d.putExtra("title", title != null ? title : fname);
+                            d.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(d);
+                            return;
+                        } catch (ActivityNotFoundException e2) { /* fall through */ }
+                    }
                 }
                 // VLC not installed → Amazon Appstore listing
                 try {

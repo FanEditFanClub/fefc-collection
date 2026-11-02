@@ -1,5 +1,6 @@
-const DWELL = [3e3, 6e3];
-let clips = null, loading = false, timers = [], cells = [], pool = [], free = [], on = false;
+const DWELL = [3e3, 6e3], DWELL_PERF = [7e3, 12e3];
+const STILL_MS = [3200, 5e3], STILL_MS_PERF = [4e3, 6500];
+let clips = null, loading = false, timers = [], cells = [], pool = [], free = [], on = false, rot = 0;
 const home = () => document.getElementById("home");
 const atHome = () => {
   const h = home(), b = document.body.classList;
@@ -7,18 +8,70 @@ const atHome = () => {
 };
 const tv = () => document.body.classList.contains("tv");
 const fire = () => !!(window.FEFCNative || document.body.classList.contains("firetv"));
+const perf = () => document.body.classList.contains("perf");
 const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
-const lite = () => ios || document.body.classList.contains("lite") || Math.min(innerWidth, innerHeight) < 600;
-const decoders = () => fire() ? 2 : tv() ? 3 : lite() ? 6 : (navigator.hardwareConcurrency || 8) <= 6 ? 12 : 40;
-window.__clipStats = () => ({ tiles: cells.length, decoders: pool.length, playing: pool.filter((v) => !v.paused).length });
+const lite = () => ios || document.body.classList.contains("lite") || document.body.classList.contains("tier-lite") || Math.min(innerWidth, innerHeight) < 600;
+function tierInfo() {
+  try {
+    const q = new URLSearchParams(location.search).get("tier");
+    if (q && /^(LOW|MID|HIGH)$/i.test(q)) {
+      const T = q.toUpperCase();
+      const vt = T === "HIGH" ? 12 : T === "MID" ? perf() ? 3 : 4 : perf() ? 1 : 2;
+      return { tier: T, videoTiles: vt, reduceEffects: T === "LOW" };
+    }
+  } catch (e) {
+  }
+  try {
+    if (window.__fefcTier && window.__fefcTier.tier) return window.__fefcTier;
+  } catch (e) {
+  }
+  try {
+    if (window.FEFCNative && FEFCNative.deviceTier) {
+      const j = JSON.parse(FEFCNative.deviceTier());
+      window.__fefcTier = j;
+      return j;
+    }
+  } catch (e) {
+  }
+  const b = document.body.classList;
+  if (b.contains("tier-high")) return { tier: "HIGH", videoTiles: 12 };
+  if (b.contains("tier-mid")) return { tier: "MID", videoTiles: perf() ? 3 : 4 };
+  if (b.contains("tier-low")) return { tier: "LOW", videoTiles: perf() ? 1 : 2 };
+  return null;
+}
+const decoders = () => {
+  const t = tierInfo();
+  if (t && t.videoTiles > 0) {
+    let n = +t.videoTiles;
+    if (t.tier === "MID" && perf()) n = Math.min(n, 3);
+    if (t.tier === "LOW" && perf()) n = Math.min(n, Math.max(1, n));
+    if (t.tier === "HIGH") n = Math.max(n, 12);
+    return n;
+  }
+  if (fire() || tv()) return perf() ? 2 : 3;
+  return lite() ? 4 : (navigator.hardwareConcurrency || 8) <= 6 ? 8 : 16;
+};
+const dwell = () => {
+  const d = perf() ? DWELL_PERF : DWELL;
+  return d[0] + Math.random() * (d[1] - d[0]);
+};
+const stillDwell = () => {
+  const d = perf() ? STILL_MS_PERF : STILL_MS;
+  return d[0] + Math.random() * (d[1] - d[0]);
+};
+const ringOf = (el) => {
+  const n = +(el && (el._ring != null ? el._ring : el.dataset && el.dataset.ring));
+  return n > 0 ? n : 99;
+};
+window.__clipStats = () => ({ tiles: cells.length, ring1: cells.filter((c) => ringOf(c) === 1).length, outer: cells.filter((c) => ringOf(c) > 1).length, decoders: pool.length, playing: pool.filter((v) => !v.paused).length, cap: decoders(), tier: (tierInfo() || {}).tier || null });
 function load() {
   if (clips || loading) return;
   loading = true;
   fetch("data/clips.json").then((r) => r.json()).then((j) => {
     clips = j;
-    j.forEach((c) => {
+    j.slice(0, 24).forEach((c) => {
       const i = new Image();
-      i.src = c.poster;
+      i.src = c.frames && c.frames[0] || c.poster;
     });
     schedule();
   }).catch(() => {
@@ -33,7 +86,10 @@ function pick(cell) {
   } while (++i < 12 && (used.indexOf(c.src) >= 0 || c === cell._clip));
   return c;
 }
-const FILL = "position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;pointer-events:none;border-radius:inherit;will-change:opacity;";
+function framesOf(c) {
+  return c && c.frames && c.frames.length ? c.frames : c && c.poster ? [c.poster] : [];
+}
+const FILL = "position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;pointer-events:none;border-radius:inherit;";
 function stills(cell) {
   if (cell._s) return;
   cell._s = [0, 1].map(() => {
@@ -41,20 +97,24 @@ function stills(cell) {
     p.alt = "";
     p.className = "mcp";
     p.decoding = "async";
-    p.style.cssText = FILL + "z-index:2;opacity:0;transition:opacity .7s ease";
+    p.style.cssText = FILL + "z-index:2;opacity:0;transition:opacity .7s ease;will-change:opacity";
     cell.appendChild(p);
     return p;
   });
   cell._si = 0;
 }
-function showStill(cell, c, cb) {
+function showFrame(cell, url, cb) {
+  if (!url) {
+    cb && cb();
+    return;
+  }
   stills(cell);
   const nx = cell._s[cell._si ^ 1], cur = cell._s[cell._si];
   const im = new Image();
-  im.src = c.poster;
+  im.src = url;
   const fin = () => {
     if (!on) return;
-    nx.src = c.poster;
+    nx.src = url;
     nx.style.zIndex = 3;
     cur.style.zIndex = 2;
     requestAnimationFrame(() => {
@@ -68,6 +128,35 @@ function showStill(cell, c, cb) {
   };
   (im.decode ? im.decode() : Promise.resolve()).then(fin, fin);
 }
+function stillLoop(cell) {
+  if (!on || !atHome()) return;
+  if (!cell._clip || !cell._fi && cell._fi !== 0) {
+    cell._clip = pick(cell);
+    cell._fi = 0;
+    if (cell._clip.id) cell.dataset.id = cell._clip.id;
+  }
+  const fr = framesOf(cell._clip);
+  if (!fr.length) {
+    timers.push(setTimeout(() => stillLoop(cell), stillDwell()));
+    return;
+  }
+  const url = fr[cell._fi % fr.length];
+  const nextUrl = fr[(cell._fi + 1) % fr.length];
+  if (nextUrl) {
+    const pre = new Image();
+    pre.src = nextUrl;
+    cell._pre = pre;
+  }
+  showFrame(cell, url, () => {
+    cell._fi = (cell._fi + 1) % Math.max(1, fr.length);
+    if (cell._fi === 0) {
+      cell._clip = pick(cell);
+      if (cell._clip.id) cell.dataset.id = cell._clip.id;
+      cell._fi = 0;
+    }
+    timers.push(setTimeout(() => stillLoop(cell), stillDwell()));
+  });
+}
 function mkVideo() {
   const v = document.createElement("video");
   v.muted = true;
@@ -79,7 +168,7 @@ function mkVideo() {
   v.setAttribute("webkit-playsinline", "");
   v.preload = "auto";
   v.className = "mcv";
-  v.style.cssText = FILL + "z-index:4;opacity:0;transition:opacity .45s ease";
+  v.style.cssText = FILL + "z-index:4;opacity:0;transition:opacity .45s ease;" + (perf() ? "will-change:auto;" : "will-change:opacity;");
   v.addEventListener("playing", () => {
     if (v._cell) v.style.opacity = 1;
   });
@@ -122,19 +211,17 @@ function attach(cell, c) {
   });
   return true;
 }
-function step(cell) {
+function videoStep(cell) {
   if (!on || !atHome()) return;
   const c = pick(cell);
   cell._clip = c;
   if (c.id) cell.dataset.id = c.id;
-  const had = !!cell._v, keep = had && pool.length >= cells.length;
-  if (keep) {
+  const had = !!cell._v;
+  if (had) {
     cell._v.style.opacity = 0;
-  } else if (had) release(cell);
-  showStill(cell, c, () => {
-    if (!on) return;
-    if (keep && cell._v) {
-      const v = cell._v;
+    const v = cell._v;
+    showFrame(cell, c.frames && c.frames[0] || c.poster, () => {
+      if (!on || v._cell !== cell) return;
       setTimeout(() => {
         if (v._cell !== cell) return;
         v.src = c.src;
@@ -142,12 +229,15 @@ function step(cell) {
         if (r && r.catch) r.catch(() => {
         });
       }, 450);
-    } else if (!had) attach(cell, c);
+    });
+  } else showFrame(cell, c.frames && c.frames[0] || c.poster, () => {
+    if (!on) return;
+    attach(cell, c);
   });
 }
 function visible(el) {
   const r = el.getBoundingClientRect(), m = 120;
-  return r.width > 0 && r.right > -m && r.bottom > -m && r.left < innerWidth + m && r.top < innerHeight + m;
+  return r.width > 0 && r.right > -m && r.bottom > -m && r.left < innerWidth + m && r.top < innerHeight + m && el.style.visibility !== "hidden";
 }
 function stop() {
   on = false;
@@ -171,20 +261,47 @@ function schedule() {
   stop();
   if (!clips || !clips.length || !atHome()) return;
   on = true;
-  cells = [].slice.call(document.querySelectorAll("#hub .mc")).filter(visible).filter((c) => c.style.visibility !== "hidden");
-  const n = Math.min(decoders(), cells.length);
+  cells = [].slice.call(document.querySelectorAll("#hub .mc")).filter(visible);
+  const ring1 = cells.filter((c) => ringOf(c) === 1).sort((a, b) => (a._ring || 0) - (b._ring || 0));
+  const outer = cells.filter((c) => ringOf(c) > 1);
+  const n = Math.min(decoders(), Math.max(1, ring1.length));
   while (pool.length < n) pool.push(mkVideo());
   free = pool.slice(0, n);
-  const order = cells.slice().sort(() => Math.random() - 0.5);
-  const gap = fire() ? 300 : Math.min(140, 2400 / Math.max(1, order.length));
-  order.forEach((c, i) => {
+  const start = rot % Math.max(1, ring1.length);
+  const videoTiles = [];
+  for (let i = 0; i < n && ring1.length; i++) videoTiles.push(ring1[(start + i) % ring1.length]);
+  const videoSet = new Set(videoTiles);
+  const ringStill = ring1.filter((c) => !videoSet.has(c));
+  const stillTiles = outer.concat(ringStill);
+  stillTiles.forEach((c, i) => timers.push(setTimeout(() => {
+    if (on && atHome()) stillLoop(c);
+  }, i * 110 + Math.random() * 180)));
+  const gap = fire() || perf() ? 320 : Math.min(140, 2400 / Math.max(1, videoTiles.length));
+  videoTiles.forEach((c, i) => {
     const loop = () => {
       if (!on || !atHome()) return;
-      step(c);
-      timers.push(setTimeout(loop, DWELL[0] + Math.random() * (DWELL[1] - DWELL[0])));
+      videoStep(c);
+      timers.push(setTimeout(loop, dwell()));
     };
-    timers.push(setTimeout(loop, i * gap + (fire() ? Math.random() * 60 : Math.random() * 250)));
+    timers.push(setTimeout(loop, i * gap + (fire() || perf() ? Math.random() * 80 : Math.random() * 250)));
   });
+  if (ring1.length > n) {
+    timers.push(setTimeout(function hop() {
+      if (!on || !atHome()) return;
+      rot = (rot + n) % ring1.length;
+      schedule();
+    }, 4e4 + Math.random() * 15e3));
+  }
+  try {
+    const ti = tierInfo() || {};
+    const line = "FEFC_CLIPS tier=" + (ti.tier || "?") + " ring1=" + ring1.length + " video=" + videoTiles.length + " outerStill=" + stillTiles.length + " cap=" + n + " stats=" + JSON.stringify(__clipStats());
+    console.log(line);
+    try {
+      if (window.FEFCNative && FEFCNative.log) FEFCNative.log(line);
+    } catch (e2) {
+    }
+  } catch (e) {
+  }
 }
 let deb;
 function kick() {
@@ -221,6 +338,8 @@ function init() {
   addEventListener("hashchange", kick);
   addEventListener("resize", kick);
   addEventListener("scroll", kick, { passive: true, capture: true });
+  addEventListener("fefc-perf", kick);
+  addEventListener("fefc-tier", kick);
   const start = () => {
     if (document.body.classList.contains("native-waiting")) return;
     kick();
