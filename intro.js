@@ -233,7 +233,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
       gpat = gx.createPattern(atlas, "repeat");
       dirty = 0;
     }
-    const quiet = () => curS > 11.2 && curS < 13.2 || curS > 21.8;
+    const quiet = () => curS > 11 && curS < 23.2;
     const ensure = () => {
       if (pat && quiet()) return;
       const n = imgs.filter((i) => i.ok).length, now = Date.now();
@@ -270,7 +270,7 @@ window.FEFCIntro = /* @__PURE__ */ (() => {
     function ground(hy, cam, camX) {
       ensure();
       sizeG();
-      const f = H * 0.9, h = 10, band = opt.lite || tv && !opt.tv ? 6 : tv ? 4 : 2;
+      const f = H * 0.9, h = 10, band = opt.lite || tv && !opt.tv ? 6 : tv ? 4 : curS >= 11.9 ? 3 : 2;
       gx.setTransform(1, 0, 0, 1, 0, 0);
       gx.clearRect(0, 0, gcv.width, gcv.height);
       gx.fillStyle = gpat;

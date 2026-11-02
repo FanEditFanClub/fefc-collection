@@ -53,7 +53,7 @@ var __spreadValues = (a, b) => {
   const IQ = [];
   function afterIntro(fn) {
     const c = document.body.classList;
-    if (c.contains("tvintro") && !c.contains("intro-done")) IQ.push(fn);
+    if ((c.contains("tvintro") || c.contains("cintro")) && !c.contains("intro-done")) IQ.push(fn);
     else fn();
   }
   const TVI = { end: 9.6 };
@@ -104,7 +104,7 @@ var __spreadValues = (a, b) => {
       if (vid) {
         vEl = document.createElement("video");
         vEl.className = "tvi-video";
-        vEl.src = "assets/intro-tv.mp4?v=2";
+        vEl.src = "assets/intro-tv.mp4?v=3";
         vEl.setAttribute("playsinline", "");
         vEl.playsInline = true;
         vEl.preload = "auto";
@@ -467,6 +467,7 @@ var __spreadValues = (a, b) => {
   function tile(f, live_) {
     const fold = isFolder(f), p = parse(f.name), aud = !fold && !isVid(f) && isAud(f), vid = !fold && (isVid(f) || aud), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
+    if (/\bread first\b/i.test(f.name || "")) return '<button class="ol-tile fold rfhome" data-id="'.concat(f.id, '" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>');
     if (fold) {
       const fid = target(f);
       if ((fid === FOLD.collections || f.id === FOLD.collections) && cur !== FOLD.collections) return '<button class="ol-tile fecc" data-id="'.concat(f.id, '" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">').concat(esc(countsLine(FOLD.collections)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
@@ -508,7 +509,7 @@ var __spreadValues = (a, b) => {
   }
   async function art(el, f) {
     if (el.dataset && el.dataset.fecc) return;
-    if (!f || el.classList.contains("sup") || el.classList.contains("mainc")) return;
+    if (!f || el.classList.contains("sup") || el.classList.contains("mainc") || el.classList.contains("rfhome") || el.dataset.rfhome) return;
     let src = null;
     const p = parse(f.name);
     if (isFolder(f) && people[target(f)]) src = people[target(f)].url;
@@ -803,7 +804,7 @@ var __spreadValues = (a, b) => {
       ["people", "Actors\n&\nDirectors", NA.plural(peopleList().length, "Collection")],
       ["mylist", "My List", (() => {
         const n = window.UD && UD.stars ? UD.stars().length : 0;
-        return n + " starred";
+        return "History \xB7 " + n + " Starred";
       })()],
       ["genres", "Genres", (() => {
         const h = {};
@@ -3974,13 +3975,15 @@ var __spreadValues = (a, b) => {
   if (C.GOOGLE_API_KEY) {
     live = true;
   }
-  tmo("data/folderthumbs.json", 1e4).then((m) => {
-    fthumbs = m;
-    document.querySelectorAll("#grid .ol-tile").forEach((el) => {
-      const f = items.get(el.dataset.id);
-      if (f && isFolder(f) && !el.querySelector("img")) art(el, f);
+  afterIntro(() => {
+    tmo("data/folderthumbs.json", 1e4).then((m) => {
+      fthumbs = m;
+      document.querySelectorAll("#grid .ol-tile").forEach((el) => {
+        const f = items.get(el.dataset.id);
+        if (f && isFolder(f) && !el.querySelector("img") && !el.classList.contains("rfhome")) art(el, f);
+      });
+    }).catch(() => {
     });
-  }).catch(() => {
   });
   const reArt = () => document.querySelectorAll("#grid .ol-tile,#arena .ol-tile").forEach((el) => {
     const f = items.get(el.dataset.id);
@@ -4136,7 +4139,7 @@ var __spreadValues = (a, b) => {
     if (droid) {
       const t = document.createElement("div");
       t.className = "ios-tip";
-      t.innerHTML = 'To install: tap the Chrome <b>\u22EE</b> menu, then <b>Install app</b> (or <b>Add to Home screen</b>).<button type="button">OK</button>';
+      t.innerHTML = 'If Chrome shows neither <b>Install app</b> nor <b>Add to Home screen</b>: (1) Settings \u2192 Apps \u2014 uninstall any existing <b>FEFC</b> / <b>Collection</b> / <b>Fan Edit Fan Club</b> app; (2) open this URL in the real <b>Chrome</b> app (not a link preview / in-app browser); (3) try a normal (non-incognito) tab, or Incognito if a managed profile is interfering; (4) reload. Otherwise: \u22EE \u2192 Install app / Add to Home screen, or tap Install above.<button type="button">OK</button>';
       document.body.appendChild(t);
       t.querySelector("button").onclick = () => t.remove();
     }

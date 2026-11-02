@@ -48,14 +48,14 @@ function create(opt){
  // tile atlas (mosaic thumbnails, rebuilt as they arrive) used as a repeating ground texture
  const AT=tv?48:64,AN=16,atlas=document.createElement('canvas');atlas.width=atlas.height=AT*AN;const ax=atlas.getContext('2d');let pat=null,gpat=null,dirty=1,lastB=0,curS=0;
  function buildAtlas(){ax.fillStyle='#0c0e12';ax.fillRect(0,0,AT*AN,AT*AN);const gp=Math.max(2,AT*.09);for(let j=0;j<AN;j++)for(let i=0;i<AN;i++){const k=hash(i,j),im=imgs.length?imgs[k%imgs.length]:null,x=i*AT+gp/2,y=j*AT+gp/2,w=AT-gp;if(im&&im.ok)ax.drawImage(im,x,y,w,w*.82),ax.fillStyle='rgba(0,0,0,.15)',ax.fillRect(x,y+w*.82,w,w*.18);else{ax.fillStyle=hues[k%64];ax.fillRect(x,y,w,w*.82)}}pat=c.createPattern(atlas,'repeat');gpat=gx.createPattern(atlas,'repeat');dirty=0}
- const quiet=()=>(curS>11.2&&curS<13.2)||curS>21.8; // never rebuild the atlas around the flashes / dive
+ const quiet=()=>(curS>11.0&&curS<23.2); // never rebuild the atlas through the flash → planet → dive (main stutter source)
  const ensure=()=>{if(pat&&quiet())return;const n=imgs.filter(i=>i.ok).length,now=Date.now();if(!pat||(n!==lastB&&now-(ensure.t||0)>400)){lastB=n;ensure.t=now;buildAtlas()}};
  const gcv=document.createElement('canvas'),gx=gcv.getContext('2d');
  const sizeG=()=>{const gw=Math.max(2,Math.round(cv.width*gs)),gh=Math.max(2,Math.round(cv.height*gs));if(gcv.width!==gw||gcv.height!==gh){gcv.width=gw;gcv.height=gh}};
  let warmed=0;const warm=()=>{warmed=1;flashA(0);sizeG();lastB=-1;ensure.t=0;buildAtlas();lastB=imgs.filter(i=>i.ok).length;gx.fillStyle=gpat;gx.fillRect(0,0,1,1);if(!tv&&(buf.width!==cv.width||buf.height!==cv.height)){buf.width=cv.width;buf.height=cv.height}};
  function ground(hy,cam,camX){ // mode-7 style perspective strips into gcv (screen space, unrotated)
   ensure();sizeG()
-  const f=H*.9,h=10,band=opt.lite||(tv&&!opt.tv)?6:tv?4:2;gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,gcv.width,gcv.height);gx.fillStyle=gpat;
+  const f=H*.9,h=10,band=opt.lite||(tv&&!opt.tv)?6:tv?4:(curS>=11.9?3:2);gx.setTransform(1,0,0,1,0,0);gx.clearRect(0,0,gcv.width,gcv.height);gx.fillStyle=gpat;
   for(let y=Math.max(Math.floor(hy)+1,-H);y<H*1.3;y+=band){const d=y-hy;if(d<=0)continue;const z=f*h/d,k=f/(z*AT),ky=f*h/(z*z*AT),tx=W/2-camX*AT*k,ty=y-(z+cam)*AT*ky;
    gx.setTransform(k*dpr*gs,0,0,ky*dpr*gs,tx*dpr*gs,ty*dpr*gs);gx.fillRect(-tx/k,(y-ty)/ky,W/k,band/ky*1.5)}
   gx.setTransform(1,0,0,1,0,0)}
