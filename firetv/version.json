@@ -1,8 +1,8 @@
 {
-    "versionCode": 16,
-    "versionName": "0.8.7",
+    "versionCode": 17,
+    "versionName": "0.8.8",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.7: Cross-folder Drive shortcuts (e.g. 6 Twilight Zone franchise folders) now show: index embeds links; app applies before first paint. Fire TV P0 \u2014 update Check always re-fetches version.json; Back hint pulses (not Home) + details Back restores prior screen/scroll/focus + ancestor folder SFX; Gen3 Back/Select SVGs; FEFC logo beside Home, centered bar; local APK bundles shell/art/sfx/intro/mosaic clips (full edits still stream); Media3 ExoPlayer; Open in Drive; NA titles under date badge + Untitled fallback; genres 60s retry UI; Home focuses Main Collection; nav SFX resume suspended AudioContext; Support Us after Read First; Actor/Director dual labels (Brooks/Tarantino/Gibson/Cameron); people photos win over folderthumbs; Landman/Parks/Pirates/Rick&Morty SFX pools.",
-    "size": 89311122,
-    "sha256": "e9a27f5d24f2b75dfd9bf407fa5d83e365199ba1fecb45e807fb7a1a7ae99ff8"
+    "notes": "\u2022 Fire TV details: Open in VLC (Play \u2192 VLC \u2192 Drive); opens stream in VLC or Amazon Appstore if missing\n\u2022 Native Media3 intro (fullscreen ExoPlayer from res/raw) before WebView; Select/Back skips; web uses ?nointro=1\nBeta 0.8.8: Fire TV banner/icon full-bleed (edge-to-edge FEFC on black); idle Home\u2194collection bounce fixed (background index/links/interim soft-refresh, no navigate; no SW reload on TV; boot respects folder hash); intro skip grace so D-pad no longer cuts intro short; mosaic tiles ring around hub (not top-only) + local poster preference; artwork local-first where bundled. Web + Fire TV version sync.",
+    "size": 95732929,
+    "sha256": "5580d034dbbc86a78c291bd944d53d3a0223202912d375668f68bf58b95d80db"
 }

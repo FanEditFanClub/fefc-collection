@@ -61,8 +61,12 @@ function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElemen
  else{tryEl().then(ok=>{if(!ok&&!sndOn&&!done&&!short)sndHint(true)});const tick=setInterval(()=>{if(sndOn||done)return clearInterval(tick);go()},250);['pointerdown','touchstart','keydown','click'].forEach(ev=>addEventListener(ev,go,{capture:true,passive:true}))}
  if(vid){let m=false;try{m=!!S.muted}catch(e){}vEl.muted=m;const pp=vEl.play();const mp=()=>{vEl.muted=true;const p2=vEl.play();if(p2&&p2.catch)p2.catch(()=>vidFail())};if(pp&&pp.catch)pp.catch(mp);setTimeout(()=>{if(!done&&!vfb&&(!(vEl.currentTime>0.05)||!(vEl.videoWidth>0)))vidFail()},2500)}
  R.frame(0);raf=requestAnimationFrame(loop);
- const sk=e=>{if(e.type==='keydown'&&e.repeat)return;if(!sndOn&&!short&&!done){/* (b) first press while blocked: start sound, don't skip */S.unlock();tryEl().then(ok=>{if(!ok)go()});setTimeout(go,60);e.stopPropagation&&e.stopPropagation();return}e.preventDefault&&e.preventDefault();e.stopPropagation&&e.stopPropagation();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);S.unlock();end(true)};
- setTimeout(()=>{if(!done){addEventListener('keydown',sk,true);el.addEventListener('pointerdown',sk)}},sndOn?250:0)}
+ /* Skip arming: with video, sndOn starts as 'vid' so the old sndOn?250 path armed skip in 250ms —
+    Fire TV D-pad/OK then cut the intro short (owner: "intro doesn't play in full"). Arm skip only after a real grace. */
+ let skipArmed=false;const skipGrace=vid?Math.max(4000,(tEnd*1000*0.35)|0):(sndOn?2500:0);
+ setTimeout(()=>{skipArmed=true},skipGrace);
+ const sk=e=>{if(e.type==='keydown'&&e.repeat)return;if(!skipArmed||(!sndOn&&!short&&!done)){/* first press / pre-arm: unlock sound only, never skip */S.unlock();tryEl().then(ok=>{if(!ok)go()});setTimeout(go,60);e.stopPropagation&&e.stopPropagation();return}e.preventDefault&&e.preventDefault();e.stopPropagation&&e.stopPropagation();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);S.unlock();end(true)};
+ setTimeout(()=>{if(!done){addEventListener('keydown',sk,true);el.addEventListener('pointerdown',sk)}},vid?100:(sndOn?250:0))}
 // first interaction anywhere unlocks audio (autoplay rules)
 addEventListener('keydown',function kU(){removeEventListener('keydown',kU);if(!window._u){window._u=1;S.unlock();if(document.body.classList.contains('intro-done')&&$('#details').hidden&&$('#player').hidden)S.ambience(true)}});
 addEventListener('pointerdown',()=>{const first=!window._u;window._u=1;S.unlock();if(first&&document.body.classList.contains('intro-done')&&$('#details').hidden&&$('#player').hidden)S.ambience(true)},{capture:true});
@@ -193,7 +197,7 @@ function bandFit(el,D,g){const sh=Math.max(0,D-2*g),tw=el._tw||0;let w=tw,h=tw*9
 function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classList.contains('tv');
  /* 0.8.6: Fire TV keeps a lighter mosaic (fewer tiles, low-res thumbs, slower stagger) — do not skip. */
  const fire=tv&&(document.body.classList.contains('firetv')||window.FEFCNative);
- const n=fire?8:tv?14:Math.max(10,Math.min(22,Math.round(innerWidth*innerHeight/60000)));
+ const n=fire?14:tv?14:Math.max(10,Math.min(22,Math.round(innerWidth*innerHeight/60000)));
  let pool=mosaicList.length?mosaicList.slice():vids().slice(0,40).map(f=>({id:f.id,target:target(f),name:f.name}));
  M.innerHTML='';[].slice.call(document.querySelectorAll('#hub .mc')).forEach(x=>x.remove());const cells=[];
  // geometry: tiles sized like hub tiles, aligned to hub edges, only OUTSIDE the hub box and below the tagline
@@ -202,11 +206,20 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
  const tw=(hw-2*g)/3,th=(hh-2*g)/3;const hr=H.getBoundingClientRect(),tr=(()=>{const sp=$('#tagline span'),wm=$('#wordmark'),a=[];if(wm)a.push(wm.getBoundingClientRect());if(sp&&document.createRange){const rg=document.createRange();rg.selectNodeContents(sp);[].forEach.call(rg.getClientRects(),r=>a.push(r))}else if(sp)a.push(sp.getBoundingClientRect());a.splice(0,a.length,...a.filter(r=>r.width));if(!a.length)return null;const px=Math.max(16,innerWidth*.02);return {left:Math.min(...a.map(r=>r.left))-px,right:Math.max(...a.map(r=>r.right))+px,top:-1e9,bottom:Math.max(...a.map(r=>r.bottom))+6,height:1}})();
  const tb=tr?{l:tr.left-hr.left,t:-1e9,r:tr.right-hr.left,b:tr.bottom-hr.top}:null;
  hb.style.transform=_tf;const ov=(a,b)=>a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t,hub={l:hx-g/2,t:hy-g/2,r:hx+hw+g/2,b:hy+hh+g/2};
- const cols=Math.ceil(hx/(tw+g))+1,rows=Math.ceil(hy/(th+g))+2;let budget=fire?12:tv?40:90;
- for(let r=-rows;r<3+rows&&budget>0;r++)for(let c=-cols;c<3+cols&&budget>0;c++){
+ const cols=Math.ceil(hx/(tw+g))+1,rows=Math.ceil(hy/(th+g))+2;let budget=fire?24:tv?40:90;
+ /* Collect candidates first, then take a ring around the hub. Old top-row-first fill + fire budget 12
+    left only the TOP mosaic live — sides/bottom never got tiles (owner report). */
+ const cands=[];
+ for(let r=-rows;r<3+rows;r++)for(let c=-cols;c<3+cols;c++){
   const x=hx+c*(tw+g)+(c<0?-g:c>2?g:0),y=hy+r*(th+g)+(r<0?-g:r>2?g:0),box={l:x,t:y,r:x+tw,b:y+th};
   const toprow=r===-1&&c>=0&&c<=2,above=r<0,sh=above&&hb._hdr?Math.max(0,hb._hdr.D-2*g):0;if(above){box.t-=sh;box.b-=sh}if(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub)||(!above&&tb&&ov(box,tb)))continue;
-  const el=document.createElement('div');el.className='mc';const ex=(c<0?-g:c>2?g:0),ey=(r<0?-g:r>2?g:0);
+  cands.push({r,c,toprow,above,ex:(c<0?-g:c>2?g:0),ey:(r<0?-g:r>2?g:0)});
+ }
+ const ring=o=>{const dr=o.r<0?-o.r:Math.max(0,o.r-2),dc=o.c<0?-o.c:Math.max(0,o.c-2);return Math.max(dr,dc)*3+Math.min(dr,dc)};
+ /* Prefer a full ring (top/sides/bottom) before farther cells; within a ring rotate sides so fire budget is not top-heavy. */
+ cands.sort((a,b)=>{const ra=ring(a),rb=ring(b);if(ra!==rb)return ra-rb;const qa=(a.r+99)*10+(a.c+99),qb=(b.r+99)*10+(b.c+99);return (qa%7)-(qb%7)||qa-qb});
+ for(const o of cands){if(budget<=0)break;const {r,c,toprow,above,ex,ey}=o;
+  const el=document.createElement('div');el.className='mc';
   el.style.cssText=`left:calc(${c} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ex}px);top:calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px);width:calc((100% - ${2*g}px) / 3);height:calc((100% - ${2*g}px) / 3)`;
   if(above){if(toprow)el.classList.add('toprow');el.classList.add('above');el._top=D=>`calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px - ${Math.max(0,D-2*g)}px)`;el.style.top=el._top((hb._hdr&&hb._hdr.D)||2*g)}
   el.style.height='auto';el.style.aspectRatio='16 / 9';el.style.marginTop=((th-tw*9/16)/2)+'px';
@@ -217,7 +230,7 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
   el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);bb--}}
  const pick=()=>pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
  const set=(c,first)=>{const v=pick(),layers=c.children,on=c._on?0:1;c._on=!c._on;const L=layers[on];
-  if(v){L.src='https://drive.google.com/thumbnail?sz='+(fire?'w240':'w480')+'&id='+v.target;c.dataset.id=v.id}else{c.style.background='radial-gradient(circle at 60% 30%,hsl('+(Math.random()*360|0)+' 70% 45%),#050a14 80%)'}
+  if(v){const ps=posters[v.id]||posters[v.target];L.src=(ps&&ps.url&&String(ps.url).startsWith('assets/'))?ps.url:('https://drive.google.com/thumbnail?sz='+(fire?'w240':'w480')+'&id='+v.target);c.dataset.id=v.id}else{c.style.background='radial-gradient(circle at 60% 30%,hsl('+(Math.random()*360|0)+' 70% 45%),#050a14 80%)'}
   L.style.animationName='none';void L.offsetWidth;L.style.animationName='';L.className=(on?'mi2':'mi1')+' kb'+(Math.random()*4|0);
   layers[on].style.opacity=1;layers[1-on].style.opacity=0};
  cells.forEach(c=>set(c,true));requestAnimationFrame(fitHeader);clearInterval(mosaicTimer);
@@ -430,6 +443,30 @@ function parentHash(){const r=parseH();
 function parseH(){if(/^#\/arena/.test(location.hash))history.replaceState(history.state,'','#/newarrivals');return (location.hash.replace(/^#\/?newarrivals/,'#/arena').replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent)}
 function itemOr(id){return items.get(id)||{id:id,name:'Fan edit',mimeType:'video/mp4'}}
 let baseKey=null;
+/* Soft in-place refresh after background index/links/interim/dates loads.
+   Must NEVER navigate or flash Home — that caused idle Home↔collection bounce
+   (showHome on boot/reload, then route() restoring the hash). */
+function softRefresh(){
+ try{
+  if(!$('#player').hidden)return;
+  const r=parseH(),k=r[0]||'';
+  if(!$('#home').hidden||!k||k==='home'){
+   hub();
+   const M=$('#mosaic');
+   if(M&&!M.querySelector('.mc')&&mosaicList.length)mosaic();
+   return;
+  }
+  if(/^(folder|all|arena|newarrivals|people|actors|directors|mylist|genre|genres|search|support|supportus)$/.test(k)){
+   const main=$('#main'),st=main?main.scrollTop:0;
+   const ae=document.activeElement,fid=ae&&ae.dataset&&ae.dataset.id,fhub=ae&&ae.dataset&&ae.dataset.hub;
+   renderBase(location.hash);
+   if(main)main.scrollTop=st;
+   if(fid){const el=document.querySelector('[data-id="'+CSS.escape(fid)+'"]');if(el)try{focusEl(el)}catch(e){}}
+   else if(fhub){const el=document.querySelector('[data-hub="'+CSS.escape(fhub)+'"]');if(el)try{focusEl(el)}catch(e){}}
+   return;
+  }
+ }catch(e){console.warn('softRefresh',e)}
+}
 function route(){const r=parseH(),k=r[0]||'';
  // overlays
  if(k!=='play')closedFor=null;
@@ -709,7 +746,7 @@ async function details(f,push=true){fitMode();
  else if(isJura){S.fx(['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a'])}
  else if(isDexter){S.fx(['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a'])}}
  $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
- <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
+ <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>▶ Play</button>${(window.FEFCNative&&typeof FEFCNative.openInVlc==='function')?'<button type="button" class="pill p5" data-act="vlc">Open in VLC</button>':''}<a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
  <div class="lc-body${PU?'':' nopo'}"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
   ${desc?`<h3 class="lc-h">Fan edit</h3><p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
   <div id="lc-fanedit"></div>
@@ -761,7 +798,7 @@ function play(f){
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
- const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();S.chirp(1);go('#/play/'+f.id);return}
+ const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();if(act.dataset.act==='vlc'){S.chirp(1);try{const nb=window.FEFCNative;if(nb&&nb.openInVlc&&f)nb.openInVlc(target(f),parse(f.name).raw)}catch(err){}return;}S.chirp(1);go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.rfhome){S.click();readFirst();return}if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
 document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog'+(isTvEnv()?'':',.tk-i:not(.tk-dup)')))S.move()});
@@ -1130,7 +1167,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.7';
+const HOME_VER_FALLBACK='0.8.8';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}
@@ -1193,21 +1230,24 @@ const TVB=/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android T
 /* On TV the big secondary JSON files (genres 0.5 MB, dates 1.6 MB, metadata 1.7 MB, details extras 3.7 MB) are fetched/parsed one after another after the hub is up, not all at once during startup. */
 const later=(fn,ms)=>TVB?afterIntro(()=>setTimeout(fn,ms)):fn();
 /* Genres: Fire TV previously raced a 10s timeout vs local/network JSON and .catch(()=>{}) left genreMap={} → FEFCGenres hub stuck on "Loading genres…" forever. Load from bundled/local URL with a long TV timeout, retry once, and surface fail+retry UI. */
-window.loadGenres=(force)=>{if(window._genresP&&!force)return window._genresP;const ms=isTvEnv()?60000:20000;const once=()=>tmo('data/genres.json',ms).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;try{if(window.FEFCGenres&&FEFCGenres.loaded)FEFCGenres.loaded()}catch(e){}if(!$('#home').hidden)hub();else if(/^#\/genres?\/./.test(location.hash))route();return g});window._genresP=once().catch(e=>{console.warn('genres',e);return once()}).then(g=>{window._genresP=Promise.resolve(g);return g},e=>{window._genresP=null;try{if(window.FEFCGenres&&FEFCGenres.fail)FEFCGenres.fail(e&&e.message||e)}catch(err){}throw e});return window._genresP};
+window.loadGenres=(force)=>{if(window._genresP&&!force)return window._genresP;const ms=isTvEnv()?60000:20000;const once=()=>tmo('data/genres.json',ms).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;try{if(window.FEFCGenres&&FEFCGenres.loaded)FEFCGenres.loaded()}catch(e){}softRefresh();return g});window._genresP=once().catch(e=>{console.warn('genres',e);return once()}).then(g=>{window._genresP=Promise.resolve(g);return g},e=>{window._genresP=null;try{if(window.FEFCGenres&&FEFCGenres.fail)FEFCGenres.fail(e&&e.message||e)}catch(err){}throw e});return window._genresP};
 later(()=>window.loadGenres(),isTvEnv()?400:1500);
 afterIntro(()=>{tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});});
-later(()=>tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));if(!$('#home').hidden)hub();else if(/^#\/(newarrivals|arena|folder)/.test(location.hash))route()}).catch(e=>console.warn(e)),3000);
+later(()=>tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));softRefresh()}).catch(e=>console.warn(e)),3000);
 later(()=>tmo('data/metadata.json',8000).then(m=>{meta=m;refreshOpenDetails()}).catch(e=>console.warn(e)),isTvEnv()?5000:800);later(()=>{const sx=document.createElement('script');sx.src='details-extra.js';sx.onload=()=>{if(window.FEX)FEX.ready.then(()=>refreshOpenDetails()).catch(()=>{})};document.head.appendChild(sx)},isTvEnv()?8000:1200);
 /* Prefetch the 6.7MB index during the TV CSS intro (no canvas). Longer timeout + one retry — Fire TV WebView often exceeds 15s download/parse and was leaving every hub count at 0. */
-const idxMs=isTvEnv()?90000:30000;
+const idxMs=isTvEnv()?180000:30000;
 const idxFetch=()=>tmo('data/index.json',idxMs).catch(e=>{console.warn('index retry',e);return tmo('data/index.json',idxMs)});
 const idxP=(isTvEnv()||document.body.classList.contains('tvintro'))?idxFetch():null;
-afterIntro(()=>{(idxP||idxFetch()).then(async d=>{window._idx=d.items;window._links=d.links||window._links||null;if(!live){add(d.items);applyLinks(window._links);if(!window._links){try{window._links=await tmo('data/links.json',30000);applyLinks(window._links)}catch(e){console.warn('links',e)}}else{tmo('data/links.json',30000).then(L=>{window._links=L;applyLinks(L);if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(e=>console.warn('links',e))}}if(d.partial!==false&&!live)tmo('data/index.interim.json',30000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));applyLinks(window._links);window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
+afterIntro(()=>{(idxP||idxFetch()).then(async d=>{window._idx=d.items;window._links=d.links||window._links||null;if(!live){add(d.items);applyLinks(window._links);if(!window._links){try{window._links=await tmo('data/links.json',30000);applyLinks(window._links)}catch(e){console.warn('links',e)}}else{tmo('data/links.json',30000).then(L=>{window._links=L;applyLinks(L);softRefresh()}).catch(e=>console.warn('links',e))}}if(d.partial!==false&&!live)tmo('data/index.interim.json',30000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));applyLinks(window._links);window._idx=Array.from(items.values());softRefresh()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{softRefresh();
  if(P.get('focus')){setTimeout(()=>{document.body.classList.add('kbd');const t=document.querySelectorAll('.ol-tile,.hb')[+P.get('focus')];if(t)focusEl(t)},300)}
  const e=P.get('edit');if(e)go('#/edit/'+e);const pp=P.get('play');if(pp)go('#/play/'+pp);if(P.get('readfirst'))go('#/readfirst')});});
 $('#back').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();goBack()});
 $('#player').addEventListener('click',e=>{if(e.target.closest('#pclose')||(e.target.id==='player'&&!e.target.closest('.pcard'))){e.preventDefault();e.stopPropagation();goBack()}});
-showHome();if(/^#\/(genres|supportus|support|mylist)\b/.test(location.hash))route();
+/* Idle-bug fix: never paint Home first when the hash already points at a folder/list —
+   that + a later route() after index/links was the Home↔collection bounce. */
+if(/^#\/(folder|all|arena|newarrivals|people|actors|directors|mylist|genres|genre|support|supportus|search|edit|play|readfirst)\b/.test(location.hash))route();
+else showHome();
 })();
 
 /* ---------- INSTALL BUTTON (bottom legend bar only) ---------- */
@@ -1230,7 +1270,10 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.__bip=e;upd
  const isTV=document.body.classList.contains('tv'),mobile=/Android|iPhone|iPad|iPod/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/.test(ua)&&'ontouchend' in document);
  const ios=/iPhone|iPad|iPod/i.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1),snoozed=+localStorage.fefcInstallSnooze>Date.now();
  let deferred=null;const box=document.getElementById('install');
- if('serviceWorker' in navigator&&location.protocol!=='file:'){
+ /* Fire TV / Leanback / native shell: no SW. Auto controllerchange→reload was painting Home then
+    route()-ing back into the collection (idle bounce). Web keeps SW but only reloads off TV. */
+ const skipSW=isTV||!!window.FEFCNative||document.body.classList.contains('firetv')||/AFT|Android TV|GoogleTV|Silk/i.test(ua);
+ if('serviceWorker' in navigator&&location.protocol!=='file:'&&!skipSW){
   navigator.serviceWorker.register('/sw.js',{updateViaCache:'none'}).then(reg=>{
     try{reg.update()}catch(e){}
     if(reg.waiting)try{reg.waiting.postMessage({type:'SKIP_WAITING'})}catch(e){}

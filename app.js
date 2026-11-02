@@ -374,9 +374,14 @@ var __spreadValues = (a, b) => {
     }
     R.frame(0);
     raf = requestAnimationFrame(loop);
+    let skipArmed = false;
+    const skipGrace = vid ? Math.max(4e3, tEnd * 1e3 * 0.35 | 0) : sndOn ? 2500 : 0;
+    setTimeout(() => {
+      skipArmed = true;
+    }, skipGrace);
     const sk = (e) => {
       if (e.type === "keydown" && e.repeat) return;
-      if (!sndOn && !short && !done) {
+      if (!skipArmed || !sndOn && !short && !done) {
         S.unlock();
         tryEl().then((ok) => {
           if (!ok) go2();
@@ -397,7 +402,7 @@ var __spreadValues = (a, b) => {
         addEventListener("keydown", sk, true);
         el.addEventListener("pointerdown", sk);
       }
-    }, sndOn ? 250 : 0);
+    }, vid ? 100 : sndOn ? 250 : 0);
   }
   addEventListener("keydown", function kU() {
     removeEventListener("keydown", kU);
@@ -970,7 +975,7 @@ var __spreadValues = (a, b) => {
     const M = $("#mosaic");
     const tv = document.body.classList.contains("tv");
     const fire = tv && (document.body.classList.contains("firetv") || window.FEFCNative);
-    const n = fire ? 8 : tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
+    const n = fire ? 14 : tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
     let pool = mosaicList.length ? mosaicList.slice() : vids().slice(0, 40).map((f) => ({ id: f.id, target: target(f), name: f.name }));
     M.innerHTML = "";
     [].slice.call(document.querySelectorAll("#hub .mc")).forEach((x) => x.remove());
@@ -998,8 +1003,9 @@ var __spreadValues = (a, b) => {
     hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 2;
-    let budget = fire ? 12 : tv ? 40 : 90;
-    for (let r = -rows; r < 3 + rows && budget > 0; r++) for (let c = -cols; c < 3 + cols && budget > 0; c++) {
+    let budget = fire ? 24 : tv ? 40 : 90;
+    const cands = [];
+    for (let r = -rows; r < 3 + rows; r++) for (let c = -cols; c < 3 + cols; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
       const toprow = r === -1 && c >= 0 && c <= 2, above = r < 0, sh = above && hb._hdr ? Math.max(0, hb._hdr.D - 2 * g) : 0;
       if (above) {
@@ -1007,9 +1013,23 @@ var __spreadValues = (a, b) => {
         box.b -= sh;
       }
       if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || !above && tb && ov(box, tb)) continue;
+      cands.push({ r, c, toprow, above, ex: c < 0 ? -g : c > 2 ? g : 0, ey: r < 0 ? -g : r > 2 ? g : 0 });
+    }
+    const ring = (o) => {
+      const dr = o.r < 0 ? -o.r : Math.max(0, o.r - 2), dc = o.c < 0 ? -o.c : Math.max(0, o.c - 2);
+      return Math.max(dr, dc) * 3 + Math.min(dr, dc);
+    };
+    cands.sort((a, b) => {
+      const ra = ring(a), rb = ring(b);
+      if (ra !== rb) return ra - rb;
+      const qa = (a.r + 99) * 10 + (a.c + 99), qb = (b.r + 99) * 10 + (b.c + 99);
+      return qa % 7 - qb % 7 || qa - qb;
+    });
+    for (const o of cands) {
+      if (budget <= 0) break;
+      const { r, c, toprow, above, ex, ey } = o;
       const el = document.createElement("div");
       el.className = "mc";
-      const ex = c < 0 ? -g : c > 2 ? g : 0, ey = r < 0 ? -g : r > 2 ? g : 0;
       el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);top:calc(").concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px);width:calc((100% - ").concat(2 * g, "px) / 3);height:calc((100% - ").concat(2 * g, "px) / 3)");
       if (above) {
         if (toprow) el.classList.add("toprow");
@@ -1050,7 +1070,8 @@ var __spreadValues = (a, b) => {
       c._on = !c._on;
       const L = layers[on];
       if (v) {
-        L.src = "https://drive.google.com/thumbnail?sz=" + (fire ? "w240" : "w480") + "&id=" + v.target;
+        const ps = posters[v.id] || posters[v.target];
+        L.src = ps && ps.url && String(ps.url).startsWith("assets/") ? ps.url : "https://drive.google.com/thumbnail?sz=" + (fire ? "w240" : "w480") + "&id=" + v.target;
         c.dataset.id = v.id;
       } else {
         c.style.background = "radial-gradient(circle at 60% 30%,hsl(" + (Math.random() * 360 | 0) + " 70% 45%),#050a14 80%)";
@@ -1853,6 +1874,40 @@ var __spreadValues = (a, b) => {
     return items.get(id) || { id, name: "Fan edit", mimeType: "video/mp4" };
   }
   let baseKey = null;
+  function softRefresh() {
+    try {
+      if (!$("#player").hidden) return;
+      const r = parseH(), k = r[0] || "";
+      if (!$("#home").hidden || !k || k === "home") {
+        hub();
+        const M = $("#mosaic");
+        if (M && !M.querySelector(".mc") && mosaicList.length) mosaic();
+        return;
+      }
+      if (/^(folder|all|arena|newarrivals|people|actors|directors|mylist|genre|genres|search|support|supportus)$/.test(k)) {
+        const main = $("#main"), st = main ? main.scrollTop : 0;
+        const ae = document.activeElement, fid = ae && ae.dataset && ae.dataset.id, fhub = ae && ae.dataset && ae.dataset.hub;
+        renderBase(location.hash);
+        if (main) main.scrollTop = st;
+        if (fid) {
+          const el = document.querySelector('[data-id="' + CSS.escape(fid) + '"]');
+          if (el) try {
+            focusEl(el);
+          } catch (e) {
+          }
+        } else if (fhub) {
+          const el = document.querySelector('[data-hub="' + CSS.escape(fhub) + '"]');
+          if (el) try {
+            focusEl(el);
+          } catch (e) {
+          }
+        }
+        return;
+      }
+    } catch (e) {
+      console.warn("softRefresh", e);
+    }
+  }
   function route() {
     const r = parseH(), k = r[0] || "";
     if (k !== "play") closedFor = null;
@@ -2946,7 +3001,7 @@ var __spreadValues = (a, b) => {
         S.fx(["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"]);
       }
     }
-    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
+    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button>'.concat(window.FEFCNative && typeof FEFCNative.openInVlc === "function" ? '<button type="button" class="pill p5" data-act="vlc">Open in VLC</button>' : "", '<a class="pill p3" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
     })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <div id="lc-fanedit"></div>\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? '<h3 class="lc-h l">Overview</h3><p class="plot">'.concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", "\n </div><div>\n  ").concat(FE.length ? '<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">'.concat(feRt, "</div>") : "", '\n  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">').concat(rt, '</div>\n  <div id="lc-fileinfo-slot"></div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
@@ -3169,6 +3224,15 @@ var __spreadValues = (a, b) => {
     if (act) {
       const f = items.get($("#details").dataset.id);
       if (act.dataset.act === "back") return goBack();
+      if (act.dataset.act === "vlc") {
+        S.chirp(1);
+        try {
+          const nb = window.FEFCNative;
+          if (nb && nb.openInVlc && f) nb.openInVlc(target(f), parse(f.name).raw);
+        } catch (err) {
+        }
+        return;
+      }
       S.chirp(1);
       go("#/play/" + f.id);
       return;
@@ -4281,7 +4345,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.7";
+  const HOME_VER_FALLBACK = "0.8.8";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4507,8 +4571,7 @@ var __spreadValues = (a, b) => {
         if (window.FEFCGenres && FEFCGenres.loaded) FEFCGenres.loaded();
       } catch (e) {
       }
-      if (!$("#home").hidden) hub();
-      else if (/^#\/genres?\/./.test(location.hash)) route();
+      softRefresh();
       return g;
     });
     window._genresP = once().catch((e) => {
@@ -4538,8 +4601,7 @@ var __spreadValues = (a, b) => {
   later(() => tmo("data/dates.json", 15e3).then((m) => {
     NA.dates = m;
     (window.requestIdleCallback || setTimeout)(() => NA.top(rootVids()));
-    if (!$("#home").hidden) hub();
-    else if (/^#\/(newarrivals|arena|folder)/.test(location.hash)) route();
+    softRefresh();
   }).catch((e) => console.warn(e)), 3e3);
   later(() => tmo("data/metadata.json", 8e3).then((m) => {
     meta = m;
@@ -4554,7 +4616,7 @@ var __spreadValues = (a, b) => {
     };
     document.head.appendChild(sx);
   }, isTvEnv() ? 8e3 : 1200);
-  const idxMs = isTvEnv() ? 9e4 : 3e4;
+  const idxMs = isTvEnv() ? 18e4 : 3e4;
   const idxFetch = () => tmo("data/index.json", idxMs).catch((e) => {
     console.warn("index retry", e);
     return tmo("data/index.json", idxMs);
@@ -4578,8 +4640,7 @@ var __spreadValues = (a, b) => {
           tmo("data/links.json", 3e4).then((L) => {
             window._links = L;
             applyLinks(L);
-            if (/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash)) route();
-            else if (!$("#home").hidden) hub();
+            softRefresh();
           }).catch((e) => console.warn("links", e));
         }
       }
@@ -4587,14 +4648,14 @@ var __spreadValues = (a, b) => {
         add(x.items.filter((f) => !items.has(f.id)));
         applyLinks(window._links);
         window._idx = Array.from(items.values());
-        route();
+        softRefresh();
       }).catch(() => {
       });
     }).catch((e) => {
       console.warn(e);
       status("Saved index unavailable");
     }).then(() => {
-      route();
+      softRefresh();
       if (P.get("focus")) {
         setTimeout(() => {
           document.body.classList.add("kbd");
@@ -4621,8 +4682,8 @@ var __spreadValues = (a, b) => {
       goBack();
     }
   });
-  showHome();
-  if (/^#\/(genres|supportus|support|mylist)\b/.test(location.hash)) route();
+  if (/^#\/(folder|all|arena|newarrivals|people|actors|directors|mylist|genres|genre|support|supportus|search|edit|play|readfirst)\b/.test(location.hash)) route();
+  else showHome();
 })();
 (function() {
   const isStandalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
@@ -4693,7 +4754,8 @@ var __spreadValues = (a, b) => {
   const ios = /iPhone|iPad|iPod/i.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1, snoozed = +localStorage.fefcInstallSnooze > Date.now();
   let deferred = null;
   const box = document.getElementById("install");
-  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  const skipSW = isTV || !!window.FEFCNative || document.body.classList.contains("firetv") || /AFT|Android TV|GoogleTV|Silk/i.test(ua);
+  if ("serviceWorker" in navigator && location.protocol !== "file:" && !skipSW) {
     navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((reg) => {
       try {
         reg.update();

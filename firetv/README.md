@@ -5,7 +5,7 @@ A minimal native Android WebView wrapper around the live site
 the web app shows up on the TV the next time the app opens (no reinstall needed).
 
 - Package `com.faneditfanclub.collection`, label "FEFC Collection", versionCode 8 (1.0.7). Playback tries the site `/api/stream/:id` proxy first, then the direct Drive URL.
-- Leanback launcher (`LEANBACK_LAUNCHER`). The banner is full-bleed: `drawable-xhdpi/banner.png` is 320×180 and `drawable-xxhdpi/banner.png` is 480×270, so the Fire TV home tile has no letterbox. Touchscreen not required; landscape, fullscreen, keeps the screen on.
+- Leanback launcher (`LEANBACK_LAUNCHER`). The banner is full-bleed: `drawable-xhdpi/banner.png` is 320×180 and `drawable-xxhdpi/banner.png` is 640×360, so the Fire TV home tile has no letterbox. Touchscreen not required; landscape, fullscreen, keeps the screen on.
 - WebView with JavaScript, DOM storage, autoplay allowed, hardware acceleration. The user agent adds `Android TV FEFCFireTV/1.0`, and the start URL has `?tv=1`, so the web app uses its TV layout.
 - Remote: D-pad and Select go to the page (focus navigation). Back sends the web app's own Back (`GoBack`, which closes the player or details page or goes up a level using history); on the Home screen, press Back twice to exit. Home exits as usual. Play/Pause, Next and Previous are passed to the page. Menu is forwarded as a DOM key `Menu` (keyCode 82) and opens search. Gamepad Y is still forwarded as `y` and also opens search.
 - Cache: default WebView policy; the site sends `Cache-Control: no-cache` and its service worker is network-first, so updates show. Offline: a Retry screen (it retries on its own when you return to the app).

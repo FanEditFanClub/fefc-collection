@@ -145,8 +145,8 @@ function step(cell) {
   });
 }
 function visible(el) {
-  const r = el.getBoundingClientRect();
-  return r.width > 0 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
+  const r = el.getBoundingClientRect(), m = 120;
+  return r.width > 0 && r.right > -m && r.bottom > -m && r.left < innerWidth + m && r.top < innerHeight + m;
 }
 function stop() {
   on = false;
@@ -214,6 +214,7 @@ function init() {
   document.addEventListener("visibilitychange", kick);
   addEventListener("hashchange", kick);
   addEventListener("resize", kick);
+  addEventListener("scroll", kick, { passive: true, capture: true });
   const start = () => kick();
   window.requestIdleCallback ? requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 1500);
 }

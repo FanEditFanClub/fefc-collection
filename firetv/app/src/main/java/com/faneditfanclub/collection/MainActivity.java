@@ -58,6 +58,9 @@ public class MainActivity extends Activity {
     private Updater updater;
     private LocalAssets localAssets;
     private final Handler ui = new Handler(Looper.getMainLooper());
+    /** Native Media3 intro overlay; null when not playing / already finished. */
+    private NativeIntro nativeIntro;
+    private boolean nativeIntroUsed;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -90,15 +93,26 @@ public class MainActivity extends Activity {
         web.setWebViewClient(new Client());
         chrome = new Chrome();
         web.setWebChromeClient(chrome);
-        if (b != null) web.restoreState(b); else load();
-        web.requestFocus();
         localAssets = new LocalAssets(this);
         updater = new Updater(this);
+
+        // Cold start: native Media3 intro fullscreen FIRST; WebView preloads underneath with ?nointro=1.
+        // Process restore (b != null): skip native intro — user already saw it this session.
         if (b == null) {
-            // Fetch version.json now, in parallel with the site intro. The dialog waits until the intro is gone.
+            nativeIntroUsed = true;
+            nativeIntro = new NativeIntro(this, root, skipped -> {
+                nativeIntro = null;
+                web.requestFocus();
+                if (updater != null) updater.revealAfterIntro();
+            });
+            nativeIntro.start();
+            load(true); // nointro=1 so the CSS/WebView intro never runs
             updater.prefetch();
             localAssets.refreshDataInBackground();
-            waitForIntroThenReveal(0);
+            // Do NOT poll web INTRO_DONE_JS — native finish drives revealAfterIntro.
+        } else {
+            web.restoreState(b);
+            web.requestFocus();
         }
     }
 
@@ -154,13 +168,16 @@ public class MainActivity extends Activity {
         w.addJavascriptInterface(new Bridge(), "FEFCNative");
     }
 
-    private void load() {
+    private void load() { load(nativeIntroUsed); }
+
+    private void load(boolean skipWebIntro) {
         failed = false;
         offline.setVisibility(View.GONE);
         web.setVisibility(View.VISIBLE);
         // apk=versionCode so the first document request bypasses any edge/WebView cache keyed only on ?tv=1
         String url = BuildConfig.START_URL;
         url += (url.contains("?") ? "&" : "?") + "apk=" + BuildConfig.VERSION_CODE;
+        if (skipWebIntro) url += "&nointro=1";
         web.loadUrl(url);
     }
 
@@ -383,6 +400,59 @@ public class MainActivity extends Activity {
                 startActivity(i);
             });
         }
+
+        /**
+         * Open a Drive stream in VLC (Fire TV). Uses the same URLs as PlayerActivity:
+         * prefer /api/stream/:id (Range proxy with server auth); setPackage VLC.
+         * If VLC is missing, open its Amazon Appstore page. Does not change Drive sharing.
+         */
+        @JavascriptInterface
+        public void openInVlc(final String driveId, final String title) {
+            if (driveId == null || !driveId.matches("[A-Za-z0-9_-]{10,100}")) return;
+            ui.post(() -> {
+                final String PROXY = "https://collection.faneditfanclub.com/api/stream/";
+                final String DIRECT = "https://drive.usercontent.google.com/download?id=";
+                // Same preference as PlayerActivity: proxy first (server-side Drive auth / Range).
+                Uri uri = Uri.parse(PROXY + driveId);
+                Intent vlc = new Intent(Intent.ACTION_VIEW);
+                vlc.setDataAndType(uri, "video/*");
+                vlc.setPackage("org.videolan.vlc");
+                vlc.putExtra("title", title != null ? title : "");
+                vlc.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    startActivity(vlc);
+                    return;
+                } catch (ActivityNotFoundException e) {
+                    // try direct Drive URL once in case a sideloaded VLC rejects our host
+                    try {
+                        Intent d = new Intent(Intent.ACTION_VIEW);
+                        d.setDataAndType(Uri.parse(DIRECT + driveId + "&export=download&confirm=t"), "video/*");
+                        d.setPackage("org.videolan.vlc");
+                        d.putExtra("title", title != null ? title : "");
+                        d.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(d);
+                        return;
+                    } catch (ActivityNotFoundException e2) { /* fall through */ }
+                }
+                // VLC not installed → Amazon Appstore listing
+                try {
+                    Intent store = new Intent(Intent.ACTION_VIEW,
+                            Uri.parse("amzn://apps/android?p=org.videolan.vlc"));
+                    store.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(store);
+                } catch (ActivityNotFoundException e3) {
+                    try {
+                        Intent web = new Intent(Intent.ACTION_VIEW,
+                                Uri.parse("https://www.amazon.com/gp/mas/dl/android?p=org.videolan.vlc"));
+                        web.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(web);
+                    } catch (Exception e4) {
+                        Toast.makeText(MainActivity.this, "Install VLC to use Open in VLC", Toast.LENGTH_LONG).show();
+                    }
+                }
+            });
+        }
+
     }
 
     private void tapAt(float x, float y) {
@@ -447,6 +517,9 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
+        if (nativeIntro != null && nativeIntro.isShowing()) {
+            return nativeIntro.onKey(e);
+        }
         int k = e.getKeyCode();
         if (customView != null) {
             // Fullscreen video from the embedded player: Back leaves fullscreen instead of quitting the app.
@@ -507,8 +580,8 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         web.onResume();
-        // Coming back after a network drop: retry automatically.
-        if (failed && online()) load();
+        // Coming back after a network drop: retry automatically (not during native intro).
+        if (failed && online() && (nativeIntro == null || !nativeIntro.isShowing())) load();
     }
 
     @Override
@@ -525,6 +598,10 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (nativeIntro != null) {
+            nativeIntro.releaseQuietly();
+            nativeIntro = null;
+        }
         if (updater != null) updater.dispose();
         root.removeAllViews();
         web.destroy();

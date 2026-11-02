@@ -13,6 +13,7 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:banner="@drawable/banner"
+        android:logo="@drawable/banner"
         android:label="FEFC Collection"
         android:hardwareAccelerated="true"
         android:usesCleartextTraffic="false"

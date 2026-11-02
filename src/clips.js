@@ -32,7 +32,7 @@ function step(cell){if(!on||!atHome())return;const c=pick(cell);cell._clip=c;if(
  if(keep){cell._v.style.opacity=0}else if(had)release(cell);
  // the still frame always changes first (visible even without a decoder); a decoder (if free) then plays over it
  showStill(cell,c,()=>{if(!on)return;if(keep&&cell._v){const v=cell._v;setTimeout(()=>{if(v._cell!==cell)return;v.src=c.src;const r=v.play();if(r&&r.catch)r.catch(()=>{})},450)}else if(!had)attach(cell,c)})}
-function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.right>0&&r.bottom>0&&r.left<innerWidth&&r.top<innerHeight}
+function visible(el){const r=el.getBoundingClientRect(),m=120;return r.width>0&&r.right>-m&&r.bottom>-m&&r.left<innerWidth+m&&r.top<innerHeight+m}
 function stop(){on=false;timers.forEach(clearTimeout);timers=[];pool.forEach(v=>{try{v.pause()}catch(e){}v._cell=null;v.style.opacity=0});cells.forEach(c=>{c._v=null});free=pool.slice();cells=[]}
 function schedule(){stop();if(!clips||!clips.length||!atHome())return;on=true;
  cells=[].slice.call(document.querySelectorAll('#hub .mc')).filter(visible).filter(c=>c.style.visibility!=='hidden'); // headline-overlapping tiles stay hidden
@@ -45,6 +45,6 @@ let _ic=document.body.classList.contains('cintro');new MutationObserver(()=>{con
 function init(){const h=home(),hub=document.getElementById('hub');if(!h||!hub)return setTimeout(init,500);
  new MutationObserver(ms=>{if(ms.some(m=>[].some.call(m.addedNodes,x=>x.classList&&x.classList.contains('mc'))||[].some.call(m.removedNodes,x=>x.classList&&x.classList.contains('mc'))))kick()}).observe(hub,{childList:true});
  new MutationObserver(kick).observe(h,{attributes:true,attributeFilter:['hidden']});
- document.addEventListener('visibilitychange',kick);addEventListener('hashchange',kick);addEventListener('resize',kick);
+ document.addEventListener('visibilitychange',kick);addEventListener('hashchange',kick);addEventListener('resize',kick);addEventListener('scroll',kick,{passive:true,capture:true});
  const start=()=>kick();window.requestIdleCallback?requestIdleCallback(start,{timeout:1500}):setTimeout(start,1500)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
