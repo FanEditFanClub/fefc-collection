@@ -80,17 +80,33 @@ public class MainActivity extends Activity {
         if (b != null) web.restoreState(b); else load();
         web.requestFocus();
         updater = new Updater(this);
-        if (b == null) waitForIntroThenCheck(0);
+        if (b == null) {
+            // Fetch version.json now, in parallel with the site intro. The dialog waits until the intro is gone.
+            updater.prefetch();
+            waitForIntroThenReveal(0);
+        }
     }
 
-    /** The update dialog must not sit on top of the site's intro: poll until the intro is gone (or ~60 s), then check for an update. */
-    private void waitForIntroThenCheck(final int tries) {
+    /**
+     * True only once the page has actually finished (or skipped) its intro.
+     * A missing #intro before the document has the intro-done / no-intro class is "still loading", not "intro over",
+     * so the update dialog cannot pop up on a blank page and then sit through the intro.
+     */
+    private static final String INTRO_DONE_JS =
+            "(function(){try{var b=document.body;if(!b||!b.classList)return false;"
+            + "if(b.classList.contains('intro-done')||b.classList.contains('no-intro'))return true;"
+            + "var i=document.getElementById('intro');"
+            + "return !!(i&&(i.classList.contains('done')||i.hidden));}catch(e){return false}})()";
+
+    /** Poll until the intro has handed off (or ~60 s, for a page that never loads), then show a pending update. The check itself is already running. */
+    private void waitForIntroThenReveal(final int tries) {
         ui.postDelayed(() -> {
             if (isFinishing() || web == null) return;
-            web.evaluateJavascript("(function(){var i=document.getElementById('intro');return !i||i.classList.contains('done')||i.hidden||getComputedStyle(i).display==='none'})()", val -> {
-                if ("true".equals(val) || tries >= 40) updater.check(false); else waitForIntroThenCheck(tries + 1);
+            web.evaluateJavascript(INTRO_DONE_JS, val -> {
+                if ("true".equals(val) || tries >= 90) updater.revealAfterIntro();
+                else waitForIntroThenReveal(tries + 1);
             });
-        }, tries == 0 ? 3000 : 1500);
+        }, tries == 0 ? 200 : 700);
     }
 
     @Override
@@ -405,8 +421,11 @@ public class MainActivity extends Activity {
                 if (down && e.getRepeatCount() == 0) handleBack();
                 return true;
             case KeyEvent.KEYCODE_MENU:
+                // Fire TV remote Menu (three lines) → a DOM key the page treats as "open search". Not the letter R (also keyCode 82).
+                if (down && e.getRepeatCount() == 0 && !failed) sendKey("Menu", 82);
+                return true;
             case KeyEvent.KEYCODE_BUTTON_Y:
-                if (down && e.getRepeatCount() == 0 && !failed) sendKey("y", 89); // search
+                if (down && e.getRepeatCount() == 0 && !failed) sendKey("y", 89); // gamepad Y, also search
                 return true;
             case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE:
             case KeyEvent.KEYCODE_MEDIA_PLAY:
