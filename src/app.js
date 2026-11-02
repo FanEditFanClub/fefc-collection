@@ -26,11 +26,12 @@ function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElemen
  document.body.classList.add('cintro');const tg=$('#tagline');
  /* TV: no per-frame canvas. A short CSS-only intro (transform/opacity on a few static layers) on the same audio; ?fullintro=1 forces the canvas intro. Timeline in seconds: see TVI. */
  const tvl=tv&&!P.get('fullintro')&&!P.get('introframe')&&!short;
- /* TV intro = assets/intro-tv.mp4 (H.264 High profile level 4.1, yuv420p limited-range, 1080p30, faststart, audio muxed). The previous yuvj420p full-range High L5.0 1080p60 file played audio with a black picture in the Fire TV WebView. Falls back to the CSS-only intro if the video can't play. ?novideo=1 forces the fallback. */
- const vid=tvl&&!P.get('novideo');let vfb=false,vEl=null,tEnd=vid?26.2:TVI.end;
+ /* TV intro = assets/intro-tv.mp4 (H.264 High L4.1 yuv420p 1080p30). Fire TV WebView often plays audio with a black picture even on the fixed encode — use CSS layers + intro audio there (and when videoWidth stays 0). ?novideo=1 forces CSS; ?forcevideo=1 forces the mp4 on Fire TV. */
+ const isFire=/AFT\w|FEFCFireTV|Fire TV|Amazon/i.test(navigator.userAgent)||!!window.FEFCNative;
+ const vid=tvl&&!P.get('novideo')&&(!isFire||!!P.get('forcevideo'));let vfb=false,vEl=null,tEnd=vid?26.2:TVI.end;
  const tviLayers=()=>{el.insertAdjacentHTML('afterbegin','<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>')};/* tagline waits for end() — do not tg-run mid-intro */
  if(tvl){document.body.classList.add('tvintro');el.classList.add('tvi');if(tg){tg.style.visibility='hidden';tg.style.opacity='0'}
-  if(vid){vEl=document.createElement('video');vEl.className='tvi-video';vEl.src='assets/intro-tv.mp4?v=3';vEl.setAttribute('playsinline','');vEl.playsInline=true;vEl.preload='auto';vEl.disablePictureInPicture=true;el.prepend(vEl);vEl.addEventListener('error',()=>vidFail());vEl.addEventListener('ended',()=>end(false));vEl.addEventListener('playing',()=>{t0=performance.now()},{once:true})}
+  if(vid){vEl=document.createElement('video');vEl.className='tvi-video';vEl.src='assets/intro-tv.mp4?v=4';vEl.setAttribute('playsinline','');vEl.playsInline=true;vEl.preload='auto';vEl.disablePictureInPicture=true;el.prepend(vEl);vEl.addEventListener('error',()=>vidFail());vEl.addEventListener('ended',()=>end(false));vEl.addEventListener('playing',()=>{t0=performance.now();if(!(vEl.videoWidth>0))vidFail()},{once:true})}
   else tviLayers()}
  /* HTML title/subtitle stay hidden until intro ends (body.cintro:not(.tg-run)); short path still animates via tg-short */
  else if(short)document.body.classList.add('tg-run','tg-short');
@@ -55,7 +56,7 @@ function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElemen
  const go=()=>{if(sndOn||done)return;let s2='suspended';try{S.unlock();s2=S.state()}catch(e){}if(s2==='running'){if(ia&&!ia.paused)return;sndOn='ctx';sndHint(false);try{S.introSeq(short,Math.max(0,(performance.now()-t0)/1000-.05),()=>(performance.now()-t0)/1000)}catch(e){}}};
  if(vid){/* sound comes from the video's own track */}else if(st==='running'){sndOn='ctx';try{S.introSeq(short,0,()=>(performance.now()-t0)/1000)}catch(e){}}
  else{tryEl().then(ok=>{if(!ok&&!sndOn&&!done&&!short)sndHint(true)});const tick=setInterval(()=>{if(sndOn||done)return clearInterval(tick);go()},250);['pointerdown','touchstart','keydown','click'].forEach(ev=>addEventListener(ev,go,{capture:true,passive:true}))}
- if(vid){let m=false;try{m=!!S.muted}catch(e){}vEl.muted=m;const pp=vEl.play();const mp=()=>{vEl.muted=true;const p2=vEl.play();if(p2&&p2.catch)p2.catch(()=>vidFail())};if(pp&&pp.catch)pp.catch(mp);setTimeout(()=>{if(!done&&!vfb&&!(vEl.currentTime>0.05))vidFail()},7000)}
+ if(vid){let m=false;try{m=!!S.muted}catch(e){}vEl.muted=m;const pp=vEl.play();const mp=()=>{vEl.muted=true;const p2=vEl.play();if(p2&&p2.catch)p2.catch(()=>vidFail())};if(pp&&pp.catch)pp.catch(mp);setTimeout(()=>{if(!done&&!vfb&&(!(vEl.currentTime>0.05)||!(vEl.videoWidth>0)))vidFail()},2500)}
  R.frame(0);raf=requestAnimationFrame(loop);
  const sk=e=>{if(e.type==='keydown'&&e.repeat)return;if(!sndOn&&!short&&!done){/* (b) first press while blocked: start sound, don't skip */S.unlock();tryEl().then(ok=>{if(!ok)go()});setTimeout(go,60);e.stopPropagation&&e.stopPropagation();return}e.preventDefault&&e.preventDefault();e.stopPropagation&&e.stopPropagation();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);S.unlock();end(true)};
  setTimeout(()=>{if(!done){addEventListener('keydown',sk,true);el.addEventListener('pointerdown',sk)}},sndOn?250:0)}
@@ -201,7 +202,7 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
   L.style.animationName='none';void L.offsetWidth;L.style.animationName='';L.className=(on?'mi2':'mi1')+' kb'+(Math.random()*4|0);
   layers[on].style.opacity=1;layers[1-on].style.opacity=0};
  cells.forEach(c=>set(c,true));requestAnimationFrame(fitHeader);clearInterval(mosaicTimer);
- mosaicTimer=setInterval(()=>{if($('#home').hidden||document.hidden)return;const k=tv?1:2;for(let j=0;j<k;j++)set(cells[Math.random()*cells.length|0])},tv?3500:1800)}
+ mosaicTimer=setInterval(()=>{if($('#home').hidden||document.hidden)return;if(tv&&document.body.classList.contains('genres-mode'))return;const k=tv?1:2;for(let j=0;j<k;j++)set(cells[Math.random()*cells.length|0])},tv?6000:1800)}
 let mosT;if(window.ResizeObserver)new ResizeObserver(()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},150)}).observe(document.getElementById('hub'));addEventListener('resize',()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},250)});
 let homeHideTimer=null;
 const VIEW_MS=(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion:reduce)').matches)?1:220;
@@ -254,7 +255,7 @@ function myListPage(){const U=window.UD;if(!U)return;const H=U.history(50).map(r
  const histBody=`<div id="ml-hist-body" class="ml-hist-body${histCollapsed?' is-collapsed':''}"${histCollapsed?' hidden':''}>`+(H.length?`<div class="sgrid vids">${H.map(f=>tile(f)).join('')}</div>`:'<p class="ml-empty">Fan edits you open in the player show up here.</p>')+'</div>';
  g.innerHTML='<div id="ml-sync"></div>'+histHead+histBody
   +`<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn${mlSort==='date'?' on':''}" data-ml="date">Date starred</button><button class="mi ml-btn${mlSort==='az'?' on':''}" data-ml="az">A–Z</button><b>${St.length}</b></div>`
-  +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>'+(document.body.classList.contains('tv')&&window.FEFCNative&&typeof FEFCNative.checkUpdate==='function'?'<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>':'');if(window.FEFCSync){const c=$('#ml-sync');c&&FEFCSync.subscribe&&0}
+  +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>'+((document.body.classList.contains('tv')||document.body.classList.contains('firetv')||window.FEFCNative)?'<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>':'');if(window.FEFCSync){const c=$('#ml-sync');c&&FEFCSync.subscribe&&0}
  g.querySelectorAll('.ol-tile').forEach(lazyArt)}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ml]');if(!b)return;S.click();const k=b.dataset.ml;if(k==='update'){try{window.FEFCNative&&FEFCNative.checkUpdate()}catch(err){}return}if(k==='hist'){localStorage.fefcHistCollapsed=localStorage.fefcHistCollapsed==='1'?'0':'1';myListPage();const t=document.querySelector('[data-ml="hist"]');if(t)try{t.focus({preventScroll:true})}catch(err){t.focus()}return}if(k==='clear'){if(confirm('Clear your watch history?'))UD.clearHistory();myListPage();return}if(k==='date'||k==='az'){mlSort=localStorage.fefcStarSort=k;myListPage()}});
 let starLast={};if(window.UD&&UD.subscribe)UD.subscribe(()=>requestAnimationFrame(()=>document.querySelectorAll('[data-star]').forEach(x=>{const on=UD.isStarred(x.dataset.star);if((x.getAttribute('aria-pressed')==='true')!==on)paintStars(x.dataset.star,on)})));
@@ -370,7 +371,7 @@ function sfxResolve(id){
 addEventListener('hashchange',()=>{const m=location.hash.match(/^#\/folder\/([^/?]+)/);if(m&&!navBack)folderSfx(decodeURIComponent(m[1]))});
 function go(h){navBack=false;const m=h.match(/^#\/folder\/([^/?]+)/);if(m)folderSfx(decodeURIComponent(m[1]));if(location.hash===h)return route();history.pushState({fefc:1},'',h);route()}
 function back(fallback){S.back();navBack=true;clearBack();const h=location.hash,fb=()=>{history.replaceState(null,'',fallback||'#/');route()};if(history.state&&history.state.fefc){history.back();setTimeout(()=>{if(location.hash===h)fb()},450)}else fb()}
-function parentHash(){const r=parseH();if(r[0]==='play')return window.__shufPrevHash||(r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/');if(r[0]==='edit'||r[0]==='readfirst'||r[0]==='search')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';if(r[0]==='genres'&&r[2])return '#/genres/'+encodeURIComponent(r[1]);if(r[0]==='genres'&&r[1])return '#/genres';return '#/'}
+function parentHash(){const r=parseH();if(r[0]==='play')return window.__shufPrevHash||(r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/');if(r[0]==='edit'||r[0]==='readfirst'||r[0]==='search'||r[0]==='mylist'||r[0]==='people'||r[0]==='supportus'||r[0]==='support')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';if(r[0]==='genres'&&r[2])return '#/genres/'+encodeURIComponent(r[1]);if(r[0]==='genres'&&r[1])return '#/genres';if(r[0]==='genres')return '#/';return '#/'}
 function parseH(){if(/^#\/arena/.test(location.hash))history.replaceState(history.state,'','#/newarrivals');return (location.hash.replace(/^#\/?newarrivals/,'#/arena').replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent)}
 function itemOr(id){return items.get(id)||{id:id,name:'Fan edit',mimeType:'video/mp4'}}
 let baseKey=null;
@@ -654,7 +655,7 @@ document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br)
  const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return back('#/');S.chirp(1);go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.rfhome){S.click();readFirst();return}if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
-document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi,.hb,.hint-btn,[data-nav],.tk-i:not(.tk-dup),.gnr,.sortpill'))S.move()});
+document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog'+(document.body.classList.contains('tv')?'':',.tk-i:not(.tk-dup)')))S.move()});
 /* ---------- Semantic concept search (instant local fallback for concept queries like "Space Movies") ---------- */
 const SEMANTIC_MAP = {
   space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
@@ -750,7 +751,7 @@ const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
 let qt;$('#q').readOnly=true;['focus','click'].forEach(ev=>$('#q').addEventListener(ev,e=>{if(spOpen())return;e.preventDefault();$('#q').blur();openSpot('')}));
 setTimeout(sm2,0);
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-const FOC='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#ml-update,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap,.tk-i:not(.tk-dup)';
+const FOC='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap'+(document.body.classList.contains('tv')?'':',.tk-i:not(.tk-dup)');
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
 function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(FOC)).filter(visible),a=document.activeElement;
@@ -774,19 +775,19 @@ document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('
  if(dir&&!$('#rfpanel').hidden&&(k===38||k===40)){e.preventDefault();const w=$('.rf-scroll');if(w)w.scrollBy(0,k===40?220:-220);return}
  if(dir&&!(inInput&&(k===37||k===39))){e.preventDefault();S.unlock();move(dir);return}
  if(k===10009||k===461||k===27||(k===8&&!inInput)||e.key==='GoBack'||e.key==='BrowserBack'){e.preventDefault();goBack();return}
- if((k===13||k===23)&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href]')){e.preventDefault();S.unlock();document.activeElement.click()}});
+ if((k===13||k===23)&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href],[data-ml],.ml-btn,.ml-hist-tog,.mi')){e.preventDefault();S.unlock();document.activeElement.click()}});
 /* ---------- TV grid navigation, MODEL-BASED (not viewport geometry) ----------
    rows are rebuilt from DOM order + each grid's column count (computed track list) and offsetTop, so they never depend on what is on screen,
    on scroll position, or on whether the WebView skipped layout/paint of offscreen rows. Up from row N always goes to row N-1 (scrolled into view);
    the menu bar is reached only from the FIRST row of the page. Arrow keys are always preventDefault'ed on TV so the WebView's native focus search never runs. */
 let tvGoalX=null;
 function tvRows(){const c=[$('#arena'),$('#grid')].find(x=>x&&!x.hidden&&x.getClientRects().length);if(!c)return null;
- const els=[].slice.call(c.querySelectorAll('.sortpill,.ol-tile,#na-more,#ml-update')).filter(e=>!e.hidden&&!e.closest('[hidden]')&&getComputedStyle(e).display!=='none'),groups=new Map();
+ const els=[].slice.call(c.querySelectorAll('.sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog')).filter(e=>!e.hidden&&!e.closest('[hidden]')&&getComputedStyle(e).display!=='none'),groups=new Map();
  els.forEach(e=>{const g=e.closest('.sgrid')||e.parentElement;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(e)});
  const rows=[];groups.forEach((a,g)=>{if(getComputedStyle(g).display==='grid'){const n=Math.max(1,getComputedStyle(g).gridTemplateColumns.split(' ').filter(x=>x&&x!=='none').length);for(let i=0;i<a.length;i+=n)rows.push(a.slice(i,i+n))}
   else{const by={};a.forEach(e=>{const y=Math.round((e.offsetTop||0)/8);(by[y]=by[y]||[]).push(e)});Object.keys(by).map(Number).sort((x,y)=>x-y).forEach(y=>rows.push(by[y]))}});
  return rows}
-function tvGridNav(k,a){if(!a||!a.closest)return false;const cur=a.closest('.ol-tile,.sortpill,#na-more');if(!cur)return false;let rows=tvRows();if(!rows)return false;
+function tvGridNav(k,a){if(!a||!a.closest)return false;const cur=a.closest('.ol-tile,.sortpill,#na-more,#ml-update,.ml-btn,.ml-hist-tog');if(!cur)return false;let rows=tvRows();if(!rows)return false;
  const find=()=>{for(let i=0;i<rows.length;i++){const j=rows[i].indexOf(cur);if(j>=0)return[i,j]}return null};let p=find();if(!p)return false;let[ri,ci]=p;
  const cx=e=>{const r=e.getBoundingClientRect();return r.left+r.width/2},nearest=(row,x)=>{let b=row[0],bd=1e9;row.forEach(e=>{const d=Math.abs(cx(e)-x);if(d<bd){bd=d;b=e}});return b};
  if(k===37||k===39){const n=rows[ri][ci+(k===39?1:-1)];if(n){focusEl(n);tvGoalX=cx(n)}return true}
@@ -999,7 +1000,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||P.get('tv'))document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.2';
+const HOME_VER_FALLBACK='0.8.3';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}

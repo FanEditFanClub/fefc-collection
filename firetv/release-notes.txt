@@ -1,1 +1,1 @@
-Beta 0.8.1: home screen shows subtle "v0.8.1 beta" version badge (native FEFCNative.version / version.json). Same signing key as 1.0.8 — updater accepts via versionCode 10.
+Beta 0.8.3: Fire TV — skip black-frame intro video (CSS+audio; ?forcevideo=1 to force mp4); My List D-pad + Check for updates; Back from Genres/inner screens returns Home (double-back exit only on true Home); news ticker scrolls on Home + non-focusable on TV; ticker flush to bottom edge with remote bar sitting directly on top (no gap); lighter TV UI (less blur/shadow/mosaic); faster Genres hub load.

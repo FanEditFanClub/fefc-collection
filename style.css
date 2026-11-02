@@ -975,7 +975,8 @@ body.tv #home-ver{opacity:.85;font-size:clamp(12px,1.55vh,16px);bottom:calc(1.2v
 .tk-discord{background:#5865f2}.tk-x{background:#000;box-shadow:0 0 0 1px #ffffff55}.tk-facebook{background:#1877f2}.tk-reddit{background:#ff4500}
 .tk-i:hover,.tk-i:focus{background:#16324d;color:#fff}
 .tk-i:focus{box-shadow:inset 0 0 0 3px #ffb02e,0 0 18px #ff9c00cc;position:relative;z-index:1}
-body.tk-on #hints{bottom:calc(clamp(24px,3.7vh,46px) + env(safe-area-inset-bottom,0px) + .9vh)!important}
+/* Ticker at screen bottom; remote/controls bar sits directly on top (no gap). */
+body.tk-on #hints{bottom:calc(var(--tkh,clamp(24px,3.7vh,46px)) + env(safe-area-inset-bottom,0px))!important;transform:none!important}
 @media (prefers-reduced-motion:reduce){#ticker{scroll-behavior:auto}}
 
 /* ---------- TV player: focusable overlay so OK can start/pause Drive's iframe (see src/tvplayer.js) ---------- */
@@ -1122,7 +1123,7 @@ body.touch:not(.tv):not(.kbd) #hints #hmute{
   flex-direction:row;gap:6px;color:#dfe7f1;font-size:12px;background:#0d1117e6;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 body.touch:not(.tv):not(.kbd) #hints #hmute .g{font-size:14px;width:20px;height:20px;margin:0}
 body.touch:not(.tv):not(.kbd){--dock:0px}
-body.touch:not(.tv):not(.kbd).tk-on #hints{bottom:calc(var(--tkh,28px) + 8px + env(safe-area-inset-bottom,0px))!important}
+body.touch:not(.tv):not(.kbd).tk-on #hints{bottom:calc(var(--tkh,28px) + env(safe-area-inset-bottom,0px))!important}
 body.touch:not(.tv):not(.kbd).at-home #home-ver{bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:88}
 body.touch:not(.tv):not(.kbd).tk-on.at-home #home-ver{bottom:calc(var(--tkh,28px) + 8px + env(safe-area-inset-bottom,0px))}
 /* D-pad/keyboard on a touch device: restore non-dock floating legend (not the full phone dock) */
@@ -1153,15 +1154,15 @@ body.touch.kbd:not(.tv){--dock:0px}
   #hub .hb{padding:2px 3px;gap:0.12em;line-height:1.02}
   #hub .hb-logo img{width:34%;max-height:46%}
   #ticker{--tkh:clamp(18px,4.2dvh,26px)}
-  body.tk-on #hints{bottom:calc(var(--tkh,22px) + env(safe-area-inset-bottom,0px) + .4vh)!important}
-  body.touch:not(.tv):not(.kbd).tk-on #hints{bottom:calc(var(--tkh,22px) + 6px + env(safe-area-inset-bottom,0px))!important}
+  body.tk-on #hints{bottom:calc(var(--tkh,22px) + env(safe-area-inset-bottom,0px))!important}
+  body.touch:not(.tv):not(.kbd).tk-on #hints{bottom:calc(var(--tkh,22px) + env(safe-area-inset-bottom,0px))!important}
   /* Version pill: bottom-left above ticker so it does not sit on My List / Sound FAB */
   body.touch:not(.tv):not(.kbd).at-home #home-ver,
   body.touch:not(.tv):not(.kbd).tk-on.at-home #home-ver,
   body.touch.at-home #home-ver,
   body.touch.tk-on.at-home #home-ver{
     left:calc(10px + env(safe-area-inset-left,0px))!important;right:auto!important;transform:none!important;
-    bottom:calc(var(--tkh,22px) + 6px + env(safe-area-inset-bottom,0px))!important;
+    bottom:calc(var(--tkh,22px) + env(safe-area-inset-bottom,0px))!important;
     font-size:clamp(10px,1.3vh,13px);padding:3px 9px;z-index:88}
 }
 /* Prefer dvh for short landscape height math when supported */
@@ -1171,3 +1172,23 @@ body.touch.kbd:not(.tv){--dock:0px}
   }
 }
 /* Fire TV / leanback: never apply the touch-hide rules (body.tv wins above). Pixel Fold portrait unchanged. */
+
+/* Ticker always flush to the physical bottom; safe-area is inside the ticker height. */
+#ticker{bottom:0!important}
+body.tk-on.touch #hints{bottom:calc(var(--tkh,28px) + env(safe-area-inset-bottom,0px))!important;padding-bottom:4px!important}
+body.touch:not(.tk-on) #hints{bottom:0!important}
+/* When touch hides the remote bar (rare / shuf), ticker still sits on the bottom edge. */
+body.tv.tk-on #hints{left:50%;right:auto;transform:translateX(-50%)!important;bottom:calc(var(--tkh,clamp(24px,3.7vh,46px)) + env(safe-area-inset-bottom,0px))!important}
+
+/* ---- Fire TV / TV mode performance (0.8.3) ---- */
+body.tv .ol-tile,body.tv .hb,body.tv .gnr{transition:none!important;box-shadow:0 2px 6px #0008!important;-webkit-box-reflect:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.tv .ol-tile:hover,body.tv .ol-tile:focus,body.tv .ol-tile:focus-visible,body.tv .hb:hover,body.tv .hb:focus{transition:none!important;filter:none!important}
+body.tv #player.floating,body.tv .rf-in,body.tv #home-ver{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.tv .ol-tile.person img.pbg{filter:brightness(.55)!important;transform:scale(1.08)!important}
+body.tv #mosaic,.tv #mosaic{opacity:.55}
+body.tv #mosaic .mc>img{animation:none!important;transition:opacity .4s linear!important;filter:none!important}
+body.tv #hub.gflip .hb,body.tv #home.enter #hub,body.tv #home.enter #mosaic,body.tv #home.enter #hints{animation:none!important}
+body.tv #grid.gnrs{perspective:none!important}
+body.tv #grid.gnrs .ol-tile.gnr{transform:none!important}
+body.tv .tk-i{pointer-events:none!important;cursor:default}
+

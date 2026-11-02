@@ -89,7 +89,8 @@ var __spreadValues = (a, b) => {
     document.body.classList.add("cintro");
     const tg = $("#tagline");
     const tvl = tv && !P.get("fullintro") && !P.get("introframe") && !short;
-    const vid = tvl && !P.get("novideo");
+    const isFire = /AFT\w|FEFCFireTV|Fire TV|Amazon/i.test(navigator.userAgent) || !!window.FEFCNative;
+    const vid = tvl && !P.get("novideo") && (!isFire || !!P.get("forcevideo"));
     let vfb = false, vEl = null, tEnd = vid ? 26.2 : TVI.end;
     const tviLayers = () => {
       el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
@@ -104,7 +105,7 @@ var __spreadValues = (a, b) => {
       if (vid) {
         vEl = document.createElement("video");
         vEl.className = "tvi-video";
-        vEl.src = "assets/intro-tv.mp4?v=3";
+        vEl.src = "assets/intro-tv.mp4?v=4";
         vEl.setAttribute("playsinline", "");
         vEl.playsInline = true;
         vEl.preload = "auto";
@@ -114,6 +115,7 @@ var __spreadValues = (a, b) => {
         vEl.addEventListener("ended", () => end(false));
         vEl.addEventListener("playing", () => {
           t0 = performance.now();
+          if (!(vEl.videoWidth > 0)) vidFail();
         }, { once: true });
       } else tviLayers();
     } else if (short) document.body.classList.add("tg-run", "tg-short");
@@ -343,8 +345,8 @@ var __spreadValues = (a, b) => {
       };
       if (pp && pp.catch) pp.catch(mp);
       setTimeout(() => {
-        if (!done && !vfb && !(vEl.currentTime > 0.05)) vidFail();
-      }, 7e3);
+        if (!done && !vfb && (!(vEl.currentTime > 0.05) || !(vEl.videoWidth > 0))) vidFail();
+      }, 2500);
     }
     R.frame(0);
     raf = requestAnimationFrame(loop);
@@ -1003,9 +1005,10 @@ var __spreadValues = (a, b) => {
     clearInterval(mosaicTimer);
     mosaicTimer = setInterval(() => {
       if ($("#home").hidden || document.hidden) return;
+      if (tv && document.body.classList.contains("genres-mode")) return;
       const k = tv ? 1 : 2;
       for (let j = 0; j < k; j++) set(cells[Math.random() * cells.length | 0]);
-    }, tv ? 3500 : 1800);
+    }, tv ? 6e3 : 1800);
   }
   let mosT;
   if (window.ResizeObserver) new ResizeObserver(() => {
@@ -1161,7 +1164,7 @@ var __spreadValues = (a, b) => {
     const histCollapsed = localStorage.fefcHistCollapsed === "1";
     const histHead = '<div class="ol-div ml-hist-head"><button type="button" class="ml-hist-tog" data-ml="hist" aria-expanded="'.concat(histCollapsed ? "false" : "true", '" aria-controls="ml-hist-body"><span class="ml-hist-chev" aria-hidden="true">').concat(histCollapsed ? "\u25B6" : "\u25BC", "</span><span>HISTORY</span></button><i></i>").concat(!histCollapsed && H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "", "<b>").concat(H.length, "</b></div>");
     const histBody = '<div id="ml-hist-body" class="ml-hist-body'.concat(histCollapsed ? " is-collapsed" : "", '"').concat(histCollapsed ? " hidden" : "", ">") + (H.length ? '<div class="sgrid vids">'.concat(H.map((f) => tile(f)).join(""), "</div>") : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + "</div>";
-    g.innerHTML = '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>' + (document.body.classList.contains("tv") && window.FEFCNative && typeof FEFCNative.checkUpdate === "function" ? '<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>' : "");
+    g.innerHTML = '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>' + (document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>' : "");
     if (window.FEFCSync) {
       const c = $("#ml-sync");
       c && FEFCSync.subscribe && 0;
@@ -1695,7 +1698,7 @@ var __spreadValues = (a, b) => {
   function parentHash() {
     const r = parseH();
     if (r[0] === "play") return window.__shufPrevHash || (r[1] ? "#/edit/" + encodeURIComponent(r[1]) : "#/");
-    if (r[0] === "edit" || r[0] === "readfirst" || r[0] === "search") return "#/";
+    if (r[0] === "edit" || r[0] === "readfirst" || r[0] === "search" || r[0] === "mylist" || r[0] === "people" || r[0] === "supportus" || r[0] === "support") return "#/";
     if (r[0] === "folder") {
       const f = items.get(r[1]);
       if (f && (f.parent === FOLD.actors || f.parent === FOLD.directors)) return "#/people";
@@ -1704,6 +1707,7 @@ var __spreadValues = (a, b) => {
     if (r[0] === "genre") return "#/genres";
     if (r[0] === "genres" && r[2]) return "#/genres/" + encodeURIComponent(r[1]);
     if (r[0] === "genres" && r[1]) return "#/genres";
+    if (r[0] === "genres") return "#/";
     return "#/";
   }
   function parseH() {
@@ -2975,7 +2979,7 @@ var __spreadValues = (a, b) => {
     }
   });
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches(".ol-tile,.mi,.hb,.hint-btn,[data-nav],.tk-i:not(.tk-dup),.gnr,.sortpill")) S.move();
+    if (e.target.matches(".ol-tile,.mi,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog" + (document.body.classList.contains("tv") ? "" : ",.tk-i:not(.tk-dup)"))) S.move();
   });
   const SEMANTIC_MAP = {
     space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
@@ -3105,7 +3109,7 @@ var __spreadValues = (a, b) => {
     openSpot("");
   }));
   setTimeout(sm2, 0);
-  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#ml-update,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap,.tk-i:not(.tk-dup)";
+  const FOC = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap" + (document.body.classList.contains("tv") ? "" : ",.tk-i:not(.tk-dup)");
   function visible(el) {
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
@@ -3211,7 +3215,7 @@ var __spreadValues = (a, b) => {
       goBack();
       return;
     }
-    if ((k === 13 || k === 23) && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav],[data-href]")) {
+    if ((k === 13 || k === 23) && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav],[data-href],[data-ml],.ml-btn,.ml-hist-tog,.mi")) {
       e.preventDefault();
       S.unlock();
       document.activeElement.click();
@@ -3221,7 +3225,7 @@ var __spreadValues = (a, b) => {
   function tvRows() {
     const c = [$("#arena"), $("#grid")].find((x) => x && !x.hidden && x.getClientRects().length);
     if (!c) return null;
-    const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more,#ml-update")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
+    const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
     els.forEach((e) => {
       const g = e.closest(".sgrid") || e.parentElement;
       if (!groups.has(g)) groups.set(g, []);
@@ -3245,7 +3249,7 @@ var __spreadValues = (a, b) => {
   }
   function tvGridNav(k, a) {
     if (!a || !a.closest) return false;
-    const cur2 = a.closest(".ol-tile,.sortpill,#na-more");
+    const cur2 = a.closest(".ol-tile,.sortpill,#na-more,#ml-update,.ml-btn,.ml-hist-tog");
     if (!cur2) return false;
     let rows = tvRows();
     if (!rows) return false;
@@ -3923,7 +3927,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || P.get("tv")) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.2";
+  const HOME_VER_FALLBACK = "0.8.3";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

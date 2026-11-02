@@ -390,8 +390,19 @@ public class MainActivity extends Activity {
 
     private void handleBack() {
         if (failed) { finish(); return; }
-        // Is the web app on its home screen? If so, Back twice quits; otherwise let the app go back.
-        web.evaluateJavascript("(function(){var h=document.getElementById('home');return !!(h&&!h.hidden)})()", val -> {
+        // True Home dashboard only (not Genres hub / overlays that keep #home visible). Double-Back exits there;
+        // every other screen gets GoBack so the web app navigates up.
+        web.evaluateJavascript("(function(){"
+                + "var h=document.getElementById('home'),d=document.getElementById('details'),"
+                + "p=document.getElementById('player'),rf=document.getElementById('rfpanel'),"
+                + "b=document.body.classList,hash=(location.hash||'').replace(/^#\\/?/,'');"
+                + "if(!h||h.hidden)return false;"
+                + "if(b.contains('genres-mode'))return false;"
+                + "if(d&&!d.hidden)return false;"
+                + "if(p&&!p.hidden)return false;"
+                + "if(rf&&!rf.hidden)return false;"
+                + "if(hash&&hash!=='/')return false;"
+                + "return true})()", val -> {
             boolean atHome = "true".equals(val);
             if (atHome) {
                 long now = System.currentTimeMillis();
@@ -399,7 +410,7 @@ public class MainActivity extends Activity {
                 lastBack = now;
                 Toast.makeText(this, "Press Back again to exit", Toast.LENGTH_SHORT).show();
             } else {
-                // The app's own back handler (closes player / details / folder), which uses history.back().
+                // The app's own back handler (closes player / details / folder / genres), which uses history.back().
                 sendKey("GoBack", 27);
             }
         });

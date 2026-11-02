@@ -64,28 +64,23 @@
 (function() {
   var st = { page: 0, o: null, list: null };
   var css = document.createElement("style");
-  css.textContent = '#hub .hb.ghb{overflow:hidden;background:#0b111a}#hub .hb.ghb .gimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;border-radius:inherit}#hub .hb.ghb .gimg.brand{object-fit:contain;padding:14%;box-sizing:border-box;background:radial-gradient(circle at 50% 40%,#1c2636,#05070b 75%);opacity:.6}#hub .hb.ghb:after{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(0deg,#000b,#0005 55%,#0002);pointer-events:none;border-radius:inherit}#hub .hb.ghb span,#hub .hb.ghb small{position:relative;z-index:1}#hub .hb.ghb small{color:#ffb02e}#hub .hb.gempty{visibility:hidden}#hub .hb.ghb span{overflow-wrap:normal;word-break:keep-all;hyphens:none}@supports (font-size:1cqh){#hub .hb.ghb span{font-size:clamp(12px,min(28cqh,14cqw),120px)}}.gnav{display:none;position:absolute;top:calc(50% + 7vh);transform:translateY(-50%);z-index:5;width:clamp(36px,5vmin,72px);height:clamp(64px,12vmin,150px);border:2px solid #9fb6cf;border-radius:4px;background:linear-gradient(180deg,#2c333ecc,#0b0e13cc);color:#fff;font:700 clamp(22px,5vmin,60px)/1 sans-serif;cursor:pointer;padding:0}.gnav:hover,.gnav:focus{outline:0;border-color:#ffb02e;box-shadow:0 0 0 2px #ff9c00,0 0 24px #ff9c00cc}.gnav[disabled]{opacity:.25;pointer-events:none}#gpage{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(3.5vh + 52px);z-index:5;color:#ffb02e;font:600 clamp(12px,2vmin,22px) "Source Sans 3",sans-serif;letter-spacing:.08em;text-shadow:0 1px 3px #000}body.genres-mode .gnav,body.genres-mode #gpage{display:block}#hub.gflip .hb{animation:gflip .35s ease-out both}@keyframes gflip{from{opacity:0;filter:blur(3px)}to{opacity:1;filter:none}}@media (orientation:landscape) and (max-height:520px){#gpage{bottom:calc(2vh + 40px)}.gnav{top:calc(50% + 10vh)}}';
+  css.textContent = '#hub .hb.ghb{overflow:hidden;background:#0b111a}#hub .hb.ghb .gimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;border-radius:inherit}#hub .hb.ghb .gimg.brand{object-fit:contain;padding:14%;box-sizing:border-box;background:radial-gradient(circle at 50% 40%,#1c2636,#05070b 75%);opacity:.6}#hub .hb.ghb:after{content:"";position:absolute;inset:0;z-index:0;background:linear-gradient(0deg,#000b,#0005 55%,#0002);pointer-events:none;border-radius:inherit}#hub .hb.ghb span,#hub .hb.ghb small{position:relative;z-index:1}#hub .hb.ghb small{color:#ffb02e}#hub .hb.gempty{visibility:hidden}#hub .hb.ghb span{overflow-wrap:normal;word-break:keep-all;hyphens:none}@supports (font-size:1cqh){#hub .hb.ghb span{font-size:clamp(12px,min(28cqh,14cqw),120px)}}.gnav{display:none;position:absolute;top:calc(50% + 7vh);transform:translateY(-50%);z-index:5;width:clamp(36px,5vmin,72px);height:clamp(64px,12vmin,150px);border:2px solid #9fb6cf;border-radius:4px;background:linear-gradient(180deg,#2c333ecc,#0b0e13cc);color:#fff;font:700 clamp(22px,5vmin,60px)/1 sans-serif;cursor:pointer;padding:0}.gnav:hover,.gnav:focus{outline:0;border-color:#ffb02e;box-shadow:0 0 0 2px #ff9c00,0 0 24px #ff9c00cc}.gnav[disabled]{opacity:.25;pointer-events:none}#gpage{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(3.5vh + 52px);z-index:5;color:#ffb02e;font:600 clamp(12px,2vmin,22px) "Source Sans 3",sans-serif;letter-spacing:.08em;text-shadow:0 1px 3px #000}body.genres-mode .gnav,body.genres-mode #gpage{display:block}#hub.gflip .hb{animation:gflip .25s ease-out both}@keyframes gflip{from{opacity:0}to{opacity:1}}body.tv #hub.gflip .hb{animation:none}@media (orientation:landscape) and (max-height:520px){#gpage{bottom:calc(2vh + 40px)}.gnav{top:calc(50% + 10vh)}}';
   document.head.appendChild(css);
   function pl(n, w) {
     return n + " " + w + (n === 1 ? "" : "s");
   }
   function list(o) {
     if (st.list && st.key === o.items.size + ":" + Object.keys(o.genreMap).length) return st.list;
-    var by = {};
-    Object.keys(o.genreMap).forEach(function(fid) {
-      o.genreMap[fid].genres.forEach(function(g) {
+    var by = {}, foldG = {};
+    Object.keys(o.genreMap || {}).forEach(function(fid) {
+      var gens = o.genreMap[fid].genres || [];
+      foldG[fid] = gens;
+      gens.forEach(function(g) {
         (by[g] = by[g] || []).push(fid);
       });
     });
     var gs = Object.keys(by).sort(function(a, b) {
       return (a === "Uncategorized") - (b === "Uncategorized") || a.localeCompare(b);
-    });
-    var sets = {};
-    gs.forEach(function(g) {
-      sets[g] = {};
-      by[g].forEach(function(i) {
-        sets[g][i] = 1;
-      });
     });
     var cnt = {};
     gs.forEach(function(g) {
@@ -95,12 +90,16 @@
       if (!o.isVid(f)) return;
       var p = f.parent, k = 0, hit = {};
       while (p && k++ < 30) {
-        gs.forEach(function(g) {
-          if (sets[g][p] && !hit[g]) {
-            hit[g] = 1;
-            cnt[g]++;
+        var gens = foldG[p];
+        if (gens) {
+          for (var i = 0; i < gens.length; i++) {
+            var g = gens[i];
+            if (!hit[g]) {
+              hit[g] = 1;
+              cnt[g]++;
+            }
           }
-        });
+        }
         var x = o.items.get(p);
         p = x && x.parent;
       }
@@ -121,7 +120,15 @@
   function paint() {
     var hub = document.getElementById("hub");
     if (!hub || !st.o) return;
-    var o = st.o, L = list(o), P = pages();
+    var o = st.o, gm = o.genreMap || {}, nKeys = Object.keys(gm).length;
+    if (!nKeys) {
+      hub.innerHTML = '<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4) + '<button class="hb ghb" tabindex="-1"><span>Loading genres\u2026</span><small>Please wait</small></button>' + '<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4);
+      ui();
+      var gp = document.getElementById("gpage");
+      if (gp) gp.textContent = "";
+      return;
+    }
+    var L = list(o), P = pages();
     st.page = Math.max(0, Math.min(st.page, P - 1));
     var keep = [].slice.call(hub.querySelectorAll(".mc")), sl = L.slice(st.page * 9, st.page * 9 + 9), h = "";
     for (var i = 0; i < 9; i++) {
@@ -131,7 +138,7 @@
         continue;
       }
       var a = art(x.g);
-      h += '<button class="hb ghb" data-genre="' + o.esc(x.g) + '"><img class="gimg' + (a.brand ? " brand" : "") + '" alt="" src="' + a.img + '" referrerpolicy="no-referrer"><span>' + o.esc(x.g) + "</span><small>" + pl(x.c, "Collection") + " \xB7 " + pl(x.m, "File") + "</small></button>";
+      h += '<button class="hb ghb" data-genre="' + o.esc(x.g) + '"><img class="gimg' + (a.brand ? " brand" : "") + '" alt="" loading="lazy" decoding="async" src="' + a.img + '" referrerpolicy="no-referrer"><span>' + o.esc(x.g) + "</span><small>" + pl(x.c, "Collection") + " \xB7 " + pl(x.m, "File") + "</small></button>";
     }
     hub.innerHTML = h;
     keep.forEach(function(x2) {

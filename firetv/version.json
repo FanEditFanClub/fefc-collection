@@ -1,8 +1,8 @@
 {
-    "versionCode": 10,
-    "versionName": "0.8.2",
+    "versionCode": 11,
+    "versionName": "0.8.3",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.2: Picard quotes on Star Trek + Sci-Fi; For All Mankind Armstrong/Leonov SFX; And Not To Yield war-source playlist (no Churchill TTS); shared Back to the Future quote+Silvestri rotation (all BTTF folders incl. The Game); Game Movie & Series Fan Edits arcade cover; Directors chair+megaphone cover; iOS Safari landscape home; Drive README/changelog on details; nightly resync 7am ET before 9am notifier (CF token via secret). Web badge matches; APK versionCode still 10.",
-    "size": 59078,
-    "sha256": "4bdb8d17013db4853ea62ef054ff38af7c10657c31071757f86dbd632f45d403"
+    "notes": "Beta 0.8.3: Fire TV \u2014 skip black-frame intro video (CSS+audio; ?forcevideo=1 to force mp4); My List D-pad + Check for updates; Back from Genres/inner screens returns Home (double-back exit only on true Home); news ticker scrolls on Home + non-focusable on TV; ticker flush to bottom edge with remote bar sitting directly on top (no gap); lighter TV UI (less blur/shadow/mosaic); faster Genres hub load.",
+    "size": 59205,
+    "sha256": "f6e03add68aa0a285c891db67dcba1aef076afecc00a686a12e11c53f5d281d5"
 }
