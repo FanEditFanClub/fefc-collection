@@ -124,7 +124,7 @@ body.shuf-player #hints{display:flex!important;z-index:50}
 #details .pill:focus,#details a:focus,#player .pill:focus{outline:5px solid #fff;outline-offset:3px;filter:brightness(1.25)}
 /* ---------- TV / 10-FOOT ---------- */
 body.tv #app{padding:3.5vh 5vw 0}
-body.tv #bar{padding:1.2vh 1.5vw;border-radius:10px}
+body.tv #bar{padding:1.2vh 3.5vw 1.2vh 4vw;border-radius:10px}
 body.tv .mi{font-size:1.9vh;min-height:5.5vh;padding:0 1.6vw}
 body.tv #brand{font-size:1.9vh}body.tv #brand img{height:5vh}
 body.tv #q{height:5vh;font-size:1.8vh;width:18vw}body.tv .ol-btn{min-height:5vh;font-size:1.8vh}
@@ -132,7 +132,7 @@ body.tv #main{padding:2.5vh 1vw 6vh}
 body.tv #crumb{font-size:3.6vh}body.tv .sec{font-size:2vh}
 body.tv #grid{grid-template-columns:repeat(5,1fr);gap:2.2vh}body.tv #arena{gap:2.2vh}
 body.tv .ol-tile .nm{font-size:1.9vh}body.tv .ol-tile .kind{font-size:1.3vh}
-body.tv #details{padding:4vh 5vw}body.tv .lc-body p{font-size:2vh}body.tv .pill{font-size:2.1vh;min-height:6vh}
+body.tv #details{padding:4vh 5vw 4vh 5.5vw}body.tv .lc-body p{font-size:2vh}body.tv .pill{font-size:2.1vh;min-height:6vh}
 body.tv .rt a,body.tv .rt .na{font-size:1.9vh;min-height:5.5vh}body.tv .cast span{font-size:1.9vh}body.tv .lc-h{font-size:2vh}
 body.tv .lc-title{font-size:4vh}
 body.tv .ol-tile{-webkit-box-reflect:initial;transition:transform .12s}
@@ -469,7 +469,7 @@ body.genres-mode #tagline .gtitle{display:inline-block;font:600 1.5em/1.1 Antoni
 /* TV top bar: 10-foot sizing, strong focus, search button + overlay */
 .tv-only{display:none}#tvsearch[hidden]{display:none}
 body.tv .tv-only{display:inline-flex;align-items:center}body.tv #q,body.tv #aiq{display:none}
-body.tv #bar{gap:.5vw;padding:1vh 1.2vw}
+body.tv #bar{gap:.5vw;padding:1vh 3.5vw 1vh 4vw}
 body.tv .mi{min-height:max(48px,5.2vh);font-size:max(14px,1.32vh);padding:0 .42vw;border-radius:8px}
 body.tv #bar .mi:focus,body.tv #bar .mi:focus-visible{outline:0;color:#000;background:linear-gradient(180deg,#fff,#cfe9ff);box-shadow:0 0 0 4px #fff,0 0 0 8px #2fa8ff,0 0 34px 8px #2fa8ffcc;transform:scale(1.08);z-index:2}
 body.tv #menu{overflow-x:auto;scroll-padding:0 40px;padding:10px 6px}
@@ -1020,20 +1020,20 @@ body.tv #player.floating{background:#000}
 @keyframes tviFlash{0%{opacity:0}18%{opacity:.85}100%{opacity:0}}
 body.tvintro #intro.done{animation:introFadeTv .5s linear forwards}
 
-/* ---------- One-screen detail page (TV + large desktop): poster left, title/play, ratings, source film, compact trailer, description ---------- */
-body.fit #details{padding:1vh 2.2vw 0;grid-template-columns:10vw 1fr;grid-template-rows:auto 1fr;gap:.8vh 1vw}
+/* ---------- One-screen detail page (TV + large desktop): poster left, title/play, ratings, source media, compact trailer, description ---------- */
+body.fit #details{padding:1.2vh 3.5vw 1.2vh 4.5vw;grid-template-columns:minmax(120px,11vw) 1fr;grid-template-rows:auto 1fr;gap:.8vh 1vw}
 body.fit #details .lc-top{height:4.2vh;grid-column:1/3}body.fit #details .lc-top .lc-elbow{width:10vw;border-radius:2.2vh 0 0 0}body.fit #details .lc-top .lc-elbow:after{width:3vh;height:1.8vh}
 body.fit #details .lc-bars span{height:1.7vh}body.fit #details .lc-foot{display:none}
-body.fit #details .lc-side{gap:.6vh;overflow:hidden}body.fit #details .lc-side .pill{min-height:4.2vh;font-size:max(13px,1.75vh);padding:0 1vh;letter-spacing:.06em}
+body.fit #details .lc-side{gap:.6vh;overflow:auto;-webkit-overflow-scrolling:touch;padding-left:.2vw}body.fit #details .lc-side .pill{min-height:4.2vh;font-size:max(13px,1.75vh);padding:0 1vh;letter-spacing:.06em;flex:none}
 body.fit #details .lc-side .grow{min-height:0}
-body.fit #details .lc-body{overflow:hidden;padding:0 0 12vh 1vw!important;grid-template-columns:32vh minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto 1fr;gap:1.2vh 1.6vw;align-content:start}
+body.fit #details .lc-body{overflow:auto;-webkit-overflow-scrolling:touch;scroll-padding-bottom:10vh;padding:0 0 14vh 1vw!important;grid-template-columns:32vh minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto auto;gap:1.2vh 1.6vw;align-content:start}
 body.fit #details .lc-head{display:contents}
 body.fit #details .lc-poster{grid-column:1;grid-row:1/3;width:32vh;align-self:start}
 body.fit #details .lc-info{grid-column:2/4;grid-row:1;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:.7vh;max-width:none}
 body.fit #details .lc-head .lc-title{font-size:max(26px,4.4vh);align-self:flex-start;text-align:left}
 body.fit #details .lc-sub{font-size:max(12px,1.8vh)}
 body.fit #details .bigplay{font-size:max(20px,3.1vh);padding:.7vh 3.4vh .7vh 2.6vh;margin-top:.4vh}
-body.fit #details .lc-body>div:not(.lc-head){min-width:0;overflow:hidden;grid-row:2}
+body.fit #details .lc-body>div:not(.lc-head){min-width:0;overflow:visible;grid-row:2}
 body.fit #details .lc-body>div:nth-of-type(2){grid-column:2}body.fit #details .lc-body>div:nth-of-type(3){grid-column:3}
 body.fit #details .lc-body p{font-size:max(12px,1.9vh);line-height:1.35;margin-bottom:.8vh}
 body.fit #details .lc-body>div>p:not(.src):last-of-type{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
@@ -1223,24 +1223,31 @@ body.tv #brand img{height:4.6vh;width:4.6vh;border-radius:0.7vh}
 body.tv #brand span{display:none}
 
 /* My List: Check for updates pinned under the bar (Fire TV D-pad) */
-.ml-upd-wrap.ml-upd-top{padding:12px 12px 18px;justify-content:flex-start;gap:12px;align-items:center;flex-wrap:wrap}
+.ml-upd-wrap.ml-upd-bot,.ml-upd-wrap.ml-upd-top{padding:18px 12px 28px;justify-content:flex-start;gap:12px;align-items:center;flex-wrap:wrap}
 .ml-upd-hint{margin:0;color:#9fb6cf;font-size:13px;opacity:.9}
 body.tv .ml-upd-hint{font-size:1.6vh}
-body.tv .ml-upd-wrap.ml-upd-top{padding:1.2vh 1vw 1.6vh}
+body.tv .ml-upd-wrap.ml-upd-bot,body.tv .ml-upd-wrap.ml-upd-top{padding:2vh 1.5vw 3vh}
 
-/* Fire TV CSS intro: guarantee a visible logo quickly (weak GPU / stalled animations) */
-#intro.tvi.tvi-lite .tvi-logo{animation-duration:.75s;animation-delay:.25s;opacity:1}
-#intro.tvi.tvi-lite .tvi-glow{animation-duration:3.2s}
-#intro.tvi.tvi-lite .tvi-ring,#intro.tvi.tvi-lite .tvi-ring.r2{animation-iteration-count:2;animation-duration:1.4s}
-body.firetv.tvintro #intro.tvi{opacity:1;visibility:visible;background:#000}
-/* If animations never run, still show the logo after 1.2s */
-#intro.tvi.tvi-lite .tvi-logo{animation-fill-mode:both}
+/* 0.8.6 CSS intro: continuous motion through full ~26s (no logo freeze after short anim) */
+#intro.tvi.tvi-live .tvi-logo{animation:tviLogoIn .9s cubic-bezier(.2,.8,.2,1) .2s both,tviLogoBreathe 3.6s ease-in-out 1.2s infinite}
+#intro.tvi.tvi-live .tvi-glow{animation:tviGlowLive 4.5s ease-in-out infinite alternate}
+#intro.tvi.tvi-live .tvi-ring{animation:tviRing 2.8s ease-out infinite}
+#intro.tvi.tvi-live .tvi-ring.r2{animation:tviRing 2.8s ease-out .9s infinite}
+#intro.tvi.tvi-live .tvi-sweep{animation:tviSweep 3.2s ease-in-out infinite}
+#intro.tvi.tvi-live .tvi-pulse{position:absolute;left:50%;top:50%;width:42vmin;height:42vmin;margin:-21vmin 0 0 -21vmin;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,176,46,.22),transparent 68%);animation:tviPulse 2.8s ease-in-out infinite}
+@keyframes tviLogoIn{0%{opacity:0;transform:scale(1.45)}100%{opacity:1;transform:scale(1)}}
+@keyframes tviLogoBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.035)}}
+@keyframes tviGlowLive{0%{opacity:.35;transform:scale(.92)}100%{opacity:.75;transform:scale(1.08)}}
+@keyframes tviPulse{0%,100%{opacity:.35;transform:scale(.92)}50%{opacity:.7;transform:scale(1.06)}}
+body.firetv.tvintro #intro.tvi,body.tvintro #intro.tvi{opacity:1;visibility:visible;background:#000}
 @supports not (animation-name:x){#intro.tvi .tvi-logo{opacity:1;transform:none}}
 
-/* TV_PERF_085: Fire TV / body.tv — kill expensive paint (mosaic already skipped in JS) */
+/* TV_PERF_086: Fire TV / body.tv — lighter paint; mosaic restored (JS uses fewer/low-res tiles) */
 body.tv,body.firetv{scroll-behavior:auto!important}
-body.tv #mosaic,body.firetv #mosaic{display:none!important}
-body.tv .mc,body.firetv .mc{display:none!important}
+body.tv #mosaic,body.firetv #mosaic{display:block!important}
+body.tv .mc,body.firetv .mc{display:block!important;will-change:auto}
+body.firetv .mc img{image-rendering:auto}
 body.tv .ol-tile,body.tv .hb,body.tv .mi,body.tv .pill,body.tv .sortpill{
   transition:none!important;animation:none!important;
   box-shadow:none!important;filter:none!important;-webkit-filter:none!important;
@@ -1268,3 +1275,14 @@ body.tv #hmute .g-ftv-spk svg{width:78%;height:78%;display:block}
 #tvmenu .tvm-i:focus,#tvmenu .tvm-i:focus-visible{outline:0;border-color:#fff;background:linear-gradient(180deg,#fff,#cfe9ff);color:#000;box-shadow:0 0 0 4px #2fa8ff88}
 #tvmenu .tvm-i:disabled{opacity:.45}
 body.tvmenu-open #hints{pointer-events:none}
+
+/* 0.8.6 Menu / Search icons match g-ftv SVG line+fill (no emoji) */
+#tvmenu .tvm-row{display:inline-flex;align-items:center;gap:.7em}
+#tvmenu .tvm-ico{width:1.35em;height:1.35em;flex:none;display:block}
+#tvmenu .tvm-lab{flex:1}
+#tvmenu .tvm-i:focus .tvm-ico,#tvmenu .tvm-i:focus-visible .tvm-ico{color:inherit}
+#tvq .tvq-row{display:inline-flex;align-items:center;gap:.35em}
+#tvq .tvq-ico{width:1.15em;height:1.15em;display:block;flex:none}
+body.fit #details .fx-sec,body.fit #details #lc-fileinfo,body.fit #details .fx-kv{display:block}
+body.tv #details .lc-body .fx-kv{font-size:1.7vh}
+body.tv #details .lc-body{scroll-behavior:auto}

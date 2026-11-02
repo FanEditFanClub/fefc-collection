@@ -92,16 +92,15 @@ var __spreadValues = (a, b) => {
     const tg = $("#tagline");
     const tvl = tv && !P.get("fullintro") && !P.get("introframe") && !short;
     const isFire = /AFT\w|FEFCFireTV|Fire TV|Amazon/i.test(navigator.userAgent) || !!window.FEFCNative;
-    const vid = tvl && !P.get("novideo") && (!isFire || !!P.get("forcevideo"));
+    const vid = tvl && !P.get("novideo") && !P.get("cssintro");
     let vfb = false, vEl = null, tEnd = vid ? 26.2 : TVI.end;
     const tviLayers = () => {
-      el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
-      if (isFire) el.classList.add("tvi-lite");
+      el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i><i class="tvi-pulse" aria-hidden="true"></i>');
+      el.classList.add("tvi-live");
     };
     if (tvl) {
       document.body.classList.add("tvintro");
       el.classList.add("tvi");
-      if (isFire) el.classList.add("tvi-lite");
       if (tg) {
         tg.style.visibility = "hidden";
         tg.style.opacity = "0";
@@ -109,9 +108,13 @@ var __spreadValues = (a, b) => {
       if (vid) {
         vEl = document.createElement("video");
         vEl.className = "tvi-video";
-        vEl.src = "assets/intro-tv.mp4?v=4";
+        vEl.src = "assets/intro-tv.mp4?v=6";
         vEl.setAttribute("playsinline", "");
+        vEl.setAttribute("webkit-playsinline", "");
         vEl.playsInline = true;
+        vEl.setAttribute("muted", "");
+        vEl.muted = true;
+        vEl.autoplay = true;
         vEl.preload = "auto";
         vEl.disablePictureInPicture = true;
         el.prepend(vEl);
@@ -120,6 +123,12 @@ var __spreadValues = (a, b) => {
         vEl.addEventListener("playing", () => {
           t0 = performance.now();
           if (!(vEl.videoWidth > 0)) vidFail();
+          else {
+            try {
+              if (!S.muted) vEl.muted = false;
+            } catch (e) {
+            }
+          }
         }, { once: true });
       } else tviLayers();
     } else if (short) document.body.classList.add("tg-run", "tg-short");
@@ -939,13 +948,8 @@ var __spreadValues = (a, b) => {
     syncTag();
     const M = $("#mosaic");
     const tv = document.body.classList.contains("tv");
-    if (tv && (document.body.classList.contains("firetv") || window.FEFCNative)) {
-      clearInterval(mosaicTimer);
-      if (M) M.innerHTML = "";
-      [].slice.call(document.querySelectorAll("#hub .mc")).forEach((x) => x.remove());
-      return;
-    }
-    const n = tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
+    const fire = tv && (document.body.classList.contains("firetv") || window.FEFCNative);
+    const n = fire ? 8 : tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
     let pool = mosaicList.length ? mosaicList.slice() : vids().slice(0, 40).map((f) => ({ id: f.id, target: target(f), name: f.name }));
     M.innerHTML = "";
     [].slice.call(document.querySelectorAll("#hub .mc")).forEach((x) => x.remove());
@@ -973,7 +977,7 @@ var __spreadValues = (a, b) => {
     hb.style.transform = _tf;
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 2;
-    let budget = tv ? 40 : 90;
+    let budget = fire ? 12 : tv ? 40 : 90;
     for (let r = -rows; r < 3 + rows && budget > 0; r++) for (let c = -cols; c < 3 + cols && budget > 0; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
       const toprow = r === -1 && c >= 0 && c <= 2, above = r < 0, sh = above && hb._hdr ? Math.max(0, hb._hdr.D - 2 * g) : 0;
@@ -1025,7 +1029,7 @@ var __spreadValues = (a, b) => {
       c._on = !c._on;
       const L = layers[on];
       if (v) {
-        L.src = "https://drive.google.com/thumbnail?sz=w480&id=" + v.target;
+        L.src = "https://drive.google.com/thumbnail?sz=" + (fire ? "w240" : "w480") + "&id=" + v.target;
         c.dataset.id = v.id;
       } else {
         c.style.background = "radial-gradient(circle at 60% 30%,hsl(" + (Math.random() * 360 | 0) + " 70% 45%),#050a14 80%)";
@@ -1043,9 +1047,9 @@ var __spreadValues = (a, b) => {
     mosaicTimer = setInterval(() => {
       if ($("#home").hidden || document.hidden) return;
       if (tv && document.body.classList.contains("genres-mode")) return;
-      const k = tv ? 1 : 2;
+      const k = fire ? 1 : tv ? 1 : 2;
       for (let j = 0; j < k; j++) set(cells[Math.random() * cells.length | 0]);
-    }, tv ? 6e3 : 1800);
+    }, fire ? 9e3 : tv ? 6e3 : 1800);
   }
   let mosT;
   if (window.ResizeObserver) new ResizeObserver(() => {
@@ -1213,8 +1217,8 @@ var __spreadValues = (a, b) => {
     const histCollapsed = localStorage.fefcHistCollapsed === "1";
     const histHead = '<div class="ol-div ml-hist-head"><button type="button" class="ml-hist-tog" data-ml="hist" aria-expanded="'.concat(histCollapsed ? "false" : "true", '" aria-controls="ml-hist-body"><span class="ml-hist-chev" aria-hidden="true">').concat(histCollapsed ? "\u25B6" : "\u25BC", "</span><span>HISTORY</span></button><i></i>").concat(!histCollapsed && H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "", "<b>").concat(H.length, "</b></div>");
     const histBody = '<div id="ml-hist-body" class="ml-hist-body'.concat(histCollapsed ? " is-collapsed" : "", '"').concat(histCollapsed ? " hidden" : "", ">") + (H.length ? '<div class="sgrid vids">'.concat(H.map((f) => tile(f)).join(""), "</div>") : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + "</div>";
-    const updTV = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap ml-upd-top"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button><p class="ml-upd-hint">Looks for a newer Fire TV / Android TV build.</p></div>' : "";
-    g.innerHTML = updTV + '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
+    const updTV = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap ml-upd-bot"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button><p class="ml-upd-hint">Looks for a newer Fire TV / Android TV build.</p></div>' : "";
+    g.innerHTML = '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + updTV + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
     if (window.FEFCSync) {
       const c = $("#ml-sync");
       c && FEFCSync.subscribe && 0;
@@ -1228,12 +1232,14 @@ var __spreadValues = (a, b) => {
         } catch (e) {
         }
       }
-      const u = $("#ml-update");
-      if (u && document.body.classList.contains("tv")) {
-        try {
-          u.focus({ preventScroll: true });
-          focusEl(u);
-        } catch (e) {
+      if (document.body.classList.contains("tv")) {
+        const first = g.querySelector(".ol-tile,.ml-btn,.ml-hist-tog") || $("#ml-update");
+        if (first) {
+          try {
+            first.focus({ preventScroll: true });
+            focusEl(first);
+          } catch (e) {
+          }
         }
       }
     });
@@ -2435,7 +2441,7 @@ var __spreadValues = (a, b) => {
     render(kids.get(id) || [], id === ROOT ? { home: "The Fan Edit Fan Club Collection", all: "The Fan Edit Fan Club Collection", arena: "New Arrivals", collections: "Collections" }[mode] : f.name, id === ROOT ? mode : "home");
     if (id !== ROOT && !(kids.get(id) || []).length && isDenied(id)) privatePrompt(id, f);
   }
-  const SORTS = [["az", "A\u2013Z"], ["za", "Z\u2013A"], ["newest", "Newest"], ["oldest", "Oldest"], ["film", "Source Film"], ["genre", "Genre"], ["size", "Largest"]];
+  const SORTS = [["az", "A\u2013Z"], ["za", "Z\u2013A"], ["newest", "Newest"], ["oldest", "Oldest"], ["film", "Source Media"], ["genre", "Genre"], ["size", "Largest"]];
   function curSort() {
     const m = location.hash.match(/[?&]sort=([a-z]+)/);
     return m && SORTS.some((s) => s[0] === m[1]) ? m[1] : "az";
@@ -2821,7 +2827,7 @@ var __spreadValues = (a, b) => {
       if (x && x.url) FE.push({ ico: "fe", name: "Fan Edit Changes", val: x.label || (x.n != null ? x.n + " changes" : "VIEW \u203A"), sub: x.label ? "IFDB change list" : fsub(x) || "IFDB change list", url: x.url });
     }
     const tr = m.trailer && m.trailer.youtubeId ? { id: m.trailer.youtubeId } : F2 && F2.trailer;
-    const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source film.</p>';
+    const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source media.</p>';
     const T = m.title || p.raw, meta1 = [film.year, F2 && F2.runtime ? F2.runtime + " min" : "", F2 && F2.tv ? "TV series" : ""].filter(Boolean).join(" \xB7 ");
     const PS = posters[f.id] || posters[id], PU = F2 && F2.fx && F2.poster && (!PS || meta.map && (meta.map[f.id] || meta.map[id])) ? F2.poster : PS && PS.url;
     const fn = (f.name || "").toLowerCase();
@@ -2849,7 +2855,7 @@ var __spreadValues = (a, b) => {
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, "</div>").concat(FE.length ? '<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">'.concat(FE.map((r) => '<a href="'.concat(esc(r.url), '" target="_blank" rel="noopener" class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join(""), "</div>") : "", '\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, "</div>").concat(FE.length ? '<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">'.concat(FE.map((r) => '<a href="'.concat(esc(r.url), '" target="_blank" rel="noopener" class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join(""), "</div>") : "", '\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     const _det = $("#details");
     _det.classList.remove("leaving");
     _det.dataset.id = f.id;
@@ -3525,15 +3531,23 @@ var __spreadValues = (a, b) => {
   }
   function toGrid() {
     if (!$("#details").hidden) {
-      const t2 = lastDet && lastDet.isConnected && lastDet.offsetParent ? lastDet : document.querySelector('#details .bigplay,#details [data-act="play"],#details .pill');
+      const t2 = lastDet && lastDet.isConnected && lastDet.offsetParent ? lastDet : document.querySelector('#details .bigplay,#details [data-act="play"],#details .pill,#details .ol-tile,#details a.rr');
       if (t2) {
         focusEl(t2);
+        try {
+          t2.scrollIntoView({ block: "nearest" });
+        } catch (e) {
+        }
         return true;
       }
     }
-    const t = lastTile && document.contains(lastTile) && lastTile.offsetParent ? lastTile : document.querySelector("#details:not([hidden]) [data-act],#arena .ol-tile,#grid .ol-tile");
+    const t = lastTile && document.contains(lastTile) && lastTile.offsetParent ? lastTile : document.querySelector("#arena .ol-tile,#grid .ol-tile,#grid .ml-btn,#grid .ml-hist-tog,#grid .sortpill,#ml-update");
     if (t) {
       focusEl(t);
+      try {
+        t.scrollIntoView({ block: "nearest" });
+      } catch (e) {
+      }
       return true;
     }
     return false;
@@ -3602,6 +3616,45 @@ var __spreadValues = (a, b) => {
       }
       if (k >= 37 && k <= 40) {
         e.preventDefault();
+        e.stopImmediatePropagation();
+        const els = [].slice.call($("#details").querySelectorAll(focSel())).filter((el) => el.offsetParent && getComputedStyle(el).visibility !== "hidden" && !el.disabled);
+        if (!els.length) return;
+        const cx = (el) => {
+          const r = el.getBoundingClientRect();
+          return { x: r.left + r.width / 2, y: r.top + r.height / 2, r };
+        };
+        const cur2 = els.includes(a) ? a : els.find((x) => x.contains && x.contains(a)) || els[0];
+        const C2 = cx(cur2);
+        let best = null, bd = 1e12;
+        els.forEach((el) => {
+          if (el === cur2) return;
+          const P2 = cx(el);
+          const dx = P2.x - C2.x, dy = P2.y - C2.y;
+          let ok = false;
+          if (k === 39) ok = dx > 8 && Math.abs(dy) <= Math.abs(dx) + 40;
+          else if (k === 37) ok = dx < -8 && Math.abs(dy) <= Math.abs(dx) + 40;
+          else if (k === 40) ok = dy > 8 && Math.abs(dx) <= Math.abs(dy) + 80;
+          else if (k === 38) ok = dy < -8 && Math.abs(dx) <= Math.abs(dy) + 80;
+          if (!ok) return;
+          const d = Math.hypot(dx, dy) + (k === 40 || k === 38 ? Math.abs(dx) * 0.35 : Math.abs(dy) * 0.35);
+          if (d < bd) {
+            bd = d;
+            best = el;
+          }
+        });
+        if (best) {
+          focusEl(best);
+          try {
+            best.scrollIntoView({ block: "nearest", inline: "nearest" });
+          } catch (err) {
+          }
+          const body = $("#details .lc-body");
+          if (body) {
+            const br = best.getBoundingClientRect(), bb = body.getBoundingClientRect();
+            if (br.bottom > bb.bottom - 8) body.scrollTop += br.bottom - bb.bottom + 24;
+            if (br.top < bb.top + 8) body.scrollTop -= bb.top - br.top + 24;
+          }
+        }
         return;
       }
     }
@@ -3639,7 +3692,7 @@ var __spreadValues = (a, b) => {
     b.id = "tvq";
     b.type = "button";
     b.className = "mi tv-only";
-    b.textContent = "\u2315 Search";
+    b.innerHTML = '<span class="tvq-row"><svg class="tvq-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg><span>Search</span></span>';
     $("#bar").insertBefore(b, $("#q"));
     b.onclick = () => {
       S.click();
@@ -4106,7 +4159,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.5";
+  const HOME_VER_FALLBACK = "0.8.6";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4178,7 +4231,7 @@ var __spreadValues = (a, b) => {
       el.id = "tvmenu";
       el.setAttribute("role", "dialog");
       el.setAttribute("aria-label", "Menu");
-      el.innerHTML = '<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search">\u2315 Search</button><button type="button" class="tvm-i" data-tm="mute"></button></div>';
+      el.innerHTML = '<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search"></button><button type="button" class="tvm-i" data-tm="mute"></button></div>';
       document.body.appendChild(el);
       el.addEventListener("click", (e) => {
         const b = e.target.closest("[data-tm]");
@@ -4222,27 +4275,35 @@ var __spreadValues = (a, b) => {
     const el = $("#tvmenu");
     if (!el) return;
     const id = focusedMediaId() || _tvMenuPrev && _tvMenuPrev.closest && _tvMenuPrev.closest(".ol-tile") && _tvMenuPrev.closest(".ol-tile").dataset.id || ($("#details").hidden ? null : $("#details").dataset.id);
-    const star = el.querySelector('[data-tm="star"]'), mute = el.querySelector('[data-tm="mute"]');
+    const star = el.querySelector('[data-tm="star"]'), mute = el.querySelector('[data-tm="mute"]'), search = el.querySelector('[data-tm="search"]');
     let on = false;
     try {
       on = !!(id && window.UD && UD.isStarred(id));
     } catch (e) {
     }
+    const ST = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.6l2.7 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.8 5.99 21.1l1.62-6.8L2.3 9.7l7-.6L12 2.6z"/></svg>', SO = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3.2l2.4 5.8 6.2.5-4.7 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6-4.7-4.1 6.2-.5L12 3.2z"/></svg>', SE = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg>', SK = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9v6h3.2L12 19V5L7.2 9H4zm11.5 3a3.5 3.5 0 00-1.1-2.55l1.2-1.2A5.2 5.2 0 0118.2 12a5.2 5.2 0 01-2.6 4.55l-1.2-1.2A3.5 3.5 0 0015.5 12z"/></svg>', SX = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM14 3.23v2.06c1.94.6 3.5 2.1 4.06 4.06h2.08C19.4 6.04 17 3.85 14 3.23zM12 5.5l-1.91 1.91L12 9.32V5.5z"/></svg>';
+    const ico = (svg, lab) => '<span class="tvm-row">' + svg + '<span class="tvm-lab">' + lab + "</span></span>";
     if (star) {
       star.disabled = !id;
-      star.textContent = id ? on ? "\u2605 Unstar this item" : "\u2606 Star this item" : "\u2606 Star (select a title first)";
+      star.innerHTML = ico(on ? ST : SO, id ? on ? "Unstar this item" : "Star this item" : "Star (select a title first)");
       star.setAttribute("aria-disabled", id ? "false" : "true");
     }
-    if (mute) mute.textContent = (S.muted ? "\u{1F507} Sound off" : "\u{1F50A} Sound on") + " \u2014 tap to toggle";
+    if (search) search.innerHTML = ico(SE, "Search");
+    if (mute) mute.innerHTML = ico(S.muted ? SX : SK, (S.muted ? "Sound off" : "Sound on") + " \u2014 tap to toggle");
   }
   if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
     document.body.classList.add("firetv");
-    const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20 11H7.83l4.58-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H20v-2z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>';
-    const backI = document.querySelector("#hints .hb-back .g"), menuBtn = document.querySelector("#hints .hb-search"), menuI = menuBtn && menuBtn.querySelector(".g");
+    const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>', SEL = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4"/><circle cx="12" cy="12" r="4.1" fill="currentColor"/><circle cx="12" cy="12" r="1.35" fill="#1a1a1a" opacity=".35"/></svg>';
+    const backI = document.querySelector("#hints .hb-back .g"), selI = document.querySelector("#hints .hb-sel .g"), menuBtn = document.querySelector("#hints .hb-search"), menuI = menuBtn && menuBtn.querySelector(".g");
     if (backI) {
       backI.className = "g g-ftv g-ftv-back";
       backI.setAttribute("aria-hidden", "true");
       backI.innerHTML = BK;
+    }
+    if (selI) {
+      selI.className = "g g-ftv g-ftv-sel";
+      selI.setAttribute("aria-hidden", "true");
+      selI.innerHTML = SEL;
     }
     if (menuBtn) {
       menuBtn.classList.add("hb-menu");
