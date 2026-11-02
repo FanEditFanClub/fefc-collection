@@ -7,3 +7,4 @@ tools/cache
 .wrangler
 __pycache__
 *.apk
+firetv/app/build
