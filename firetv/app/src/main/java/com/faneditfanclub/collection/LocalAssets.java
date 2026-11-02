@@ -148,7 +148,32 @@ final class LocalAssets {
                     //noinspection ResultOfMethodCallIgnored
                     tmp.renameTo(out);
                     c.disconnect();
-                } catch (Exception ignored) {}
+                } catch (Exception first) {
+                    // one backoff retry per path
+                    try { Thread.sleep(400); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                    try {
+                        java.net.URL url2 = new java.net.URL("https://" + HOST + "/" + path);
+                        java.net.HttpURLConnection c2 = (java.net.HttpURLConnection) url2.openConnection();
+                        c2.setConnectTimeout(10000);
+                        c2.setReadTimeout(20000);
+                        c2.setRequestProperty("User-Agent", "FEFC-FireTV/" + BuildConfig.VERSION_NAME);
+                        if (c2.getResponseCode() == 200) {
+                            File out = new File(cacheDir, path);
+                            File parent = out.getParentFile();
+                            if (parent != null && !parent.exists()) parent.mkdirs();
+                            File tmp = new File(out.getPath() + ".tmp");
+                            try (InputStream in = c2.getInputStream();
+                                 java.io.FileOutputStream fos = new java.io.FileOutputStream(tmp)) {
+                                byte[] buf = new byte[8192];
+                                int n;
+                                while ((n = in.read(buf)) > 0) fos.write(buf, 0, n);
+                            }
+                            //noinspection ResultOfMethodCallIgnored
+                            tmp.renameTo(out);
+                        }
+                        c2.disconnect();
+                    } catch (Exception ignored) {}
+                }
             }
         }, "fefc-bundle-refresh").start();
     }

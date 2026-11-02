@@ -12,6 +12,7 @@ import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
@@ -104,6 +105,7 @@ public class MainActivity extends Activity {
                 nativeIntro = null;
                 web.requestFocus();
                 if (updater != null) updater.revealAfterIntro();
+                prewarmPlayer();
             });
             nativeIntro.start();
             load(true); // nointro=1 so the CSS/WebView intro never runs
@@ -121,7 +123,14 @@ public class MainActivity extends Activity {
      * A missing #intro before the document has the intro-done / no-intro class is "still loading", not "intro over",
      * so the update dialog cannot pop up on a blank page and then sit through the intro.
      */
-    private static final String INTRO_DONE_JS =
+    /** Drop any leftover service worker so LocalAssets (bundled www) always wins over a stale SW cache. */
+    private static final String KILL_SW_JS =
+            "(function(){try{if(!('serviceWorker' in navigator))return 'nosw';"
+            + "navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()});});"
+            + "if(window.caches){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})});}"
+            + "return 'ok'}catch(e){return 'err'}})()";
+
+        private static final String INTRO_DONE_JS =
             "(function(){try{var b=document.body;if(!b||!b.classList)return false;"
             + "if(b.classList.contains('intro-done')||b.classList.contains('no-intro'))return true;"
             + "var i=document.getElementById('intro');"
@@ -144,6 +153,22 @@ public class MainActivity extends Activity {
         if (updater != null) updater.onActivityResult(req);
     }
 
+
+    /** Build+release a tiny ExoPlayer so Media3 codecs/JNI are warm before the first Play. */
+    private void prewarmPlayer() {
+        new Thread(() -> {
+            try {
+                final androidx.media3.exoplayer.ExoPlayer p = new androidx.media3.exoplayer.ExoPlayer.Builder(MainActivity.this).build();
+                ui.post(() -> {
+                    try { p.release(); } catch (Exception ignored) {}
+                });
+                Log.i("FEFC", "media3_prewarm_ok");
+            } catch (Throwable t) {
+                Log.i("FEFC", "media3_prewarm_skip: " + t.getMessage());
+            }
+        }, "fefc-prewarm").start();
+    }
+
     private void configure(WebView w) {
         WebSettings s = w.getSettings();
         s.setJavaScriptEnabled(true);
@@ -162,6 +187,11 @@ public class MainActivity extends Activity {
         // "Android TV" makes the web app switch on its TV layout and focus navigation.
         s.setUserAgentString(s.getUserAgentString() + " Android TV FEFCFireTV/" + BuildConfig.VERSION_NAME);
         w.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        try {
+            java.lang.reflect.Method m = WebView.class.getMethod("setOffscreenPreRaster", boolean.class);
+            m.invoke(w, true);
+        } catch (Throwable ignored) {}
+        w.setBackgroundColor(0xFF000000);
         CookieManager cm = CookieManager.getInstance();
         cm.setAcceptCookie(true);
         cm.setAcceptThirdPartyCookies(w, true);
@@ -303,6 +333,8 @@ public class MainActivity extends Activity {
 
         @Override
         public void onPageFinished(WebView v, String url) {
+                try { v.evaluateJavascript(KILL_SW_JS, null); } catch (Exception ignored) {}
+
             if (!failed && isAppHost(Uri.parse(url))) {
                 offline.setVisibility(View.GONE);
                 web.setVisibility(View.VISIBLE);
@@ -392,11 +424,23 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void playVideo(final String driveId, final String title) {
+            playVideoWithOptions(driveId, title, null, null);
+        }
+
+        /** Native player with optional mime + sidecar subtitle URL (same-origin /api/stream/... .srt/.vtt). */
+        @JavascriptInterface
+        public void playVideoWithOptions(final String driveId, final String title, final String mime, final String subtitleUrl) {
             if (driveId == null || !driveId.matches("[A-Za-z0-9_-]{10,100}")) return;
             ui.post(() -> {
                 Intent i = new Intent(MainActivity.this, PlayerActivity.class);
                 i.putExtra("id", driveId);
                 i.putExtra("title", title == null ? "" : title);
+                if (mime != null && !mime.isEmpty()) i.putExtra("mime", mime);
+                if (subtitleUrl != null && !subtitleUrl.isEmpty()) {
+                    i.putExtra("subtitleUrl", subtitleUrl);
+                    String low = subtitleUrl.toLowerCase();
+                    i.putExtra("subtitleMime", low.contains("vtt") ? "text/vtt" : "application/x-subrip");
+                }
                 startActivity(i);
             });
         }

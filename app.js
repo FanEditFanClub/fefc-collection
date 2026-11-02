@@ -15,10 +15,24 @@ var __spreadValues = (a, b) => {
   return a;
 };
 (() => {
-  const tmo = (u, ms) => Promise.race([fetch(u).then((r) => {
+  const _fetchOnce = (u, ms) => Promise.race([fetch(u, { credentials: "same-origin" }).then((r) => {
     if (!r.ok) throw Error(r.status);
     return r.json();
   }), new Promise((_, rj) => setTimeout(() => rj(Error("timeout " + u)), ms))]);
+  function thumbSz() {
+    return (typeof isTvEnv === "function" ? isTvEnv() : false) || document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative ? "w320" : "w640";
+  }
+  const tmo = (u, ms, tries) => {
+    tries = tries == null ? 2 : tries;
+    let attempt = 0;
+    const go2 = () => _fetchOnce(u, ms).catch((e) => {
+      attempt++;
+      if (attempt > tries) throw e;
+      const wait = Math.min(4e3, 250 * Math.pow(2, attempt - 1));
+      return new Promise((r) => setTimeout(r, wait)).then(go2);
+    });
+    return go2();
+  };
   const C = window.FEFC_CONFIG || {}, ROOT = C.ROOT_ID, FOLDER = "application/vnd.google-apps.folder", SC = "application/vnd.google-apps.shortcut", S = window.SFX;
   const $ = (s) => document.querySelector(s), P = new URLSearchParams(location.search);
   const isTvEnv = () => !!(document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative || P.get("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT\w|CrKey|BRAVIA|Android TV|GoogleTV|Silk|FEFCFireTV|Fire TV/i.test(navigator.userAgent));
@@ -585,10 +599,10 @@ var __spreadValues = (a, b) => {
           q = nq.slice(0, 40);
         }
       }
-      if (t) src = t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=w640&id=" + t;
+      if (t) src = t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=" + thumbSz() + "&id=" + t;
     } else if (person && !src) {
     } else if (f.mimeType === "application/octet-stream" && !f.targetId) src = null;
-    else if (!person) src = f.thumb ? f.thumb.replace(/=s\d+$/, "=s640") : "https://drive.google.com/thumbnail?sz=w640&id=" + target(f);
+    else if (!person) src = f.thumb ? f.thumb.replace(/=s\d+$/, "=s640") : "https://drive.google.com/thumbnail?sz=" + thumbSz() + "&id=" + target(f);
     if (!src) {
       const r = await tmdbFind(isFolder(f) ? f.name : p.film, p.year);
       if (r) src = "https://image.tmdb.org/t/p/w780" + (r.backdrop_path || r.poster_path);
@@ -2056,7 +2070,7 @@ var __spreadValues = (a, b) => {
         artIO.unobserve(e.target);
         art(e.target, items.get(e.target.dataset.id));
       }
-    }), { root: null, rootMargin: "800px 0px" });
+    }), { root: null, rootMargin: document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative ? "320px 0px" : "600px 0px" });
     artIO.observe(el);
   }
   const LEAN = () => document.body.classList.contains("tv") || matchMedia("(pointer:coarse)").matches;
@@ -2077,7 +2091,7 @@ var __spreadValues = (a, b) => {
         qi++;
         return true;
       }
-      const part = Q[qi].splice(0, 60), t = document.createElement("div");
+      const part = Q[qi].splice(0, LEAN() ? 24 : 60), t = document.createElement("div");
       t.innerHTML = part.map((f) => tile(f, isNew[f.id])).join("");
       const fr = document.createDocumentFragment();
       const els = [].slice.call(t.children);
@@ -2873,7 +2887,7 @@ var __spreadValues = (a, b) => {
     for (const p of ids) {
       if (p === ROOT) break;
       const t = fthumbs[p];
-      if (t) return t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=w640&id=" + t;
+      if (t) return t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=" + thumbSz() + "&id=" + t;
     }
     return null;
   }
@@ -3093,6 +3107,148 @@ var __spreadValues = (a, b) => {
     if (w) w.classList.remove("vid");
     newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
   }
+  const SUB_LANG_SUF = [".en", ".eng", ".en-us", ".en-gb", ".es", ".fr", ".de", ".it", ".pt", ".ja", ".ko", ".zh", ".forced", ".sdh", ".cc", ".hi", ".nl", ".ru"];
+  function stemBase(name) {
+    let s = String(name || "").replace(/\.[^.]+$/, "");
+    const low = s.toLowerCase();
+    for (const suf of SUB_LANG_SUF) {
+      if (low.endsWith(suf)) return s.slice(0, s.length - suf.length);
+    }
+    return s;
+  }
+  function findSidecarSub(f) {
+    if (!f) return null;
+    const id = target(f), parent = f.parent;
+    if (!parent || !kids) return null;
+    const sibs = kids.get(parent) || [];
+    const want = stemBase(f.name).toLowerCase();
+    let best = null;
+    for (const s of sibs) {
+      const n = (s.name || "").toLowerCase();
+      if (!/\.(srt|vtt|webvtt)$/.test(n)) continue;
+      const st = stemBase(s.name).toLowerCase();
+      if (st === want || (s.name || "").replace(/\.[^.]+$/, "").toLowerCase() === want) {
+        const sid = target(s);
+        if (sid === id) continue;
+        best = { id: sid, name: s.name, mime: /\.vtt|webvtt/.test(n) ? "text/vtt" : "application/x-subrip" };
+        if (/\.en(\.|$)|english|sdh|\.cc\./i.test(n)) return best;
+      }
+    }
+    return best;
+  }
+  function srtToVtt(txt) {
+    let b = String(txt || "").replace(/^\uFEFF/, "").replace(/\r+/g, "");
+    if (/^WEBVTT/i.test(b)) return b;
+    b = b.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2");
+    return "WEBVTT\n\n" + b;
+  }
+  function attachSidecarTrack(v, sub) {
+    if (!v || !sub) return;
+    const url = "/api/stream/" + encodeURIComponent(sub.id);
+    const add2 = (src, mime) => {
+      const tr = document.createElement("track");
+      tr.kind = "captions";
+      tr.label = sub.name || "Captions";
+      tr.srclang = "en";
+      tr.default = true;
+      tr.src = src;
+      if (mime) tr.setAttribute("data-mime", mime);
+      v.appendChild(tr);
+      try {
+        if (v.textTracks && v.textTracks[0]) v.textTracks[0].mode = "showing";
+      } catch (e) {
+      }
+    };
+    if (sub.mime === "text/vtt") {
+      add2(url, "text/vtt");
+      return;
+    }
+    fetch(url).then((r) => r.ok ? r.text() : Promise.reject()).then((txt) => {
+      const vtt = srtToVtt(txt);
+      const blob = new Blob([vtt], { type: "text/vtt" });
+      const u = URL.createObjectURL(blob);
+      add2(u, "text/vtt");
+      v.addEventListener("emptied", () => {
+        try {
+          URL.revokeObjectURL(u);
+        } catch (e) {
+        }
+      }, { once: true });
+    }).catch(() => {
+    });
+  }
+  function playerScaleMode() {
+    try {
+      return localStorage.fefcScale || "contain";
+    } catch (e) {
+      return "contain";
+    }
+  }
+  function setPlayerScale(mode) {
+    const order = ["contain", "cover", "fill"];
+    let m = mode;
+    if (!m) {
+      const i = order.indexOf(playerScaleMode());
+      m = order[(i + 1) % 3];
+    }
+    try {
+      localStorage.fefcScale = m;
+    } catch (e) {
+    }
+    const v = $("#pvideo");
+    if (v) v.style.objectFit = m;
+    const b = $("#pscale");
+    if (b) b.textContent = "Scale: " + (m === "contain" ? "Fit" : m === "cover" ? "Fill" : "Stretch");
+    return m;
+  }
+  function ensurePlayerExtras() {
+    const top = $("#player .ptop");
+    if (!top || top.dataset.extras) return;
+    top.dataset.extras = 1;
+    const mk = (id, label, title) => {
+      const b = document.createElement("button");
+      b.id = id;
+      b.type = "button";
+      b.className = "pill p5";
+      b.textContent = label;
+      b.title = title;
+      top.insertBefore(b, $("#popen"));
+      return b;
+    };
+    const sc = mk("pscale", "Scale: Fit", "Cycle Fit \u2192 Fill \u2192 Stretch");
+    sc.onclick = () => {
+      S.chirp(1);
+      setPlayerScale();
+    };
+    const cc = mk("pcc", "CC", "Toggle captions");
+    cc.onclick = () => {
+      S.chirp(1);
+      const v = $("#pvideo");
+      if (!v || !v.textTracks || !v.textTracks.length) {
+        cc.textContent = "CC n/a";
+        return;
+      }
+      const t = v.textTracks[0];
+      t.mode = t.mode === "showing" ? "hidden" : "showing";
+      cc.textContent = t.mode === "showing" ? "CC on" : "CC off";
+    };
+    const au = mk("paudio", "Audio", "Audio track");
+    au.onclick = () => {
+      S.chirp(1);
+      const v = $("#pvideo");
+      const list = v && v.audioTracks;
+      if (!list || !list.length) {
+        au.textContent = "Audio n/a";
+        return;
+      }
+      let i = 0;
+      for (let x = 0; x < list.length; x++) if (list[x].enabled) i = x;
+      const n = (i + 1) % list.length;
+      for (let x = 0; x < list.length; x++) list[x].enabled = x === n;
+      au.textContent = "Audio " + (n + 1) + "/" + list.length;
+    };
+    setPlayerScale(playerScaleMode());
+  }
   function startStream(id) {
     killVideo();
     const tok = streamTok, fo = $("#pframe");
@@ -3131,12 +3287,20 @@ var __spreadValues = (a, b) => {
       v.preload = "auto";
       v.setAttribute("playsinline", "");
       v.tabIndex = -1;
+      v.style.objectFit = playerScaleMode();
       v.addEventListener("error", () => {
         if (tok === streamTok) previewFallback(id);
       });
       v.src = url;
       w.classList.add("vid");
       w.appendChild(v);
+      try {
+        const f = items.get($("#player").dataset.pid);
+        attachSidecarTrack(v, findSidecarSub(f));
+      } catch (e) {
+      }
+      ensurePlayerExtras();
+      setPlayerScale(playerScaleMode());
       const pp = v.play && v.play();
       if (pp && pp.catch) pp.catch(() => {
       });
@@ -3187,12 +3351,21 @@ var __spreadValues = (a, b) => {
     const isShuf = !!(window.__shufPlay || sessionStorage.fefcShufScope);
     document.body.classList.toggle("shuf-player", isShuf);
     $("#player").classList.toggle("floating", isShuf);
+    const sub = findSidecarSub(f);
     $("#player").dataset.pid = f.id;
     $("#ptitle").textContent = parse(f.name).raw;
     $("#player").dataset.did = id;
+    if (sub) {
+      $("#player").dataset.sub = sub.id;
+      $("#player").dataset.submime = sub.mime || "";
+    } else {
+      delete $("#player").dataset.sub;
+      delete $("#player").dataset.submime;
+    }
     startStream(id);
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
     $("#player").hidden = false;
+    ensurePlayerExtras();
   }
   document.addEventListener("click", (e) => {
     const br = e.target.closest("#brand");
@@ -3275,8 +3448,18 @@ var __spreadValues = (a, b) => {
       S.move();
     }
   });
+  let _moveT = 0;
   document.addEventListener("focusin", (e) => {
-    if (e.target.matches(".ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog" + (isTvEnv() ? "" : ",.tk-i:not(.tk-dup)"))) S.move();
+    if (!e.target.matches(".ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog" + (isTvEnv() ? "" : ",.tk-i:not(.tk-dup)"))) return;
+    const tv = isTvEnv() || document.body.classList.contains("tv") || document.body.classList.contains("firetv");
+    if (!tv) {
+      S.move();
+      return;
+    }
+    const now = Date.now();
+    if (now - _moveT < 90) return;
+    _moveT = now;
+    S.move();
   });
   const SEMANTIC_MAP = {
     space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
@@ -4345,7 +4528,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.8";
+  const HOME_VER_FALLBACK = "0.8.9";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4755,6 +4938,13 @@ var __spreadValues = (a, b) => {
   let deferred = null;
   const box = document.getElementById("install");
   const skipSW = isTV || !!window.FEFCNative || document.body.classList.contains("firetv") || /AFT|Android TV|GoogleTV|Silk/i.test(ua);
+  if (skipSW && "serviceWorker" in navigator) {
+    try {
+      navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => r.unregister()));
+      if (window.caches) caches.keys().then((ks) => ks.forEach((k) => caches.delete(k)));
+    } catch (e) {
+    }
+  }
   if ("serviceWorker" in navigator && location.protocol !== "file:" && !skipSW) {
     navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((reg) => {
       try {

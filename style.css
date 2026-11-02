@@ -1331,3 +1331,8 @@ body.tv #menu{display:flex;align-items:center;justify-content:flex-start}
 body.tv #menu .mi{display:inline-flex;align-items:center;justify-content:center;text-align:center}
 /* NA blank-title guard: always show a title line under the date badge */
 #na-list .ol-tile.vid .nm:empty::after{content:'Untitled';opacity:.7}
+
+/* perf: cut TV overdraw (gloss/reflect) without removing tiles/features */
+body.tv .ol-tile:after,body.firetv .ol-tile:after{display:none}
+body.tv .mc>img,body.firetv .mc>img{will-change:opacity}
+body.tv #arena .ol-tile,body.firetv #arena .ol-tile{-webkit-box-reflect:none}

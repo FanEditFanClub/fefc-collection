@@ -56,11 +56,12 @@
   }
   function native() {
     var n = N(), d = driveId();
-    if (n && n.playVideo && d) {
-      try {
-        n.playVideo(d, ($("#ptitle") || {}).textContent || "");
-      } catch (e) {
-      }
+    if (!n || !d) return;
+    var title = ($("#ptitle") || {}).textContent || "", pl = $("#player"), subId = pl && pl.dataset && pl.dataset.sub, subMime = pl && pl.dataset && pl.dataset.submime, subUrl = subId ? "/api/stream/" + encodeURIComponent(subId) : "";
+    try {
+      if (n.playVideoWithOptions) n.playVideoWithOptions(d, title, "", subUrl || "");
+      else if (n.playVideo) n.playVideo(d, title);
+    } catch (e) {
     }
   }
   function build() {

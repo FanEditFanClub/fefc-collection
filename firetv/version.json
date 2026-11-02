@@ -1,8 +1,8 @@
 {
-    "versionCode": 17,
-    "versionName": "0.8.8",
+    "versionCode": 18,
+    "versionName": "0.8.9",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "\u2022 Fire TV details: Open in VLC (Play \u2192 VLC \u2192 Drive); opens stream in VLC or Amazon Appstore if missing\n\u2022 Native Media3 intro (fullscreen ExoPlayer from res/raw) before WebView; Select/Back skips; web uses ?nointro=1\nBeta 0.8.8: Fire TV banner/icon full-bleed (edge-to-edge FEFC on black); idle Home\u2194collection bounce fixed (background index/links/interim soft-refresh, no navigate; no SW reload on TV; boot respects folder hash); intro skip grace so D-pad no longer cuts intro short; mosaic tiles ring around hub (not top-only) + local poster preference; artwork local-first where bundled. Web + Fire TV version sync.",
-    "size": 95732929,
-    "sha256": "5580d034dbbc86a78c291bd944d53d3a0223202912d375668f68bf58b95d80db"
+    "notes": "Beta 0.8.9: Performance/reliability \u2014 TV tile thumbs at display size (w320), fetch retry/backoff, D-pad focus SFX debounce, SW unregister on Fire TV + Media3 player prewarm, LocalAssets refresh retry, WebView preraster/black bg, Player prepare crash guard; web defer non-critical JS, SW cache-first for fonts/static assets, content-visibility + less TV overdraw. Player: CC/chapters/scale/audio track (web+TV). No features removed. Web + Fire TV version sync.",
+    "size": 95742065,
+    "sha256": "9324a31811eb0c1447b728153a392234f5f3ac8fce17f91cba3b5a1cdc60b3fb"
 }

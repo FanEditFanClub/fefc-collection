@@ -1,5 +1,5 @@
 // FEFC Collection service worker. Version is stamped at build time; a new build = new cache.
-const V='mvyyxjqs',SHELL='fefc-shell-'+V;
+const V='mvz16tfy',SHELL='fefc-shell-'+V;
 const ASSETS=[
  '/',
  '/index.html',
@@ -38,6 +38,9 @@ self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.
 self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
  if(e.request.method!=='GET'||u.origin!==location.origin||u.pathname.startsWith('/assets/clips/')||u.pathname.startsWith('/api/stream/'))return; // never touch Drive/Docs/YouTube/Google APIs
  if(u.pathname.startsWith('/data/')){e.respondWith(fetch(e.request,{cache:'no-cache'}).catch(()=>caches.match(e.request)));return} // network-first, no caching of data
+ // static assets (fonts/icons/images): cache-first for repeat visits
+ if(/^\/assets\/(fonts|covers|posters|people|sfx)\//.test(u.pathname)||/\.(png|jpg|jpeg|webp|gif|ttf|woff2?|ico)$/.test(u.pathname)){
+  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(hit=>hit||fetch(e.request).then(r=>{if(r.ok){const c=r.clone();caches.open(SHELL).then(x=>x.put(e.request,c))}return r}).catch(()=>caches.match('/index.html'))));return}
  // app shell: network-first (fresh builds), cache fallback for offline
  const nav=e.request.mode==='navigate'||/(^\/$|\.html$|\.js$|\.css$)/.test(u.pathname);
  e.respondWith(fetch(e.request,nav?{cache:'no-store'}:undefined).then(r=>{if(r.ok){const c=r.clone();caches.open(SHELL).then(x=>x.put(e.request,c))}return r}).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||caches.match('/index.html'))))});
