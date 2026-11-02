@@ -8,3 +8,6 @@ tools/cache
 __pycache__
 *.apk
 firetv/app/build
+firetv/app/build/
+**/app-release.apk
+**/*.apk
