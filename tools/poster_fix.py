@@ -20,6 +20,7 @@ def jget(u):
         except Exception: pass
 d=json.load(open('data/index.json'));by={x['id']:x for x in d['items']}
 P=json.load(open('data/posters.json'));PINS=json.load(open('data/poster-pins.json'))
+PEOPLE_IDS=set(json.load(open('data/people.json'))) if os.path.exists('data/people.json') else set()  # poster pins must never override person folders
 P={k:v for k,v in P.items() if v.get('source')!='pinned'}   # pins are re-derived from the rules every run (a rule change must not leave stale pins)
 CACHE_F='tools/poster_fix_cache.json';CACHE=json.load(open(CACHE_F)) if os.path.exists(CACHE_F) else {}
 VEXT=('.mkv','.mp4','.avi','.m4v','.mov','.webm','.wmv','.mpg','.divx','.ts')

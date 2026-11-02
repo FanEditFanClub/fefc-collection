@@ -62,7 +62,7 @@
       if (h === "#/arena") h = "#/newarrivals";
       if (h === "#/support") h = "#/supportus";
       if (/^#\/genre\//.test(h)) h = "#/genres";
-      var isBack = !!back || /^#\/(edit|search|play|readfirst)\b/.test(h) || typeof document !== "undefined" && document.getElementById("details") && !document.getElementById("details").hidden;
+      var isBack = !!back || /^#\/(edit|search|play|readfirst|folder|all|genre)\b/.test(h) || typeof document !== "undefined" && document.getElementById("details") && !document.getElementById("details").hidden;
       var items = NA.MENU(F).map(function(m) {
         var on = h === m[0] || m[0] === "#/" && h === "#" || m[0] !== "#/" && h.indexOf(m[0] + "/") === 0;
         return '<button class="mi' + (on ? " on" : "") + '" data-href="' + m[0] + '"' + (on ? ' aria-current="page"' : "") + ">" + m[1] + "</button>";

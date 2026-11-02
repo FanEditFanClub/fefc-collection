@@ -5,3 +5,6 @@ tools/cache/
 .config/
 .data/
 __pycache__/
+
+# Packed by tools/pack_firetv_assets.py before assembleRelease (do not commit)
+firetv/app/src/main/assets/www/

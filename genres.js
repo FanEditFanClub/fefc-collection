@@ -122,10 +122,23 @@
     if (!hub || !st.o) return;
     var o = st.o, gm = o.genreMap || {}, nKeys = Object.keys(gm).length;
     if (!nKeys) {
-      hub.innerHTML = '<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4) + '<button class="hb ghb" tabindex="-1"><span>Loading genres\u2026</span><small>Please wait</small></button>' + '<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4);
+      var mid = st.err ? '<button class="hb ghb" data-genres-retry="1" tabindex="0"><span>Couldn\'t load genres</span><small>Select to retry</small></button>' : '<button class="hb ghb" tabindex="-1"><span>Loading genres\u2026</span><small>Please wait</small></button>';
+      hub.innerHTML = '<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4) + mid + '<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4);
       ui();
       var gp = document.getElementById("gpage");
       if (gp) gp.textContent = "";
+      var rb = hub.querySelector("[data-genres-retry]");
+      if (rb) {
+        rb.onclick = function() {
+          st.err = null;
+          paint();
+          if (window.loadGenres) window.loadGenres(true);
+        };
+        try {
+          rb.focus();
+        } catch (e) {
+        }
+      }
       return;
     }
     var L = list(o), P = pages();
@@ -236,6 +249,14 @@
     paint();
     setTimeout(place, 50);
     setTimeout(place, 600);
+  };
+  window.FEFCGenres.fail = function(msg) {
+    st.err = String(msg || "error");
+    if (on()) paint();
+  };
+  window.FEFCGenres.loaded = function() {
+    st.err = null;
+    if (on()) paint();
   };
   fetch("data/genreart.json").then(function(r) {
     return r.json();

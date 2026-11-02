@@ -68,7 +68,7 @@ button,input,a{font:inherit;color:inherit}
 .src{font-size:12px;color:#aaa}
 .cast{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.cast span{background:#222;border-left:6px solid var(--l);padding:5px 10px;border-radius:0 14px 14px 0;font-size:14px}
 .rt{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
-.rt a,.rt .na{display:flex;justify-content:space-between;gap:10px;background:#111;border-radius:0 18px 18px 0;border-left:8px solid var(--y);padding:8px 12px;text-decoration:none;color:#fff;min-height:40px;align-items:center;grid-column:1/3}
+.rt a,.rt .rr,.rt .na{display:flex;justify-content:space-between;gap:10px;background:#111;border-radius:0 18px 18px 0;border-left:8px solid var(--y);padding:8px 12px;text-decoration:none;color:#fff;min-height:40px;align-items:center;grid-column:1/3}
 .rt b{font-family:Antonio;font-size:20px;color:var(--y)}.rt .na{border-color:#555;color:#999}
 .trailer{aspect-ratio:16/9;width:100%;border:3px solid var(--p);border-radius:0 0 0 24px;background:#111;display:grid;place-items:center;color:#888;text-align:center;padding:10px}
 .trailer iframe{width:100%;height:100%;border:0}
@@ -133,7 +133,7 @@ body.tv #crumb{font-size:3.6vh}body.tv .sec{font-size:2vh}
 body.tv #grid{grid-template-columns:repeat(5,1fr);gap:2.2vh}body.tv #arena{gap:2.2vh}
 body.tv .ol-tile .nm{font-size:1.9vh}body.tv .ol-tile .kind{font-size:1.3vh}
 body.tv #details{padding:4vh 5vw 4vh 5.5vw}body.tv .lc-body p{font-size:2vh}body.tv .pill{font-size:2.1vh;min-height:6vh}
-body.tv .rt a,body.tv .rt .na{font-size:1.9vh;min-height:5.5vh}body.tv .cast span{font-size:1.9vh}body.tv .lc-h{font-size:2vh}
+body.tv .rt a,body.tv .rt .rr,body.tv .rt .na{font-size:1.9vh;min-height:5.5vh}body.tv .cast span{font-size:1.9vh}body.tv .lc-h{font-size:2vh}
 body.tv .lc-title{font-size:4vh}
 body.tv .ol-tile{-webkit-box-reflect:initial;transition:transform .12s}
 body.tv #player{padding:3vh 4vw}
@@ -267,7 +267,27 @@ html.no3d #home{perspective:none}html.no3d #hub{-webkit-transform:translate(-50%
 #intro .isnd{position:absolute;right:calc(3vw + 7.5em);bottom:4vh;font:600 clamp(13px,1.8vh,22px) 'Source Sans 3',sans-serif;color:#fffb;padding:.35em .9em;border:1px solid #fff4;border-radius:3px;background:#0006;z-index:3;cursor:pointer}#intro .isnd[hidden]{display:none}
 
 /* sections + poster shapes */
-#na-list{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}#na-list .ol-tile{aspect-ratio:2/3}body.tv #na-list{grid-template-columns:repeat(7,1fr);gap:2.2vh}
+#na-list{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));align-items:stretch}
+/* NA: title overlays INSIDE the poster, starting BELOW the date badge (photo: badge overlapped first title line; some tiles showed badge only). Keep badge; smaller clamped title on every badged tile. */
+#na-list .ol-tile.vid{aspect-ratio:2/3;display:block;height:auto;overflow:hidden}
+#na-list .ol-tile.vid .art{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto}
+#na-list .ol-tile.vid .kind{display:none} /* date badge is enough; kind sat under/over title */
+#na-list .na-date{position:absolute;left:6px;right:auto;top:6px;z-index:4;font-size:10px;line-height:1.1;max-width:72%}
+#na-list .ol-tile.vid .pcap{display:none!important}
+#na-list .ol-tile.vid .nm,
+#na-list .ol-tile.vid.has-poster .nm{
+  display:-webkit-box!important;-webkit-box-orient:vertical;
+  position:absolute;left:0;right:0;bottom:0;top:34px; /* clear date badge */
+  max-height:none;margin:0;padding:6px 8px 10px;
+  font-size:11px;line-height:1.2;-webkit-line-clamp:7;line-clamp:7;
+  overflow:hidden;white-space:normal;overflow-wrap:anywhere;word-break:break-word;
+  background:linear-gradient(0deg,#000f 0%,#000c 55%,#0000 100%);
+  text-shadow:0 1px 2px #000;z-index:2;box-sizing:border-box;
+  align-content:flex-end;-webkit-box-pack:end
+}
+body.tv #na-list{grid-template-columns:repeat(7,1fr);gap:2.2vh}
+body.tv #na-list .na-date{font-size:1.15vh;top:.7vh;left:.7vh}
+body.tv #na-list .ol-tile.vid .nm{top:3.4vh;font-size:1.35vh;line-height:1.18;-webkit-line-clamp:6;line-clamp:6;padding:.6vh .7vh 1vh}
 #grid.sectioned{display:block}
 .sgrid{display:grid;gap:14px;margin-bottom:6px}
 .sgrid.folds,.sgrid.docs{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
@@ -421,7 +441,10 @@ body.tv .ml-hist-tog:focus{outline:3px solid #ff9c00;outline-offset:4px;backgrou
 .ol-tile.has-poster .pcap{display:block;position:absolute;left:0;right:0;bottom:0;z-index:2;padding:2.2em 7px 7px;background:linear-gradient(0deg,#000d 0,#000b 45%,#0000 100%);color:#fff;font:700 15px/1.18 'Source Sans 3','Segoe UI',system-ui,sans-serif;text-align:center;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:normal;overflow:visible;overflow-wrap:anywhere;pointer-events:none;border-radius:0 0 inherit inherit}
 .ol-tile.has-poster .pcap.c2{font-size:13px}.ol-tile.has-poster .pcap.c3{font-size:11.5px}.ol-tile.has-poster .pcap.c4{font-size:10.5px;line-height:1.14}
 .ol-tile.has-poster .pcap small{display:block;font-weight:600;font-size:.8em;opacity:.75;margin-top:2px}
-.ol-tile.vid.has-poster>.nm,.sgrid.vids .ol-tile.vid.has-poster .nm{display:none!important}
+/* Poster vids in collection grids: keep the below-art .nm title (folder style). Overlay .pcap is for non-flex tiles only. */
+.ol-tile.vid.has-poster>.nm{display:none!important}
+.sgrid.vids .ol-tile.vid.has-poster .nm{display:block!important}
+.sgrid.vids .ol-tile.vid .pcap{display:none!important}
 body.tv .ol-tile.has-poster .pcap{font-size:19px}body.tv .ol-tile.has-poster .pcap.c2{font-size:17px}body.tv .ol-tile.has-poster .pcap.c3{font-size:15px}body.tv .ol-tile.has-poster .pcap.c4{font-size:13.5px}
 /* Top menu: one line (>=1280px), horizontal scroll on narrow screens, never wraps */
 #bar{flex-wrap:nowrap!important}
@@ -1036,11 +1059,13 @@ body.fit #details .bigplay{font-size:max(20px,3.1vh);padding:.7vh 3.4vh .7vh 2.6
 body.fit #details .lc-body>div:not(.lc-head){min-width:0;overflow:visible;grid-row:2}
 body.fit #details .lc-body>div:nth-of-type(2){grid-column:2}body.fit #details .lc-body>div:nth-of-type(3){grid-column:3}
 body.fit #details .lc-body p{font-size:max(12px,1.9vh);line-height:1.35;margin-bottom:.8vh}
-body.fit #details .lc-body>div>p:not(.src):last-of-type{display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+/* Plot/overview and cast must stay visible in 1080p fit — scroll the column instead of hiding/clamping */
+body.fit #details .lc-body>div:not(.lc-head){overflow:auto;-webkit-overflow-scrolling:touch;max-height:100%}
 body.fit #details .lc-h{font-size:max(12px,1.9vh);margin-bottom:.6vh}
-body.fit #details .cast{display:none}
+body.fit #details .cast{display:flex;flex-wrap:wrap;gap:.45vh .55vw;max-height:16vh;overflow:auto;-webkit-overflow-scrolling:touch;align-content:flex-start}
+body.fit #details .cast span{font-size:max(11px,1.55vh);padding:.35vh .7vh}
 body.fit #details .rt{display:grid;grid-template-columns:1fr 1fr;gap:.6vh .6vw}
-body.fit #details .rt a,body.fit #details .rt .na{grid-column:auto;min-height:5vh;padding:.5vh 1vh;font-size:max(12px,1.8vh)}
+body.fit #details .rt a,body.fit #details .rt .rr,body.fit #details .rt .na{grid-column:auto;min-height:5vh;padding:.5vh 1vh;font-size:max(12px,1.8vh)}
 body.fit #details .rt .ico{height:3vh}body.fit #details .rt b{font-size:max(15px,2.3vh)}body.fit #details .rt small{font-size:max(10px,1.3vh)}
 body.fit #details .rt .src{grid-column:1/3}
 body.fit #details #lc-trailer{margin-top:1vh!important}
@@ -1286,3 +1311,23 @@ body.tvmenu-open #hints{pointer-events:none}
 body.fit #details .fx-sec,body.fit #details #lc-fileinfo,body.fit #details .fx-kv{display:block}
 body.tv #details .lc-body .fx-kv{font-size:1.7vh}
 body.tv #details .lc-body{scroll-behavior:auto}
+
+/* Fire TV Alexa Voice Remote Gen3 glyphs + FEFC home logo; center icon+label in each hint box */
+body.firetv #hints .hb{display:inline-flex;align-items:center;justify-content:center;gap:.45em;padding:.35em .7em;box-sizing:border-box}
+body.firetv #hints .hb .g{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+body.firetv #hints .hb .g.g-ftv{width:1.15em;height:1.15em}
+body.firetv #hints .hb .g.g-ftv svg{width:100%;height:100%;display:block}
+body.firetv #hints .hb .g.g-ftv-home{width:1.35em;height:1.35em}
+body.firetv #hints .hb .g-ftv-logo{width:100%;height:100%;object-fit:contain;display:block;border-radius:15%}
+
+/* 0.8.7: remote Back/Select flash the matching hint (never leave Home stuck lit) */
+#hints .hint-btn.pressed,#menu .mi.pressed{background:#ff9c0033!important;color:#ffb02e!important;box-shadow:inset 0 0 0 1px #ff9c0088}
+body.firetv #hints{justify-content:center;align-items:center}
+body.firetv #hints .hint-btn{justify-content:center;flex:0 0 auto;min-width:5.5em;padding:.35em .7em}
+body.firetv #hints .g-ftv-home .g-ftv-logo,body.firetv #hints .g-ftv-home img{display:block;width:1.15em;height:1.15em;object-fit:contain;border-radius:3px}
+body.tv #bar #brand{display:inline-flex;align-items:center;justify-content:center}
+body.tv #bar #brand img{width:1.35em;height:1.35em;object-fit:contain}
+body.tv #menu{display:flex;align-items:center;justify-content:flex-start}
+body.tv #menu .mi{display:inline-flex;align-items:center;justify-content:center;text-align:center}
+/* NA blank-title guard: always show a title line under the date badge */
+#na-list .ol-tile.vid .nm:empty::after{content:'Untitled';opacity:.7}

@@ -12,6 +12,7 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const isFolder=f=>!!f&&(f.mimeType===FOLDER||f.targetMime===FOLDER||(f.mimeType===SC&&f.targetMime===FOLDER)||(!!f.targetId&&f.targetId!==f.id&&(items.get(f.targetId)||{}).mimeType===FOLDER));
 const target=f=>f.targetId||f.id;
 function add(list){for(const f of list){items.set(f.id,f);const p=f.parent||ROOT;if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);if(!a.some(x=>x.id===f.id))a.push(f)}}
+function applyLinks(L){if(!L)return;for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}}
 function parse(n){const base=n.replace(/\.[a-z0-9]{2,4}$/i,'');const parts=base.split(' - ').map(s=>s.trim()).filter(s=>!/^fan edit$/i.test(s));
  return{title:parts.length>1?parts.slice(1).join(' · '):parts[0],series:parts.length>1?parts[0]:'',raw:base,film:parts[0].replace(/\s*\(\d{4}\)\s*/,''),year:(base.match(/\((\d{4})\)/)||[])[1]}}
 const sz=b=>b?(b/1e9).toFixed(2)+' GB':'';
@@ -84,7 +85,8 @@ async function tmdbFind(q,year){if(!C.TMDB_API_KEY)return null;const k='t:'+q+ye
  try{const j=await(await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${C.TMDB_API_KEY}&query=${encodeURIComponent(q)}${year?'&year='+year:''}`)).json();cache[k]=(j.results||[]).find(x=>x.poster_path)||null}catch(e){cache[k]=null}save();return cache[k]}
 function artBg(f){const h=HUES[hash(parse(f.name).series||f.name)%8];return `radial-gradient(circle at 75% 20%,hsl(${h} 90% 60% / .85),hsl(${h} 70% 25%) 45%,#050a14 100%)`}
 const SUPRE=/^\s*\w{1,3}\s*-\s*support\b|support\s+(us|patreon)|patreon|paypal|venmo|donat(e|ion)/i;function isSupportDoc(f){if(!f||isFolder(f))return false;const t=f.targetId&&items.get(f.targetId);return SUPRE.test(f.name||'')||!!(t&&SUPRE.test(t.name||''))}
-function tile(f,live_){const fold=isFolder(f),p=parse(f.name),aud=!fold&&!isVid(f)&&isAud(f),vid=!fold&&(isVid(f)||aud),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';/* Any Read First folder/doc (any parent / search / My List) uses the same home-hub artwork at normal grid tile size */if(/\bread first\b/i.test(f.name||''))return `<button class="ol-tile fold rfhome" data-id="${f.id}" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span></button>`;if(fold){const fid=target(f);if((fid===FOLD.collections||f.id===FOLD.collections)&&cur!==FOLD.collections)return `<button class="ol-tile fecc" data-id="${f.id}" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">${esc(countsLine(FOLD.collections)).replace(/ · /g,' <wbr>· ')}</small></button>`;if((fid===FOLD.tbc||f.id===FOLD.tbc)&&cur!==FOLD.tbc)return `<button class="ol-tile fecc fecc-tbc" data-id="${f.id}" data-fecc="1" aria-label="To Be Catalogued"><span class="fecc-t">To Be Catalogued</span><small class="fecc-c">${esc(countsLine(FOLD.tbc)).replace(/ · /g,' <wbr>· ')}</small></button>`}if(fold&&target(f)===ROOT&&f.parent===FOLD.collections)return `<button class="ol-tile mainc" data-id="${f.id}" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">${esc(countsLine(ROOT)).replace(/ · /g,' <wbr>· ')}</small></button>`;if(!fold&&!vid&&isSupportDoc(f))return `<button class="ol-tile sup" data-id="${f.id}" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon · <wbr>PayPal · <wbr>Venmo</small></button>`;const ad=cls==='doc'&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);return `<button class="ol-tile ${cls}${ad?' ad':''} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}"></div><span class="kind">${live_?'NEW':pp?(pp.role==='director'?'DIRECTOR':'ACTOR'):fold?'':aud?'AUDIO':vid?'FAN EDIT':'DOCUMENT'}</span>${(fold||vid)?(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<span class="star${on?' on':''}" data-star="${f.id}" role="button" aria-pressed="${on}" aria-label="${on?'Remove from My List':'Add to My List'}" title="${on?'Starred':'Star'} (S)">${on?'★':'☆'}</span>`})():''}${vid?`<div class="pcap ${(()=>{const n=p.raw.length;return n>90?'c4':n>55?'c3':n>30?'c2':'c1'})()}">${esc(p.raw)}</div>`:''}${fold&&typeof isDenied==='function'&&isDenied(target(f))?'<span class="lockb" title="Private library" aria-label="Private">🔒</span>':''}<div class="nm">${esc(fold?f.name:p.raw)}</div></button>`}
+function personKind(pp){if(!pp)return'';const R=pp.roles||(pp.role?[pp.role]:[]);const hasA=R.includes('actor')||pp.role==='actor';const hasD=R.includes('director')||pp.role==='director';if(hasA&&hasD)return'ACTOR / DIRECTOR';return hasD?'DIRECTOR':'ACTOR'}
+function tile(f,live_){const fold=isFolder(f),p=parse(f.name),aud=!fold&&!isVid(f)&&isAud(f),vid=!fold&&(isVid(f)||aud),pp=fold&&people[target(f)];const cls=fold?(pp?'person':'fold'):vid?'vid':'doc';/* Any Read First folder/doc (any parent / search / My List) uses the same home-hub artwork at normal grid tile size */if(/\bread first\b/i.test(f.name||''))return `<button class="ol-tile fold rfhome" data-id="${f.id}" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span></button>`;if(fold){const fid=target(f);if((fid===FOLD.collections||f.id===FOLD.collections)&&cur!==FOLD.collections)return `<button class="ol-tile fecc" data-id="${f.id}" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">${esc(countsLine(FOLD.collections)).replace(/ · /g,' <wbr>· ')}</small></button>`;if((fid===FOLD.tbc||f.id===FOLD.tbc)&&cur!==FOLD.tbc)return `<button class="ol-tile fecc fecc-tbc" data-id="${f.id}" data-fecc="1" aria-label="To Be Catalogued"><span class="fecc-t">To Be Catalogued</span><small class="fecc-c">${esc(countsLine(FOLD.tbc)).replace(/ · /g,' <wbr>· ')}</small></button>`}if(fold&&target(f)===ROOT&&f.parent===FOLD.collections)return `<button class="ol-tile mainc" data-id="${f.id}" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">${esc(countsLine(ROOT)).replace(/ · /g,' <wbr>· ')}</small></button>`;if(!fold&&!vid&&isSupportDoc(f))return `<button class="ol-tile sup" data-id="${f.id}" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon · <wbr>PayPal · <wbr>Venmo</small></button>`;const ad=cls==='doc'&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);return `<button class="ol-tile ${cls}${ad?' ad':''} ${live_?'live':''}" data-id="${f.id}" title="${esc(f.name)}"><div class="art" style="background:${artBg(f)}"></div><span class="kind">${live_?'NEW':pp?personKind(pp):fold?'':aud?'AUDIO':vid?'FAN EDIT':'DOCUMENT'}</span>${(fold||vid)?(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<span class="star${on?' on':''}" data-star="${f.id}" role="button" aria-pressed="${on}" aria-label="${on?'Remove from My List':'Add to My List'}" title="${on?'Starred':'Star'} (S)">${on?'★':'☆'}</span>`})():''}${vid?`<div class="pcap ${(()=>{const n=p.raw.length;return n>90?'c4':n>55?'c3':n>30?'c2':'c1'})()}">${esc(p.raw)}</div>`:''}${fold&&typeof isDenied==='function'&&isDenied(target(f))?'<span class="lockb" title="Private library" aria-label="Private">🔒</span>':''}<div class="nm">${esc(fold?f.name:(p.raw||f.name||'Untitled'))}</div></button>`}
 const THUMBO=new Map();
 /* Poster URLs in posters.json are mostly full-size originals (Wikimedia *_unscaled, TVmaze original_untouched). Ask for a tile-sized
    rendition instead (about a third of the bytes and decode cost on a weak TV); falls back to the original on error. */
@@ -96,9 +98,11 @@ function thumbUrl(u){if(!u||typeof u!=='string')return u;let n=u;
 /* an edit with no poster of its own borrows one from a sibling edit of the same series (same folder, same "Series - Part N - Title" prefix), e.g. Dawn of Justice Series Part 1/3 use Part 2's */
 function seriesPoster(f){if(isFolder(f))return null;const p=parse(f.name);if(!p.series)return null;const sb=kids.get(f.parent)||[];for(const x of sb){if(x===f||isFolder(x)||!isVid(x))continue;if(parse(x.name).series!==p.series)continue;const q=posters[x.id]||posters[target(x)];if(q)return q}return null}
 async function art(el,f){if(el.dataset&&el.dataset.fecc)return;if(!f||el.classList.contains('sup')||el.classList.contains('mainc')||el.classList.contains('rfhome')||el.dataset.rfhome)return;let src=null;const p=parse(f.name);
+ /* Person folders always use people.json photos — never folderthumbs / first-video Drive frames (those + face-crop coords looked like broken actor/director art after pins raced ahead of people.json). */
+ const person=isFolder(f)&&(people[target(f)]||f.parent===FOLD.actors||f.parent===FOLD.directors);
  if(isFolder(f)&&people[target(f)])src=people[target(f)].url;else if(!isFolder(f)&&isMedia(f)){const ps=posters[f.id]||posters[target(f)]||(isAud(f)?(()=>{const sb=kids.get(f.parent)||[],pf=parse(f.name).film;for(const x of sb){const q=!isFolder(x)&&isVid(x)&&parse(x.name).film===pf&&(posters[x.id]||posters[target(x)]);if(q)return q}return null})():null)||seriesPoster(f);if(!ps)return;src=thumbUrl(ps.url);el.classList.add('has-poster')}else
- if(isFolder(f)){const fid=target(f);let t=fthumbs[fid];if(!t){let q=[fid];for(let d=0;d<3&&!t&&q.length;d++){const nq=[];for(const id of q){const ks=kids.get(id)||[],v=ks.find(x=>!isFolder(x)&&isVid(x));if(v){t=target(v);break}ks.forEach(x=>{if(isFolder(x))nq.push(target(x))})}q=nq.slice(0,40)}}if(t)src=t.startsWith('assets/')?t:'https://drive.google.com/thumbnail?sz=w640&id='+t}
- else if(f.mimeType==='application/octet-stream'&&!f.targetId)src=null;else src=f.thumb?f.thumb.replace(/=s\d+$/,'=s640'):'https://drive.google.com/thumbnail?sz=w640&id='+target(f);
+ if(isFolder(f)&&!person){const fid=target(f);let t=fthumbs[fid];if(!t){let q=[fid];for(let d=0;d<3&&!t&&q.length;d++){const nq=[];for(const id of q){const ks=kids.get(id)||[],v=ks.find(x=>!isFolder(x)&&isVid(x));if(v){t=target(v);break}ks.forEach(x=>{if(isFolder(x))nq.push(target(x))})}q=nq.slice(0,40)}}if(t)src=t.startsWith('assets/')?t:'https://drive.google.com/thumbnail?sz=w640&id='+t}
+ else if(person&&!src){/* people.json not loaded yet — leave blank; reArt will fill */}else if(f.mimeType==='application/octet-stream'&&!f.targetId)src=null;else if(!person)src=f.thumb?f.thumb.replace(/=s\d+$/,'=s640'):'https://drive.google.com/thumbnail?sz=w640&id='+target(f);
  if(!src){const r=await tmdbFind(isFolder(f)?f.name:p.film,p.year);if(r)src='https://image.tmdb.org/t/p/w780'+(r.backdrop_path||r.poster_path)}
  if(src){const im=new Image();im.alt='';im.referrerPolicy='no-referrer';im.decoding='async';im.onerror=()=>{const o=THUMBO.get(src);if(o){THUMBO.delete(src);src=o;im.src=o}};im.onload=()=>{if(im.naturalWidth>40){const a=el.querySelector('.art');const pp=isFolder(f)&&people[target(f)];
   if(pp&&pp.fx!=null){const vis=Math.min(1,im.naturalWidth*9/16/im.naturalHeight),py=vis>=1?50:Math.max(0,Math.min(100,(pp.fy-vis/2)/(1-vis)*100));
@@ -300,7 +304,7 @@ function hubGo(k){S.click();
  if(k==='people')return go('#/people');
  if(k==='actors')return virtual([items.get(FOLD.actors)||{id:FOLD.actors,name:'Actors',mimeType:FOLDER},items.get(FOLD.directors)||{id:FOLD.directors,name:'Directors',mimeType:FOLDER}],'Actors & Directors');
  if(k==='search'){openSpot('');return}
- if(k==='genres'){showHome(true);if(window.FEFCGenres&&FEFCGenres.hub)FEFCGenres.hub({get genreMap(){return genreMap},order:GORDER,items,isVid,esc});return}
+ if(k==='genres'){showHome(true);if(!Object.keys(genreMap).length&&window.loadGenres)window.loadGenres();if(window.FEFCGenres&&FEFCGenres.hub)FEFCGenres.hub({get genreMap(){return genreMap},order:GORDER,items,isVid,esc});return}
  if(k==='support'){hideHome();cur='virtual';view='folder';$('#crumb').textContent='Support Us';$('#arena').innerHTML='';$('#sec2').textContent='Thank you for supporting the collection';
   $('#grid').className='support-grid';$('#grid').innerHTML=SUPPORT.map(s=>`<a class="ol-tile link sup sup-${s.name.toLowerCase()}" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} (opens in a new tab)"><span class="sup-logo">${s.logo}</span><span class="sup-nm">${s.name}</span><small>${s.sub}</small></a>`).join('');status('');menu()}}
 const HUBH={main:'#/all',arena:'#/newarrivals',readfirst:'#/readfirst',genres:'#/genres',support:'#/supportus',people:'#/people',mylist:'#/mylist',search:'#/search'};
@@ -316,7 +320,7 @@ function sm2(){const l=$('#hmutel');if(l)l.textContent=S.muted?'Sound off':'Soun
   const hm=$('#hmute');if(hm)hm.setAttribute('aria-pressed',S.muted?'true':'false')}
 let lastFocus=null;document.addEventListener('focusin',e=>{if(!e.target.closest('#hints'))lastFocus=e.target});
 document.addEventListener('click',e=>{const h=e.target.closest('[data-hint]');if(!h)return;const k=h.dataset.hint;
- if(k==='search')return doSearch();if(k==='menu'){S.click&&S.click();openTvMenu();return}if(k==='star'){S.click&&S.click();starFocused();return}if(k==='mute')return doMute();if(k==='home'){S.click&&S.click();return go('#/')}if(k==='back'){if(closeTvMenu())return;if(history.length>1&&location.hash&&location.hash!=='#/'){S.back();return history.back()}return goBack()}
+ if(k==='search')return doSearch();if(k==='menu'){S.click&&S.click();openTvMenu();return}if(k==='star'){S.click&&S.click();starFocused();return}if(k==='mute')return doMute();if(k==='home'){S.click&&S.click();return go('#/')}if(k==='back'){if(closeTvMenu())return;return goBack()}
  if(k==='select'){const t=lastFocus&&document.contains(lastFocus)&&lastFocus.matches('.ol-tile,[data-act],[data-nav],.hb,.pill,.sortpill,.bigplay,.mi,#tvmenu button')?lastFocus:null;if(t){S.unlock&&S.unlock();t.click()}}});
 (function(){const B=document.body,u=()=>{const t=!B.classList.contains('tv')&&((window.matchMedia&&matchMedia('(pointer:coarse)').matches)||('ontouchstart' in window&&navigator.maxTouchPoints>0));B.classList.toggle('touch',t)};u();window.addEventListener('touchstart',()=>{if(!B.classList.contains('tv'))B.classList.add('touch')},{passive:true,once:true});if(window.matchMedia)try{matchMedia('(pointer:coarse)').addEventListener('change',u)}catch(e){}})();
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();doSearch();return}if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;const menuKey=e.key==='Menu'||e.key==='ContextMenu'||e.keyCode===93||(e.keyCode===82&&e.key!=='r'&&e.key!=='R');if(menuKey){e.preventDefault();if(document.body.classList.contains('firetv')||document.body.classList.contains('tv')&&window.FEFCNative)openTvMenu();else starFocused()}else if(e.key==='y'||e.key==='Y'||e.key==='/'||e.keyCode===403){e.preventDefault();doSearch()}else if(e.key==='m'||e.key==='M'||e.keyCode===404){doMute()}});
@@ -330,7 +334,9 @@ const RF_IDS={'1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk':1};
 function isReadFirst(f){if(!f)return false;const n=f.name||'';if(/\bread (first|me)\b/i.test(n))return true;/* Drive folder "01 - Read First" and sibling docs */return /^\s*\d{0,2}[A-Z]?\s*-\s*read first\b/i.test(n)}
 function rfKind(f){if(!f||isFolder(f)||isMedia(f))return null;if(/support|patreon|paypal|venmo/i.test(f.name))return 'support';if(isReadFirst(f))return 'readfirst';return null}
 const RF_HOME_TILE=`<button class="ol-tile fold rfhome" data-rfhome="1" data-hub="readfirst" aria-label="Read First"><span class="rf-t">Read First</span></button>`;
+const SUP_HOME_TILE=`<button class="ol-tile fold sup" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon · <wbr>PayPal · <wbr>Venmo</small></button>`;
 function stripReadFirst(list){return list.filter(f=>!isReadFirst(f))}
+function stripSupportDocs(list){return list.filter(f=>!isSupportDoc(f))}
 function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supportus');return}const p=$('#rfpanel'),d=$('#rfdoc'),src='data/readfirst.html',ttl='Read First';
  const sp=p.querySelector('.rf-top span');if(sp)sp.textContent=ttl;if(d.dataset.src!==src){d.dataset.src=src;d.dataset.ok=1;d.innerHTML='';fetch(src).then(r=>{if(!r.ok)throw 0;return r.text()}).catch(()=>fetch('data/readfirst.html').then(r=>r.text())).then(h=>{d.innerHTML=h}).catch(()=>{})}
  rfInPlace=true;S.click();p.hidden=false;void p.offsetWidth;RFX.open(p);setTimeout(()=>focusEl($('#rfclose')),60)}
@@ -398,10 +404,29 @@ function sfxResolve(id){
  return L}
 /*SFX-RESOLVE-END*/
 addEventListener('hashchange',()=>{const m=location.hash.match(/^#\/folder\/([^/?]+)/);if(m&&!navBack)folderSfx(decodeURIComponent(m[1]))});
-function go(h){captureNavState();navBack=false;const m=h.match(/^#\/folder\/([^/?]+)/);if(m)folderSfx(decodeURIComponent(m[1]));if(location.hash===h)return route();history.pushState({fefc:1,y:0,focus:null},'',h);route()}
+function go(h){captureNavState();navBack=false;const cur=location.hash||'#/';
+ /* Remember the real previous screen when opening a video details page so Back does not dump to Home. */
+ if(/^#\/edit\//.test(h)&&!/^#\/(edit|play)\//.test(cur)){window.__editFrom=cur;try{sessionStorage.fefcEditFrom=cur}catch(e){}}
+ const m=h.match(/^#\/folder\/([^/?]+)/);if(m)folderSfx(decodeURIComponent(m[1]));if(location.hash===h)return route();history.pushState({fefc:1,y:0,focus:null},'',h);route()}
 function back(fallback){/* leave current entry stamped so Forward would work; pop restores prior entry's scroll/focus from history.state */
  captureNavState();S.back();navBack=true;clearBack();const h=location.hash,fb=()=>{history.replaceState({fefc:1,y:0,focus:null},'',fallback||'#/');route()};if(history.state&&history.state.fefc){history.back();setTimeout(()=>{if(location.hash===h)fb()},450)}else fb()}
-function parentHash(){const r=parseH();if(r[0]==='play')return window.__shufPrevHash||(r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/');if(r[0]==='edit'||r[0]==='readfirst'||r[0]==='search'||r[0]==='mylist'||r[0]==='people'||r[0]==='supportus'||r[0]==='support')return '#/';if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}if(r[0]==='genre')return '#/genres';if(r[0]==='genres'&&r[2])return '#/genres/'+encodeURIComponent(r[1]);if(r[0]==='genres'&&r[1])return '#/genres';if(r[0]==='genres')return '#/';return '#/'}
+function parentHash(){const r=parseH();
+ if(r[0]==='play')return window.__shufPrevHash||(r[1]?'#/edit/'+encodeURIComponent(r[1]):'#/');
+ if(r[0]==='edit'){
+  /* Prefer the screen we navigated from (folder / search / My List / people / genres / home hub). */
+  let from=window.__editFrom;try{if(!from)from=sessionStorage.fefcEditFrom}catch(e){}
+  if(from&&from!==location.hash&&!/^#\/(edit|play)\/?/.test(from))return from;
+  const f=items.get(r[1]);
+  if(f&&f.parent){
+   if(f.parent===ROOT)return '#/all';
+   if(f.parent===FOLD.actors||f.parent===FOLD.directors)return '#/people';
+   if(items.has(f.parent))return '#/folder/'+f.parent;
+  }
+  return '#/';
+ }
+ if(r[0]==='readfirst'||r[0]==='search'||r[0]==='mylist'||r[0]==='people'||r[0]==='supportus'||r[0]==='support')return '#/';
+ if(r[0]==='folder'){const f=items.get(r[1]);if(f&&(f.parent===FOLD.actors||f.parent===FOLD.directors))return '#/people';return f&&f.parent&&f.parent!==ROOT&&items.has(f.parent)?'#/folder/'+f.parent:(f&&f.parent===ROOT?'#/all':'#/')}
+ if(r[0]==='genre')return '#/genres';if(r[0]==='genres'&&r[2])return '#/genres/'+encodeURIComponent(r[1]);if(r[0]==='genres'&&r[1])return '#/genres';if(r[0]==='genres')return '#/';return '#/'}
 function parseH(){if(/^#\/arena/.test(location.hash))history.replaceState(history.state,'','#/newarrivals');return (location.hash.replace(/^#\/?newarrivals/,'#/arena').replace(/^#\/?/,'')||'').split('/').map(decodeURIComponent)}
 function itemOr(id){return items.get(id)||{id:id,name:'Fan edit',mimeType:'video/mp4'}}
 let baseKey=null;
@@ -411,7 +436,7 @@ function route(){const r=parseH(),k=r[0]||'';
  if(k!=='play'&&!$('#player').hidden){closePlayer();window.__shufPrevHash=null;if(started())S.ambience(true)}
  if(k!=='edit'&&k!=='play'&&!$('#details').hidden){const d=$('#details');const hide=()=>{d.hidden=true;d.classList.remove('leaving');document.body.classList.remove('details-open')};if(VIEW_MS<=1)hide();else{d.classList.add('leaving');setTimeout(hide,VIEW_MS)}}
  if(k!=='readfirst')closeRF();
- if(k==='edit'){details(itemOr(r[1]),false);try{warmStream(itemOr(r[1]))}catch(e){}if(baseKey===null)renderBase('');return}
+ if(k==='edit'){const _ef=itemOr(r[1]);details(_ef,false);try{warmStream(_ef)}catch(e){}if(!navBack){try{const pid=_ef&&_ef.parent;if(pid)folderSfx(pid)}catch(e){}}if(baseKey===null)renderBase('');return}
  if(k==='play'){
   /* the player was just closed for this exact hash (Back/close/Esc): never reopen it, step up to the parent instead */
   if(closedFor===location.hash){closedFor=null;history.replaceState({fefc:1},'',parentHash()||'#/');return route()}
@@ -420,7 +445,7 @@ function route(){const r=parseH(),k=r[0]||'';
   if(!$('#player').hidden&&$('#player').dataset.pid===r[1])return;
   /* Fire TV app (FEFCNative bridge): Play launches the native full-screen TV PLAYER directly (the WebView popup can show audio with a black picture); web/phone keep the popup */
   {const nf=itemOr(r[1]),nb=window.FEFCNative;if(nf&&nb&&nb.playVideo&&!window.__shufPlay){let ok=false;try{nb.playVideo(target(nf),parse(nf.name).raw);ok=true}catch(e){}
-   if(ok){try{window.UD&&UD.opened(nf.id,nf.name)}catch(e){}S.ambience(false);history.replaceState({fefc:1},'','#/edit/'+encodeURIComponent(nf.id));return route()}}}
+   if(ok){try{window.UD&&UD.opened(nf.id,nf.name)}catch(e){}S.ambience(false);if(!window.__editFrom){const _h=location.hash||'#/';window.__editFrom=/^#\/(edit|play)\//.test(_h)?'#/':_h;try{sessionStorage.fefcEditFrom=window.__editFrom}catch(e){}}history.replaceState({fefc:1},'','#/edit/'+encodeURIComponent(nf.id));return route()}}}
   play(itemOr(r[1]));return}
  if(k==='readfirst'){if(baseKey===null||baseKey!=='')renderBase('');readFirst();return}
  renderBase(location.hash);if(view==='home'||k==='')S.ambience(true)}
@@ -498,7 +523,7 @@ function restoreScroll(){const m=$('#main');
  navBack=false;
  /* Home has no #main scroll — still restore hub focus from history.state */
  if(!m||m.hidden){if(rec&&rec.focus)requestAnimationFrame(()=>applyFocusRec(rec.focus));return}
- if(!rec){m.scrollTop=0;return}
+ if(!rec){m.scrollTop=0;if(cur===FOLD.collections||view==='collections'){const mc=document.querySelector('[data-mainc]');if(mc&&(document.body.classList.contains('tv')||document.body.classList.contains('kbd')))requestAnimationFrame(()=>focusEl(mc))}return}
  const need=()=>m.scrollHeight<rec.y+m.clientHeight+40||(rec.id&&!document.querySelector('#grid [data-id="'+rec.id+'"],#arena [data-id="'+rec.id+'"]'));
  let guard=0;while(need()&&guard++<400){if(drainOne())continue;const more=document.getElementById('na-more');if(more&&!more.hidden&&more.offsetParent){more.onclick&&NA&&more.click();continue}break}
  const prev=m.style.scrollBehavior;m.style.scrollBehavior='auto';m.scrollTop=rec.y;m.style.scrollBehavior=prev;
@@ -549,13 +574,13 @@ function shufPick(scope){const pool=shufPool(scope);if(!pool.length)return null;
 function shuffle(scope){const f=shufPick(scope);if(!f){status('Nothing to shuffle yet');return}const doWarp=()=>{try{sessionStorage.fefcShufScope=scope}catch(e){}if(!window.__shufPrevHash&&location.hash&&!/^#\/play\//.test(location.hash)){window.__shufPrevHash=location.hash}window.__shufPlay=1;const targetHash='#/play/'+encodeURIComponent(f.id);if(parseH()[0]==='play'){history.replaceState({fefc:1},'',targetHash);route()}else{go(targetHash)}};if(window.FEFCHotStage){window.FEFCHotStage(doWarp)}else{doWarp()}}
 const shufBtn=scope=>`<button class="sortpill shuf-btn" data-shuffle="${esc(scope)}" title="Play a random fan edit">${SHUF_ICON}Shuffle Play</button>`;
 document.addEventListener('click',e=>{const b=e.target.closest('[data-shuffle]');if(!b)return;e.preventDefault();S.unlock&&S.unlock();shuffle(b.dataset.shuffle)});
-function render(list,title,mode){const _list=(cur===ROOT)?stripReadFirst(list):list;const fold=_list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=_list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));const showRF=cur===ROOT&&(mode==='all'||mode==='home'||!mode);
+function render(list,title,mode){const _list=(cur===ROOT)?stripSupportDocs(stripReadFirst(list)):list;const fold=_list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=_list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));const showRF=cur===ROOT&&(mode==='all'||mode==='home'||!mode);
  const _main=$('#main');viewFade(_main);$('#crumb').textContent=title;hideHome();
  $('#arena').innerHTML='';NA.top(rootVids());const isNew={};if(mode!=='collections')list.forEach(f=>{if(NA.isNew(f))isNew[f.id]=1});
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
  $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':(cur===ROOT||cur===FOLD.collections||cur===FOLD.tbc)?countsLine(cur):cur==='virtual'?`${fold.length} collections · ${fmtN(vids.filter(isVid).length)} files`:`${fold.length} ${fold.length===1?'collection':'collections'} · ${fmtN(sortCounts(cur).n)} ${sortCounts(cur).n===1?'file':'files'}`;
  const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),ck=mode==='arena'?'az':csortGet(cur),evs=csortList(vids.filter(f=>isVid(f)||isAd(f)),ck,isAd),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
- const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(rootVids(),tile,art,i=>items.get(i),typeof shufBtn==='function'?shufBtn('newarrivals'):'')}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':(cur===FOLD.collections||mode==='collections')?'collections':(cur===FOLD.tbc||underTBC(cur)||/to be catalogued/i.test(title))?'tbc':cur==='virtual'&&window.__gscope&&title===window.__gtitle?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);const _rf=(cur===ROOT&&mode!=='arena')?RF_HOME_TILE:'';g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/,'$1'+_rf)+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
+ const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(rootVids(),tile,art,i=>items.get(i),typeof shufBtn==='function'?shufBtn('newarrivals'):'')}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':(cur===FOLD.collections||mode==='collections')?'collections':(cur===FOLD.tbc||underTBC(cur)||/to be catalogued/i.test(title))?'tbc':cur==='virtual'&&window.__gscope&&title===window.__gtitle?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);const _rf=(cur===ROOT&&mode!=='arena')?(RF_HOME_TILE+SUP_HOME_TILE):'';g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/,'$1'+_rf)+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
  document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena'&&!(mode==='all'&&cur===ROOT))drain(Q,isNew);
  status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll();viewEnter(_main)}
 /* ---------- private / not-shared folders: Request Access prompt (app-side only, no requests sent) ---------- */
@@ -565,7 +590,7 @@ function privatePrompt(id,f){const g=$('#grid');if(!g)return;const own=f&&(f.own
  g.innerHTML=`<div class="priv"><div class="priv-box"><div class="priv-bar"><span>ACCESS RESTRICTED</span><i></i><b>🔒</b></div><h2>This library is private.</h2><p>Request access from the owner${own?` (<b>${esc(own)}</b>)`:''} to view it.</p><div class="priv-row"><a class="pill priv-req" href="${url}" target="_blank" rel="noopener" data-privreq="1">Request Access</a><button class="pill priv-back" type="button" data-privback="1">Back</button></div><small>Opens Google Drive, where you can ask the owner for access.</small></div></div>`;
  status('');const b=g.querySelector('.priv-req');setTimeout(()=>{try{b.focus({preventScroll:true})}catch(e){}},60)}
 document.addEventListener('click',e=>{if(e.target.closest('[data-privback]')){e.preventDefault();back(parentHash())}});
-async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(!navBack&&id!==ROOT)folderSfx(id);if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){if(/drive (403|404)/.test(e&&e.message||''))DENIED.add(id);live=false;status('');add(window._idx||[])}}
+async function open(id,mode='home'){cur=id;view=id===ROOT?mode:'folder';$('#q').value='';if(!navBack&&id!==ROOT)folderSfx(id);if(live&&!kids.has(id)){try{await loadFolder(id)}catch(e){if(/drive (403|404)/.test(e&&e.message||''))DENIED.add(id);live=false;status('');add(window._idx||[]);applyLinks(window._links)}}
  const f=items.get(id);if(id===ROOT&&mode==='home')return showHome();render(kids.get(id)||[],id===ROOT?{home:'The Fan Edit Fan Club Collection',all:'The Fan Edit Fan Club Collection',arena:'New Arrivals',collections:'Collections'}[mode]:f.name,id===ROOT?mode:'home');if(id!==ROOT&&!(kids.get(id)||[]).length&&isDenied(id))privatePrompt(id,f)}
 /* ---------- SORT (#/all) ---------- */
 const SORTS=[['az','A–Z'],['za','Z–A'],['newest','Newest'],['oldest','Oldest'],['film','Source Media'],['genre','Genre'],['size','Largest']];
@@ -573,7 +598,7 @@ function curSort(){const m=location.hash.match(/[?&]sort=([a-z]+)/);return m&&SO
 /* Main Collection layout. sections (default): every folder, then every file. mixed: the previous letter-by-letter mix. */
 function allLayout(){try{return localStorage.getItem('fefcAllLayout')==='mixed'?'mixed':'sections'}catch(e){return 'sections'}}
 let sortJob=0;
-function sortedAll(fold,vids,g,extra){fold=stripReadFirst(fold);vids=stripReadFirst(vids);const k=curSort(),layout=allLayout(),list=[...fold,...vids],nm=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
+function sortedAll(fold,vids,g,extra){fold=stripReadFirst(fold);vids=stripReadFirst(stripSupportDocs(vids));const k=curSort(),layout=allLayout(),list=[...fold,...vids],nm=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'});
  const dt=f=>NA.d(f)||'',film=f=>{const mm=meta.map&&meta.films&&meta.films[meta.map[f.id]||meta.map[target(f)]];return (mm&&mm.title)||(isFolder(f)?f.name.replace(/^\s*\d+[A-Z]?\s*-\s*/,''):parse(f.name).film)||f.name},gen=f=>{const x=isFolder(f)?(genreMap[target(f)]||{}).genres:genresOf(f);return x&&x[0]||'Uncategorized'};
  const cmp=(a,b)=>{if(k==='az')return nm(a,b);if(k==='za')return nm(b,a);if(k==='newest'||k==='oldest'){const s=k==='newest'?-1:1;return (dt(a)<dt(b)?-s:dt(a)>dt(b)?s:0)||nm(a,b)}if(k==='size')return (+b.size||0)-(+a.size||0)||nm(a,b);const x=k==='film'?film(a):gen(a),y=k==='film'?film(b):gen(b);return (x==='Uncategorized')-(y==='Uncategorized')||x.localeCompare(y,undefined,{sensitivity:'base'})||nm(a,b)};
  const layoutBtn=`<button class="sortpill${layout==='mixed'?' on':''}" data-layout="1" aria-pressed="${layout==='mixed'}" title="Mixed lists folders and files together. Off: all collections, then all files.">Mixed</button>`;
@@ -582,7 +607,7 @@ function sortedAll(fold,vids,g,extra){fold=stripReadFirst(fold);vids=stripReadFi
  /* Sections: paint every collection before the files header, so the files block cannot appear in the middle of a still-loading folder grid. */
  if(layout==='sections'){const folders=fold.slice().sort(cmp),files=vids.slice().sort(cmp);
   g.innerHTML=bar+`<div class="ol-div"><span>COLLECTIONS</span><i></i><b>${folders.length+1}</b></div><div class="sgrid folds" data-g="cols"></div>`+(files.length?'<div data-files-slot></div>':'');
-  const colEl=g.querySelector('[data-g="cols"]');if(colEl){colEl.insertAdjacentHTML('afterbegin',RF_HOME_TILE);for(let i=0;i<folders.length;i+=60)q.push([colEl,folders.slice(i,i+60)])}
+  const colEl=g.querySelector('[data-g="cols"]');if(colEl){colEl.insertAdjacentHTML('afterbegin',RF_HOME_TILE+SUP_HOME_TILE);for(let i=0;i<folders.length;i+=60)q.push([colEl,folders.slice(i,i+60)])}
   if(files.length)q.push([{files:files},[]])}
  else{let groups;
   if(k==='az'||k==='za'){list.sort(k==='az'?nm:(a,b)=>nm(b,a));const L=f=>{const c=(f.name||'').trim().charAt(0).normalize('NFD').charAt(0).toUpperCase();return /[A-Z]/.test(c)?c:'#'};const by=new Map();list.forEach(f=>{const x=L(f);if(!by.has(x))by.set(x,[]);by.get(x).push(f)});groups=[...by.entries()].map(([x,a])=>[x,a,1])}
@@ -632,9 +657,11 @@ function epWire(f,E){const box=$('#lc-eps');if(!box||!E)return;let all=false;con
  box.addEventListener('click',e=>{const a=e.target.closest('[data-epall]'),g=e.target.closest('[data-epgo]');if(a){S.chirp(3);all=!all;draw();const n=box.querySelector('[data-epall]');if(n)focusEl(n);const c=box.querySelector('.ept.cur');if(c)c.scrollIntoView({block:'nearest'})}else if(g&&g.dataset.epgo){S.click();go('#/edit/'+g.dataset.epgo)}})}
 function fileChips(f){const t=items.get(target(f))||f,g=k=>f[k]!=null?f[k]:t[k];let ext=g('ext');const mt=g('mimeType')||'';
  if(!ext){const m=(t.name||f.name).match(/\.([a-z0-9]{2,4})$/i);ext=m?m[1]:({'video/mp4':'mp4','video/x-matroska':'mkv','video/x-msvideo':'avi','video/quicktime':'mov','video/webm':'webm','video/mp2t':'ts','video/x-m4v':'m4v','video/mpeg':'mpg','video/x-ms-wmv':'wmv'}[mt]||(/^video\/(?:x-)?([a-z0-9]+)$/.exec(mt)||[])[1])}
- const size=+g('size')||0,hs=size?(size>=1e9?(size/1e9).toFixed(1)+' GB':(size/1e6).toFixed(0)+' MB'):'';
+ let size=+g('size')||0;if(!size&&window.FEX&&FEX.size){try{size=+FEX.size(target(f))||0}catch(e){}}
+ const hs=size?(size>=1e9?(size/1e9).toFixed(1)+' GB':(size/1e6).toFixed(0)+' MB'):'';
  const rm=(f.name+' '+(t.name||'')).match(/\b(4K|2160p|1080p|720p|576p|480p|360p|UHD)\b/i),res=rm?(/2160|uhd/i.test(rm[1])?'4K':rm[1].toUpperCase().replace('P','p')):'';
- const dur=g('duration')||g('durationMillis');const ds=dur?(()=>{const m=Math.round(+dur/(dur>1e5?6e4:60));return m>=60?Math.floor(m/60)+'h '+(m%60)+'m':m+'m'})():'';
+ const dur=g('duration')||g('durationMillis');let ds=dur?(()=>{const m=Math.round(+dur/(dur>1e5?6e4:60));return m>=60?Math.floor(m/60)+'h '+(m%60)+'m':m+'m'})():'';
+ if(!ds){const F=(window.FEX&&FEX.film(f.id,target(f)))||null;if(F&&F.runtime)ds=F.runtime+'m'}
  const c=[ext&&ext.toUpperCase(),hs,res,ds].filter(Boolean);return c.length?`<div class="fchips" aria-label="File info"><span class="fl">FILE</span>${c.map(x=>`<span>${esc(x)}</span>`).join('')}</div>`:''}
 /* blurred backdrop: low-res canvas upscaled by the browser (no CSS blur filter; cheap on iOS) */
 function detCover(f){let x=items.get(target(f))||f,g=0;const ids=[];while(x&&x.parent&&g++<30){ids.push(x.parent);x=items.get(x.parent)}if(f.parent)ids.unshift(f.parent);
@@ -646,7 +673,10 @@ function timeAgo(ts){if(!ts)return'';const diff=Math.max(0,Date.now()-ts),m=Math
 /* one-screen detail layout: TV and large non-touch desktops (see body.fit in style.css) */
 function fitMode(){document.body.classList.toggle('fit',document.body.classList.contains('tv')||(innerWidth>=1100&&innerHeight>=640&&!document.body.classList.contains('touch')))}
 addEventListener('resize',fitMode);
-async function details(f,push=true){fitMode();S.open();S.ambience(false);
+function refreshOpenDetails(){const d=$('#details');if(!d||d.hidden||!d.dataset.id)return;const f=items.get(d.dataset.id);if(f&&!isFolder(f))details(f,false)}
+async function details(f,push=true){fitMode();
+ const _same=$('#details')&&!$('#details').hidden&&$('#details').dataset.id===f.id;
+ if(!_same){S.open();S.ambience(false)}
  $('#bar').hidden=false;document.body.classList.add('details-open');
  if(window.NA&&NA.menuHTML)try{menu()}catch(e){}
  const b=$('#bar');if(b)document.documentElement.style.setProperty('--barh',(b.offsetHeight||56)+'px');
@@ -658,32 +688,39 @@ async function details(f,push=true){fitMode();S.open();S.ambience(false);
  const imdbId=F&&F.imdb||((old.find(r=>/^IMDb/.test(r.source))||{}).url||'').replace(/.*title\/(tt\d+).*/,'$1')||null;
  if(imdbId||F&&F.imdbRating)R.push({ico:'imdb',name:'IMDb',val:F&&F.imdbRating?F.imdbRating+'/10':'VIEW ›',sub:F&&F.imdbVotes?fmtV(F.imdbVotes)+' votes':'',url:imdbId?`https://www.imdb.com/title/${imdbId}/`:null});
  const rto=old.find(r=>/Tomatometer/.test(r.source));const rtUrl=F&&F.rt?'https://www.rottentomatoes.com/'+F.rt:rto&&rto.url;const rts=F&&F.rtScore!=null?F.rtScore+'%':rto&&rto.value;
- if(rtUrl)R.push({ico:'rt',name:'Rotten Tomatoes',val:rts||'VIEW ›',sub:rts?'Tomatometer'+(F&&F.rtAudience!=null?' · Audience '+F.rtAudience+'%':''):'',url:rtUrl});
+ if(rtUrl||rts)R.push({ico:'rt',name:'Rotten Tomatoes',val:rts||'VIEW ›',sub:rts?'Tomatometer'+(F&&F.rtAudience!=null?' · Audience '+F.rtAudience+'%':''):'',url:rtUrl||null});
  const ifdb=(meta.ifdb||{})[f.id]||(meta.ifdb||{})[id]||((old.find(r=>/FanEdit/.test(r.source))||{}).url);
  const FE=[],fer=FER[f.id]||FER[id]||{},fsc=x=>x&&x.score!=null?(+x.score).toFixed(1).replace(/\.0$/,'')+'/'+(x.scale||10):'VIEW ›',fsub=x=>x&&x.votes?fmtV(x.votes)+' vote'+(x.votes===1?'':'s'):'';
  {const x=fer.ifdb||(ifdb?{url:ifdb}:null);if(x&&x.url)FE.push({ico:'fe',name:'FanEdit.org',val:fsc(x),sub:fsub(x)||'IFDB entry',url:x.url})}
  {const mro=old.find(r=>/Movies Remastered/.test(r.source)&&(r.url||r.value)),x=fer.mrdb||(mro?{url:mro.url,score:null}:null);if(x&&x.url)FE.push({ico:'mr',name:'Movies Remastered',val:fsc(x),sub:fsub(x)||'MRDb entry',url:x.url})}
  {const x=fer.changes;if(x&&x.url)FE.push({ico:'fe',name:'Fan Edit Changes',val:x.label||(x.n!=null?x.n+' changes':'VIEW ›'),sub:x.label?'IFDB change list':(fsub(x)||'IFDB change list'),url:x.url})}
  const tr=m.trailer&&m.trailer.youtubeId?{id:m.trailer.youtubeId}:F&&F.trailer;
- const rt=R.map(r=>`<a ${r.url?`href="${esc(r.url)}" target="_blank" rel="noopener"`:''} class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')||'<p class="src">No ratings found for the source media.</p>';
+ /* Fire TV / TV: RT + IMDb as plain text; web: hyperlinks */
+ const tvPlain=document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative;
+ const rateHTML=(r,plain)=>{const inner=`<span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b>`;return (plain||!r.url)?`<span class="rr">${inner}</span>`:`<a href="${esc(r.url)}" target="_blank" rel="noopener" class="rr">${inner}</a>`};
+ const rt=R.map(r=>rateHTML(r,tvPlain)).join('')||'<p class="src">No ratings found for the source media.</p>';
+ const feRt=FE.map(r=>rateHTML(r,false)).join('');
  const T=m.title||p.raw,meta1=[film.year,F&&F.runtime?F.runtime+' min':'',F&&F.tv?'TV series':''].filter(Boolean).join(' · ');
  const PS=posters[f.id]||posters[id],PU=F&&F.fx&&F.poster&&(!PS||(meta.map&&(meta.map[f.id]||meta.map[id])))?F.poster:PS&&PS.url;
  const fn=(f.name||'').toLowerCase();let fp=fn,curF=f,gc=0;while(curF&&curF.parent&&gc++<15){curF=items.get(curF.parent);if(curF&&curF.name)fp+=' '+curF.name.toLowerCase()}
  if(f.targetId){let tF=items.get(f.targetId),gc2=0;while(tF&&gc2++<15){if(tF.name)fp+=' '+tF.name.toLowerCase();tF=tF.parent?items.get(tF.parent):null}}
  const isPurr=/purr|purassic/i.test(fp),isJura=!isPurr&&fp.includes('jurassic'),isDexter=/\bdexter\b(?!'?s?\s+lab)/i.test(fp);
- if(isPurr){if(window.S&&S.catMeow)S.catMeow();else S.fx(['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a'])}
+ if(!_same){if(isPurr){if(window.S&&S.catMeow)S.catMeow();else S.fx(['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a'])}
  else if(isJura){S.fx(['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a'])}
- else if(isDexter){S.fx(['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a'])}
+ else if(isDexter){S.fx(['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a'])}}
  $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
  <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>▶ Play</button><a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
  <div class="lc-body${PU?'':' nopo'}"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
   ${desc?`<h3 class="lc-h">Fan edit</h3><p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
+  <div id="lc-fanedit"></div>
   <h3 class="lc-h l">Source Media</h3><p><b>${esc(film.title||'Unknown')}</b>${film.year?' ('+esc(film.year)+')':''}${film.director?'<br>Directed by '+esc(film.director):''}${F&&F.genres?'<br><span class="src">'+esc(F.genres.join(' · '))+'</span>':''}${m.editor?'<br><span class="src">Fan edit by '+esc(m.editor)+'</span>':''}</p>
-  ${plot?`<p>${esc(plot)}</p>${F.wiki?`<p class="src">Plot: <a href="${esc(F.wiki)}" target="_blank" rel="noopener">Wikipedia</a></p>`:''}`:''}
+  ${plot?`<h3 class="lc-h l">Overview</h3><p class="plot">${esc(plot)}</p>${F.wiki?`<p class="src">Plot: <a href="${esc(F.wiki)}" target="_blank" rel="noopener">Wikipedia</a></p>`:''}`:''}
   <div id="lc-eps"></div>
   ${cast.length?`<h3 class="lc-h p">Cast</h3><div class="cast">${cast.map(c=>`<span>${esc(c.name)}</span>`).join('')}</div>`:''}
  </div><div>
-  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">${rt}</div>${FE.length?`<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">${FE.map(r=>`<a href="${esc(r.url)}" target="_blank" rel="noopener" class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')}</div>`:''}
+  ${FE.length?`<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">${feRt}</div>`:''}
+  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">${rt}</div>
+  <div id="lc-fileinfo-slot"></div>
   <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer${film.title?' · '+esc(film.title):''}</h3><div class="trailer">${tr?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(tr.id)}" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>`:`<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query=${encodeURIComponent((film.title||p.raw)+' '+(film.year||'')+' official trailer')}" target="_blank" rel="noopener">Search YouTube ›</a></span>`}</div>
  </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>`;
  const _det=$('#details');_det.classList.remove('leaving');_det.dataset.id=f.id;_det.classList.add('det-enter');_det.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>_det.classList.remove('det-enter')));detBackdrop(f,PU);const E=episodes(f);epWire(f,E);if(window.FEX)FEX.ready.then(()=>FEX.enhance(f,{items,target,root:ROOT},F));$('#details').scrollTop=0;const lb=$('#details .lc-body');if(lb)lb.scrollTop=0;
@@ -691,7 +728,7 @@ async function details(f,push=true){fitMode();S.open();S.ambience(false);
   $('#details').onclick=e=>{if(e.target.closest('button,a,.pill,.bigplay,.ol-tile')){if(window.S&&S.catMeow)S.catMeow();else S.fx(['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a'])}};
  }
  $('#details').querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>{S.chirp(2);const t=$('#lc-'+b.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}));
- let n=0;$('#details').querySelectorAll('.pill,.rt a,.bigplay').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)))}
+ let n=0;$('#details').querySelectorAll('.pill,.rt a,.rt .rr,.bigplay').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)))}
 let playerTimer=null,closedFor=null;
 function stopPlayerTimer(){if(playerTimer){clearTimeout(playerTimer);clearInterval(playerTimer);playerTimer=null}}
 function closePlayer(){try{stopPlayerTimer()}catch(e){}const pl=$('#player');if(pl){pl.hidden=true;pl.classList.remove('floating')}try{killFrame()}catch(e){}document.body.classList.remove('shuf-player');window.__shufPlay=0}
@@ -724,7 +761,7 @@ function play(f){
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
- const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return back('#/');S.chirp(1);go('#/play/'+f.id);return}
+ const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();S.chirp(1);go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.rfhome){S.click();readFirst();return}if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
 document.addEventListener('focusin',e=>{if(e.target.matches('.ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog'+(isTvEnv()?'':',.tk-i:not(.tk-dup)')))S.move()});
@@ -841,7 +878,10 @@ function tvReveal(m,e){const R=x=>x&&x.getClientRects().length?x.getBoundingClie
  if(r.height>bot-top||r.top<top)m.scrollTop+=r.top-top;else if(r.bottom>bot)m.scrollTop+=r.bottom-bot}
 function focusEl(e){if(!e)return;try{e.focus({preventScroll:true})}catch(err){try{e.focus()}catch(_){}}if(!e.scrollIntoView)return;const tv=document.body.classList.contains('tv')||document.body.classList.contains('firetv');const m=tv&&e.closest&&e.closest('#main');if(m&&m.scrollHeight>m.clientHeight){tvReveal(m,e);try{e.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'})}catch(_){}return}try{e.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'})}catch(_){}}
 let gbT=0;
-function goBack(){const nw=Date.now();if(nw-gbT<250)return;gbT=nw;if(closeTvMenu()){S.back();return}S.back();if(!$('#rfpanel').hidden)return rfDismiss();if(!$('#player').hidden){const fb=window.__shufPrevHash||parentHash()||'#/';window.__shufPrevHash=null;closedFor=location.hash;closePlayer();return back(fb)}back(parentHash())}
+function pulseHint(which){/* Fire TV: remote Back must light the Back control, never Home/#brand */
+ const map={back:['#hints .hb-back','#menu .mi[data-nav="up"]'],home:['#hints .hb-home','#brand'],select:['#hints .hb-sel'],menu:['#hints .hb-search','#hints .hb-menu']};
+ const sels=map[which]||[];sels.forEach(sel=>{document.querySelectorAll(sel).forEach(el=>{el.classList.add('pressed');clearTimeout(el._pulseT);el._pulseT=setTimeout(()=>el.classList.remove('pressed'),280)})})}
+function goBack(){const nw=Date.now();if(nw-gbT<250)return;gbT=nw;try{pulseHint('back')}catch(e){}if(closeTvMenu()){S.back();return}S.back();if(!$('#rfpanel').hidden)return rfDismiss();if(!$('#player').hidden){const fb=window.__shufPrevHash||parentHash()||'#/';window.__shufPrevHash=null;closedFor=location.hash;closePlayer();return back(fb)}back(parentHash())}
 document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('#q');{const it=document.getElementById('intro');if(it&&(!it.classList.contains('done')||Date.now()-(window.__ie||0)<900))return}
  const dir={37:'left',38:'up',39:'right',40:'down'}[k];
  const tvm=$('#tvmenu');if(tvm&&!tvm.hidden){if(k===10009||k===461||k===27||(k===8&&!inInput)||e.key==='GoBack'||e.key==='BrowserBack'){e.preventDefault();closeTvMenu();return}
@@ -876,7 +916,7 @@ document.addEventListener('click',()=>{tvGoalX=null},true);
 /* ---------- Top menu bar D-pad navigation (TV / keyboard) ---------- */
 let lastTile=null,lastDet=null;
 const barItems=()=>[].slice.call(document.querySelectorAll('#bar #brand,#bar .mi,#bar #tvq,#bar #q,#bar #aiq')).filter(x=>x.offsetParent&&!x.hidden&&getComputedStyle(x).display!=='none');
-const menuCurrent=()=>{const L=barItems();return document.querySelector('#menu .mi.on')||L.find(x=>x.closest('#menu'))||L[0]};
+const menuCurrent=()=>{const L=barItems();const backBtn=document.querySelector('#menu .mi[data-nav="up"]');if(backBtn)return backBtn;const on=document.querySelector('#menu .mi.on');if(on)return on;const mi=L.find(x=>x.closest&&x.closest('#menu'));return mi||null};
 const inBar=el=>el&&el.closest&&el.closest('#bar');
 const pageVisible=()=>$('#player').hidden&&$('#bar').offsetHeight>0&&($('#home').hidden||!$('#details').hidden);
 function toMenu(){const m=menuCurrent();if(m){focusEl(m);m.scrollIntoView({block:'nearest',inline:'center'});return true}return false}
@@ -915,7 +955,7 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
  if(tv&&k>=37&&k<=40){e.preventDefault();if(tvGridNav(k,a)){e.stopImmediatePropagation();return}}
  if(k===38&&tile){const r=tile.getBoundingClientRect(),above=[].slice.call(document.querySelectorAll('#arena .ol-tile,#grid .ol-tile,#grid .sortpill')).some(x=>x!==tile&&x.getClientRects().length&&x.getBoundingClientRect().bottom<=r.top+4);
   if(!above){e.preventDefault();e.stopImmediatePropagation();toMenu();return}}
- if(back&&tv&&$('#details').hidden&&$('#rfpanel').hidden&&tile){e.preventDefault();e.stopImmediatePropagation();toMenu()}},true);
+ if(back&&tv&&$('#details').hidden&&$('#rfpanel').hidden&&tile){e.preventDefault();e.stopImmediatePropagation();try{pulseHint('back')}catch(err){}goBack();return}},true);
 document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('.ol-tile');if(t)lastTile=t;if(e.target.closest&&e.target.closest('#details')&&e.target.matches&&e.target.matches(focSel()))lastDet=e.target});
 /* TV: search input becomes a 'Search' button that opens an on-screen search overlay */
 (function(){const b=document.createElement('button');b.id='tvq';b.type='button';b.className='mi tv-only';b.innerHTML='<span class="tvq-row"><svg class="tvq-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg><span>Search</span></span>';$('#bar').insertBefore(b,$('#q'));b.onclick=()=>{S.click();openSpot('')}})();
@@ -933,7 +973,7 @@ function spThumb(f){if(isFolder(f)){const pp=people[target(f)];if(pp)return /^as
 function spLocal(q){const n=spNorm(q).trim();if(!n)return[];const words=n.split(/\s+/).filter(w=>w.length>1||n.length<3),idx=spBuild(),seenT=new Set();
  const hit=s=>words.every(w=>s.includes(w))||s.includes(n);
  const titles=[],cols=[],ppl=[],peopleHits={};
- for(const r of idx){if(r.fold){if(hit(r.n)){(people[target(r.f)]?ppl:cols).push({f:r.f,sub:people[target(r.f)]?(people[target(r.f)].role==='director'?'Director':'Actor'):'Collection'})}continue}
+ for(const r of idx){if(r.fold){if(hit(r.n)){(people[target(r.f)]?ppl:cols).push({f:r.f,sub:people[target(r.f)]?(function(pp){const k=personKind(pp);return k==='ACTOR / DIRECTOR'?'Actor / Director':(k==='DIRECTOR'?'Director':'Actor')})(people[target(r.f)]):'Collection'})}continue}
   if(hit(r.n)){const k=target(r.f);if(!seenT.has(k)){seenT.add(k);titles.push({f:r.f,sub:r.year?String(r.year):'Fan edit'})}}
   r.cn.forEach((c,i)=>{if(n.length>2&&c.includes(n))(peopleHits[r.cast[i]]=peopleHits[r.cast[i]]||[]).push(r.f)});
   r.dn.forEach((c,i)=>{if(n.length>2&&c.includes(n))(peopleHits[r.dir[i]+' (director)']=peopleHits[r.dir[i]+' (director)']||[]).push(r.f)})}
@@ -1090,7 +1130,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.6';
+const HOME_VER_FALLBACK='0.8.7';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}
@@ -1129,8 +1169,10 @@ function paintTvMenu(){const el=$('#tvmenu');if(!el)return;const id=focusedMedia
   if(search)search.innerHTML=ico(SE,'Search');
   if(mute)mute.innerHTML=ico(S.muted?SX:SK,(S.muted?'Sound off':'Sound on')+' — tap to toggle')}
 if(document.body.classList.contains('tv')&&(/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent)||window.FEFCNative)){document.body.classList.add('firetv');
- const BK='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>',MN='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>',SEL='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4"/><circle cx="12" cy="12" r="4.1" fill="currentColor"/><circle cx="12" cy="12" r="1.35" fill="#1a1a1a" opacity=".35"/></svg>';
- const backI=document.querySelector('#hints .hb-back .g'),selI=document.querySelector('#hints .hb-sel .g'),menuBtn=document.querySelector('#hints .hb-search'),menuI=menuBtn&&menuBtn.querySelector('.g');
+ /* Alexa Voice Remote Gen3: Back = left-curving U-turn ↩; Select = solid center in thin D-pad ring; Home glyph = FEFC logo. */
+ const BK='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15.2 7.2h-3.4c-3.1 0-5.6 2.4-5.6 5.4s2.5 5.4 5.6 5.4h6.2"/><path fill="currentColor" d="M15.05 4.55L11.2 7.35l3.85 2.8V4.55z"/></svg>',MN='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>',SEL='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.85"/><circle cx="12" cy="12" r="4.35" fill="currentColor"/></svg>',HM='<img class="g-ftv-logo" src="assets/fefc-logo-carson.png" alt="" width="24" height="24" decoding="async">';
+ const backI=document.querySelector('#hints .hb-back .g'),selI=document.querySelector('#hints .hb-sel .g'),homeI=document.querySelector('#hints .hb-home .g'),menuBtn=document.querySelector('#hints .hb-search'),menuI=menuBtn&&menuBtn.querySelector('.g');
+ if(homeI){homeI.className='g g-ftv g-ftv-home';homeI.setAttribute('aria-hidden','true');homeI.innerHTML=HM}
  if(backI){backI.className='g g-ftv g-ftv-back';backI.setAttribute('aria-hidden','true');backI.innerHTML=BK}
  if(selI){selI.className='g g-ftv g-ftv-sel';selI.setAttribute('aria-hidden','true');selI.innerHTML=SEL}
  /* 3-line control opens Menu popup (Star / Search / Sound) — not star-direct. Web keeps Y/S/M shortcuts. */
@@ -1142,20 +1184,25 @@ document.addEventListener('keydown',()=>document.body.classList.add('kbd'),{once
 /* ---------- BOOT ---------- */
 intro();if(C.GOOGLE_API_KEY){live=true;}
 afterIntro(()=>{tmo('data/folderthumbs.json',10000).then(m=>{fthumbs=m;document.querySelectorAll('#grid .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&isFolder(f)&&!el.querySelector('img')&&!el.classList.contains('rfhome'))art(el,f)})}).catch(()=>{})});
-const reArt=()=>document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(f&&!el.querySelector('img')){if(isFolder(f)&&people[target(f)]){el.outerHTML=tile(f);const n=document.querySelector('[data-id="'+f.id+'"]');n&&art(n,f)}else art(el,f)}});
+const reArt=()=>document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').forEach(el=>{const f=items.get(el.dataset.id);if(!f)return;
+ /* Always re-apply person photos even if a folderthumb img already painted (folderthumbs often loads before people.json). */
+ if(isFolder(f)&&people[target(f)]){const id=f.id;el.outerHTML=tile(f);const n=document.querySelector('#grid [data-id="'+id+'"],#arena [data-id="'+id+'"]');n&&art(n,f);return}
+ if(!el.querySelector('img'))art(el,f)});
 afterIntro(()=>{tmo('data/posters.json',15000).then(m=>{posters=m;reArt()}).catch(()=>{});tmo('data/people.json',10000).then(m=>{people=m;reArt()}).catch(()=>{});});
 const TVB=/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||!!P.get('tv');
 /* On TV the big secondary JSON files (genres 0.5 MB, dates 1.6 MB, metadata 1.7 MB, details extras 3.7 MB) are fetched/parsed one after another after the hub is up, not all at once during startup. */
 const later=(fn,ms)=>TVB?afterIntro(()=>setTimeout(fn,ms)):fn();
-later(()=>tmo('data/genres.json',10000).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;if(!$('#home').hidden)hub();else if(/^#\/genres?\/./.test(location.hash))route()}).catch(()=>{}),1500);
+/* Genres: Fire TV previously raced a 10s timeout vs local/network JSON and .catch(()=>{}) left genreMap={} → FEFCGenres hub stuck on "Loading genres…" forever. Load from bundled/local URL with a long TV timeout, retry once, and surface fail+retry UI. */
+window.loadGenres=(force)=>{if(window._genresP&&!force)return window._genresP;const ms=isTvEnv()?60000:20000;const once=()=>tmo('data/genres.json',ms).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;try{if(window.FEFCGenres&&FEFCGenres.loaded)FEFCGenres.loaded()}catch(e){}if(!$('#home').hidden)hub();else if(/^#\/genres?\/./.test(location.hash))route();return g});window._genresP=once().catch(e=>{console.warn('genres',e);return once()}).then(g=>{window._genresP=Promise.resolve(g);return g},e=>{window._genresP=null;try{if(window.FEFCGenres&&FEFCGenres.fail)FEFCGenres.fail(e&&e.message||e)}catch(err){}throw e});return window._genresP};
+later(()=>window.loadGenres(),isTvEnv()?400:1500);
 afterIntro(()=>{tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});});
 later(()=>tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));if(!$('#home').hidden)hub();else if(/^#\/(newarrivals|arena|folder)/.test(location.hash))route()}).catch(e=>console.warn(e)),3000);
-later(()=>tmo('data/metadata.json',8000).then(m=>meta=m).catch(e=>console.warn(e)),5000);later(()=>{const sx=document.createElement('script');sx.src='details-extra.js';document.head.appendChild(sx)},8000);
+later(()=>tmo('data/metadata.json',8000).then(m=>{meta=m;refreshOpenDetails()}).catch(e=>console.warn(e)),isTvEnv()?5000:800);later(()=>{const sx=document.createElement('script');sx.src='details-extra.js';sx.onload=()=>{if(window.FEX)FEX.ready.then(()=>refreshOpenDetails()).catch(()=>{})};document.head.appendChild(sx)},isTvEnv()?8000:1200);
 /* Prefetch the 6.7MB index during the TV CSS intro (no canvas). Longer timeout + one retry — Fire TV WebView often exceeds 15s download/parse and was leaving every hub count at 0. */
 const idxMs=isTvEnv()?90000:30000;
 const idxFetch=()=>tmo('data/index.json',idxMs).catch(e=>{console.warn('index retry',e);return tmo('data/index.json',idxMs)});
 const idxP=(isTvEnv()||document.body.classList.contains('tvintro'))?idxFetch():null;
-afterIntro(()=>{(idxP||idxFetch()).then(d=>{window._idx=d.items;if(!live)add(d.items);if(!live)tmo('data/links.json',30000).then(L=>{for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(()=>{});if(d.partial!==false&&!live)tmo('data/index.interim.json',30000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
+afterIntro(()=>{(idxP||idxFetch()).then(async d=>{window._idx=d.items;window._links=d.links||window._links||null;if(!live){add(d.items);applyLinks(window._links);if(!window._links){try{window._links=await tmo('data/links.json',30000);applyLinks(window._links)}catch(e){console.warn('links',e)}}else{tmo('data/links.json',30000).then(L=>{window._links=L;applyLinks(L);if(/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash))route();else if(!$('#home').hidden)hub()}).catch(e=>console.warn('links',e))}}if(d.partial!==false&&!live)tmo('data/index.interim.json',30000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));applyLinks(window._links);window._idx=Array.from(items.values());route()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{route();
  if(P.get('focus')){setTimeout(()=>{document.body.classList.add('kbd');const t=document.querySelectorAll('.ol-tile,.hb')[+P.get('focus')];if(t)focusEl(t)},300)}
  const e=P.get('edit');if(e)go('#/edit/'+e);const pp=P.get('play');if(pp)go('#/play/'+pp);if(P.get('readfirst'))go('#/readfirst')});});
 $('#back').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();goBack()});

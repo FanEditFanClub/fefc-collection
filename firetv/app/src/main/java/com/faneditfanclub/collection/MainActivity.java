@@ -28,6 +28,7 @@ import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebStorage;
@@ -39,8 +40,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * Minimal Android TV / Fire TV wrapper around the live FEFC Collection web app.
- * It always loads BuildConfig.START_URL, so site changes show up without a reinstall.
+ * Fire TV wrapper: loads START_URL (same origin) while shouldInterceptRequest serves
+ * bundled www/ assets (shell, art, sfx, tile clips, intro) locally. Full fan edits stream.
  */
 public class MainActivity extends Activity {
     private static final String HOST = "collection.faneditfanclub.com";
@@ -55,6 +56,7 @@ public class MainActivity extends Activity {
     private long lastBack;
     private Chrome chrome;
     private Updater updater;
+    private LocalAssets localAssets;
     private final Handler ui = new Handler(Looper.getMainLooper());
 
     @Override
@@ -90,10 +92,12 @@ public class MainActivity extends Activity {
         web.setWebChromeClient(chrome);
         if (b != null) web.restoreState(b); else load();
         web.requestFocus();
+        localAssets = new LocalAssets(this);
         updater = new Updater(this);
         if (b == null) {
             // Fetch version.json now, in parallel with the site intro. The dialog waits until the intro is gone.
             updater.prefetch();
+            localAssets.refreshDataInBackground();
             waitForIntroThenReveal(0);
         }
     }
@@ -250,6 +254,17 @@ public class MainActivity extends Activity {
         @Override
         public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {
             return handleUrl(r.getUrl());
+        }
+
+        @Override
+        public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
+            if (r == null || localAssets == null) return super.shouldInterceptRequest(v, r);
+            if (!"GET".equalsIgnoreCase(r.getMethod())) return super.shouldInterceptRequest(v, r);
+            try {
+                WebResourceResponse local = localAssets.open(r.getUrl());
+                if (local != null) return local;
+            } catch (Exception ignored) {}
+            return super.shouldInterceptRequest(v, r);
         }
 
         @Override

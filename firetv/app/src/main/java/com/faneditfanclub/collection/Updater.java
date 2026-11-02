@@ -101,15 +101,25 @@ final class Updater {
         deliver(prefetched, manual);
     }
 
-    /** @param manual true = the user asked (tell them when there is nothing new); false = silent check. */
+    /**
+     * @param manual true = the user asked (tell them when there is nothing new); false = silent check.
+     * Manual checks always re-fetch version.json. Reusing the launch prefetch made a long-lived
+     * process report "latest" after a newer build was published (Carson on 0.8.5 / vc 13 after 0.8.6 shipped).
+     */
     void check(final boolean manual) {
         if (!manual) { startFetch(false); return; }
         if (prefetching) { manualPending = true; return; }
-        if (prefetchDone) {
-            if (launchSequence && !introCleared) { manualWaiting = true; return; }
-            deliver(prefetched, true);
+        if (launchSequence && !introCleared) {
+            // Hold the dialog until the intro ends; kick a fresh fetch if launch prefetch already finished.
+            manualWaiting = true;
+            if (!prefetchDone) startFetch(true);
+            else {
+                prefetchDone = false;
+                startFetch(true);
+            }
             return;
         }
+        // Always hit the network for My List → Check for updates.
         startFetch(true);
     }
 

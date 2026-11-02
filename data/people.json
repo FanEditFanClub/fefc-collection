@@ -15,7 +15,11 @@
 "license": "CC BY-SA 2.0",
 "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
 "original": "2925x4225"
-}
+},
+"roles": [
+"actor",
+"director"
+]
 },
 "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq": {
 "name": "Nicolas Cage",
@@ -123,7 +127,11 @@
 "license": "CC BY-SA 3.0",
 "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
 "original": "2714x1791"
-}
+},
+"roles": [
+"actor",
+"director"
+]
 },
 "1sBe2LolQsUBYKe-rFAg7eT44OMJjRJIO": {
 "name": "Adam Sandler",
@@ -231,7 +239,11 @@
 "license": "CC BY-SA 2.0",
 "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
 "original": "5616x3744"
-}
+},
+"roles": [
+"actor",
+"director"
+]
 },
 "10PYTtlZVDJMlxIuPrtcpkaeRUrplGf04": {
 "name": "Bruce Willis",
@@ -303,7 +315,11 @@
 "license": "CC BY-SA 2.0",
 "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
 "original": "5760x3840"
-}
+},
+"roles": [
+"actor",
+"director"
+]
 },
 "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2": {
 "name": "Roland Emmerich",

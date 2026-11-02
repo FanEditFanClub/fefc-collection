@@ -4,6 +4,12 @@ For each known folder, find a public non-black thumbnail of a video inside it (s
 import re,json,io,html,os,urllib.request,concurrent.futures as cf
 from PIL import Image,ImageStat
 UA={'User-Agent':'Mozilla/5.0'};D=os.path.join(os.path.dirname(__file__),'..','data')
+# Never write actor/director person-folder thumbs — people.json photos own those tiles.
+PEOPLE_SKIP=set()
+try:
+    PEOPLE_SKIP=set(json.load(open(os.path.join(D,'people.json'))))
+except Exception:
+    pass
 ROOT='1kGaeK1unqWD1VOl3-DGWLAxISBhDR3cg'
 SEED=[ROOT,'1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB','1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS','1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib','1503Wl56hzRppaIFcQisvQksOaeYOEjnk']
 E_=re.compile(r'<a href="https://drive\.google\.com/(drive/folders|file/d)/([\w-]+)[^"]*"[^>]*>.*?flip-entry-title">([^<]*)<',re.S)
@@ -1092,6 +1098,8 @@ COVER_MANUAL={
 "1Vm8fQF42MJGwshe8M2rVTht1XQwA6ozL":"assets/covers/getaway.jpg",
 # Alan Wake Promo Media: was Live Teaser mp4 frame
 "16xekfpYMsmH23Ny6CUUlRzgOzOspI0b8":"assets/covers/alan-wake.jpg",
+# Stephen King: local Comicon/title cover (cache-bust Drive Castle Rock frame)
+"1GK7SeVADkGKr-cia9DdXuT0FIH5I8_W3":"assets/covers/stephen-king.jpg",
 }
 def covers(force=False):
     os.makedirs(os.path.join(D,'..','assets','covers'),exist_ok=True)
@@ -1119,7 +1127,7 @@ folders.update({s:'seed' for s in SEED})
 out={}
 with cf.ThreadPoolExecutor(8) as ex:
     for n,(fid,t) in enumerate(zip(folders,ex.map(thumb,list(folders)))):
-        if t:out[fid]=t
+        if t and fid not in PEOPLE_SKIP:out[fid]=t
         if n%10==0:
             json.dump(out,open(os.path.join(D,'folderthumbs.json'),'w'));print('progress',n,'/',len(folders),'thumbs',len(out),flush=True)
 json.dump(out,open(os.path.join(D,'folderthumbs.json'),'w'))

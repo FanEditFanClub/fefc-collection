@@ -42,6 +42,17 @@ var __spreadValues = (a, b) => {
       if (!a.some((x) => x.id === f.id)) a.push(f);
     }
   }
+  function applyLinks(L) {
+    if (!L) return;
+    for (const p in L) {
+      if (!kids.has(p)) kids.set(p, []);
+      const a = kids.get(p);
+      for (const id of L[p]) {
+        const f = items.get(id);
+        if (f && !a.includes(f)) a.push(f);
+      }
+    }
+  }
   function parse(n) {
     const base = n.replace(/\.[a-z0-9]{2,4}$/i, "");
     const parts = base.split(" - ").map((s) => s.trim()).filter((s) => !/^fan edit$/i.test(s));
@@ -479,6 +490,14 @@ var __spreadValues = (a, b) => {
     const t = f.targetId && items.get(f.targetId);
     return SUPRE.test(f.name || "") || !!(t && SUPRE.test(t.name || ""));
   }
+  function personKind(pp) {
+    if (!pp) return "";
+    const R = pp.roles || (pp.role ? [pp.role] : []);
+    const hasA = R.includes("actor") || pp.role === "actor";
+    const hasD = R.includes("director") || pp.role === "director";
+    if (hasA && hasD) return "ACTOR / DIRECTOR";
+    return hasD ? "DIRECTOR" : "ACTOR";
+  }
   function tile(f, live_) {
     const fold = isFolder(f), p = parse(f.name), aud = !fold && !isVid(f) && isAud(f), vid = !fold && (isVid(f) || aud), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
@@ -491,13 +510,13 @@ var __spreadValues = (a, b) => {
     if (fold && target(f) === ROOT && f.parent === FOLD.collections) return '<button class="ol-tile mainc" data-id="'.concat(f.id, '" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">').concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
     if (!fold && !vid && isSupportDoc(f)) return '<button class="ol-tile sup" data-id="'.concat(f.id, '" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small></button>');
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
-    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? pp.role === "director" ? "DIRECTOR" : "ACTOR" : fold ? "" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
+    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? personKind(pp) : fold ? "" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<span class="star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-pressed="').concat(on, '" aria-label="').concat(on ? "Remove from My List" : "Add to My List", '" title="').concat(on ? "Starred" : "Star", ' (S)">').concat(on ? "\u2605" : "\u2606", "</span>");
     })() : "").concat(vid ? '<div class="pcap '.concat((() => {
       const n = p.raw.length;
       return n > 90 ? "c4" : n > 55 ? "c3" : n > 30 ? "c2" : "c1";
-    })(), '">').concat(esc(p.raw), "</div>") : "").concat(fold && typeof isDenied === "function" && isDenied(target(f)) ? '<span class="lockb" title="Private library" aria-label="Private">\u{1F512}</span>' : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw), "</div></button>");
+    })(), '">').concat(esc(p.raw), "</div>") : "").concat(fold && typeof isDenied === "function" && isDenied(target(f)) ? '<span class="lockb" title="Private library" aria-label="Private">\u{1F512}</span>' : "", '<div class="nm">').concat(esc(fold ? f.name : p.raw || f.name || "Untitled"), "</div></button>");
   }
   const THUMBO = /* @__PURE__ */ new Map();
   function thumbUrl(u) {
@@ -527,6 +546,7 @@ var __spreadValues = (a, b) => {
     if (!f || el.classList.contains("sup") || el.classList.contains("mainc") || el.classList.contains("rfhome") || el.dataset.rfhome) return;
     let src = null;
     const p = parse(f.name);
+    const person = isFolder(f) && (people[target(f)] || f.parent === FOLD.actors || f.parent === FOLD.directors);
     if (isFolder(f) && people[target(f)]) src = people[target(f)].url;
     else if (!isFolder(f) && isMedia(f)) {
       const ps = posters[f.id] || posters[target(f)] || (isAud(f) ? (() => {
@@ -540,7 +560,7 @@ var __spreadValues = (a, b) => {
       if (!ps) return;
       src = thumbUrl(ps.url);
       el.classList.add("has-poster");
-    } else if (isFolder(f)) {
+    } else if (isFolder(f) && !person) {
       const fid = target(f);
       let t = fthumbs[fid];
       if (!t) {
@@ -561,8 +581,9 @@ var __spreadValues = (a, b) => {
         }
       }
       if (t) src = t.startsWith("assets/") ? t : "https://drive.google.com/thumbnail?sz=w640&id=" + t;
+    } else if (person && !src) {
     } else if (f.mimeType === "application/octet-stream" && !f.targetId) src = null;
-    else src = f.thumb ? f.thumb.replace(/=s\d+$/, "=s640") : "https://drive.google.com/thumbnail?sz=w640&id=" + target(f);
+    else if (!person) src = f.thumb ? f.thumb.replace(/=s\d+$/, "=s640") : "https://drive.google.com/thumbnail?sz=w640&id=" + target(f);
     if (!src) {
       const r = await tmdbFind(isFolder(f) ? f.name : p.film, p.year);
       if (r) src = "https://image.tmdb.org/t/p/w780" + (r.backdrop_path || r.poster_path);
@@ -1362,6 +1383,7 @@ var __spreadValues = (a, b) => {
     }
     if (k === "genres") {
       showHome(true);
+      if (!Object.keys(genreMap).length && window.loadGenres) window.loadGenres();
       if (window.FEFCGenres && FEFCGenres.hub) FEFCGenres.hub({ get genreMap() {
         return genreMap;
       }, order: GORDER, items, isVid, esc });
@@ -1444,10 +1466,6 @@ var __spreadValues = (a, b) => {
     }
     if (k === "back") {
       if (closeTvMenu()) return;
-      if (history.length > 1 && location.hash && location.hash !== "#/") {
-        S.back();
-        return history.back();
-      }
       return goBack();
     }
     if (k === "select") {
@@ -1554,8 +1572,12 @@ var __spreadValues = (a, b) => {
     return null;
   }
   const RF_HOME_TILE = '<button class="ol-tile fold rfhome" data-rfhome="1" data-hub="readfirst" aria-label="Read First"><span class="rf-t">Read First</span></button>';
+  const SUP_HOME_TILE = '<button class="ol-tile fold sup" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small></button>';
   function stripReadFirst(list) {
     return list.filter((f) => !isReadFirst(f));
+  }
+  function stripSupportDocs(list) {
+    return list.filter((f) => !isSupportDoc(f));
   }
   function openDocTile(f) {
     const k = rfKind(f);
@@ -1763,6 +1785,14 @@ var __spreadValues = (a, b) => {
   function go(h) {
     captureNavState();
     navBack = false;
+    const cur2 = location.hash || "#/";
+    if (/^#\/edit\//.test(h) && !/^#\/(edit|play)\//.test(cur2)) {
+      window.__editFrom = cur2;
+      try {
+        sessionStorage.fefcEditFrom = cur2;
+      } catch (e) {
+      }
+    }
     const m = h.match(/^#\/folder\/([^/?]+)/);
     if (m) folderSfx(decodeURIComponent(m[1]));
     if (location.hash === h) return route();
@@ -1788,7 +1818,22 @@ var __spreadValues = (a, b) => {
   function parentHash() {
     const r = parseH();
     if (r[0] === "play") return window.__shufPrevHash || (r[1] ? "#/edit/" + encodeURIComponent(r[1]) : "#/");
-    if (r[0] === "edit" || r[0] === "readfirst" || r[0] === "search" || r[0] === "mylist" || r[0] === "people" || r[0] === "supportus" || r[0] === "support") return "#/";
+    if (r[0] === "edit") {
+      let from = window.__editFrom;
+      try {
+        if (!from) from = sessionStorage.fefcEditFrom;
+      } catch (e) {
+      }
+      if (from && from !== location.hash && !/^#\/(edit|play)\/?/.test(from)) return from;
+      const f = items.get(r[1]);
+      if (f && f.parent) {
+        if (f.parent === ROOT) return "#/all";
+        if (f.parent === FOLD.actors || f.parent === FOLD.directors) return "#/people";
+        if (items.has(f.parent)) return "#/folder/" + f.parent;
+      }
+      return "#/";
+    }
+    if (r[0] === "readfirst" || r[0] === "search" || r[0] === "mylist" || r[0] === "people" || r[0] === "supportus" || r[0] === "support") return "#/";
     if (r[0] === "folder") {
       const f = items.get(r[1]);
       if (f && (f.parent === FOLD.actors || f.parent === FOLD.directors)) return "#/people";
@@ -1831,10 +1876,18 @@ var __spreadValues = (a, b) => {
     }
     if (k !== "readfirst") closeRF();
     if (k === "edit") {
-      details(itemOr(r[1]), false);
+      const _ef = itemOr(r[1]);
+      details(_ef, false);
       try {
-        warmStream(itemOr(r[1]));
+        warmStream(_ef);
       } catch (e) {
+      }
+      if (!navBack) {
+        try {
+          const pid = _ef && _ef.parent;
+          if (pid) folderSfx(pid);
+        } catch (e) {
+        }
       }
       if (baseKey === null) renderBase("");
       return;
@@ -1862,6 +1915,14 @@ var __spreadValues = (a, b) => {
             } catch (e) {
             }
             S.ambience(false);
+            if (!window.__editFrom) {
+              const _h = location.hash || "#/";
+              window.__editFrom = /^#\/(edit|play)\//.test(_h) ? "#/" : _h;
+              try {
+                sessionStorage.fefcEditFrom = window.__editFrom;
+              } catch (e) {
+              }
+            }
             history.replaceState({ fefc: 1 }, "", "#/edit/" + encodeURIComponent(nf.id));
             return route();
           }
@@ -2066,6 +2127,10 @@ var __spreadValues = (a, b) => {
     }
     if (!rec) {
       m.scrollTop = 0;
+      if (cur === FOLD.collections || view === "collections") {
+        const mc = document.querySelector("[data-mainc]");
+        if (mc && (document.body.classList.contains("tv") || document.body.classList.contains("kbd"))) requestAnimationFrame(() => focusEl(mc));
+      }
       return;
     }
     const need = () => m.scrollHeight < rec.y + m.clientHeight + 40 || rec.id && !document.querySelector('#grid [data-id="' + rec.id + '"],#arena [data-id="' + rec.id + '"]');
@@ -2345,7 +2410,7 @@ var __spreadValues = (a, b) => {
     shuffle(b.dataset.shuffle);
   });
   function render(list, title, mode) {
-    const _list = cur === ROOT ? stripReadFirst(list) : list;
+    const _list = cur === ROOT ? stripSupportDocs(stripReadFirst(list)) : list;
     const fold = _list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = _list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
     const showRF = cur === ROOT && (mode === "all" || mode === "home" || !mode);
     const _main = $("#main");
@@ -2377,7 +2442,7 @@ var __spreadValues = (a, b) => {
       g.className = "sectioned";
       const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === FOLD.tbc || underTBC(cur) || /to be catalogued/i.test(title) ? "tbc" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
-      const _rf = cur === ROOT && mode !== "arena" ? RF_HOME_TILE : "";
+      const _rf = cur === ROOT && mode !== "arena" ? RF_HOME_TILE + SUP_HOME_TILE : "";
       g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/, "$1" + _rf) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach(lazyArt);
@@ -2434,6 +2499,7 @@ var __spreadValues = (a, b) => {
         live = false;
         status("");
         add(window._idx || []);
+        applyLinks(window._links);
       }
     }
     const f = items.get(id);
@@ -2456,7 +2522,7 @@ var __spreadValues = (a, b) => {
   let sortJob = 0;
   function sortedAll(fold, vids2, g, extra) {
     fold = stripReadFirst(fold);
-    vids2 = stripReadFirst(vids2);
+    vids2 = stripReadFirst(stripSupportDocs(vids2));
     const k = curSort(), layout = allLayout(), list = [...fold, ...vids2], nm = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" });
     const dt = (f) => NA.d(f) || "", film = (f) => {
       const mm = meta.map && meta.films && meta.films[meta.map[f.id] || meta.map[target(f)]];
@@ -2484,7 +2550,7 @@ var __spreadValues = (a, b) => {
       g.innerHTML = bar + '<div class="ol-div"><span>COLLECTIONS</span><i></i><b>'.concat(folders.length + 1, '</b></div><div class="sgrid folds" data-g="cols"></div>') + (files.length ? "<div data-files-slot></div>" : "");
       const colEl = g.querySelector('[data-g="cols"]');
       if (colEl) {
-        colEl.insertAdjacentHTML("afterbegin", RF_HOME_TILE);
+        colEl.insertAdjacentHTML("afterbegin", RF_HOME_TILE + SUP_HOME_TILE);
         for (let i = 0; i < folders.length; i += 60) q.push([colEl, folders.slice(i, i + 60)]);
       }
       if (files.length) q.push([{ files }, []]);
@@ -2720,13 +2786,24 @@ var __spreadValues = (a, b) => {
       const m = (t.name || f.name).match(/\.([a-z0-9]{2,4})$/i);
       ext = m ? m[1] : { "video/mp4": "mp4", "video/x-matroska": "mkv", "video/x-msvideo": "avi", "video/quicktime": "mov", "video/webm": "webm", "video/mp2t": "ts", "video/x-m4v": "m4v", "video/mpeg": "mpg", "video/x-ms-wmv": "wmv" }[mt] || (/^video\/(?:x-)?([a-z0-9]+)$/.exec(mt) || [])[1];
     }
-    const size = +g("size") || 0, hs = size ? size >= 1e9 ? (size / 1e9).toFixed(1) + " GB" : (size / 1e6).toFixed(0) + " MB" : "";
+    let size = +g("size") || 0;
+    if (!size && window.FEX && FEX.size) {
+      try {
+        size = +FEX.size(target(f)) || 0;
+      } catch (e) {
+      }
+    }
+    const hs = size ? size >= 1e9 ? (size / 1e9).toFixed(1) + " GB" : (size / 1e6).toFixed(0) + " MB" : "";
     const rm = (f.name + " " + (t.name || "")).match(/\b(4K|2160p|1080p|720p|576p|480p|360p|UHD)\b/i), res = rm ? /2160|uhd/i.test(rm[1]) ? "4K" : rm[1].toUpperCase().replace("P", "p") : "";
     const dur = g("duration") || g("durationMillis");
-    const ds = dur ? (() => {
+    let ds = dur ? (() => {
       const m = Math.round(+dur / (dur > 1e5 ? 6e4 : 60));
       return m >= 60 ? Math.floor(m / 60) + "h " + m % 60 + "m" : m + "m";
     })() : "";
+    if (!ds) {
+      const F2 = window.FEX && FEX.film(f.id, target(f)) || null;
+      if (F2 && F2.runtime) ds = F2.runtime + "m";
+    }
     const c = [ext && ext.toUpperCase(), hs, res, ds].filter(Boolean);
     return c.length ? '<div class="fchips" aria-label="File info"><span class="fl">FILE</span>'.concat(c.map((x) => "<span>".concat(esc(x), "</span>")).join(""), "</div>") : "";
   }
@@ -2789,10 +2866,19 @@ var __spreadValues = (a, b) => {
     document.body.classList.toggle("fit", document.body.classList.contains("tv") || innerWidth >= 1100 && innerHeight >= 640 && !document.body.classList.contains("touch"));
   }
   addEventListener("resize", fitMode);
+  function refreshOpenDetails() {
+    const d = $("#details");
+    if (!d || d.hidden || !d.dataset.id) return;
+    const f = items.get(d.dataset.id);
+    if (f && !isFolder(f)) details(f, false);
+  }
   async function details(f, push = true) {
     fitMode();
-    S.open();
-    S.ambience(false);
+    const _same = $("#details") && !$("#details").hidden && $("#details").dataset.id === f.id;
+    if (!_same) {
+      S.open();
+      S.ambience(false);
+    }
     $("#bar").hidden = false;
     document.body.classList.add("details-open");
     if (window.NA && NA.menuHTML) try {
@@ -2811,7 +2897,7 @@ var __spreadValues = (a, b) => {
     const rto = old.find((r) => /Tomatometer/.test(r.source));
     const rtUrl = F2 && F2.rt ? "https://www.rottentomatoes.com/" + F2.rt : rto && rto.url;
     const rts = F2 && F2.rtScore != null ? F2.rtScore + "%" : rto && rto.value;
-    if (rtUrl) R.push({ ico: "rt", name: "Rotten Tomatoes", val: rts || "VIEW \u203A", sub: rts ? "Tomatometer" + (F2 && F2.rtAudience != null ? " \xB7 Audience " + F2.rtAudience + "%" : "") : "", url: rtUrl });
+    if (rtUrl || rts) R.push({ ico: "rt", name: "Rotten Tomatoes", val: rts || "VIEW \u203A", sub: rts ? "Tomatometer" + (F2 && F2.rtAudience != null ? " \xB7 Audience " + F2.rtAudience + "%" : "") : "", url: rtUrl || null });
     const ifdb = (meta.ifdb || {})[f.id] || (meta.ifdb || {})[id] || (old.find((r) => /FanEdit/.test(r.source)) || {}).url;
     const FE = [], fer = FER[f.id] || FER[id] || {}, fsc = (x) => x && x.score != null ? (+x.score).toFixed(1).replace(/\.0$/, "") + "/" + (x.scale || 10) : "VIEW \u203A", fsub = (x) => x && x.votes ? fmtV(x.votes) + " vote" + (x.votes === 1 ? "" : "s") : "";
     {
@@ -2827,7 +2913,13 @@ var __spreadValues = (a, b) => {
       if (x && x.url) FE.push({ ico: "fe", name: "Fan Edit Changes", val: x.label || (x.n != null ? x.n + " changes" : "VIEW \u203A"), sub: x.label ? "IFDB change list" : fsub(x) || "IFDB change list", url: x.url });
     }
     const tr = m.trailer && m.trailer.youtubeId ? { id: m.trailer.youtubeId } : F2 && F2.trailer;
-    const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source media.</p>';
+    const tvPlain = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative;
+    const rateHTML = (r, plain) => {
+      const inner = '<span class="rn">'.concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b>");
+      return plain || !r.url ? '<span class="rr">'.concat(inner, "</span>") : '<a href="'.concat(esc(r.url), '" target="_blank" rel="noopener" class="rr">').concat(inner, "</a>");
+    };
+    const rt = R.map((r) => rateHTML(r, tvPlain)).join("") || '<p class="src">No ratings found for the source media.</p>';
+    const feRt = FE.map((r) => rateHTML(r, false)).join("");
     const T = m.title || p.raw, meta1 = [film.year, F2 && F2.runtime ? F2.runtime + " min" : "", F2 && F2.tv ? "TV series" : ""].filter(Boolean).join(" \xB7 ");
     const PS = posters[f.id] || posters[id], PU = F2 && F2.fx && F2.poster && (!PS || meta.map && (meta.map[f.id] || meta.map[id])) ? F2.poster : PS && PS.url;
     const fn = (f.name || "").toLowerCase();
@@ -2844,18 +2936,20 @@ var __spreadValues = (a, b) => {
       }
     }
     const isPurr = /purr|purassic/i.test(fp), isJura = !isPurr && fp.includes("jurassic"), isDexter = /\bdexter\b(?!'?s?\s+lab)/i.test(fp);
-    if (isPurr) {
-      if (window.S && S.catMeow) S.catMeow();
-      else S.fx(["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"]);
-    } else if (isJura) {
-      S.fx(["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"]);
-    } else if (isDexter) {
-      S.fx(["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"]);
+    if (!_same) {
+      if (isPurr) {
+        if (window.S && S.catMeow) S.catMeow();
+        else S.fx(["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"]);
+      } else if (isJura) {
+        S.fx(["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"]);
+      } else if (isDexter) {
+        S.fx(["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"]);
+      }
     }
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button><a class="pill p3" href="https://drive.google.com/file/d/'.concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, "</div>").concat(FE.length ? '<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">'.concat(FE.map((r) => '<a href="'.concat(esc(r.url), '" target="_blank" rel="noopener" class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join(""), "</div>") : "", '\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <div id="lc-fanedit"></div>\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? '<h3 class="lc-h l">Overview</h3><p class="plot">'.concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", "\n </div><div>\n  ").concat(FE.length ? '<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">'.concat(feRt, "</div>") : "", '\n  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">').concat(rt, '</div>\n  <div id="lc-fileinfo-slot"></div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     const _det = $("#details");
     _det.classList.remove("leaving");
     _det.dataset.id = f.id;
@@ -2883,7 +2977,7 @@ var __spreadValues = (a, b) => {
       if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
     }));
     let n = 0;
-    $("#details").querySelectorAll(".pill,.rt a,.bigplay").forEach((el) => el.addEventListener("pointerenter", () => S.chirp(n++)));
+    $("#details").querySelectorAll(".pill,.rt a,.rt .rr,.bigplay").forEach((el) => el.addEventListener("pointerenter", () => S.chirp(n++)));
   }
   let playerTimer = null, closedFor = null;
   function stopPlayerTimer() {
@@ -3074,7 +3168,7 @@ var __spreadValues = (a, b) => {
     const act = e.target.closest("[data-act]");
     if (act) {
       const f = items.get($("#details").dataset.id);
-      if (act.dataset.act === "back") return back("#/");
+      if (act.dataset.act === "back") return goBack();
       S.chirp(1);
       go("#/play/" + f.id);
       return;
@@ -3334,10 +3428,25 @@ var __spreadValues = (a, b) => {
     }
   }
   let gbT = 0;
+  function pulseHint(which) {
+    const map = { back: ["#hints .hb-back", '#menu .mi[data-nav="up"]'], home: ["#hints .hb-home", "#brand"], select: ["#hints .hb-sel"], menu: ["#hints .hb-search", "#hints .hb-menu"] };
+    const sels = map[which] || [];
+    sels.forEach((sel) => {
+      document.querySelectorAll(sel).forEach((el) => {
+        el.classList.add("pressed");
+        clearTimeout(el._pulseT);
+        el._pulseT = setTimeout(() => el.classList.remove("pressed"), 280);
+      });
+    });
+  }
   function goBack() {
     const nw = Date.now();
     if (nw - gbT < 250) return;
     gbT = nw;
+    try {
+      pulseHint("back");
+    } catch (e) {
+    }
     if (closeTvMenu()) {
       S.back();
       return;
@@ -3516,7 +3625,12 @@ var __spreadValues = (a, b) => {
   const barItems = () => [].slice.call(document.querySelectorAll("#bar #brand,#bar .mi,#bar #tvq,#bar #q,#bar #aiq")).filter((x) => x.offsetParent && !x.hidden && getComputedStyle(x).display !== "none");
   const menuCurrent = () => {
     const L = barItems();
-    return document.querySelector("#menu .mi.on") || L.find((x) => x.closest("#menu")) || L[0];
+    const backBtn = document.querySelector('#menu .mi[data-nav="up"]');
+    if (backBtn) return backBtn;
+    const on = document.querySelector("#menu .mi.on");
+    if (on) return on;
+    const mi = L.find((x) => x.closest && x.closest("#menu"));
+    return mi || null;
   };
   const inBar = (el) => el && el.closest && el.closest("#bar");
   const pageVisible = () => $("#player").hidden && $("#bar").offsetHeight > 0 && ($("#home").hidden || !$("#details").hidden);
@@ -3679,7 +3793,12 @@ var __spreadValues = (a, b) => {
     if (back2 && tv && $("#details").hidden && $("#rfpanel").hidden && tile2) {
       e.preventDefault();
       e.stopImmediatePropagation();
-      toMenu();
+      try {
+        pulseHint("back");
+      } catch (err) {
+      }
+      goBack();
+      return;
     }
   }, true);
   document.addEventListener("focusin", (e) => {
@@ -3736,7 +3855,10 @@ var __spreadValues = (a, b) => {
     for (const r of idx) {
       if (r.fold) {
         if (hit(r.n)) {
-          (people[target(r.f)] ? ppl : cols).push({ f: r.f, sub: people[target(r.f)] ? people[target(r.f)].role === "director" ? "Director" : "Actor" : "Collection" });
+          (people[target(r.f)] ? ppl : cols).push({ f: r.f, sub: people[target(r.f)] ? function(pp) {
+            const k = personKind(pp);
+            return k === "ACTOR / DIRECTOR" ? "Actor / Director" : k === "DIRECTOR" ? "Director" : "Actor";
+          }(people[target(r.f)]) : "Collection" });
         }
         continue;
       }
@@ -4159,7 +4281,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.6";
+  const HOME_VER_FALLBACK = "0.8.7";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4293,8 +4415,13 @@ var __spreadValues = (a, b) => {
   }
   if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
     document.body.classList.add("firetv");
-    const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62C8.77 11.22 10.54 10.5 12.5 10.5c3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>', SEL = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4"/><circle cx="12" cy="12" r="4.1" fill="currentColor"/><circle cx="12" cy="12" r="1.35" fill="#1a1a1a" opacity=".35"/></svg>';
-    const backI = document.querySelector("#hints .hb-back .g"), selI = document.querySelector("#hints .hb-sel .g"), menuBtn = document.querySelector("#hints .hb-search"), menuI = menuBtn && menuBtn.querySelector(".g");
+    const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15.2 7.2h-3.4c-3.1 0-5.6 2.4-5.6 5.4s2.5 5.4 5.6 5.4h6.2"/><path fill="currentColor" d="M15.05 4.55L11.2 7.35l3.85 2.8V4.55z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>', SEL = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.85"/><circle cx="12" cy="12" r="4.35" fill="currentColor"/></svg>', HM = '<img class="g-ftv-logo" src="assets/fefc-logo-carson.png" alt="" width="24" height="24" decoding="async">';
+    const backI = document.querySelector("#hints .hb-back .g"), selI = document.querySelector("#hints .hb-sel .g"), homeI = document.querySelector("#hints .hb-home .g"), menuBtn = document.querySelector("#hints .hb-search"), menuI = menuBtn && menuBtn.querySelector(".g");
+    if (homeI) {
+      homeI.className = "g g-ftv g-ftv-home";
+      homeI.setAttribute("aria-hidden", "true");
+      homeI.innerHTML = HM;
+    }
     if (backI) {
       backI.className = "g g-ftv g-ftv-back";
       backI.setAttribute("aria-hidden", "true");
@@ -4345,13 +4472,15 @@ var __spreadValues = (a, b) => {
   });
   const reArt = () => document.querySelectorAll("#grid .ol-tile,#arena .ol-tile").forEach((el) => {
     const f = items.get(el.dataset.id);
-    if (f && !el.querySelector("img")) {
-      if (isFolder(f) && people[target(f)]) {
-        el.outerHTML = tile(f);
-        const n = document.querySelector('[data-id="' + f.id + '"]');
-        n && art(n, f);
-      } else art(el, f);
+    if (!f) return;
+    if (isFolder(f) && people[target(f)]) {
+      const id = f.id;
+      el.outerHTML = tile(f);
+      const n = document.querySelector('#grid [data-id="' + id + '"],#arena [data-id="' + id + '"]');
+      n && art(n, f);
+      return;
     }
+    if (!el.querySelector("img")) art(el, f);
   });
   afterIntro(() => {
     tmo("data/posters.json", 15e3).then((m) => {
@@ -4367,14 +4496,38 @@ var __spreadValues = (a, b) => {
   });
   const TVB = /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || !!P.get("tv");
   const later = (fn, ms) => TVB ? afterIntro(() => setTimeout(fn, ms)) : fn();
-  later(() => tmo("data/genres.json", 1e4).then((g) => {
-    GC = g.__collections || {};
-    delete g.__collections;
-    genreMap = g;
-    if (!$("#home").hidden) hub();
-    else if (/^#\/genres?\/./.test(location.hash)) route();
-  }).catch(() => {
-  }), 1500);
+  window.loadGenres = (force) => {
+    if (window._genresP && !force) return window._genresP;
+    const ms = isTvEnv() ? 6e4 : 2e4;
+    const once = () => tmo("data/genres.json", ms).then((g) => {
+      GC = g.__collections || {};
+      delete g.__collections;
+      genreMap = g;
+      try {
+        if (window.FEFCGenres && FEFCGenres.loaded) FEFCGenres.loaded();
+      } catch (e) {
+      }
+      if (!$("#home").hidden) hub();
+      else if (/^#\/genres?\/./.test(location.hash)) route();
+      return g;
+    });
+    window._genresP = once().catch((e) => {
+      console.warn("genres", e);
+      return once();
+    }).then((g) => {
+      window._genresP = Promise.resolve(g);
+      return g;
+    }, (e) => {
+      window._genresP = null;
+      try {
+        if (window.FEFCGenres && FEFCGenres.fail) FEFCGenres.fail(e && e.message || e);
+      } catch (err) {
+      }
+      throw e;
+    });
+    return window._genresP;
+  };
+  later(() => window.loadGenres(), isTvEnv() ? 400 : 1500);
   afterIntro(() => {
     tmo("data/mosaic.json", 1e4).then((m) => {
       mosaicList = m;
@@ -4388,12 +4541,19 @@ var __spreadValues = (a, b) => {
     if (!$("#home").hidden) hub();
     else if (/^#\/(newarrivals|arena|folder)/.test(location.hash)) route();
   }).catch((e) => console.warn(e)), 3e3);
-  later(() => tmo("data/metadata.json", 8e3).then((m) => meta = m).catch((e) => console.warn(e)), 5e3);
+  later(() => tmo("data/metadata.json", 8e3).then((m) => {
+    meta = m;
+    refreshOpenDetails();
+  }).catch((e) => console.warn(e)), isTvEnv() ? 5e3 : 800);
   later(() => {
     const sx = document.createElement("script");
     sx.src = "details-extra.js";
+    sx.onload = () => {
+      if (window.FEX) FEX.ready.then(() => refreshOpenDetails()).catch(() => {
+      });
+    };
     document.head.appendChild(sx);
-  }, 8e3);
+  }, isTvEnv() ? 8e3 : 1200);
   const idxMs = isTvEnv() ? 9e4 : 3e4;
   const idxFetch = () => tmo("data/index.json", idxMs).catch((e) => {
     console.warn("index retry", e);
@@ -4401,24 +4561,31 @@ var __spreadValues = (a, b) => {
   });
   const idxP = isTvEnv() || document.body.classList.contains("tvintro") ? idxFetch() : null;
   afterIntro(() => {
-    (idxP || idxFetch()).then((d) => {
+    (idxP || idxFetch()).then(async (d) => {
       window._idx = d.items;
-      if (!live) add(d.items);
-      if (!live) tmo("data/links.json", 3e4).then((L) => {
-        for (const p in L) {
-          if (!kids.has(p)) kids.set(p, []);
-          const a = kids.get(p);
-          for (const id of L[p]) {
-            const f = items.get(id);
-            if (f && !a.includes(f)) a.push(f);
+      window._links = d.links || window._links || null;
+      if (!live) {
+        add(d.items);
+        applyLinks(window._links);
+        if (!window._links) {
+          try {
+            window._links = await tmo("data/links.json", 3e4);
+            applyLinks(window._links);
+          } catch (e) {
+            console.warn("links", e);
           }
+        } else {
+          tmo("data/links.json", 3e4).then((L) => {
+            window._links = L;
+            applyLinks(L);
+            if (/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash)) route();
+            else if (!$("#home").hidden) hub();
+          }).catch((e) => console.warn("links", e));
         }
-        if (/^#\/(folder|all|people|actors|directors|mylist|genre\/)/.test(location.hash)) route();
-        else if (!$("#home").hidden) hub();
-      }).catch(() => {
-      });
+      }
       if (d.partial !== false && !live) tmo("data/index.interim.json", 3e4).then((x) => {
         add(x.items.filter((f) => !items.has(f.id)));
+        applyLinks(window._links);
         window._idx = Array.from(items.values());
         route();
       }).catch(() => {

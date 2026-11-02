@@ -11,7 +11,7 @@ def get(u,tries=4):
         except Exception as e: time.sleep(2*(i+1))
     return None,''
 ENTRY=re.compile(r'<a href="https://drive\.google\.com/(drive/folders|file/d)/([\w-]+)[^"]*"[^>]*>.*?flip-entry-title">([^<]*)<.*?(?:flip-entry-last-modified"><div>([^<]*)<)?',re.S)
-items={};folders=[ROOT];seen={ROOT}
+items={};folders=[ROOT];seen={ROOT};links={}
 try: OLD={x['id']:x for x in json.load(open(OUT))['items']}   # ids resolved on a previous crawl keep their result (a Drive id never changes its target) - only NEW files need the slow redirect lookup
 except Exception: OLD={}
 def listf(fid):
@@ -23,7 +23,10 @@ with cf.ThreadPoolExecutor(8) as ex:
         for fid,ents in ex.map(listf,batch):
             for k,i,n,m in ents:
                 fold=k=='drive/folders'
-                items.setdefault(i,{'id':i,'name':n,'mimeType':'application/vnd.google-apps.folder' if fold else 'video/*' if re.search(r'\.(mp4|mkv|m4v|avi|mov|webm)$',n,re.I) else 'application/octet-stream','parent':fid,'modified':m or None})
+                if i in items:
+                    if items[i]['parent']!=fid: links.setdefault(fid,[]).append(i)
+                else:
+                    items[i]={'id':i,'name':n,'mimeType':'application/vnd.google-apps.folder' if fold else 'video/*' if re.search(r'\.(mp4|mkv|m4v|avi|mov|webm)$',n,re.I) else 'application/octet-stream','parent':fid,'modified':m or None}
                 if fold and i not in seen: seen.add(i);folders.append(i)
         print('folders',len(seen),'items',len(items),flush=True)
     vids=[v for v in items.values() if v['mimeType']=='video/*']
@@ -51,5 +54,7 @@ for v in items.values():
 for x in items.values():   # keep the resolved type (tools/classify.py, manual) for entries seen before
     o=OLD.get(x['id'])
     if o and o.get('kind') and 'kind' not in x: x['kind']=o['kind']
-json.dump({'root':ROOT,'generated':time.strftime('%Y-%m-%d %H:%M'),'partial':False,'items':list(items.values())},open(OUT,'w'))
-print('DONE folders',len(seen),'items',len(items),'videos',len(vids),'shortcuts',sum('targetId' in v for v in vids))
+for k in list(links): links[k]=list(dict.fromkeys(links[k]))
+json.dump({'root':ROOT,'generated':time.strftime('%Y-%m-%d %H:%M'),'partial':False,'links':links,'items':list(items.values())},open(OUT,'w'))
+json.dump(links,open(os.path.join(os.path.dirname(OUT),'links.json'),'w'))
+print('DONE folders',len(seen),'items',len(items),'videos',len(vids),'shortcuts',sum('targetId' in v for v in vids),'cross-links',sum(map(len,links.values())),flush=True)

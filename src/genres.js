@@ -51,7 +51,10 @@ function list(o){if(st.list&&st.key===o.items.size+':'+Object.keys(o.genreMap).l
 function art(g){var a=(window.FEFCGenres&&FEFCGenres._art)||{};return a[g]||a.Uncategorized||{img:'assets/fefc-logo.png',brand:1}}
 function pages(){return Math.max(1,Math.ceil(st.list.length/9))}
 function paint(){var hub=document.getElementById('hub');if(!hub||!st.o)return;var o=st.o,gm=o.genreMap||{},nKeys=Object.keys(gm).length;
- if(!nKeys){hub.innerHTML='<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4)+'<button class="hb ghb" tabindex="-1"><span>Loading genres…</span><small>Please wait</small></button>'+'<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4);ui();var gp=document.getElementById('gpage');if(gp)gp.textContent='';return}
+ if(!nKeys){var mid=st.err
+  ?('<button class="hb ghb" data-genres-retry="1" tabindex="0"><span>Couldn\'t load genres</span><small>Select to retry</small></button>')
+  :('<button class="hb ghb" tabindex="-1"><span>Loading genres…</span><small>Please wait</small></button>');
+  hub.innerHTML='<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4)+mid+'<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>'.repeat(4);ui();var gp=document.getElementById('gpage');if(gp)gp.textContent='';var rb=hub.querySelector('[data-genres-retry]');if(rb){rb.onclick=function(){st.err=null;paint();if(window.loadGenres)window.loadGenres(true);};try{rb.focus()}catch(e){}}return}
  var L=list(o),P=pages();st.page=Math.max(0,Math.min(st.page,P-1));
  var keep=[].slice.call(hub.querySelectorAll('.mc')),sl=L.slice(st.page*9,st.page*9+9),h='';
  for(var i=0;i<9;i++){var x=sl[i];if(!x){h+='<button class="hb gempty" tabindex="-1" aria-hidden="true"></button>';continue}var a=art(x.g);
@@ -72,5 +75,7 @@ function on(){return document.body.classList.contains('genres-mode')&&!document.
 function flip(d,focusCol){var np=st.page+d;if(np<0||np>=pages())return;st.page=np;try{if(window.SFX&&SFX.zoom)SFX.zoom(d<0)}catch(_){}
  paint();setTimeout(place,0);var hb=document.querySelectorAll('#hub .hb:not(.gempty)');if(hb.length&&document.body.classList.contains('kbd')){var t=hb[Math.min(hb.length-1,focusCol||0)];t.focus()}}
 window.FEFCGenres.hub=function(o){if(o){st.o=o;if(o.page!=null)st.page=o.page}paint();setTimeout(place,50);setTimeout(place,600)};
+window.FEFCGenres.fail=function(msg){st.err=String(msg||'error');if(on())paint()};
+window.FEFCGenres.loaded=function(){st.err=null;if(on())paint()};
 fetch('data/genreart.json').then(function(r){return r.json()}).then(function(j){window.FEFCGenres._art=j;if(on())paint()}).catch(function(){});
 })();

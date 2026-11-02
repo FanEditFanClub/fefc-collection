@@ -17,7 +17,7 @@ var NA=window.NA={dates:{},
  MENU:function(F){return [['#/','Home'],['#/supportus','Support Us'],['#/all','Main Collection'],['#/newarrivals','New Arrivals'],['#/people','Actors & Directors'],['#/genres','Genres'],['#/mylist','My List']]},
  menuHTML:function(F,back){var h=location.hash||'#/';if(h==='#/arena')h='#/newarrivals';if(h==='#/support')h='#/supportus';if(/^#\/genre\//.test(h))h='#/genres';
   /* Top-left: FEFC logo | Home | Back | … — never Back next to the logo. */
-  var isBack=!!back||/^#\/(edit|search|play|readfirst)\b/.test(h)||(typeof document!=='undefined'&&document.getElementById('details')&&!document.getElementById('details').hidden);
+  var isBack=!!back||/^#\/(edit|search|play|readfirst|folder|all|genre)\b/.test(h)||(typeof document!=='undefined'&&document.getElementById('details')&&!document.getElementById('details').hidden);
   var items=NA.MENU(F).map(function(m){var on=h===m[0]||(m[0]==='#/'&&h==='#')||(m[0]!=='#/'&&h.indexOf(m[0]+'/')===0);return '<button class="mi'+(on?' on':'')+'" data-href="'+m[0]+'"'+(on?' aria-current="page"':'')+'>'+m[1]+'</button>'});
   if(isBack) items.splice(1,0,'<button class="mi" data-nav="up">◀ Back</button>');
   return items.join('')},

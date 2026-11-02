@@ -59,10 +59,11 @@ const S={
  get muted(){return muted},
  toggle(){muted=!muted;localStorage.fefcMute=muted?'1':'0';if(master)master.gain.setTargetAtTime(muted?0:.6,ctx.currentTime,.05);return muted},
  ambience(on){ambWant=!!on&&document.body.classList.contains('intro-done');if(!ambWant){ambStop();return}init();ambStart()},
- move(){if(!started)return;tone(1400,ctx.currentTime,.06,'sine',.05)},
- click(){if(!started)return;const t=ctx.currentTime;tone(600,t,.08,'triangle',.12,900);tone(1200,t+.03,.1,'sine',.06)},
- open(){if(!started)return;const t=ctx.currentTime;tone(300,t,.35,'sawtooth',.05,1200);tone(880,t+.12,.25,'sine',.08)},
- chirp(n=0){if(!started)return;const t=ctx.currentTime,seq=[[1320,1760],[988,1480],[1760,1175]][n%3];tone(seq[0],t,.07,'square',.04);tone(seq[1],t+.08,.09,'square',.04)},
+ move(){/* D-pad nav SFX: AudioContext re-suspends after intro/idle on Fire TV; tones into suspended ctx were silent. Resume; respect mute. */
+ if(muted)return;init();started=true;if(ctx.state==='suspended')ctx.resume();tone(1400,ctx.currentTime,.06,'sine',.05)},
+ click(){if(muted)return;init();started=true;if(ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;tone(600,t,.08,'triangle',.12,900);tone(1200,t+.03,.1,'sine',.06)},
+ open(){if(muted)return;init();started=true;if(ctx.state==='suspended')ctx.resume();const t=ctx.currentTime;tone(300,t,.35,'sawtooth',.05,1200);tone(880,t+.12,.25,'sine',.08)},
+ chirp(n=0){if(muted)return;init();started=true;if(ctx.state==='suspended')ctx.resume();const t=ctx.currentTime,seq=[[1320,1760],[988,1480],[1760,1175]][n%3];tone(seq[0],t,.07,'square',.04);tone(seq[1],t+.08,.09,'square',.04)},
 
  /* one-shot sound effects (Carson-supplied files), decoded once and cached; ducks the ambient bed while playing */
  _fx:{},

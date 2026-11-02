@@ -42,6 +42,8 @@ android {
         }
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    // Keep media/json uncompressed so WebView can stream tile clips / intro / sfx from assets.
+    androidResources { noCompress 'mp4', 'webm', 'mp3', 'm4a', 'wav', 'json', 'gz', 'ttf' }
 }
 
 // Every release build also publishes the update manifest the in-app updater reads:
@@ -68,3 +70,19 @@ tasks.register('publishUpdateMeta') {
     }
 }
 afterEvaluate { tasks.named('assembleRelease').configure { finalizedBy 'publishUpdateMeta' } }
+
+tasks.register('packFiretvAssets', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine 'python3', 'tools/pack_firetv_assets.py'
+}
+tasks.named('preBuild').configure { dependsOn 'packFiretvAssets' }
+
+dependencies {
+    // Progressive Drive streams (proxy + direct). VideoView/MediaPlayer failed on HEVC/10-bit/MKV and many Range responses.
+    def media3 = "1.4.1"
+    implementation "androidx.media3:media3-exoplayer:$media3"
+    implementation "androidx.media3:media3-exoplayer-hls:$media3"
+    implementation "androidx.media3:media3-ui:$media3"
+    implementation "androidx.media3:media3-database:$media3"
+    implementation "androidx.media3:media3-datasource:$media3"
+}

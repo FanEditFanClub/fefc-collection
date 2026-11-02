@@ -152,23 +152,35 @@ window.SFX = (() => {
       ambStart();
     },
     move() {
-      if (!started) return;
+      if (muted) return;
+      init();
+      started = true;
+      if (ctx.state === "suspended") ctx.resume();
       tone(1400, ctx.currentTime, 0.06, "sine", 0.05);
     },
     click() {
-      if (!started) return;
+      if (muted) return;
+      init();
+      started = true;
+      if (ctx.state === "suspended") ctx.resume();
       const t = ctx.currentTime;
       tone(600, t, 0.08, "triangle", 0.12, 900);
       tone(1200, t + 0.03, 0.1, "sine", 0.06);
     },
     open() {
-      if (!started) return;
+      if (muted) return;
+      init();
+      started = true;
+      if (ctx.state === "suspended") ctx.resume();
       const t = ctx.currentTime;
       tone(300, t, 0.35, "sawtooth", 0.05, 1200);
       tone(880, t + 0.12, 0.25, "sine", 0.08);
     },
     chirp(n = 0) {
-      if (!started) return;
+      if (muted) return;
+      init();
+      started = true;
+      if (ctx.state === "suspended") ctx.resume();
       const t = ctx.currentTime, seq = [[1320, 1760], [988, 1480], [1760, 1175]][n % 3];
       tone(seq[0], t, 0.07, "square", 0.04);
       tone(seq[1], t + 0.08, 0.09, "square", 0.04);

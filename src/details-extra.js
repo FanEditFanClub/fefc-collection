@@ -21,9 +21,16 @@ const st=document.createElement('style');st.textContent=css;document.head.append
 function film(fid,tid){const q=E.map[fid]||E.map[tid];return q&&E.films[q]?Object.assign({fx:1,low:!!(E.conf[fid]||E.conf[tid])},E.films[q]):null}
 function loc(f,ctx){const its=ctx.items,ids=[];let x=f,g=0;while(x&&x.parent&&g++<40){ids.push(x.parent);if(x.parent===ctx.root)break;x=its.get(x.parent)}
  const names=ids.filter(i=>i!==ctx.root).map(i=>(its.get(i)||{}).name).filter(Boolean);return{parent:names[0],top:names[names.length-1]}}
-function fileInfo(f,ctx){const t=ctx.target(f),T=ctx.items.get(t)||{},r=FI[t]||{},size=r.s||+T.size||+f.size||0,o=r.o,sc=!!(f.targetId&&f.targetId!==f.id),L=loc(f,ctx);
+function fileInfo(f,ctx,F,e){const t=ctx.target(f),T=ctx.items.get(t)||{},r=FI[t]||{},size=r.s||+T.size||+f.size||0,o=r.o,sc=!!(f.targetId&&f.targetId!==f.id),L=loc(f,ctx);
  const host=sc?`Shortcut → hosted by ${esc(owner(o)||'another account')}`:`Hosted directly in ${esc(L.top||'Fan Edit Fan Club Collection')}`;
- return `<h3 class="lc-h b fx-sec" id="lc-fileinfo">File Info</h3><dl class="fx-kv">${size?`<dt>Size</dt><dd>${hs(size)}</dd>`:''}<dt>Hosting</dt><dd>${host}</dd>${o?`<dt>Owner</dt><dd>${esc(owner(o))}${owner(o)!==o?` <span class="src">${esc(o)}</span>`:''}</dd>`:''}${L.parent?`<dt>Folder</dt><dd>${esc(L.top&&L.top!==L.parent?L.top+' › ':'')}${esc(L.parent)}</dd>`:''}</dl>`}
+ const dur=e&&e.runtime?esc(e.runtime)+(e.origRuntime?` <span class="src">vs ${esc(e.origRuntime)} original</span>`:F&&F.runtime?` <span class="src">vs ${F.runtime} min original</span>`:''):(F&&F.runtime?esc(F.runtime)+' min':'');
+ return `<h3 class="lc-h b fx-sec" id="lc-fileinfo">File Info</h3><dl class="fx-kv">${dur?`<dt>Duration</dt><dd>${dur}</dd>`:''}${size?`<dt>Size</dt><dd>${hs(size)}</dd>`:''}<dt>Hosting</dt><dd>${host}</dd>${o?`<dt>Owner</dt><dd>${esc(owner(o))}${owner(o)!==o?` <span class="src">${esc(o)}</span>`:''}</dd>`:''}${L.parent?`<dt>Folder</dt><dd>${esc(L.top&&L.top!==L.parent?L.top+' › ':'')}${esc(L.parent)}</dd>`:''}</dl>`}
+function fillChips(D,f,ctx,F,e){const chips=D.querySelector('.fchips');if(!chips)return;const t=ctx.target(f),T=ctx.items.get(t)||{},r=FI[t]||{},size=r.s||+T.size||+f.size||0;
+ const have=[...chips.querySelectorAll('span')].map(s=>s.textContent);
+ if(size&&!have.some(x=>/\bGB\b|\bMB\b|\bKB\b/.test(x)))chips.insertAdjacentHTML('beforeend',`<span>${hs(size)}</span>`);
+ const durTxt=e&&e.runtime?String(e.runtime).replace(/\s*minutes?/i,'m'):(F&&F.runtime?F.runtime+'m':'');
+ if(durTxt&&!have.some(x=>/\d+m\b|\dh\b|min/i.test(x)))chips.insertAdjacentHTML('beforeend',`<span>${esc(durTxt)}</span>`);
+}
 function normCh(s){return String(s||'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
 function mergeChanges(driveEnt,e){
   // Prefer Drive description/readme first, then IFDB/MRDb (editinfo). Dedupe by normalized text.
@@ -70,26 +77,32 @@ function editHTML(e,F,driveEnt){
  }
  return html;
 }
-function enhance(f,ctx,F){const D=document.getElementById('details');if(!D||D.dataset.id!==f.id)return;const t=ctx.target(f),e=E.edits[f.id]||E.edits[t];
+function enhance(f,ctx,F){const D=document.getElementById('details');if(!D||D.dataset.id!==f.id)return;if(D.querySelector('#lc-fileinfo,.fx'))return;const t=ctx.target(f),e=E.edits[f.id]||E.edits[t];
  const driveEnt=DC.by_id[f.id]||DC.by_id[t]||(f.targetId&&DC.by_id[f.targetId])||null;
  const cols=D.querySelectorAll('.lc-body > div:not(.lc-head)'),L=cols[0],R=cols[1];if(!L)return;
- const h=document.createElement('div');h.className='fx';h.innerHTML=editHTML(e,F,driveEnt);L.insertBefore(h,L.firstChild);
+ /* Fan-edit block first (Edit Info / Notes / changes); fall back to left-column top */
+ const slot=D.querySelector('#lc-fanedit');
+ const h=document.createElement('div');h.className='fx';h.innerHTML=editHTML(e,F,driveEnt);
+ if(slot){slot.replaceWith(h)}else{L.insertBefore(h,L.firstChild)}
  // old short "Fan edit" description is superseded when IFDB notes exist
  if(e&&e.synopsis){const hs0=[...L.querySelectorAll('.lc-h')].find(x=>/^Fan edit$/i.test(x.textContent));if(hs0){let n=hs0.nextElementSibling;hs0.remove();while(n&&!n.classList.contains('lc-h')&&n.tagName==='P'){const k=n.nextElementSibling;n.remove();n=k}}}
- // Overview heading for the source plot; Cast & Crew with directors
+ // Overview heading for the source plot (skip if already present); Cast & Crew with directors
  const srcH=[...L.querySelectorAll('.lc-h')].find(x=>/^Source /.test(x.textContent));if(srcH&&F&&F.game)srcH.textContent='Source game';
- if(F&&F.plot&&srcH){const p=[...L.querySelectorAll('p')].find(x=>x.textContent===F.plot);if(p){const o=document.createElement('h3');o.className='lc-h l fx-sec';o.textContent='Overview';p.before(o)}}
+ if(F&&F.plot&&srcH){const p=L.querySelector('p.plot')||[...L.querySelectorAll('p')].find(x=>x.textContent===F.plot);if(p&&!(p.previousElementSibling&&/^Overview$/i.test(p.previousElementSibling.textContent||''))){const o=document.createElement('h3');o.className='lc-h l fx-sec';o.textContent='Overview';p.before(o)}}
  if(F&&F.game&&srcH){const pp=srcH.nextElementSibling;const kv=[['Developer',(F.developer||[]).join(', ')],['Platforms',(F.platforms||[]).join(', ')],['Released',F.year],['Genre',(F.genres||[]).join(', ')]].filter(x=>x[1]);if(pp&&kv.length){pp.innerHTML=`<b>${esc(F.title)}</b>`;pp.insertAdjacentHTML('afterend',`<dl class="fx-kv">${kv.map(x=>`<dt>${x[0]}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>`)}}
  if(F&&F.low&&srcH)srcH.insertAdjacentHTML('beforeend',' <small class="fx-low">low-confidence match</small>');
  const cH=[...L.querySelectorAll('.lc-h')].find(x=>/^Cast$/.test(x.textContent));const dirs=F&&F.director||[];
- if(cH){cH.textContent='Cast & Crew';const box=cH.nextElementSibling;if(box&&dirs.length)box.insertAdjacentHTML('afterbegin',dirs.map(d=>`<span class="crew">${esc(d)} · Director</span>`).join(''))}
- else if(dirs.length){L.insertAdjacentHTML('beforeend',`<h3 class="lc-h p fx-sec">Cast & Crew</h3><div class="cast">${dirs.map(d=>`<span class="crew">${esc(d)} · Director</span>`).join('')}</div>`)}
- // ratings: show IFDB score
- const rr=[...D.querySelectorAll('.rt a')].find(a=>/FanEdit\.org/.test(a.textContent));
+ if(cH){cH.textContent='Cast & Crew';const box=cH.nextElementSibling;if(box&&dirs.length&&!box.querySelector('.crew'))box.insertAdjacentHTML('afterbegin',dirs.map(d=>`<span class="crew">${esc(d)} · Director</span>`).join(''))}
+ else if(dirs.length&&![...L.querySelectorAll('.lc-h')].some(x=>/Cast/.test(x.textContent))){L.insertAdjacentHTML('beforeend',`<h3 class="lc-h p fx-sec">Cast & Crew</h3><div class="cast">${dirs.map(d=>`<span class="crew">${esc(d)} · Director</span>`).join('')}</div>`)}
+ // ratings: show IFDB score on Fan Edit Ratings row
+ const rr=[...D.querySelectorAll('.rt a,.rt .rr')].find(a=>/FanEdit\.org/.test(a.textContent));
  if(e&&e.rating){const html=`<span class="rn"><span>FanEdit.org IFDB<small>${e.reviews||0} user review${e.reviews===1?'':'s'}${e.trusted?' · Trusted '+e.trusted:''}</small></span></span><b>${e.rating}/10</b>`;
-  if(rr){rr.querySelector('b').textContent=e.rating+'/10';const s=rr.querySelector('small');if(s)s.textContent=(e.reviews||0)+' user reviews'}else{const rt=D.querySelector('.rt');if(rt){const p=rt.querySelector('p.src');if(p)p.remove();rt.insertAdjacentHTML('beforeend',`<a class="rr" href="${esc(e.url)}" target="_blank" rel="noopener">${html}</a>`)}}}
- // File Info on every video details page
- (R||L).insertAdjacentHTML('beforeend',fileInfo(f,ctx));
+  if(rr){const bb=rr.querySelector('b');if(bb)bb.textContent=e.rating+'/10';const s=rr.querySelector('small');if(s)s.textContent=(e.reviews||0)+' user reviews'}else{const fer=D.querySelector('.rt.fer')||D.querySelector('.rt');if(fer){const p=fer.querySelector('p.src');if(p)p.remove();fer.insertAdjacentHTML('beforeend',`<a class="rr" href="${esc(e.url)}" target="_blank" rel="noopener">${html}</a>`)}}}
+ // File Info (duration + size) — prefer slot under source ratings, before trailer
+ const fiHTML=fileInfo(f,ctx,F,e);
+ const fiSlot=D.querySelector('#lc-fileinfo-slot');
+ if(fiSlot)fiSlot.outerHTML=fiHTML;else (R||L).insertAdjacentHTML('beforeend',fiHTML);
+ fillChips(D,f,ctx,F,e);
  D.querySelectorAll('[data-fxmore]').forEach(b=>b.addEventListener('click',()=>{b.previousElementSibling.querySelectorAll('li[hidden]').forEach(x=>x.hidden=false);b.remove()}))}
-window.FEX={ready,film,enhance,poster:(fid,tid)=>{const F=film(fid,tid);return F&&F.poster}};
+window.FEX={ready,film,enhance,poster:(fid,tid)=>{const F=film(fid,tid);return F&&F.poster},size:(tid)=>{const r=FI[tid];return r&&r.s}};
 })();

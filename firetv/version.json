@@ -1,8 +1,8 @@
 {
-    "versionCode": 14,
-    "versionName": "0.8.6",
+    "versionCode": 16,
+    "versionName": "0.8.7",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.6: Fire TV P0 \u2014 intro Baseline 720p + continuous CSS fallback (no logo freeze); lighter mosaic restored; Back curved U-turn; My List Down restores list + Check for updates at bottom; Menu/Search/Sound SVG icons (no emoji); details D-pad scroll to File Info; SOURCE MEDIA rename; TV overscan safe margins (left bar + side pills); Fire TV Select hint = remote center/OK (D-pad ring).",
-    "size": 59436,
-    "sha256": "8de6de4fa967db2c37a153f7a41c2703fc66bb6953b2ca7c83465dfc7311c42e"
+    "notes": "Beta 0.8.7: Cross-folder Drive shortcuts (e.g. 6 Twilight Zone franchise folders) now show: index embeds links; app applies before first paint. Fire TV P0 \u2014 update Check always re-fetches version.json; Back hint pulses (not Home) + details Back restores prior screen/scroll/focus + ancestor folder SFX; Gen3 Back/Select SVGs; FEFC logo beside Home, centered bar; local APK bundles shell/art/sfx/intro/mosaic clips (full edits still stream); Media3 ExoPlayer; Open in Drive; NA titles under date badge + Untitled fallback; genres 60s retry UI; Home focuses Main Collection; nav SFX resume suspended AudioContext; Support Us after Read First; Actor/Director dual labels (Brooks/Tarantino/Gibson/Cameron); people photos win over folderthumbs; Landman/Parks/Pirates/Rick&Morty SFX pools.",
+    "size": 89311122,
+    "sha256": "e9a27f5d24f2b75dfd9bf407fa5d83e365199ba1fecb45e807fb7a1a7ae99ff8"
 }
