@@ -467,7 +467,7 @@ var __spreadValues = (a, b) => {
   function tile(f, live_) {
     const fold = isFolder(f), p = parse(f.name), aud = !fold && !isVid(f) && isAud(f), vid = !fold && (isVid(f) || aud), pp = fold && people[target(f)];
     const cls = fold ? pp ? "person" : "fold" : vid ? "vid" : "doc";
-    if (/\bread first\b/i.test(f.name || "")) return '<button class="ol-tile fold rfhome" data-id="'.concat(f.id, '" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>');
+    if (/\bread first\b/i.test(f.name || "")) return '<button class="ol-tile fold rfhome" data-id="'.concat(f.id, '" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span></button>');
     if (fold) {
       const fid = target(f);
       if ((fid === FOLD.collections || f.id === FOLD.collections) && cur !== FOLD.collections) return '<button class="ol-tile fecc" data-id="'.concat(f.id, '" data-fecc="1" aria-label="Fan Edit Collections"><span class="fecc-t">Fan Edit Collections</span><small class="fecc-c">').concat(esc(countsLine(FOLD.collections)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
@@ -1462,7 +1462,7 @@ var __spreadValues = (a, b) => {
     if (isReadFirst(f)) return "readfirst";
     return null;
   }
-  const RF_HOME_TILE = '<button class="ol-tile fold rfhome" data-rfhome="1" data-hub="readfirst" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>';
+  const RF_HOME_TILE = '<button class="ol-tile fold rfhome" data-rfhome="1" data-hub="readfirst" aria-label="Read First"><span class="rf-t">Read First</span></button>';
   function stripReadFirst(list) {
     return list.filter((f) => !isReadFirst(f));
   }
