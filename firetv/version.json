@@ -1,7 +1,7 @@
 {
     "versionCode": 20,
     "versionName": "0.8.11",
-    "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
+    "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk?v=0.8.11",
     "notes": "Beta 0.8.11: Folder SFX pools filled and rotating (GoT/HotD 10 clips, Star Wars 17, Indy, Cage, Cameron, Brooks, Willis, Westworld, Blade, Flash Gordon, Game Movie arcade, Directors Action/Cut, Emmerich, etc.); subfolders inherit root pools; Action genre no longer leaks Die Hard yippee. Catalog: Fire TV refreshes index/links from the network (bundled index is fallback only; newest remote wins); daily-resync early-ships crawl prune after Drive crawl and timeout raised to 6h so stale folders/files get pruned on schedule. Web + Fire TV sync.",
     "size": 98708227,
     "sha256": "c5cf9232006a7076b3785775afa034feb3cd3d9d298f5918be000b704202f51c"

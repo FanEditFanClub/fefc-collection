@@ -420,7 +420,7 @@ export default {
       const wantApk = (/^\/(firetv\/fefc[-_ ]?collection(\.apk)?|firetv\/app(\.apk)?|firetv|tv\.apk|tv|fefc\.apk|fefc|apk|app\.apk)$/.test(lp) && !/^\/firetv$/.test(lp)) || lp === '/firetv/fefc-collection.apk' || url.pathname === '/firetv/FEFC-Collection.apk';
       if (wantApk) {
         const apkPath = '/firetv/FEFC-Collection.apk';
-        const headers = { 'content-type': 'application/vnd.android.package-archive', 'cache-control': 'public, max-age=300', 'content-disposition': 'attachment; filename="FEFC-Collection.apk"' };
+        const headers = { 'content-type': 'application/vnd.android.package-archive', 'cache-control': 'public, max-age=60, must-revalidate', 'content-disposition': 'attachment; filename="FEFC-Collection.apk"', 'cdn-cache-control': 'max-age=60' };
         // Prefer R2 binding when configured (wrangler.toml [[r2_buckets]] MEDIA).
         if (env.MEDIA) {
           const obj = await env.MEDIA.get('firetv/FEFC-Collection.apk');
