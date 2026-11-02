@@ -1,8 +1,8 @@
 {
-    "versionCode": 19,
-    "versionName": "0.8.10",
+    "versionCode": 20,
+    "versionName": "0.8.11",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.10: P0 mosaic fill on Fire TV \u2014 fix #app height (100vh fallback; old WebView lacks dvh), explicit mosaic tile heights (no aspect-ratio collapse), viewport Ht fallback + larger TV ring budget so tiles surround hub top/sides/bottom. Banner/icon full-bleed unchanged. Idle Collection softRefresh unchanged. Artwork local-first counts unchanged. Web + Fire TV sync.",
-    "size": 95742442,
-    "sha256": "fc83b551b0202f6770ba5c4053aa9393e4015daa8b6cfa6dc13d7a4b9d0cc54d"
+    "notes": "Beta 0.8.11: Folder SFX pools filled and rotating (GoT/HotD 10 clips, Star Wars 17, Indy, Cage, Cameron, Brooks, Willis, Westworld, Blade, Flash Gordon, Game Movie arcade, Directors Action/Cut, Emmerich, etc.); subfolders inherit root pools; Action genre no longer leaks Die Hard yippee. Catalog: Fire TV refreshes index/links from the network (bundled index is fallback only; newest remote wins); daily-resync early-ships crawl prune after Drive crawl and timeout raised to 6h so stale folders/files get pruned on schedule. Web + Fire TV sync.",
+    "size": 98708227,
+    "sha256": "c5cf9232006a7076b3785775afa034feb3cd3d9d298f5918be000b704202f51c"
 }

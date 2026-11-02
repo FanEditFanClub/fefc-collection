@@ -1743,40 +1743,19 @@ var __spreadValues = (a, b) => {
     for (let i = 0; i < id.length; i++) h = h * 31 + id.charCodeAt(i) >>> 0;
     return SFX_DEFAULTS[h % SFX_DEFAULTS.length];
   }
+  function sfxPickPool(V, rec) {
+    if (!V || !V.length) return null;
+    if (!Array.isArray(V[0])) return V;
+    let i = Math.random() * V.length | 0;
+    if (V.length > 1 && rec && i === rec._last) i = (i + 1 + (Math.random() * (V.length - 1) | 0)) % V.length;
+    if (rec) rec._last = i;
+    return V[i];
+  }
   function sfxResolve(id) {
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
-    if (!L) {
-      const p = people[id] || f && (people[f.id] || people[f.targetId]);
-      const pName = (p ? p.name + " " + (p.folder || "") : f ? f.name : "").toLowerCase();
-      const isDir = DIR_IDS[id] || p && p.role === "director" || f && f.parent === FOLD.directors || /^(abrams|bay|cameron|emmerich|nolan|ritchie|scott|snyder|spielberg|verhoeven)$/i.test(f ? f.name : "");
-      let fullPath = pName;
-      if (f) {
-        let c = f, g = 0;
-        while (c && c.parent && g++ < 15) {
-          c = items.get(c.parent);
-          if (c && c.name) fullPath += " " + c.name.toLowerCase();
-        }
-      }
-      if (/purr|purassic/i.test(fullPath)) {
-        L = ["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"];
-      } else if (fullPath.includes("jurassic")) {
-        L = ["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"];
-      } else if (/\bdexter\b(?!'?s?\s+lab)/i.test(fullPath)) {
-        L = ["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"];
-      } else if (/carrey/i.test(pName) || id === "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ") {
-        L = ["assets/sfx/bruce-almighty-beautiful.mp3"];
-      } else if (/cage/i.test(pName) || id === "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq") {
-        L = ["assets/sfx/cage-not-the-bees.mp3"];
-      } else if (/sandler/i.test(pName) || id === "1sBe2LolQsUBYKe-rFAg7eT44OMJjRJIO") {
-        _sandlerLast = (_sandlerLast + 1) % 2;
-        L = _sandlerLast === 0 ? ["assets/sfx/sandler-swan.mp3"] : ["assets/sfx/sandler-quote2.mp3"];
-      } else if (/cruise/i.test(pName) || id === "1X1_iqdZJ9Nz62fGZSSvbzGuk_92Xespa") {
-        _cruiseLast = (_cruiseLast + 1) % 2;
-        L = _cruiseLast === 0 ? ["assets/sfx/cruise-money.mp3"] : ["assets/sfx/cruise-speed.mp3"];
-      } else if (isDir) {
-        L = ["assets/sfx/director-action.mp3"];
-      }
+    if (L && Array.isArray(L) && Array.isArray(L[0])) {
+      L = sfxPickPool(L, FSFX);
     }
     if (!L && f && Array.isArray(FSFX._rules)) {
       const names = [], ids = [];
@@ -1801,14 +1780,38 @@ var __spreadValues = (a, b) => {
         const q = (r2.match || "").toLowerCase();
         return q && (r2.path ? names : names.slice(0, 1).concat(sc ? [(sc.name || "").toLowerCase()] : [])).some((x) => x.includes(q));
       });
-      if (r) {
-        if (Array.isArray(r.file) && Array.isArray(r.file[0])) {
-          const V = r.file;
-          let i = Math.random() * V.length | 0;
-          if (V.length > 1 && i === r._last) i = (i + 1 + (Math.random() * (V.length - 1) | 0)) % V.length;
-          r._last = i;
-          L = V[i];
-        } else L = r.files || (Array.isArray(r.file) ? r.file : [r.file]);
+      if (r) L = sfxPickPool(r.file, r) || (r.files || (Array.isArray(r.file) ? r.file : [r.file]));
+    }
+    if (!L) {
+      const p = people[id] || f && (people[f.id] || people[f.targetId]);
+      const pName = (p ? p.name + " " + (p.folder || "") : f ? f.name : "").toLowerCase();
+      const isDir = DIR_IDS[id] || p && p.role === "director" || f && f.parent === FOLD.directors || /^(abrams|bay|cameron|emmerich|nolan|ritchie|scott|snyder|spielberg|verhoeven)$/i.test(f ? f.name : "");
+      let fullPath = pName;
+      if (f) {
+        let c = f, g = 0;
+        while (c && c.parent && g++ < 15) {
+          c = items.get(c.parent);
+          if (c && c.name) fullPath += " " + c.name.toLowerCase();
+        }
+      }
+      if (/purr|purassic/i.test(fullPath)) {
+        L = ["assets/sfx/cat-meow.wav", "assets/sfx/cat-meow.m4a"];
+      } else if (fullPath.includes("jurassic") && !/game of thrones|house of the dragon/i.test(fullPath)) {
+        L = ["assets/sfx/trex-roar.mp3", "assets/sfx/trex-roar.m4a"];
+      } else if (/\bdexter\b(?!'?s?\s+lab)/i.test(fullPath)) {
+        L = ["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"];
+      } else if (/carrey/i.test(pName) || id === "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ") {
+        L = ["assets/sfx/bruce-almighty-beautiful.mp3"];
+      } else if ((/^cage$|nicolas cage/i.test(pName) || id === "19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq") && !/luke cage/i.test(pName)) {
+        L = ["assets/sfx/cage-not-the-bees.mp3"];
+      } else if (/sandler/i.test(pName) || id === "1sBe2LolQsUBYKe-rFAg7eT44OMJjRJIO") {
+        _sandlerLast = (_sandlerLast + 1) % 2;
+        L = _sandlerLast === 0 ? ["assets/sfx/sandler-swan.mp3"] : ["assets/sfx/sandler-quote2.mp3"];
+      } else if (/cruise/i.test(pName) || id === "1X1_iqdZJ9Nz62fGZSSvbzGuk_92Xespa") {
+        _cruiseLast = (_cruiseLast + 1) % 2;
+        L = _cruiseLast === 0 ? ["assets/sfx/cruise-money.mp3"] : ["assets/sfx/cruise-speed.mp3"];
+      } else if (isDir) {
+        L = ["assets/sfx/director-action.mp3"];
       }
     }
     if (!L && f) L = sfxFallback(id, f);
@@ -4529,7 +4532,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.10";
+  const HOME_VER_FALLBACK = "0.8.11";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

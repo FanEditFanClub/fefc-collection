@@ -95,6 +95,12 @@ public class MainActivity extends Activity {
         chrome = new Chrome();
         web.setWebChromeClient(chrome);
         localAssets = new LocalAssets(this);
+        localAssets.setOnCatalogRefreshed(() -> ui.post(() -> {
+            if (web == null) return;
+            web.evaluateJavascript(
+                    "try{if(typeof softRefresh==='function')softRefresh();else if(typeof loadIndex==='function')loadIndex(true)}catch(e){}",
+                    null);
+        }));
         updater = new Updater(this);
 
         // Cold start: native Media3 intro fullscreen FIRST; WebView preloads underneath with ?nointro=1.

@@ -388,8 +388,14 @@ function sfxFallback(id,f){const G=FSFX._genres||{};
  const txt=names.join(' | ');
  for(const [g,rx] of SFX_GENRE_RX){if(G[g]&&rx.test(txt)){const L=G[g];return Array.isArray(L)&&L.length&&Array.isArray(L[0])?L[Math.random()*L.length|0]:L}}
  let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return SFX_DEFAULTS[h%SFX_DEFAULTS.length]}
+function sfxPickPool(V,rec){if(!V||!V.length)return null;if(!(Array.isArray(V[0])))return V;let i=Math.random()*V.length|0;if(V.length>1&&rec&&i===rec._last)i=(i+1+(Math.random()*(V.length-1)|0))%V.length;if(rec)rec._last=i;return V[i]}
 function sfxResolve(id){
  const f=items.get(id);let L=FSFX[id]||(f&&FSFX[f.name]);
+ if(L&&Array.isArray(L)&&Array.isArray(L[0])){L=sfxPickPool(L,FSFX)}
+ /* Franchise _rules beat hardcodes so director folders / Cage / GoT get their full rotating pools; path:true inherits to subfolders. */
+ if(!L&&f&&Array.isArray(FSFX._rules)){const names=[],ids=[];let c=f,n=0;while(c&&n++<30){names.push((c.name||'').toLowerCase());ids.push(c.id,c.targetId||'');c=items.get(c.parent)}
+  const sc=[...items.values()].find(x=>x.targetId===id&&x.id!==id);if(sc)names.push((sc.name||'').toLowerCase());
+  const r=FSFX._rules.find(r=>{if(r.ids&&r.ids.some(x=>x===id||(r.path!==false&&ids.indexOf(x)>=0)))return true;if(r.regex){let re;try{re=new RegExp(r.regex,'i')}catch(e){}if(re&&(r.path?names:names.slice(0,1)).some(x=>re.test(x)))return true}const q=(r.match||'').toLowerCase();return q&&(r.path?names:names.slice(0,1).concat(sc?[(sc.name||'').toLowerCase()]:[])).some(x=>x.includes(q))});if(r)L=sfxPickPool(r.file,r)||(r.files||(Array.isArray(r.file)?r.file:[r.file]))}
  if(!L){
   const p=people[id]||(f&&(people[f.id]||people[f.targetId]));
   const pName=(p?(p.name+' '+(p.folder||'')):(f?f.name:'')).toLowerCase();
@@ -398,13 +404,13 @@ function sfxResolve(id){
   if(f){let c=f,g=0;while(c&&c.parent&&g++<15){c=items.get(c.parent);if(c&&c.name)fullPath+=' '+c.name.toLowerCase()}}
   if(/purr|purassic/i.test(fullPath)){
    L=['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a']
-  }else if(fullPath.includes('jurassic')){
+  }else if(fullPath.includes('jurassic')&&!/game of thrones|house of the dragon/i.test(fullPath)){
    L=['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a']
   }else if(/\bdexter\b(?!'?s?\s+lab)/i.test(fullPath)){
    L=['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a']
   }else if(/carrey/i.test(pName)||id==='10AA5RFZKOrtyeALpY891WpIKTiqASZbZ'){
    L=['assets/sfx/bruce-almighty-beautiful.mp3']
-  }else if(/cage/i.test(pName)||id==='19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq'){
+  }else if((/^cage$|nicolas cage/i.test(pName)||id==='19gM-ZhG481Xv3-z1-7BIrxRmPGSuMTBq')&&!/luke cage/i.test(pName)){
    L=['assets/sfx/cage-not-the-bees.mp3']
   }else if(/sandler/i.test(pName)||id==='1sBe2LolQsUBYKe-rFAg7eT44OMJjRJIO'){
    _sandlerLast=(_sandlerLast+1)%2;
@@ -416,9 +422,6 @@ function sfxResolve(id){
    L=['assets/sfx/director-action.mp3']
   }
  }
- if(!L&&f&&Array.isArray(FSFX._rules)){const names=[],ids=[];let c=f,n=0;while(c&&n++<30){names.push((c.name||'').toLowerCase());ids.push(c.id,c.targetId||'');c=items.get(c.parent)}
-  const sc=[...items.values()].find(x=>x.targetId===id&&x.id!==id);if(sc)names.push((sc.name||'').toLowerCase());
-  const r=FSFX._rules.find(r=>{if(r.ids&&r.ids.some(x=>x===id||(r.path!==false&&ids.indexOf(x)>=0)))return true;if(r.regex){let re;try{re=new RegExp(r.regex,'i')}catch(e){}if(re&&(r.path?names:names.slice(0,1)).some(x=>re.test(x)))return true}const q=(r.match||'').toLowerCase();return q&&(r.path?names:names.slice(0,1).concat(sc?[(sc.name||'').toLowerCase()]:[])).some(x=>x.includes(q))});if(r){if(Array.isArray(r.file)&&Array.isArray(r.file[0])){const V=r.file;let i=Math.random()*V.length|0;if(V.length>1&&i===r._last)i=(i+1+(Math.random()*(V.length-1)|0))%V.length;r._last=i;L=V[i]}else L=r.files||(Array.isArray(r.file)?r.file:[r.file])}}
  if(!L&&f)L=sfxFallback(id,f);
  return L}
 /*SFX-RESOLVE-END*/
@@ -1221,7 +1224,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.10';
+const HOME_VER_FALLBACK='0.8.11';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}

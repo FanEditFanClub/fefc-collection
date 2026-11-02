@@ -65,6 +65,28 @@ def run_cmd(cmd, check=True):
         raise RuntimeError(f"Command failed (exit {res.returncode}): {cmd}")
     return res
 
+
+def ship_catalog_snapshot(label):
+    """Commit + deploy index/links/dates early so apps see prune/adds even if later steps time out."""
+    try:
+        run_cmd("git add data/index.json data/index.json.gz data/links.json data/dates.json data/added.json || true", check=False)
+        status = subprocess.run("git status --porcelain -- data/index.json data/links.json data/dates.json data/added.json", shell=True, capture_output=True, text=True, cwd=ROOT_DIR)
+        if not status.stdout.strip():
+            print(f"No catalog changes to ship ({label})", flush=True)
+            return
+        run_cmd(f'git commit -m "Catalog resync snapshot ({label})" || true', check=False)
+        try:
+            run_cmd("git push origin main", check=False)
+        except Exception as e:
+            print(f"Early catalog push warning: {e}", flush=True)
+        try:
+            run_cmd("./node_modules/.bin/wrangler pages deploy . --project-name=fefc-collection --branch=main --commit-dirty=true")
+            print(f"Early catalog Pages deploy ok ({label})", flush=True)
+        except Exception as e:
+            print(f"Early catalog deploy warning: {e}", flush=True)
+    except Exception as e:
+        print(f"ship_catalog_snapshot warning: {e}", flush=True)
+
 def main():
     start_ts = datetime.utcnow().isoformat() + "Z"
     print(f"=== Starting Daily FEFC Collection Resync at {start_ts} ===", flush=True)
@@ -90,6 +112,8 @@ def main():
         run_cmd("python3 tools/added.py")
     except Exception as e:
         print(f"Warning during added: {e}", flush=True)
+
+    ship_catalog_snapshot("post-crawl")
 
     # 2. File classification
     try:
