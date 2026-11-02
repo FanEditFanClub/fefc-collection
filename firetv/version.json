@@ -1,8 +1,8 @@
 {
-    "versionCode": 12,
-    "versionName": "0.8.4",
+    "versionCode": 13,
+    "versionName": "0.8.5",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.4: Fire TV \u2014 fix hub counts stuck at 0 (index prefetch + 90s timeout/retry for 6.7MB JSON); full-length TV CSS intro (~26s with audio); official FEFC app icon in top bar with Home beside it; ticker on all screens except video details, non-focusable on TV/FEFCNative; remote bar full-width flush on ticker; version pill top-right clear of tiles; home hub centered between title and controls; Fan Edit Collections removed from top menu (folder + home tile kept).",
-    "size": 59197,
-    "sha256": "0eb34f91f7affe9fb7a63202a207747ddd5ec56182f47947a917e2ac0ecefbbf"
+    "notes": "Beta 0.8.5: Fire TV P0 \u2014 WebView cache clear on version change + apk= bust; SW skipWaiting; CSS/lite intro; My List Check for updates at top + D-pad scroll; skip mosaic + TV lag CSS; menu logo\u2192Home\u2192Back; Search matches bar height; Back restores scroll+focus from history.state; TV hints: speaker icon (no M kbd); Menu (\u2630) opens Star/Search/Sound popup (web keeps Y/S/M).",
+    "size": 59438,
+    "sha256": "a81e4df2c67fdc092f6ce985c078c2e0ebf6d3f7db40430c366a9554b5981b17"
 }

@@ -12,6 +12,7 @@ import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -29,6 +30,7 @@ import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebStorage;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -70,6 +72,15 @@ public class MainActivity extends Activity {
         web.setFocusable(true);
         web.setFocusableInTouchMode(true);
         configure(web);
+        /* Bust stale WebView HTTP / SW cache when the APK versionCode changes (Fire TV often keeps old JS/CSS). */
+        SharedPreferences prefs = getSharedPreferences("fefc", MODE_PRIVATE);
+        int lastCleared = prefs.getInt("clearedForVersion", 0);
+        if (lastCleared != BuildConfig.VERSION_CODE) {
+            try { web.clearCache(true); } catch (Exception ignored) {}
+            try { web.clearFormData(); } catch (Exception ignored) {}
+            try { WebStorage.getInstance().deleteAllData(); } catch (Exception ignored) {}
+            prefs.edit().putInt("clearedForVersion", BuildConfig.VERSION_CODE).apply();
+        }
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         buildOfflineView();
         setContentView(root);
@@ -123,7 +134,7 @@ public class MainActivity extends Activity {
         s.setMediaPlaybackRequiresUserGesture(false); // embedded Drive player can start without a prior tap
         s.setAllowContentAccess(true);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
-        s.setCacheMode(WebSettings.LOAD_DEFAULT); // honours the site's no-cache headers, so updates show
+        s.setCacheMode(WebSettings.LOAD_DEFAULT); // site Cache-Control; also clearCache on VERSION_CODE change
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setSupportMultipleWindows(true);
@@ -143,7 +154,10 @@ public class MainActivity extends Activity {
         failed = false;
         offline.setVisibility(View.GONE);
         web.setVisibility(View.VISIBLE);
-        web.loadUrl(BuildConfig.START_URL);
+        // apk=versionCode so the first document request bypasses any edge/WebView cache keyed only on ?tv=1
+        String url = BuildConfig.START_URL;
+        url += (url.contains("?") ? "&" : "?") + "apk=" + BuildConfig.VERSION_CODE;
+        web.loadUrl(url);
     }
 
     private boolean online() {

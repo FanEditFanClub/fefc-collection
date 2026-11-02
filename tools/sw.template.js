@@ -41,3 +41,4 @@ self.addEventListener('fetch',e=>{const u=new URL(e.request.url);
  // app shell: network-first (fresh builds), cache fallback for offline
  const nav=e.request.mode==='navigate'||/(^\/$|\.html$|\.js$|\.css$)/.test(u.pathname);
  e.respondWith(fetch(e.request,nav?{cache:'no-store'}:undefined).then(r=>{if(r.ok){const c=r.clone();caches.open(SHELL).then(x=>x.put(e.request,c))}return r}).catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||caches.match('/index.html'))))});
+self.addEventListener('message',e=>{if(e&&e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting()});

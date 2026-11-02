@@ -63,10 +63,12 @@
       if (h === "#/support") h = "#/supportus";
       if (/^#\/genre\//.test(h)) h = "#/genres";
       var isBack = !!back || /^#\/(edit|search|play|readfirst)\b/.test(h) || typeof document !== "undefined" && document.getElementById("details") && !document.getElementById("details").hidden;
-      return (isBack ? '<button class="mi" data-nav="up">\u25C0 Back</button>' : "") + NA.MENU(F).map(function(m) {
+      var items = NA.MENU(F).map(function(m) {
         var on = h === m[0] || m[0] === "#/" && h === "#" || m[0] !== "#/" && h.indexOf(m[0] + "/") === 0;
         return '<button class="mi' + (on ? " on" : "") + '" data-href="' + m[0] + '"' + (on ? ' aria-current="page"' : "") + ">" + m[1] + "</button>";
-      }).join("");
+      });
+      if (isBack) items.splice(1, 0, '<button class="mi" data-nav="up">\u25C0 Back</button>');
+      return items.join("");
     },
     PAGE: 60,
     plural: function(n, w) {

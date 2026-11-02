@@ -1101,13 +1101,33 @@ body.touch #hints .hint-btn>span{overflow:hidden;text-overflow:ellipsis;max-widt
 }
 body.touch.at-home #home-ver{bottom:calc(var(--dock,56px) + 8px);opacity:.95;z-index:90}
 
-/* SEARCH_SIZE_30: ~30% larger search control (web #q + TV #tvq); keep bar from overflowing */
+/* SEARCH_SIZE_30: web #q ~30% larger; TV #tvq matches menu-bar .mi height (aligned), ~30% bigger than original tiny search */
 #q{height:49px;min-height:44px;border-radius:24px;font-size:15px;padding:0 18px;width:clamp(104px,15.5vw,208px)!important;flex:none!important;box-sizing:border-box}
 @media (max-width:1279px){#q{width:clamp(100px,15vw,190px)!important;height:46px;font-size:14.5px}}
 @media (min-width:1280px){#q{width:clamp(120px,11vw,230px)!important}}
 @media (max-width:900px){#menu .mi{padding:6px 7px;font-size:12px}#q{width:clamp(96px,18vw,170px)!important}}
-body.tv #tvq{font-size:1.75vh;min-height:5.2vh;padding:0 .75vw;letter-spacing:.02em;flex:none}
-body.tv #q{height:6.5vh;font-size:2.3vh;width:14vw}
+/* TV: #tvq + bar .mi share one height (menu-bar aligned). Search ~30% larger than the old 1.32vh control. */
+body.tv #bar .mi,body.tv #tvq{
+  box-sizing:border-box!important;
+  min-height:max(48px,5.2vh)!important;
+  height:max(48px,5.2vh)!important;
+  padding:0 .9vw!important;
+  font-size:max(18px,1.72vh)!important; /* ~30% over 1.32vh / 14px */
+  line-height:1!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  flex:none!important;
+  letter-spacing:.01em;
+  vertical-align:middle;
+}
+body.tv #tvq{
+  min-width:10.5vw!important;
+  padding:0 1.15vw!important;
+  font-weight:600;
+}
+body.tv #bar{align-items:center!important}
+body.tv #q{height:max(48px,5.2vh)!important;font-size:max(18px,1.72vh)!important;width:12vw}
 
 
 /* ========== iOS Safari landscape (iPhone ~844x390 / 932x430): reclaim height, fit 3x3, no mid-word tile titles ========== */
@@ -1201,3 +1221,50 @@ body.tv .tk-i{pointer-events:none!important;cursor:default}
 body.tv #brand img{height:4.6vh;width:4.6vh;border-radius:0.7vh}
 #brand{gap:10px}
 body.tv #brand span{display:none}
+
+/* My List: Check for updates pinned under the bar (Fire TV D-pad) */
+.ml-upd-wrap.ml-upd-top{padding:12px 12px 18px;justify-content:flex-start;gap:12px;align-items:center;flex-wrap:wrap}
+.ml-upd-hint{margin:0;color:#9fb6cf;font-size:13px;opacity:.9}
+body.tv .ml-upd-hint{font-size:1.6vh}
+body.tv .ml-upd-wrap.ml-upd-top{padding:1.2vh 1vw 1.6vh}
+
+/* Fire TV CSS intro: guarantee a visible logo quickly (weak GPU / stalled animations) */
+#intro.tvi.tvi-lite .tvi-logo{animation-duration:.75s;animation-delay:.25s;opacity:1}
+#intro.tvi.tvi-lite .tvi-glow{animation-duration:3.2s}
+#intro.tvi.tvi-lite .tvi-ring,#intro.tvi.tvi-lite .tvi-ring.r2{animation-iteration-count:2;animation-duration:1.4s}
+body.firetv.tvintro #intro.tvi{opacity:1;visibility:visible;background:#000}
+/* If animations never run, still show the logo after 1.2s */
+#intro.tvi.tvi-lite .tvi-logo{animation-fill-mode:both}
+@supports not (animation-name:x){#intro.tvi .tvi-logo{opacity:1;transform:none}}
+
+/* TV_PERF_085: Fire TV / body.tv — kill expensive paint (mosaic already skipped in JS) */
+body.tv,body.firetv{scroll-behavior:auto!important}
+body.tv #mosaic,body.firetv #mosaic{display:none!important}
+body.tv .mc,body.firetv .mc{display:none!important}
+body.tv .ol-tile,body.tv .hb,body.tv .mi,body.tv .pill,body.tv .sortpill{
+  transition:none!important;animation:none!important;
+  box-shadow:none!important;filter:none!important;-webkit-filter:none!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  text-shadow:none!important
+}
+body.tv .ol-tile{content-visibility:auto;contain-intrinsic-size:auto 160px;will-change:auto}
+body.tv .ol-tile img,body.tv .hb img{filter:none!important;transform:none!important;transition:opacity .2s linear!important}
+body.tv .ol-tile:focus,body.tv .ol-tile:focus-visible,body.tv .hb:focus,body.tv .mi:focus,body.tv #tvq:focus{
+  outline:3px solid #fff!important;outline-offset:2px;box-shadow:0 0 0 6px #2fa8ff88!important;transform:scale(1.03)!important
+}
+body.tv #hub .hb,body.tv #home.enter #hub,body.tv #home.enter #hints{animation:none!important;transition:none!important}
+body.tv #grid.gnrs,body.tv #grid.gnrs .ol-tile.gnr{perspective:none!important;transform:none!important}
+body.firetv #ticker .tk-i{animation:none!important}
+
+/* TV Menu popup + no keyboard glyphs on TV legend */
+body.tv #hints kbd{display:none!important}
+body.tv #hmute .g-ftv-spk,body.firetv #hmute .g-ftv-spk{width:1.85em;height:1.35em;border-radius:5px;background:linear-gradient(180deg,#4a4a4a,#161616);color:#fff;box-shadow:inset 0 1px 0 #ffffff55,0 0 0 1px #000,0 1px 2px #000;display:inline-flex;align-items:center;justify-content:center}
+body.tv #hmute .g-ftv-spk svg{width:78%;height:78%;display:block}
+#tvmenu{position:fixed;inset:0;z-index:9999;background:#000c;display:flex;align-items:center;justify-content:center;padding:4vh 4vw}
+#tvmenu[hidden]{display:none!important}
+#tvmenu .tvm-box{min-width:min(42vw,520px);max-width:70vw;background:linear-gradient(180deg,#2c333e,#0b0e13);border:2px solid #6d7c8f;border-radius:12px;padding:2.4vh 2vw;display:flex;flex-direction:column;gap:1.2vh;box-shadow:0 12px 48px #000c}
+#tvmenu .tvm-h{margin:0 0 .4vh;color:#9fb6cf;font-size:1.6vh;letter-spacing:.12em;text-transform:uppercase}
+#tvmenu .tvm-i{appearance:none;border:2px solid #5a6678;border-radius:8px;background:#141a24;color:#fff;font:600 2vh 'Source Sans 3',sans-serif;min-height:6.2vh;padding:0 1.4vw;text-align:left;cursor:pointer}
+#tvmenu .tvm-i:focus,#tvmenu .tvm-i:focus-visible{outline:0;border-color:#fff;background:linear-gradient(180deg,#fff,#cfe9ff);color:#000;box-shadow:0 0 0 4px #2fa8ff88}
+#tvmenu .tvm-i:disabled{opacity:.45}
+body.tvmenu-open #hints{pointer-events:none}

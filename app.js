@@ -96,10 +96,12 @@ var __spreadValues = (a, b) => {
     let vfb = false, vEl = null, tEnd = vid ? 26.2 : TVI.end;
     const tviLayers = () => {
       el.insertAdjacentHTML("afterbegin", '<i class="tvi-glow"></i><i class="tvi-ring"></i><i class="tvi-ring r2"></i><i class="tvi-sweep"></i><img class="tvi-logo" src="assets/fefc-logo-carson.png" alt=""><i class="tvi-flash"></i>');
+      if (isFire) el.classList.add("tvi-lite");
     };
     if (tvl) {
       document.body.classList.add("tvintro");
       el.classList.add("tvi");
+      if (isFire) el.classList.add("tvi-lite");
       if (tg) {
         tg.style.visibility = "hidden";
         tg.style.opacity = "0";
@@ -937,6 +939,12 @@ var __spreadValues = (a, b) => {
     syncTag();
     const M = $("#mosaic");
     const tv = document.body.classList.contains("tv");
+    if (tv && (document.body.classList.contains("firetv") || window.FEFCNative)) {
+      clearInterval(mosaicTimer);
+      if (M) M.innerHTML = "";
+      [].slice.call(document.querySelectorAll("#hub .mc")).forEach((x) => x.remove());
+      return;
+    }
     const n = tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
     let pool = mosaicList.length ? mosaicList.slice() : vids().slice(0, 40).map((f) => ({ id: f.id, target: target(f), name: f.name }));
     M.innerHTML = "";
@@ -1107,8 +1115,19 @@ var __spreadValues = (a, b) => {
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(lay);
     setTimeout(() => {
       if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) {
-        const t = $(".hb-logo") || $("#hub .hb:not(.gempty)");
-        if (t) focusEl(t);
+        const st = history.state;
+        let done = false;
+        if (navBack || st && st.fefc && st.focus) {
+          try {
+            restoreScroll();
+            done = !!(st && st.focus);
+          } catch (e) {
+          }
+        }
+        if (!done) {
+          const t = $(".hb-logo") || $("#hub .hb:not(.gempty)");
+          if (t) focusEl(t);
+        }
       }
     }, 30);
     try {
@@ -1177,6 +1196,7 @@ var __spreadValues = (a, b) => {
     g.className = "sectioned";
     g.innerHTML = secHTML("folds", "ACTORS & DIRECTORS", L);
     g.querySelectorAll(".ol-tile").forEach(lazyArt);
+    restoreScroll();
   }
   let mlSort = localStorage.fefcStarSort || "date";
   function myListPage() {
@@ -1193,12 +1213,30 @@ var __spreadValues = (a, b) => {
     const histCollapsed = localStorage.fefcHistCollapsed === "1";
     const histHead = '<div class="ol-div ml-hist-head"><button type="button" class="ml-hist-tog" data-ml="hist" aria-expanded="'.concat(histCollapsed ? "false" : "true", '" aria-controls="ml-hist-body"><span class="ml-hist-chev" aria-hidden="true">').concat(histCollapsed ? "\u25B6" : "\u25BC", "</span><span>HISTORY</span></button><i></i>").concat(!histCollapsed && H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "", "<b>").concat(H.length, "</b></div>");
     const histBody = '<div id="ml-hist-body" class="ml-hist-body'.concat(histCollapsed ? " is-collapsed" : "", '"').concat(histCollapsed ? " hidden" : "", ">") + (H.length ? '<div class="sgrid vids">'.concat(H.map((f) => tile(f)).join(""), "</div>") : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + "</div>";
-    g.innerHTML = '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>' + (document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>' : "");
+    const updTV = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap ml-upd-top"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button><p class="ml-upd-hint">Looks for a newer Fire TV / Android TV build.</p></div>' : "";
+    g.innerHTML = updTV + '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
     if (window.FEFCSync) {
       const c = $("#ml-sync");
       c && FEFCSync.subscribe && 0;
     }
     g.querySelectorAll(".ol-tile").forEach(lazyArt);
+    requestAnimationFrame(() => {
+      if (navBack) {
+        try {
+          restoreScroll();
+          return;
+        } catch (e) {
+        }
+      }
+      const u = $("#ml-update");
+      if (u && document.body.classList.contains("tv")) {
+        try {
+          u.focus({ preventScroll: true });
+          focusEl(u);
+        } catch (e) {
+        }
+      }
+    });
   }
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-ml]");
@@ -1365,6 +1403,14 @@ var __spreadValues = (a, b) => {
     const l = $("#hmutel");
     if (l) l.textContent = S.muted ? "Sound off" : "Sound on";
     if ($("#mute")) $("#mute").textContent = S.muted ? "\u{1F507}" : "\u{1F50A}";
+    const g = $("#hmute .g");
+    if (g && document.body.classList.contains("tv")) {
+      g.className = "g g-ftv g-ftv-spk";
+      g.setAttribute("aria-hidden", "true");
+      g.innerHTML = S.muted ? '<svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M16.5 12a4.5 4.5 0 00-1.3-3.15l1.4-1.4A6.4 6.4 0 0118.5 12a6.4 6.4 0 01-1.9 4.55l-1.4-1.4A4.5 4.5 0 0016.5 12zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>' : '<svg viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 00-1.3-3.15l1.4-1.4A6.4 6.4 0 0118.5 12a6.4 6.4 0 01-1.9 4.55l-1.4-1.4A4.5 4.5 0 0016.5 12zM14 3.23v2.06a8.9 8.9 0 010 13.42v2.06c3.84-1.1 6.5-4.7 6.5-8.77s-2.66-7.67-6.5-8.77z"/></svg>';
+    }
+    const hm = $("#hmute");
+    if (hm) hm.setAttribute("aria-pressed", S.muted ? "true" : "false");
   }
   let lastFocus = null;
   document.addEventListener("focusin", (e) => {
@@ -1375,6 +1421,11 @@ var __spreadValues = (a, b) => {
     if (!h) return;
     const k = h.dataset.hint;
     if (k === "search") return doSearch();
+    if (k === "menu") {
+      S.click && S.click();
+      openTvMenu();
+      return;
+    }
     if (k === "star") {
       S.click && S.click();
       starFocused();
@@ -1386,6 +1437,7 @@ var __spreadValues = (a, b) => {
       return go("#/");
     }
     if (k === "back") {
+      if (closeTvMenu()) return;
       if (history.length > 1 && location.hash && location.hash !== "#/") {
         S.back();
         return history.back();
@@ -1393,7 +1445,7 @@ var __spreadValues = (a, b) => {
       return goBack();
     }
     if (k === "select") {
-      const t = lastFocus && document.contains(lastFocus) && lastFocus.matches(".ol-tile,[data-act],[data-nav],.hb,.pill,.sortpill,.bigplay,.mi") ? lastFocus : null;
+      const t = lastFocus && document.contains(lastFocus) && lastFocus.matches(".ol-tile,[data-act],[data-nav],.hb,.pill,.sortpill,.bigplay,.mi,#tvmenu button") ? lastFocus : null;
       if (t) {
         S.unlock && S.unlock();
         t.click();
@@ -1424,7 +1476,8 @@ var __spreadValues = (a, b) => {
     const menuKey = e.key === "Menu" || e.key === "ContextMenu" || e.keyCode === 93 || e.keyCode === 82 && e.key !== "r" && e.key !== "R";
     if (menuKey) {
       e.preventDefault();
-      starFocused();
+      if (document.body.classList.contains("firetv") || document.body.classList.contains("tv") && window.FEFCNative) openTvMenu();
+      else starFocused();
     } else if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403) {
       e.preventDefault();
       doSearch();
@@ -1702,19 +1755,21 @@ var __spreadValues = (a, b) => {
     if (m && !navBack) folderSfx(decodeURIComponent(m[1]));
   });
   function go(h) {
+    captureNavState();
     navBack = false;
     const m = h.match(/^#\/folder\/([^/?]+)/);
     if (m) folderSfx(decodeURIComponent(m[1]));
     if (location.hash === h) return route();
-    history.pushState({ fefc: 1 }, "", h);
+    history.pushState({ fefc: 1, y: 0, focus: null }, "", h);
     route();
   }
   function back(fallback) {
+    captureNavState();
     S.back();
     navBack = true;
     clearBack();
     const h = location.hash, fb = () => {
-      history.replaceState(null, "", fallback || "#/");
+      history.replaceState({ fefc: 1, y: 0, focus: null }, "", fallback || "#/");
       route();
     };
     if (history.state && history.state.fefc) {
@@ -1922,34 +1977,92 @@ var __spreadValues = (a, b) => {
   }
   let drainOne = () => false, navBack = false;
   const scrollKey = (h) => "fefcScroll:" + (h || location.hash || "#/") + "|" + (window.FEFCSortKey || localStorage.fefcSort || "");
-  function saveScroll(id) {
+  function readFocusTarget(el) {
+    if (!el || !el.closest) return null;
+    const tile2 = el.closest(".ol-tile[data-id]");
+    if (tile2) return { type: "tile", id: tile2.dataset.id };
+    const hub2 = el.closest("[data-hub]");
+    if (hub2) return { type: "hub", hub: hub2.dataset.hub };
+    const ml = el.closest("#ml-update");
+    if (ml) return { type: "id", id: "ml-update" };
+    const mi = el.closest("#menu .mi[data-href],#bar .mi[data-href]");
+    if (mi && mi.dataset.href) return { type: "href", href: mi.dataset.href };
+    const tvq = el.closest("#tvq");
+    if (tvq) return { type: "id", id: "tvq" };
+    const star = el.closest("[data-star]");
+    if (star) return { type: "star", id: star.dataset.star };
+    return null;
+  }
+  function captureNavState(focusId) {
+    const m = $("#main");
+    const y = m && !m.hidden ? m.scrollTop : 0;
+    let focus = null;
+    if (focusId) focus = { type: "tile", id: focusId };
+    else focus = readFocusTarget(document.activeElement);
+    const hash2 = location.hash || "#/";
+    const st = Object.assign({}, history.state && typeof history.state === "object" ? history.state : {}, { fefc: 1, y, focus, hash: hash2 });
     try {
-      const m = $("#main");
-      if (!m || m.hidden) return;
-      sessionStorage.setItem(scrollKey(), JSON.stringify({ y: m.scrollTop, id: id || null }));
+      history.replaceState(st, "");
     } catch (e) {
     }
+    try {
+      sessionStorage.setItem(scrollKey(hash2), JSON.stringify({ y, id: focus && focus.type === "tile" ? focus.id : null, focus }));
+    } catch (e) {
+    }
+    return st;
+  }
+  function saveScroll(id) {
+    captureNavState(id);
   }
   document.addEventListener("click", (e) => {
-    const t = e.target.closest && e.target.closest("#grid .ol-tile,#arena .ol-tile");
-    if (t && !e.target.closest("[data-star]")) saveScroll(t.dataset.id);
+    const t = e.target.closest && e.target.closest("#grid .ol-tile,#arena .ol-tile,#hub .hb");
+    if (t && !e.target.closest("[data-star]")) saveScroll(t.dataset.id || null);
   }, true);
+  function applyFocusRec(focus) {
+    if (!focus) return;
+    let t = null;
+    if (focus.type === "tile" && focus.id) t = document.querySelector('#grid [data-id="' + focus.id + '"],#arena [data-id="' + focus.id + '"]');
+    else if (focus.type === "hub" && focus.hub) t = document.querySelector('#hub [data-hub="' + focus.hub + '"]');
+    else if (focus.type === "href" && focus.href) t = document.querySelector('#menu .mi[data-href="' + focus.href + '"]');
+    else if (focus.type === "id" && focus.id) t = document.getElementById(focus.id);
+    else if (focus.type === "star" && focus.id) t = document.querySelector('[data-star="' + focus.id + '"]');
+    if (t) {
+      try {
+        focusEl(t);
+      } catch (e) {
+        try {
+          t.focus({ preventScroll: true });
+        } catch (_) {
+        }
+      }
+      if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) t.classList.add("ret");
+    }
+  }
   function restoreScroll() {
     const m = $("#main");
-    if (!m) return;
     let rec = null;
     if (navBack) {
-      try {
-        rec = JSON.parse(sessionStorage.getItem(scrollKey()) || "null");
-      } catch (e) {
+      const st = history.state;
+      if (st && st.fefc && (st.y != null || st.focus)) {
+        rec = { y: st.y || 0, id: st.focus && st.focus.type === "tile" ? st.focus.id : st.id || null, focus: st.focus || null };
+      }
+      if (!rec) {
+        try {
+          rec = JSON.parse(sessionStorage.getItem(scrollKey()) || "null");
+        } catch (e) {
+        }
       }
     }
     navBack = false;
+    if (!m || m.hidden) {
+      if (rec && rec.focus) requestAnimationFrame(() => applyFocusRec(rec.focus));
+      return;
+    }
     if (!rec) {
       m.scrollTop = 0;
       return;
     }
-    const need = () => m.scrollHeight < rec.y + m.clientHeight + 40 || rec.id && !document.querySelector('#grid [data-id="' + rec.id + '"]');
+    const need = () => m.scrollHeight < rec.y + m.clientHeight + 40 || rec.id && !document.querySelector('#grid [data-id="' + rec.id + '"],#arena [data-id="' + rec.id + '"]');
     let guard = 0;
     while (need() && guard++ < 400) {
       if (drainOne()) continue;
@@ -1964,17 +2077,8 @@ var __spreadValues = (a, b) => {
     m.style.scrollBehavior = "auto";
     m.scrollTop = rec.y;
     m.style.scrollBehavior = prev;
-    if (rec.id) {
-      const t = document.querySelector('#grid [data-id="' + rec.id + '"]');
-      if (t) {
-        try {
-          t.focus({ preventScroll: true });
-        } catch (e) {
-          t.focus();
-        }
-        if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) t.classList.add("ret");
-      }
-    }
+    const foc = rec.focus || (rec.id ? { type: "tile", id: rec.id } : null);
+    if (foc) requestAnimationFrame(() => applyFocusRec(foc));
   }
   const CSORTS = [["az", "Name A\u2013Z"], ["za", "Name Z\u2013A"], ["added", "Recently Added"], ["updated", "Recently Updated"], ["files", "Most Files"], ["size", "Largest"]];
   const csortGet = (id) => {
@@ -3198,20 +3302,40 @@ var __spreadValues = (a, b) => {
     else if (r.bottom > bot) m.scrollTop += r.bottom - bot;
   }
   function focusEl(e) {
-    e.focus({ preventScroll: true });
+    if (!e) return;
+    try {
+      e.focus({ preventScroll: true });
+    } catch (err) {
+      try {
+        e.focus();
+      } catch (_) {
+      }
+    }
     if (!e.scrollIntoView) return;
-    const m = document.body.classList.contains("tv") && e.closest && e.closest("#main");
+    const tv = document.body.classList.contains("tv") || document.body.classList.contains("firetv");
+    const m = tv && e.closest && e.closest("#main");
     if (m && m.scrollHeight > m.clientHeight) {
       tvReveal(m, e);
+      try {
+        e.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+      } catch (_) {
+      }
       return;
     }
-    e.scrollIntoView({ block: "nearest", inline: "nearest" });
+    try {
+      e.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+    } catch (_) {
+    }
   }
   let gbT = 0;
   function goBack() {
     const nw = Date.now();
     if (nw - gbT < 250) return;
     gbT = nw;
+    if (closeTvMenu()) {
+      S.back();
+      return;
+    }
     S.back();
     if (!$("#rfpanel").hidden) return rfDismiss();
     if (!$("#player").hidden) {
@@ -3230,6 +3354,29 @@ var __spreadValues = (a, b) => {
       if (it && (!it.classList.contains("done") || Date.now() - (window.__ie || 0) < 900)) return;
     }
     const dir = { 37: "left", 38: "up", 39: "right", 40: "down" }[k];
+    const tvm = $("#tvmenu");
+    if (tvm && !tvm.hidden) {
+      if (k === 10009 || k === 461 || k === 27 || k === 8 && !inInput || e.key === "GoBack" || e.key === "BrowserBack") {
+        e.preventDefault();
+        closeTvMenu();
+        return;
+      }
+      if (k === 38 || k === 40) {
+        e.preventDefault();
+        const L = [].slice.call(tvm.querySelectorAll(".tvm-i:not([disabled])"));
+        if (!L.length) return;
+        let i = L.indexOf(document.activeElement);
+        i = k === 40 ? i < 0 ? 0 : Math.min(L.length - 1, i + 1) : i < 0 ? L.length - 1 : Math.max(0, i - 1);
+        L[i].focus({ preventScroll: true });
+        return;
+      }
+      if ((k === 13 || k === 23) && document.activeElement && document.activeElement.matches(".tvm-i")) {
+        e.preventDefault();
+        document.activeElement.click();
+        return;
+      }
+      return;
+    }
     if (dir && !$("#rfpanel").hidden && (k === 38 || k === 40)) {
       e.preventDefault();
       const w = $(".rf-scroll");
@@ -3959,7 +4106,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.4";
+  const HOME_VER_FALLBACK = "0.8.5";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4000,26 +4147,124 @@ var __spreadValues = (a, b) => {
   }
   resolveHomeVer();
   afterIntro(resolveHomeVer);
+  let _tvMenuPrev = null;
+  function focusedMediaId() {
+    const a = document.activeElement, t = a && a.closest && a.closest(".ol-tile");
+    const id = t ? t.dataset.id : !$("#details").hidden ? $("#details").dataset.id : null;
+    return id || null;
+  }
+  function closeTvMenu() {
+    const el = $("#tvmenu");
+    if (!el || el.hidden) return false;
+    el.hidden = true;
+    el.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("tvmenu-open");
+    const prev = _tvMenuPrev;
+    _tvMenuPrev = null;
+    if (prev && document.contains(prev)) try {
+      focusEl(prev);
+    } catch (e) {
+    }
+    return true;
+  }
+  function openTvMenu() {
+    if (!document.body.classList.contains("tv") && !document.body.classList.contains("firetv")) {
+      starFocused();
+      return;
+    }
+    let el = $("#tvmenu");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "tvmenu";
+      el.setAttribute("role", "dialog");
+      el.setAttribute("aria-label", "Menu");
+      el.innerHTML = '<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search">\u2315 Search</button><button type="button" class="tvm-i" data-tm="mute"></button></div>';
+      document.body.appendChild(el);
+      el.addEventListener("click", (e) => {
+        const b = e.target.closest("[data-tm]");
+        if (!b) return;
+        const k = b.dataset.tm;
+        S.click && S.click();
+        if (k === "star") {
+          closeTvMenu();
+          starFocused();
+          return;
+        }
+        if (k === "search") {
+          closeTvMenu();
+          doSearch();
+          return;
+        }
+        if (k === "mute") {
+          doMute();
+          paintTvMenu();
+          try {
+            b.focus({ preventScroll: true });
+          } catch (err) {
+          }
+          return;
+        }
+      });
+    }
+    _tvMenuPrev = document.activeElement;
+    paintTvMenu();
+    el.hidden = false;
+    el.setAttribute("aria-hidden", "false");
+    document.body.classList.add("tvmenu-open");
+    const first = el.querySelector(".tvm-i");
+    if (first) try {
+      first.focus({ preventScroll: true });
+    } catch (e) {
+      first.focus();
+    }
+  }
+  function paintTvMenu() {
+    const el = $("#tvmenu");
+    if (!el) return;
+    const id = focusedMediaId() || _tvMenuPrev && _tvMenuPrev.closest && _tvMenuPrev.closest(".ol-tile") && _tvMenuPrev.closest(".ol-tile").dataset.id || ($("#details").hidden ? null : $("#details").dataset.id);
+    const star = el.querySelector('[data-tm="star"]'), mute = el.querySelector('[data-tm="mute"]');
+    let on = false;
+    try {
+      on = !!(id && window.UD && UD.isStarred(id));
+    } catch (e) {
+    }
+    if (star) {
+      star.disabled = !id;
+      star.textContent = id ? on ? "\u2605 Unstar this item" : "\u2606 Star this item" : "\u2606 Star (select a title first)";
+      star.setAttribute("aria-disabled", id ? "false" : "true");
+    }
+    if (mute) mute.textContent = (S.muted ? "\u{1F507} Sound off" : "\u{1F50A} Sound on") + " \u2014 tap to toggle";
+  }
   if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
     document.body.classList.add("firetv");
     const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20 11H7.83l4.58-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H20v-2z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>';
-    const backI = document.querySelector("#hints .hb-back .g"), starBtn = document.querySelector("#hints .hb-search"), starI = starBtn && starBtn.querySelector(".g");
+    const backI = document.querySelector("#hints .hb-back .g"), menuBtn = document.querySelector("#hints .hb-search"), menuI = menuBtn && menuBtn.querySelector(".g");
     if (backI) {
       backI.className = "g g-ftv g-ftv-back";
       backI.setAttribute("aria-hidden", "true");
       backI.innerHTML = BK;
     }
-    if (starBtn) {
-      starBtn.classList.add("hb-star");
-      starBtn.dataset.hint = "star";
-      starBtn.setAttribute("aria-label", "Star / My List");
-      const lab = starBtn.querySelector("span");
-      if (lab) lab.textContent = "Star";
+    if (menuBtn) {
+      menuBtn.classList.add("hb-menu");
+      menuBtn.classList.remove("hb-star");
+      menuBtn.dataset.hint = "menu";
+      menuBtn.setAttribute("aria-label", "Menu");
+      const lab = menuBtn.querySelector("span");
+      if (lab) lab.textContent = "Menu";
     }
-    if (starI) {
-      starI.className = "g g-ftv g-ftv-menu";
-      starI.setAttribute("aria-hidden", "true");
-      starI.innerHTML = MN;
+    if (menuI) {
+      menuI.className = "g g-ftv g-ftv-menu";
+      menuI.setAttribute("aria-hidden", "true");
+      menuI.innerHTML = MN;
+    }
+    try {
+      sm2();
+    } catch (e) {
+    }
+  } else if (document.body.classList.contains("tv")) {
+    try {
+      sm2();
+    } catch (e) {
     }
   }
   document.addEventListener("keydown", () => document.body.classList.add("kbd"), { once: true });
@@ -4220,8 +4465,40 @@ var __spreadValues = (a, b) => {
   const ios = /iPhone|iPad|iPod/i.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1, snoozed = +localStorage.fefcInstallSnooze > Date.now();
   let deferred = null;
   const box = document.getElementById("install");
-  if ("serviceWorker" in navigator && location.protocol !== "file:") navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((r) => r.update()).catch(() => {
-  });
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" }).then((reg) => {
+      try {
+        reg.update();
+      } catch (e) {
+      }
+      if (reg.waiting) try {
+        reg.waiting.postMessage({ type: "SKIP_WAITING" });
+      } catch (e) {
+      }
+      reg.addEventListener("updatefound", () => {
+        const w = reg.installing;
+        if (!w) return;
+        w.addEventListener("statechange", () => {
+          if (w.state === "installed" && navigator.serviceWorker.controller) {
+            try {
+              w.postMessage({ type: "SKIP_WAITING" });
+            } catch (e) {
+            }
+          }
+        });
+      });
+    }).catch(() => {
+    });
+    let reloaded;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloaded) return;
+      reloaded = 1;
+      try {
+        location.reload();
+      } catch (e) {
+      }
+    });
+  }
   const allowed = () => (mobile || new URLSearchParams(location.search).get("installdemo")) && !standalone && !isTV && !snoozed;
   function show() {
     if (!allowed() || !box.hidden) return;
