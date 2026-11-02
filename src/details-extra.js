@@ -66,6 +66,7 @@ function editHTML(e,F,driveEnt){
  }
  if((e&&(e.synopsis||e.intention||e.details))||ch.length){
    html+=`<h3 class="lc-h p fx-sec" id="lc-changes">Edit Notes · What's Changed</h3>`;
+   html+=`<div class="tv-scroll" tabindex="0" data-tvscroll="changes">`;
    if(e&&e.synopsis) html+=`<p>${esc(e.synopsis)}</p>`;
    if(e&&e.intention) html+=`<p class="fx-q">${esc(e.intention)}</p>`;
    if(e&&e.details) html+=`<p>${esc(e.details)}</p>`;
@@ -73,7 +74,7 @@ function editHTML(e,F,driveEnt){
      html+=`<ul class="fx-ch">${ch.map((c,i)=>`<li${i>=n?' hidden':''}>${esc(c.text)}${c.source?` <span class="src">(${esc(c.source)})</span>`:''}</li>`).join('')}</ul>`;
      if(ch.length>n) html+=`<button class="fx-more pill" data-fxmore>Show all ${ch.length} changes</button>`;
    }
-   html+=srcNote;
+   html+=`</div>`+srcNote;
  }
  return html;
 }

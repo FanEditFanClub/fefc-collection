@@ -52,7 +52,7 @@
     var el2 = document.getElementById("ml-sync");
     if (!el2) return;
     var A = agg();
-    el2.innerHTML = !A.on ? '<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: TV code, QR code, or a 6-digit sync code.</span></div><button class="mi sync-go" data-sync="panel">Sync My List</button></div>' : A.reconnect ? '<div class="sync-card"><div><b>Sync paused</b><span>Reconnect your Google account to resume syncing.</span></div><button class="mi sync-go" data-sync="in">Reconnect</button><button class="mi" data-sync="panel">Sync My List</button></div>' : '<div class="sync-card on"><div><b>' + (A.syncing ? "Syncing\u2026" : "Synced") + "</b><span>" + esc(A.user && A.user.email || "Linked with a " + A.via) + (A.error ? " \xB7 " + esc(A.error) : "") + '</span></div><button class="mi" data-sync="panel">Sync My List</button><button class="mi" data-sync="out">Sign out</button></div>';
+    el2.innerHTML = !A.on ? '<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: TV code, QR code, or a 6-digit sync code.</span></div><button class="mi sync-go" tabindex="0" data-sync="panel">Sync My List</button></div>' : A.reconnect ? '<div class="sync-card"><div><b>Sync paused</b><span>Reconnect your Google account to resume syncing.</span></div><button class="mi sync-go" tabindex="0" data-sync="in">Reconnect</button><button class="mi" data-sync="panel">Sync My List</button></div>' : '<div class="sync-card on"><div><b>' + (A.syncing ? "Syncing\u2026" : "Synced") + "</b><span>" + esc(A.user && A.user.email || "Linked with a " + A.via) + (A.error ? " \xB7 " + esc(A.error) : "") + '</span></div><button class="mi" data-sync="panel">Sync My List</button><button class="mi" data-sync="out">Sign out</button></div>';
   }
   function repaint() {
     paintChip();
@@ -504,7 +504,18 @@
     } catch (e) {
     }
   }
+  window.__fefcPaintSync = paintCard;
   paintChip();
   paintCard();
   checkLink();
 })();
+document.addEventListener("keydown", function(e) {
+  var k = e.keyCode;
+  if (k !== 13 && k !== 23) return;
+  var a = document.activeElement;
+  if (!a || !a.closest) return;
+  var b = a.closest("[data-sync]");
+  if (!b) return;
+  e.preventDefault();
+  b.click();
+});

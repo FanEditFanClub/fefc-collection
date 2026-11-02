@@ -15,10 +15,84 @@ var __spreadValues = (a, b) => {
   return a;
 };
 (() => {
-  const _fetchOnce = (u, ms) => Promise.race([fetch(u, { credentials: "same-origin" }).then((r) => {
-    if (!r.ok) throw Error(r.status);
-    return r.json();
-  }), new Promise((_, rj) => setTimeout(() => rj(Error("timeout " + u)), ms))]);
+  let _jw = null, _jwN = 0;
+  const _jwPend = /* @__PURE__ */ new Map();
+  function _jsonWorker() {
+    if (_jw) return _jw;
+    try {
+      _jw = new Worker("json-worker.js");
+      _jw.onmessage = (e) => {
+        const m = e.data || {}, p = _jwPend.get(m.id);
+        if (!p) return;
+        _jwPend.delete(m.id);
+        m.ok ? p.res(m.value) : p.rej(Error(m.error || "worker"));
+      };
+      _jw.onerror = () => {
+        _jw = null;
+      };
+      return _jw;
+    } catch (e) {
+      _jw = null;
+      return null;
+    }
+  }
+  function parseJsonYield(text) {
+    return new Promise((res, rej) => {
+      setTimeout(() => {
+        try {
+          res(JSON.parse(text));
+        } catch (e) {
+          rej(e);
+        }
+      }, 0);
+    });
+  }
+  function parseJsonOffMain(text) {
+    if (text && text.length > 8e5) return parseJsonYield(text);
+    const w = _jsonWorker();
+    if (!w) return parseJsonYield(text);
+    const id = ++_jwN;
+    return new Promise((res, rej) => {
+      _jwPend.set(id, { res, rej });
+      try {
+        w.postMessage({ id, text });
+      } catch (e) {
+        _jwPend.delete(id);
+        parseJsonYield(text).then(res, rej);
+      }
+    });
+  }
+  function fetchJsonSmart(u, ms) {
+    const fire = !!(window.FEFCNative || document.body.classList.contains("tv") || document.body.classList.contains("firetv"));
+    const big = /index\.json|metadata\.json|dates\.json|genres\.json|details/i.test(u) && fire;
+    const viaWorkerUrl = () => {
+      const w = _jsonWorker();
+      if (!w) return null;
+      const id = ++_jwN;
+      return new Promise((res, rej) => {
+        _jwPend.set(id, { res, rej });
+        try {
+          w.postMessage({ id, url: u });
+        } catch (e) {
+          _jwPend.delete(id);
+          rej(e);
+        }
+      });
+    };
+    const viaMain = () => fetch(u, { credentials: "same-origin" }).then((r) => {
+      if (!r.ok) throw Error(r.status);
+      return r.text();
+    }).then((t) => parseJsonOffMain(t));
+    const go2 = big ? (viaWorkerUrl() || viaMain()).catch((e) => {
+      console.warn("json worker", e);
+      return viaMain();
+    }) : fetch(u, { credentials: "same-origin" }).then((r) => {
+      if (!r.ok) throw Error(r.status);
+      return r.json();
+    });
+    return Promise.race([go2, new Promise((_, rj) => setTimeout(() => rj(Error("timeout " + u)), ms))]);
+  }
+  const _fetchOnce = (u, ms) => fetchJsonSmart(u, ms);
   function thumbSz() {
     return (typeof isTvEnv === "function" ? isTvEnv() : false) || document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative ? "w320" : "w640";
   }
@@ -37,6 +111,58 @@ var __spreadValues = (a, b) => {
   const $ = (s) => document.querySelector(s), P = new URLSearchParams(location.search);
   const isTvEnv = () => !!(document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative || P.get("tv") || /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT\w|CrKey|BRAVIA|Android TV|GoogleTV|Silk|FEFCFireTV|Fire TV/i.test(navigator.userAgent));
   if (isTvEnv()) document.body.classList.add("tv");
+  if (window.FEFCNative && P.get("nointro")) {
+    document.body.classList.add("firetv", "native-waiting");
+  }
+  window.__fefcHomePaintReady = false;
+  window.__fefcMarkHomeReady = function() {
+    if (window.__fefcHomePaintReady) return;
+    window.__fefcHomePaintReady = true;
+    try {
+      document.body.classList.add("home-paint-ready");
+    } catch (e) {
+    }
+  };
+  window.__fefcFrameStats = null;
+  window.__fefcStartFrameProbe = function(ms) {
+    ms = ms || 5e3;
+    const t0 = performance.now();
+    let last = t0, frames = [];
+    function tick(now) {
+      frames.push(now - last);
+      last = now;
+      if (now - t0 < ms) requestAnimationFrame(tick);
+      else {
+        const sorted = frames.slice().sort((a, b) => a - b);
+        const sum = frames.reduce((a, b) => a + b, 0);
+        window.__fefcFrameStats = { n: frames.length, avg: +(sum / frames.length).toFixed(1), p50: +(sorted[sorted.length >> 1] || 0).toFixed(1), p95: +(sorted[Math.floor(sorted.length * 0.95)] || 0).toFixed(1), max: +(sorted[sorted.length - 1] || 0).toFixed(1), over16: frames.filter((d) => d > 16.7).length, over33: frames.filter((d) => d > 33).length, over50: frames.filter((d) => d > 50).length };
+        try {
+          console.log("FEFC_FRAME_STATS " + JSON.stringify(window.__fefcFrameStats));
+        } catch (e) {
+        }
+      }
+    }
+    ;
+    requestAnimationFrame(tick);
+  };
+  window.__fefcRevealHome = function() {
+    const b = document.body.classList;
+    if (!b.contains("native-waiting") && b.contains("home-revealed")) return "already";
+    b.remove("native-waiting");
+    b.add("home-revealed", "intro-done");
+    try {
+      window.dispatchEvent(new Event("fefc-home-revealed"));
+    } catch (e) {
+    }
+    try {
+      window.__fefcStartFrameProbe(5e3);
+    } catch (e) {
+    }
+    return "ok";
+  };
+  setTimeout(function() {
+    if (document.body.classList.contains("native-waiting") && !window.FEFCNative) window.__fefcRevealHome();
+  }, 8e3);
   const HUES = [205, 190, 220, 265, 30, 160, 340, 15];
   let token = null, items = /* @__PURE__ */ new Map(), kids = /* @__PURE__ */ new Map(), meta = {}, cur = ROOT, live = false, view = "home";
   const hash = (s) => {
@@ -1098,7 +1224,23 @@ var __spreadValues = (a, b) => {
       layers[on].style.opacity = 1;
       layers[1 - on].style.opacity = 0;
     };
-    cells.forEach((c) => set(c, true));
+    const paintReady = () => {
+      const imgs = [].slice.call(document.querySelectorAll("#hub .mc img")).filter((i) => i.src).slice(0, 8);
+      const waits = imgs.map((i) => i.decode ? i.decode().catch(() => {
+      }) : Promise.resolve());
+      Promise.all(waits).then(() => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady(), () => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady());
+      setTimeout(() => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady(), 2500);
+    };
+    if (fire) {
+      cells.forEach((c, i) => setTimeout(() => {
+        set(c, true);
+        if (i === Math.min(5, cells.length - 1)) paintReady();
+      }, i * 45));
+      if (!cells.length) paintReady();
+    } else {
+      cells.forEach((c) => set(c, true));
+      if (window.FEFCNative) paintReady();
+    }
     requestAnimationFrame(fitHeader);
     clearInterval(mosaicTimer);
     mosaicTimer = setInterval(() => {
@@ -1276,9 +1418,9 @@ var __spreadValues = (a, b) => {
     const histBody = '<div id="ml-hist-body" class="ml-hist-body'.concat(histCollapsed ? " is-collapsed" : "", '"').concat(histCollapsed ? " hidden" : "", ">") + (H.length ? '<div class="sgrid vids">'.concat(H.map((f) => tile(f)).join(""), "</div>") : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + "</div>";
     const updTV = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap ml-upd-bot"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button><p class="ml-upd-hint">Looks for a newer Fire TV / Android TV build.</p></div>' : "";
     g.innerHTML = '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + updTV + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
-    if (window.FEFCSync) {
-      const c = $("#ml-sync");
-      c && FEFCSync.subscribe && 0;
+    try {
+      (window.__fefcPaintSync || window.FEFCSync && FEFCSync.paintCard || 0)();
+    } catch (e) {
     }
     g.querySelectorAll(".ol-tile").forEach(lazyArt);
     requestAnimationFrame(() => {
@@ -1290,7 +1432,7 @@ var __spreadValues = (a, b) => {
         }
       }
       if (document.body.classList.contains("tv")) {
-        const first = g.querySelector(".ol-tile,.ml-btn,.ml-hist-tog") || $("#ml-update");
+        const first = g.querySelector("#ml-sync .sync-go,#ml-sync .mi,.ol-tile,.ml-btn,.ml-hist-tog") || $("#ml-update");
         if (first) {
           try {
             first.focus({ preventScroll: true });
@@ -1644,13 +1786,20 @@ var __spreadValues = (a, b) => {
     RFX.open(p);
     setTimeout(() => focusEl($("#rfclose")), 60);
   }
+  const _afterHomeIdle = (fn, delay) => {
+    const run = () => setTimeout(() => {
+      (window.requestIdleCallback || ((f) => setTimeout(f, 0)))(fn, { timeout: 6e3 });
+    }, delay | 0);
+    if (document.body.classList.contains("native-waiting")) addEventListener("fefc-home-revealed", () => run(), { once: true });
+    else run();
+  };
   let FER = {};
-  tmo("data/fanedit-ratings.json", 1e4).then((j) => {
+  _afterHomeIdle(() => tmo("data/fanedit-ratings.json", 1e4).then((j) => {
     FER = j && j.items || {};
   }).catch(() => {
-  });
+  }), 3e3);
   let FSFX = {};
-  tmo("data/folder-sfx.json", 1e4).then((m) => {
+  _afterHomeIdle(() => tmo("data/folder-sfx.json", 1e4).then((m) => {
     FSFX = m;
     const pre = () => {
       Object.keys(m._genres || {}).forEach((g) => {
@@ -1667,7 +1816,7 @@ var __spreadValues = (a, b) => {
     };
     (window.requestIdleCallback || setTimeout)(pre, { timeout: 4e3 });
   }).catch(() => {
-  });
+  }), 4e3);
   let _lastSfxId = null, _lastSfxAt = 0, _sandlerLast = -1, _cruiseLast = -1;
   const DIR_IDS = { "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP": 1, "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4": 1, "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v": 1, "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2": 1, "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg": 1, "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o": 1, "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF": 1, "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el": 1, "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t": 1, "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC": 1 };
   let _gsfx = { k: "", t: 0 };
@@ -3019,10 +3168,10 @@ var __spreadValues = (a, b) => {
         S.fx(["assets/sfx/dexter-tonights-the-night.mp3", "assets/sfx/dexter-tonights-the-night.m4a"]);
       }
     }
-    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>\u25B6 Play</button>'.concat(window.FEFCNative && typeof FEFCNative.openInVlc === "function" ? '<button type="button" class="pill p5" data-act="vlc">Open in VLC</button>' : "", '<a class="pill p3" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>').concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
+    $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button>'.concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <div id="lc-fanedit"></div>\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? '<h3 class="lc-h l">Overview</h3><p class="plot">'.concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", "\n </div><div>\n  ").concat(FE.length ? '<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">'.concat(feRt, "</div>") : "", '\n  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">').concat(rt, '</div>\n  <div id="lc-fileinfo-slot"></div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<div class="det-acts">').concat(window.FEFCNative && typeof FEFCNative.openInVlc === "function" ? '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><button type="button" class="pill p5 det-ext" data-act="vlc">Open in VLC</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>') : '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>'), "</div></div></div><div>\n  ").concat(desc ? '<h3 class="lc-h">Fan edit</h3><div class="tv-scroll" tabindex="0" data-tvscroll="desc"><p>'.concat(esc(desc), "</p></div>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <div id="lc-fanedit"></div>\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? '<h3 class="lc-h l">Overview</h3><div class="tv-scroll" tabindex="0" data-tvscroll="plot"><p class="plot">'.concat(esc(plot), "</p></div>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", "\n </div><div>\n  ").concat(FE.length ? '<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">'.concat(feRt, "</div>") : "", '\n  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">').concat(rt, '</div>\n  <div id="lc-fileinfo-slot"></div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     const _det = $("#details");
     _det.classList.remove("leaving");
     _det.dataset.id = f.id;
@@ -3051,6 +3200,18 @@ var __spreadValues = (a, b) => {
     }));
     let n = 0;
     $("#details").querySelectorAll(".pill,.rt a,.rt .rr,.bigplay").forEach((el) => el.addEventListener("pointerenter", () => S.chirp(n++)));
+    requestAnimationFrame(() => {
+      document.querySelectorAll("#details .tv-scroll").forEach((el) => {
+        const o = el.scrollHeight > el.clientHeight + 8;
+        el.classList.toggle("can-scroll", o);
+        el.classList.toggle("at-top", el.scrollTop <= 0);
+        el.classList.toggle("at-bot", el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
+        el.addEventListener("scroll", () => {
+          el.classList.toggle("at-top", el.scrollTop <= 0);
+          el.classList.toggle("at-bot", el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
+        }, { passive: true });
+      });
+    });
   }
   let playerTimer = null, closedFor = null;
   function stopPlayerTimer() {
@@ -3405,7 +3566,7 @@ var __spreadValues = (a, b) => {
         S.chirp(1);
         try {
           const nb = window.FEFCNative;
-          if (nb && nb.openInVlc && f) nb.openInVlc(target(f), parse(f.name).raw);
+          if (nb && nb.openInVlc && f) nb.openInVlc(target(f), parse(f.name).raw, f.name || "video.mp4");
         } catch (err) {
         }
         return;
@@ -3454,7 +3615,7 @@ var __spreadValues = (a, b) => {
   });
   let _moveT = 0;
   document.addEventListener("focusin", (e) => {
-    if (!e.target.matches(".ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog" + (isTvEnv() ? "" : ",.tk-i:not(.tk-dup)"))) return;
+    if (!e.target.matches(".ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog,.sync-go,#ml-sync .mi" + (isTvEnv() ? "" : ",.tk-i:not(.tk-dup)"))) return;
     const tv = isTvEnv() || document.body.classList.contains("tv") || document.body.classList.contains("firetv");
     if (!tv) {
       S.move();
@@ -3594,7 +3755,7 @@ var __spreadValues = (a, b) => {
   }));
   setTimeout(sm2, 0);
   function focSel() {
-    const base = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,#brand,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap";
+    const base = ".priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,#brand,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#details .tv-scroll,#ml-sync .mi,.sync-go,#player .pill:not([hidden]),#ptap";
     return isTvEnv() || document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative ? base : base + ",.tk-i:not(.tk-dup)";
   }
   function visible(el) {
@@ -3760,7 +3921,7 @@ var __spreadValues = (a, b) => {
       goBack();
       return;
     }
-    if ((k === 13 || k === 23) && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav],[data-href],[data-ml],.ml-btn,.ml-hist-tog,.mi")) {
+    if ((k === 13 || k === 23) && document.activeElement && document.activeElement.matches(".ol-tile,[data-act],[data-nav],[data-href],[data-ml],[data-sync],.ml-btn,.ml-hist-tog,.mi,.sync-go")) {
       e.preventDefault();
       S.unlock();
       document.activeElement.click();
@@ -3770,7 +3931,7 @@ var __spreadValues = (a, b) => {
   function tvRows() {
     const c = [$("#arena"), $("#grid")].find((x) => x && !x.hidden && x.getClientRects().length);
     if (!c) return null;
-    const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
+    const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog,#ml-sync .mi,.sync-go")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
     els.forEach((e) => {
       const g = e.closest(".sgrid") || e.parentElement;
       if (!groups.has(g)) groups.set(g, []);
@@ -3778,36 +3939,47 @@ var __spreadValues = (a, b) => {
     });
     const rows = [];
     groups.forEach((a, g) => {
-      if (getComputedStyle(g).display === "grid") {
-        const n = Math.max(1, getComputedStyle(g).gridTemplateColumns.split(" ").filter((x) => x && x !== "none").length);
+      const cs = getComputedStyle(g);
+      if (cs.display === "grid") {
+        let n = cs.gridTemplateColumns.split(/\s+/).filter((x) => x && x !== "none" && x !== "subgrid").length;
+        n = Math.max(1, n || 1);
+        if (n > a.length) n = a.length || 1;
+        if (a.length > 1) {
+          const y0 = a[0].offsetTop, first = a.filter((e) => Math.abs(e.offsetTop - y0) < Math.max(24, a[0].offsetHeight * 0.35));
+          if (first.length >= 2 && first.length !== n) n = first.length;
+        }
         for (let i = 0; i < a.length; i += n) rows.push(a.slice(i, i + n));
       } else {
-        const by = {};
+        const by = [];
         a.forEach((e) => {
-          const y = Math.round((e.offsetTop || 0) / 8);
-          (by[y] = by[y] || []).push(e);
+          const y = e.offsetTop || 0;
+          let row = by.find((r) => Math.abs(r.y - y) < Math.max(28, (e.offsetHeight || 80) * 0.4));
+          if (!row) {
+            row = { y, els: [] };
+            by.push(row);
+          }
+          row.els.push(e);
         });
-        Object.keys(by).map(Number).sort((x, y) => x - y).forEach((y) => rows.push(by[y]));
+        by.sort((p, q) => p.y - q.y).forEach((r) => rows.push(r.els));
       }
     });
     return rows;
   }
   function tvGridNav(k, a) {
     if (!a || !a.closest) return false;
-    const cur2 = a.closest(".ol-tile,.sortpill,#na-more,#ml-update,.ml-btn,.ml-hist-tog");
+    const cur2 = (a.matches && a.matches("#ml-sync .mi,.sync-go") ? a : null) || a.closest(".ol-tile,.sortpill,#na-more,#ml-update,.ml-btn,.ml-hist-tog,.sync-go");
     if (!cur2) return false;
     let rows = tvRows();
-    if (!rows) return false;
-    const find = () => {
-      for (let i = 0; i < rows.length; i++) {
-        const j = rows[i].indexOf(cur2);
-        if (j >= 0) return [i, j];
-      }
-      return null;
-    };
-    let p = find();
-    if (!p) return false;
-    let [ri, ci] = p;
+    if (!rows || !rows.length) return false;
+    const flat = rows.reduce((acc, r) => acc.concat(r), []);
+    let fi = flat.indexOf(cur2);
+    if (fi < 0) {
+      rows = tvRows() || rows;
+      flat.length = 0;
+      rows.forEach((r) => r.forEach((e) => flat.push(e)));
+      fi = flat.indexOf(cur2);
+      if (fi < 0) return false;
+    }
     const cx = (e) => {
       const r = e.getBoundingClientRect();
       return r.left + r.width / 2;
@@ -3822,14 +3994,24 @@ var __spreadValues = (a, b) => {
       });
       return b;
     };
-    if (k === 37 || k === 39) {
-      const n = rows[ri][ci + (k === 39 ? 1 : -1)];
-      if (n) {
-        focusEl(n);
-        tvGoalX = cx(n);
+    const find = () => {
+      for (let i = 0; i < rows.length; i++) {
+        const j = rows[i].indexOf(cur2);
+        if (j >= 0) return [i, j];
       }
+      return null;
+    };
+    if (k === 37 || k === 39) {
+      const n = flat[fi + (k === 39 ? 1 : -1)];
+      if (!n) return false;
+      focusEl(n);
+      tvGoalX = cx(n);
+      tvEnsure(n);
       return true;
     }
+    let p = find();
+    if (!p) return false;
+    let [ri] = p;
     if (tvGoalX == null) tvGoalX = cx(cur2);
     if (k === 38) {
       if (ri === 0) {
@@ -3856,8 +4038,9 @@ var __spreadValues = (a, b) => {
       const t = nearest(rows[ri + 1], tvGoalX);
       focusEl(t);
       tvEnsure(t);
+      return true;
     }
-    return true;
+    return false;
   }
   function tvEnsure(t) {
     requestAnimationFrame(() => {
@@ -4025,9 +4208,41 @@ var __spreadValues = (a, b) => {
     }
     const tile2 = a && a.closest && a.closest(".ol-tile");
     if (tile2) lastTile = tile2;
-    if (tv && k >= 37 && k <= 40) {
+    if (a && a.classList && a.classList.contains("tv-scroll") && (k === 38 || k === 40)) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      const step = Math.max(80, Math.round(a.clientHeight / 3));
+      const before = a.scrollTop;
+      if (k === 40) {
+        a.scrollTop = Math.min(a.scrollHeight - a.clientHeight, a.scrollTop + step);
+        if (a.scrollTop === before || a.scrollTop + a.clientHeight >= a.scrollHeight - 2) {
+          const els = [].slice.call($("#details").querySelectorAll(focSel())).filter((el) => el.offsetParent && !el.disabled);
+          const i = els.indexOf(a);
+          const n = els[i + 1];
+          if (n) focusEl(n);
+        }
+      } else {
+        a.scrollTop = Math.max(0, a.scrollTop - step);
+        if (a.scrollTop === before || a.scrollTop <= 0) {
+          const els = [].slice.call($("#details").querySelectorAll(focSel())).filter((el) => el.offsetParent && !el.disabled);
+          const i = els.indexOf(a);
+          const n = els[i - 1];
+          if (n) focusEl(n);
+          else if (!focusAbove($("#details"), a)) toMenu();
+        }
+      }
+      return;
+    }
+    const tvNav = tv || document.body.classList.contains("firetv") || typeof isTvEnv === "function" && isTvEnv();
+    if (tvNav && k >= 37 && k <= 40) {
       e.preventDefault();
       if (tvGridNav(k, a)) {
+        e.stopImmediatePropagation();
+        return;
+      }
+      const dir = { 37: "left", 38: "up", 39: "right", 40: "down" }[k];
+      if (dir) {
+        move(dir);
         e.stopImmediatePropagation();
         return;
       }
@@ -4041,7 +4256,7 @@ var __spreadValues = (a, b) => {
         return;
       }
     }
-    if (back2 && tv && $("#details").hidden && $("#rfpanel").hidden && tile2) {
+    if (back2 && tvNav && $("#details").hidden && $("#rfpanel").hidden && tile2) {
       e.preventDefault();
       e.stopImmediatePropagation();
       try {
@@ -4532,7 +4747,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.11";
+  const HOME_VER_FALLBACK = "0.8.12";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -4747,6 +4962,16 @@ var __spreadValues = (a, b) => {
   });
   const TVB = /Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent) || !!P.get("tv");
   const later = (fn, ms) => TVB ? afterIntro(() => setTimeout(fn, ms)) : fn();
+  const laterIdle = (fn, ms) => {
+    const kick = () => {
+      (window.requestIdleCallback || ((f) => setTimeout(f, 1)))(() => fn(), { timeout: (ms | 0) + 8e3 });
+    };
+    const wait = () => {
+      if (document.body.classList.contains("native-waiting")) addEventListener("fefc-home-revealed", () => setTimeout(kick, ms | 0), { once: true });
+      else setTimeout(kick, ms | 0);
+    };
+    TVB || window.FEFCNative ? afterIntro(wait) : fn();
+  };
   window.loadGenres = (force) => {
     if (window._genresP && !force) return window._genresP;
     const ms = isTvEnv() ? 6e4 : 2e4;
@@ -4777,24 +5002,26 @@ var __spreadValues = (a, b) => {
     });
     return window._genresP;
   };
-  later(() => window.loadGenres(), isTvEnv() ? 400 : 1500);
+  laterIdle(() => window.loadGenres(), isTvEnv() ? 3500 : 1500);
   afterIntro(() => {
     tmo("data/mosaic.json", 1e4).then((m) => {
       mosaicList = m;
       if (!$("#home").hidden) mosaic();
+      else if (window.FEFCNative) setTimeout(() => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady(), 1500);
     }).catch(() => {
+      if (window.FEFCNative) window.__fefcMarkHomeReady && window.__fefcMarkHomeReady();
     });
   });
-  later(() => tmo("data/dates.json", 15e3).then((m) => {
+  laterIdle(() => tmo("data/dates.json", 15e3).then((m) => {
     NA.dates = m;
     (window.requestIdleCallback || setTimeout)(() => NA.top(rootVids()));
     softRefresh();
-  }).catch((e) => console.warn(e)), 3e3);
-  later(() => tmo("data/metadata.json", 8e3).then((m) => {
+  }).catch((e) => console.warn(e)), 4e3);
+  laterIdle(() => tmo("data/metadata.json", 8e3).then((m) => {
     meta = m;
     refreshOpenDetails();
-  }).catch((e) => console.warn(e)), isTvEnv() ? 5e3 : 800);
-  later(() => {
+  }).catch((e) => console.warn(e)), isTvEnv() ? 6e3 : 800);
+  laterIdle(() => {
     const sx = document.createElement("script");
     sx.src = "details-extra.js";
     sx.onload = () => {
@@ -4802,7 +5029,7 @@ var __spreadValues = (a, b) => {
       });
     };
     document.head.appendChild(sx);
-  }, isTvEnv() ? 8e3 : 1200);
+  }, isTvEnv() ? 9e3 : 1200);
   const idxMs = isTvEnv() ? 18e4 : 3e4;
   const idxFetch = () => tmo("data/index.json", idxMs).catch((e) => {
     console.warn("index retry", e);
@@ -4827,7 +5054,7 @@ var __spreadValues = (a, b) => {
           tmo("data/links.json", 3e4).then((L) => {
             window._links = L;
             applyLinks(L);
-            softRefresh();
+            if (!document.body.classList.contains("native-waiting")) softRefresh();
           }).catch((e) => console.warn("links", e));
         }
       }
@@ -4835,14 +5062,27 @@ var __spreadValues = (a, b) => {
         add(x.items.filter((f) => !items.has(f.id)));
         applyLinks(window._links);
         window._idx = Array.from(items.values());
-        softRefresh();
+        if (!document.body.classList.contains("native-waiting")) softRefresh();
       }).catch(() => {
       });
     }).catch((e) => {
       console.warn(e);
       status("Saved index unavailable");
     }).then(() => {
-      softRefresh();
+      const paint = () => {
+        try {
+          hub();
+        } catch (e2) {
+        }
+        const mos = $("#mosaic");
+        if (!window.__fefcHomePaintReady && !(mos && mos.querySelector(".mc"))) setTimeout(() => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady(), 1200);
+      };
+      paint();
+      const doSoft = () => {
+        (window.requestIdleCallback || setTimeout)(() => softRefresh(), { timeout: 5e3 });
+      };
+      if (document.body.classList.contains("native-waiting")) addEventListener("fefc-home-revealed", () => setTimeout(doSoft, 2500), { once: true });
+      else softRefresh();
       if (P.get("focus")) {
         setTimeout(() => {
           document.body.classList.add("kbd");

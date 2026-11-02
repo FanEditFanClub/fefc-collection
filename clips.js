@@ -2,13 +2,14 @@ const DWELL = [3e3, 6e3];
 let clips = null, loading = false, timers = [], cells = [], pool = [], free = [], on = false;
 const home = () => document.getElementById("home");
 const atHome = () => {
-  const h = home();
-  return h && !h.hidden && !document.hidden && !document.body.classList.contains("cintro");
+  const h = home(), b = document.body.classList;
+  return h && !h.hidden && !document.hidden && !b.contains("cintro") && !b.contains("native-waiting");
 };
 const tv = () => document.body.classList.contains("tv");
+const fire = () => !!(window.FEFCNative || document.body.classList.contains("firetv"));
 const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || /Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1;
 const lite = () => ios || document.body.classList.contains("lite") || Math.min(innerWidth, innerHeight) < 600;
-const decoders = () => tv() ? 6 : lite() ? 6 : (navigator.hardwareConcurrency || 8) <= 6 ? 12 : 40;
+const decoders = () => fire() ? 2 : tv() ? 3 : lite() ? 6 : (navigator.hardwareConcurrency || 8) <= 6 ? 12 : 40;
 window.__clipStats = () => ({ tiles: cells.length, decoders: pool.length, playing: pool.filter((v) => !v.paused).length });
 function load() {
   if (clips || loading) return;
@@ -175,13 +176,14 @@ function schedule() {
   while (pool.length < n) pool.push(mkVideo());
   free = pool.slice(0, n);
   const order = cells.slice().sort(() => Math.random() - 0.5);
+  const gap = fire() ? 300 : Math.min(140, 2400 / Math.max(1, order.length));
   order.forEach((c, i) => {
     const loop = () => {
       if (!on || !atHome()) return;
       step(c);
       timers.push(setTimeout(loop, DWELL[0] + Math.random() * (DWELL[1] - DWELL[0])));
     };
-    timers.push(setTimeout(loop, i * Math.min(140, 2400 / Math.max(1, order.length)) + Math.random() * 250));
+    timers.push(setTimeout(loop, i * gap + (fire() ? Math.random() * 60 : Math.random() * 250)));
   });
 }
 let deb;
@@ -204,6 +206,7 @@ new MutationObserver(() => {
   if (_ic && !c) kick();
   _ic = c;
 }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
+addEventListener("fefc-home-revealed", () => kick());
 function init() {
   const h = home(), hub = document.getElementById("hub");
   if (!h || !hub) return setTimeout(init, 500);
@@ -212,10 +215,16 @@ function init() {
   }).observe(hub, { childList: true });
   new MutationObserver(kick).observe(h, { attributes: true, attributeFilter: ["hidden"] });
   document.addEventListener("visibilitychange", kick);
+  addEventListener("fefc-background", () => stop());
+  addEventListener("fefc-foreground", kick);
+  addEventListener("pagehide", () => stop());
   addEventListener("hashchange", kick);
   addEventListener("resize", kick);
   addEventListener("scroll", kick, { passive: true, capture: true });
-  const start = () => kick();
+  const start = () => {
+    if (document.body.classList.contains("native-waiting")) return;
+    kick();
+  };
   window.requestIdleCallback ? requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 1500);
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

@@ -357,7 +357,7 @@ async function feedApi(req, env, ctx, url) {
   return res;
 }
 
-// ---- /api/stream/:id  -> Drive file bytes via the Drive API (API key), Range-aware. Secret: GOOGLE_API_KEY (Drive API enabled).
+// ---- /api/stream/:id[/file.ext]  -> Drive file bytes via the Drive API (API key), Range-aware. Secret: GOOGLE_API_KEY (Drive API enabled).
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/';
 const sidCache = new Map();                       // shortcut/file id -> { id, t }
 async function resolveDriveId(id, key) {
@@ -377,10 +377,20 @@ function driveErr(status, body) {
   if (status === 429) return json({ error: 'quota_exceeded' }, 429);
   return json({ error: 'upstream', status }, 502);
 }
+function streamMimeFromName(name) {
+  const m = String(name || '').toLowerCase().match(/\.([a-z0-9]{1,8})$/);
+  const ext = m ? m[1] : '';
+  const map = { mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska', avi: 'video/x-msvideo', mpg: 'video/mpeg', mpeg: 'video/mpeg', ts: 'video/mp2t', m2ts: 'video/mp2t', vtt: 'text/vtt', srt: 'application/x-subrip', ass: 'text/plain', ssa: 'text/plain' };
+  return map[ext] || '';
+}
 async function streamApi(req, env, url) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
-  const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range,accept-ranges,content-length' };
-  const id = decodeURIComponent(url.pathname.slice('/api/stream/'.length)).trim();
+  const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range,accept-ranges,content-length,content-type,content-disposition' };
+  // Accept /api/stream/{id} or /api/stream/{id}/file.ext (extension helps VLC / clients pick a demuxer).
+  const rest = decodeURIComponent(url.pathname.slice('/api/stream/'.length)).replace(/^\/+|\/+$/g, '');
+  const slash = rest.indexOf('/');
+  const id = (slash < 0 ? rest : rest.slice(0, slash)).trim();
+  const fileName = (slash < 0 ? '' : rest.slice(slash + 1).split('/').pop() || '').replace(/[^\w.\- ()\[\]]+/g, '_') || '';
   if (!/^[\w-]{10,80}$/.test(id)) return json({ error: 'bad_id' }, 400);
   const key = env.GOOGLE_API_KEY;
   if (!key) return json({ error: 'not_configured', hint: 'Set the Pages secret GOOGLE_API_KEY (Drive API key, Drive API enabled in project 965770773324).' }, 503);
@@ -393,8 +403,10 @@ async function streamApi(req, env, url) {
   if (!up.ok) { const b = await up.text().catch(() => ''); return driveErr(up.status, b); }
   const o = new Headers(CORS);
   for (const k of ['content-length', 'content-range', 'etag', 'last-modified']) { const v = up.headers.get(k); if (v) o.set(k, v); }
-  let ct = up.headers.get('content-type') || ''; if (!/^video\//.test(ct)) ct = 'video/mp4';
+  let ct = streamMimeFromName(fileName) || up.headers.get('content-type') || '';
+  if (!/^(video|audio|text)\//.test(ct) && !/^application\/(x-subrip|octet-stream)/.test(ct)) ct = 'video/mp4';
   o.set('content-type', ct); o.set('accept-ranges', 'bytes'); o.set('cache-control', 'private, max-age=3600');
+  if (fileName) o.set('content-disposition', 'inline; filename="' + fileName.replace(/"/g, '') + '"');
   return new Response(req.method === 'HEAD' ? null : up.body, { status: up.status, headers: o });
 }
 
@@ -440,7 +452,7 @@ export default {
           return new Response(asset.body, { status: asset.status, headers: h });
         }
         // Fallback: proxy GitHub Release asset (same host URL for in-app updater allowlist).
-        const gh = 'https://github.com/FanEditFanClub/fefc-collection/releases/download/firetv-v0.8.11/FEFC-Collection.apk';
+        const gh = 'https://github.com/FanEditFanClub/fefc-collection/releases/download/firetv-v0.8.12/FEFC-Collection.apk';
         const up = await fetch(gh, { redirect: 'follow', headers: { 'user-agent': 'FEFC-Pages-APK-Proxy' } });
         if (!up.ok) return new Response('APK unavailable', { status: 502, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
         const h = new Headers(headers);

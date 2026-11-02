@@ -136,6 +136,23 @@ final class NativeIntro {
         return true;
     }
 
+    /** Pause intro playback when the activity backgrounds (do not finish). */
+    void pause() {
+        if (player != null) {
+            try { player.pause(); } catch (Exception ignored) {}
+            Log.i(TAG, "paused (background)");
+        }
+    }
+
+    /** Resume intro only if it was still showing when we backgrounded. */
+    void resumeIfShowing() {
+        if (!isShowing() || player == null) return;
+        try {
+            player.play();
+            Log.i(TAG, "resumed after foreground");
+        } catch (Exception ignored) {}
+    }
+
     void releaseQuietly() {
         if (finished) return;
         finished = true;

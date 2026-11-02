@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
@@ -62,6 +63,12 @@ public class MainActivity extends Activity {
     /** Native Media3 intro overlay; null when not playing / already finished. */
     private NativeIntro nativeIntro;
     private boolean nativeIntroUsed;
+    private AudioManager audioManager;
+    private final AudioManager.OnAudioFocusChangeListener audioFocusListener =
+            this::onAudioFocusChange;
+    private boolean holdingAudioFocus;
+    /** True after we have suspended web/native audio for background; cleared on resume. */
+    private boolean audioSuspended;
 
     @Override
     protected void onCreate(Bundle b) {
@@ -102,16 +109,18 @@ public class MainActivity extends Activity {
                     null);
         }));
         updater = new Updater(this);
+        audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        requestAudioFocus();
 
         // Cold start: native Media3 intro fullscreen FIRST; WebView preloads underneath with ?nointro=1.
         // Process restore (b != null): skip native intro — user already saw it this session.
         if (b == null) {
             nativeIntroUsed = true;
             nativeIntro = new NativeIntro(this, root, skipped -> {
+                // NativeIntro.finish already released ExoPlayer before this callback.
                 nativeIntro = null;
-                web.requestFocus();
-                if (updater != null) updater.revealAfterIntro();
-                prewarmPlayer();
+                Log.i("FEFC", "native_intro_done skipped=" + skipped + " — waiting for WebView Home first paint");
+                waitHomeThenReveal(0);
             });
             nativeIntro.start();
             load(true); // nointro=1 so the CSS/WebView intro never runs
@@ -142,6 +151,16 @@ public class MainActivity extends Activity {
             + "var i=document.getElementById('intro');"
             + "return !!(i&&(i.classList.contains('done')||i.hidden));}catch(e){return false}})()";
 
+    /** True once Hub/mosaic first tiles have decoded behind the native intro. */
+    private static final String HOME_READY_JS =
+            "(function(){try{return!!window.__fefcHomePaintReady}catch(e){return false}})()";
+
+    /** Fade Home in only after first paint is ready; starts 5s frame probe. */
+    private static final String REVEAL_HOME_JS =
+            "(function(){try{if(window.__fefcRevealHome)return window.__fefcRevealHome();"
+            + "document.body.classList.remove('native-waiting');document.body.classList.add('home-revealed');"
+            + "return 'fallback'}catch(e){return String(e)}})()";
+
     /** Poll until the intro has handed off (or ~60 s, for a page that never loads), then show a pending update. The check itself is already running. */
     private void waitForIntroThenReveal(final int tries) {
         ui.postDelayed(() -> {
@@ -151,6 +170,31 @@ public class MainActivity extends Activity {
                 else waitForIntroThenReveal(tries + 1);
             });
         }, tries == 0 ? 200 : 700);
+    }
+
+    /**
+     * After native ExoPlayer intro tears down: wait until WebView Home (index + first mosaic tiles)
+     * is paint-ready, then fade it in. Cap ~8s so a slow parse still reveals. Media3 prewarm is
+     * delayed so it does not fight mosaic tile decoders on the Cube.
+     */
+    private void waitHomeThenReveal(final int tries) {
+        ui.postDelayed(() -> {
+            if (isFinishing() || web == null) return;
+            web.evaluateJavascript(HOME_READY_JS, val -> {
+                boolean ready = "true".equals(val);
+                if (ready || tries >= 40) {
+                    Log.i("FEFC", "home_reveal ready=" + ready + " tries=" + tries);
+                    web.evaluateJavascript(REVEAL_HOME_JS, r ->
+                            Log.i("FEFC", "home_reveal_js=" + r));
+                    web.requestFocus();
+                    if (updater != null) updater.revealAfterIntro();
+                    // Release path already dropped intro ExoPlayer; delay prewarm past first mosaic wave.
+                    ui.postDelayed(this::prewarmPlayer, 5000);
+                } else {
+                    waitHomeThenReveal(tries + 1);
+                }
+            });
+        }, tries == 0 ? 80 : 200);
     }
 
     @Override
@@ -456,29 +500,61 @@ public class MainActivity extends Activity {
          * prefer /api/stream/:id (Range proxy with server auth); setPackage VLC.
          * If VLC is missing, open its Amazon Appstore page. Does not change Drive sharing.
          */
+        /** Derive a safe filename with video extension for VLC demuxer sniffing. */
+        private static String vlcFileName(String driveId, String title, String fileName) {
+            String raw = fileName != null && !fileName.isEmpty() ? fileName : (title != null ? title : "video.mp4");
+            raw = raw.replaceAll("[\\/]+", "_").trim();
+            if (!raw.matches("(?i).+\\.(mp4|m4v|mkv|webm|mov|avi|mpg|mpeg|m2ts|ts)$")) {
+                raw = raw.replaceAll("\\.[^.]+$", "");
+                if (raw.isEmpty()) raw = "video";
+                raw = raw + ".mp4";
+            }
+            // Keep path segment simple for VLC / proxies
+            raw = raw.replaceAll("[^A-Za-z0-9._\\- ()\\[\\]]+", "_");
+            if (raw.length() > 120) {
+                int dot = raw.lastIndexOf('.');
+                String ext = dot > 0 ? raw.substring(dot) : ".mp4";
+                raw = raw.substring(0, Math.min(100, raw.length())) + ext;
+            }
+            return raw;
+        }
+        private static String vlcMime(String fileName) {
+            String n = fileName == null ? "" : fileName.toLowerCase();
+            if (n.endsWith(".mkv")) return "video/x-matroska";
+            if (n.endsWith(".webm")) return "video/webm";
+            if (n.endsWith(".mov")) return "video/quicktime";
+            if (n.endsWith(".avi")) return "video/x-msvideo";
+            if (n.endsWith(".mpg") || n.endsWith(".mpeg")) return "video/mpeg";
+            if (n.endsWith(".m2ts") || n.endsWith(".ts")) return "video/mp2t";
+            return "video/mp4";
+        }
         @JavascriptInterface
         public void openInVlc(final String driveId, final String title) {
+            openInVlc(driveId, title, null);
+        }
+        @JavascriptInterface
+        public void openInVlc(final String driveId, final String title, final String fileName) {
             if (driveId == null || !driveId.matches("[A-Za-z0-9_-]{10,100}")) return;
             ui.post(() -> {
                 final String PROXY = "https://collection.faneditfanclub.com/api/stream/";
-                final String DIRECT = "https://drive.usercontent.google.com/download?id=";
-                // Same preference as PlayerActivity: proxy first (server-side Drive auth / Range).
-                Uri uri = Uri.parse(PROXY + driveId);
+                final String fname = vlcFileName(driveId, title, fileName);
+                final String mime = vlcMime(fname);
+                // Absolute https URL with a real file extension so VLC streams bytes (Range/206), not a playlist/HTML page.
+                Uri uri = Uri.parse(PROXY + driveId + "/" + Uri.encode(fname).replace("%2F", ""));
                 Intent vlc = new Intent(Intent.ACTION_VIEW);
-                vlc.setDataAndType(uri, "video/*");
+                vlc.setDataAndType(uri, mime);
                 vlc.setPackage("org.videolan.vlc");
-                vlc.putExtra("title", title != null ? title : "");
+                vlc.putExtra("title", title != null ? title : fname);
+                vlc.putExtra("from_start", true);
                 vlc.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 try {
                     startActivity(vlc);
                     return;
                 } catch (ActivityNotFoundException e) {
-                    // try direct Drive URL once in case a sideloaded VLC rejects our host
                     try {
                         Intent d = new Intent(Intent.ACTION_VIEW);
-                        d.setDataAndType(Uri.parse(DIRECT + driveId + "&export=download&confirm=t"), "video/*");
-                        d.setPackage("org.videolan.vlc");
-                        d.putExtra("title", title != null ? title : "");
+                        d.setDataAndType(uri, mime);
+                        d.putExtra("title", title != null ? title : fname);
                         d.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(d);
                         return;
@@ -626,18 +702,102 @@ public class MainActivity extends Activity {
         if (hasFocus) hideSystemUi();
     }
 
+    // ---- audio focus / background silence ----
+
+    private static final String SUSPEND_AUDIO_JS =
+            "(function(){try{"
+            + "window.dispatchEvent(new Event('fefc-background'));"
+            + "if(window.SFX&&typeof SFX.suspendAll==='function')SFX.suspendAll();"
+            + "document.querySelectorAll('audio,video').forEach(function(el){try{el.pause()}catch(e){}});"
+            + "if(window._rfx&&_rfx.state==='running')_rfx.suspend();"
+            + "return 'ok'}catch(e){return String(e)}})()";
+
+    /** Resume Web Audio / ambience only — never auto-start fan-edit PlayerActivity playback. */
+    private static final String RESUME_AUDIO_JS =
+            "(function(){try{"
+            + "window.dispatchEvent(new Event('fefc-foreground'));"
+            + "if(window.SFX&&typeof SFX.resumeAfterBackground==='function')SFX.resumeAfterBackground();"
+            + "return 'ok'}catch(e){return String(e)}})()";
+
+    private void onAudioFocusChange(int change) {
+        Log.i("FEFC", "audiofocus change=" + change);
+        if (change == AudioManager.AUDIOFOCUS_LOSS
+                || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+                || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+            ui.post(() -> suspendAppAudio("AUDIOFOCUS_" + change));
+        }
+    }
+
+    private void requestAudioFocus() {
+        if (audioManager == null) return;
+        int r = audioManager.requestAudioFocus(
+                audioFocusListener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN);
+        holdingAudioFocus = (r == AudioManager.AUDIOFOCUS_REQUEST_GRANTED);
+        Log.i("FEFC", "audiofocus request granted=" + holdingAudioFocus);
+    }
+
+    private void abandonAudioFocus() {
+        if (audioManager == null) return;
+        try {
+            audioManager.abandonAudioFocus(audioFocusListener);
+        } catch (Exception ignored) {}
+        holdingAudioFocus = false;
+        Log.i("FEFC", "audiofocus abandoned");
+    }
+
+    /** Pause WebView media timers, native intro, and ask JS to suspend AudioContext + media elements. */
+    private void suspendAppAudio(String reason) {
+        Log.i("FEFC", "audio_suspend reason=" + reason);
+        audioSuspended = true;
+        if (nativeIntro != null) {
+            try { nativeIntro.pause(); } catch (Exception ignored) {}
+        }
+        if (web != null) {
+            try { web.onPause(); } catch (Exception ignored) {}
+            try { web.pauseTimers(); } catch (Exception ignored) {}
+            try { web.evaluateJavascript(SUSPEND_AUDIO_JS, null); } catch (Exception ignored) {}
+        }
+        abandonAudioFocus();
+    }
+
+    /** Foreground again: resume WebView; restore ambience via JS; do not launch fan-edit playback. */
+    private void resumeAppAudio() {
+        Log.i("FEFC", "audio_resume");
+        requestAudioFocus();
+        if (web != null) {
+            try { web.resumeTimers(); } catch (Exception ignored) {}
+            try { web.onResume(); } catch (Exception ignored) {}
+        }
+        if (nativeIntro != null && nativeIntro.isShowing()) {
+            try { nativeIntro.resumeIfShowing(); } catch (Exception ignored) {}
+        }
+        if (web != null && audioSuspended) {
+            try { web.evaluateJavascript(RESUME_AUDIO_JS, null); } catch (Exception ignored) {}
+        }
+        audioSuspended = false;
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
-        web.onResume();
+        resumeAppAudio();
         // Coming back after a network drop: retry automatically (not during native intro).
         if (failed && online() && (nativeIntro == null || !nativeIntro.isShowing())) load();
     }
 
     @Override
     protected void onPause() {
-        web.onPause();
+        suspendAppAudio("onPause");
         super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        // Belt-and-suspenders: Home / other apps may skip a clean onPause path on some Fire OS builds.
+        suspendAppAudio("onStop");
+        super.onStop();
     }
 
     @Override
@@ -648,6 +808,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        abandonAudioFocus();
         if (nativeIntro != null) {
             nativeIntro.releaseQuietly();
             nativeIntro = null;

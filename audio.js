@@ -530,7 +530,60 @@ window.SFX = (() => {
           }
         }
       }, 150);
+    },
+    suspendAll() {
+      try {
+        ambWant = false;
+        ambStop();
+        S.stopFx();
+        S.introStop();
+        document.querySelectorAll("audio,video").forEach((el) => {
+          try {
+            el.pause();
+          } catch (e) {
+          }
+        });
+        if (ctx && ctx.state === "running") ctx.suspend();
+      } catch (e) {
+      }
+    },
+    resumeAfterBackground() {
+      try {
+        if (!document.body || document.hidden) return;
+        init();
+        const want = document.body.classList.contains("intro-done") && !document.body.classList.contains("cintro");
+        ambWant = !!want;
+        const go = () => {
+          if (ambWant) ambStart();
+        };
+        if (ctx.state === "suspended") ctx.resume().then(go, () => {
+        });
+        else go();
+      } catch (e) {
+      }
     }
   };
   return S;
+})();
+;
+(function() {
+  function bg() {
+    try {
+      if (window.SFX && SFX.suspendAll) SFX.suspendAll();
+    } catch (e) {
+    }
+  }
+  function fg() {
+    try {
+      if (window.SFX && SFX.resumeAfterBackground) SFX.resumeAfterBackground();
+    } catch (e) {
+    }
+  }
+  document.addEventListener("visibilitychange", function() {
+    if (document.hidden) bg();
+    else fg();
+  });
+  addEventListener("pagehide", bg);
+  addEventListener("fefc-background", bg);
+  addEventListener("fefc-foreground", fg);
 })();

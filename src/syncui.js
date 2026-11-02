@@ -20,8 +20,8 @@ function paintChip(){var c=chip();if(!c)return;var A=agg();
  '<button class="mi" data-sync="panel">Sync My List</button>'+(A.reconnect?'<button class="mi" data-sync="in">Reconnect</button>':'<button class="mi" data-sync="now">Sync now</button>')+'<button class="mi" data-sync="out">Sign out</button></div>'}
 // ---------- My List card ----------
 function paintCard(){var el=document.getElementById('ml-sync');if(!el)return;var A=agg();
- el.innerHTML=!A.on?'<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: TV code, QR code, or a 6-digit sync code.</span></div><button class="mi sync-go" data-sync="panel">Sync My List</button></div>':
- A.reconnect?'<div class="sync-card"><div><b>Sync paused</b><span>Reconnect your Google account to resume syncing.</span></div><button class="mi sync-go" data-sync="in">Reconnect</button><button class="mi" data-sync="panel">Sync My List</button></div>':
+ el.innerHTML=!A.on?'<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: TV code, QR code, or a 6-digit sync code.</span></div><button class="mi sync-go" tabindex="0" data-sync="panel">Sync My List</button></div>':
+ A.reconnect?'<div class="sync-card"><div><b>Sync paused</b><span>Reconnect your Google account to resume syncing.</span></div><button class="mi sync-go" tabindex="0" data-sync="in">Reconnect</button><button class="mi" data-sync="panel">Sync My List</button></div>':
  '<div class="sync-card on"><div><b>'+(A.syncing?'Syncing\u2026':'Synced')+'</b><span>'+esc(A.user&&A.user.email||'Linked with a '+A.via)+(A.error?' \u00B7 '+esc(A.error):'')+'</span></div><button class="mi" data-sync="panel">Sync My List</button><button class="mi" data-sync="out">Sign out</button></div>'}
 function repaint(){paintChip();paintCard();if(P&&P.view==='menu')render()}
 G.subscribe(repaint);if(V)V.subscribe(repaint);
@@ -123,5 +123,7 @@ window.__fefcModal=function(e){
 // ---------- QR link from phone: /?link=<id> ----------
 function checkLink(){try{var id=new URLSearchParams(location.search).get('link');if(!id||!/^[\w-]{20,30}$/.test(id))return;
  history.replaceState(null,'',location.pathname+location.hash);setTimeout(function(){open('approve',{id:id})},400)}catch(e){}}
-paintChip();paintCard();checkLink();
+window.__fefcPaintSync=paintCard;paintChip();paintCard();checkLink();
 })();
+/* 0.8.12 sync key: Select/Enter on focused Sync My List controls */
+document.addEventListener('keydown',function(e){var k=e.keyCode;if(k!==13&&k!==23)return;var a=document.activeElement;if(!a||!a.closest)return;var b=a.closest('[data-sync]');if(!b)return;e.preventDefault();b.click()});

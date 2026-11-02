@@ -6,6 +6,11 @@ button,input,a{font:inherit;color:inherit}
 #intro.done{animation:introBloomDissolve .75s cubic-bezier(.25,1,.5,1) forwards;pointer-events:none}
 @keyframes introBloomDissolve{0%{opacity:1;filter:brightness(2.2)}30%{opacity:.9;filter:brightness(1.5)}100%{opacity:0;visibility:hidden;filter:brightness(1)}}
 #home.enter{animation:homeEnter .8s cubic-bezier(.16,1,.3,1) forwards}
+/* Fire TV native intro handoff: WebView paints Home fully behind ExoPlayer; fade in only after first paint ready. */
+body.native-waiting #home{opacity:0!important;pointer-events:none}
+body.home-revealed #home{opacity:1;transition:opacity .35s ease}
+body.tv.native-waiting #home.enter,body.firetv.native-waiting #home.enter{animation:none!important}
+
 @keyframes homeEnter{0%{transform:scale(1.08);opacity:0;filter:blur(8px) brightness(1.6)}40%{opacity:1;filter:blur(2px) brightness(1.2)}100%{transform:scale(1);opacity:1;filter:blur(0) brightness(1)}}
 #intro .glow{position:absolute;width:60vmin;height:60vmin;border-radius:50%;background:radial-gradient(circle,#bfe6ff 0,#2fa8ff55 25%,#0000 65%);opacity:0;animation:glow var(--d,3.2s) ease-out forwards}
 @keyframes glow{0%{transform:scale(.05);opacity:0}35%{opacity:1}60%{transform:scale(1.4);opacity:.7}100%{transform:scale(2.2);opacity:.15}}
@@ -1220,13 +1225,13 @@ body.touch.kbd:not(.tv){--dock:0px}
 /* Fire TV / leanback: never apply the touch-hide rules (body.tv wins above). Pixel Fold portrait unchanged. */
 
 /* Ticker always flush to the physical bottom; safe-area is inside the ticker height. */
-#ticker{bottom:0!important}
+#ticker{bottom:0!important}body.tv #ticker,body.firetv #ticker{bottom:48px!important;bottom:5vh!important;left:80px!important;right:80px!important;left:5vw!important;right:5vw!important}
 body.tk-on.touch #hints{bottom:calc(var(--tkh,28px) + env(safe-area-inset-bottom,0px))!important;padding-bottom:4px!important}
 body.touch:not(.tk-on) #hints{bottom:0!important}
 /* When touch hides the remote bar (rare / shuf), ticker still sits on the bottom edge. */
-body.tv #hints,body.tv.tk-on #hints{position:fixed!important;left:0!important;right:0!important;width:auto!important;max-width:none!important;transform:none!important;border-radius:0!important;justify-content:space-around;align-items:center;gap:0;padding:.55vh 1vw;box-sizing:border-box}
-body.tv.tk-on #hints{bottom:calc(var(--tkh,clamp(24px,3.7vh,46px)) + env(safe-area-inset-bottom,0px))!important}
-body.tv:not(.tk-on) #hints{bottom:0!important}
+body.tv #hints,body.tv.tk-on #hints,body.firetv #hints,body.firetv.tk-on #hints{position:fixed!important;left:80px!important;right:80px!important;left:5vw!important;right:5vw!important;width:auto!important;max-width:none!important;transform:none!important;border-radius:0!important;justify-content:space-around;align-items:center;gap:0;padding:.55vh 1vw;box-sizing:border-box}
+body.tv.tk-on #hints,body.firetv.tk-on #hints{bottom:calc(48px + 36px)!important;bottom:calc(5vh + var(--tkh,36px))!important}
+body.tv:not(.tk-on) #hints,body.firetv:not(.tk-on) #hints{bottom:48px!important;bottom:5vh!important}
 
 /* ---- Fire TV / TV mode performance (0.8.3) ---- */
 body.tv .ol-tile,body.tv .hb,body.tv .gnr{transition:none!important;box-shadow:0 2px 6px #0008!important;-webkit-box-reflect:none!important;filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
@@ -1341,3 +1346,32 @@ body.tv #arena .ol-tile,body.firetv #arena .ol-tile{-webkit-box-reflect:none}
 body.tv #home,body.firetv #home{position:absolute;inset:0;flex:none;height:auto;min-height:100%;width:100%}
 body.tv.at-home #app,body.firetv.at-home #app{position:relative;min-height:100vh;height:100%;height:100vh;height:100dvh}
 body.tv .mc,body.firetv .mc{aspect-ratio:auto}
+
+/* ---- 0.8.12: details Play row, TV text scroll, overscan-safe TV chrome ---- */
+.det-acts{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:6px}
+.det-acts .bigplay{margin-top:0}
+.det-acts .det-ext{min-height:48px;padding:0 18px;border-radius:28px;font-family:Antonio,sans-serif;letter-spacing:.08em;text-decoration:none;display:inline-flex;align-items:center}
+body.tv .det-acts{gap:1.2vh}
+body.tv .det-acts .det-ext{min-height:48px;min-height:5.5vh;font-size:14px;font-size:2vh}
+.tv-scroll{max-height:42vh;overflow:auto;-webkit-overflow-scrolling:touch;outline:0;border-radius:6px;padding:6px 10px 10px;position:relative;scroll-behavior:smooth}
+.tv-scroll:focus,.tv-scroll:focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 6px #2fa8ff,0 0 28px #2fa8ffaa}
+.tv-scroll.can-scroll{box-shadow:inset 0 -18px 16px -16px #000c}
+.tv-scroll.can-scroll:not(.at-bot)::after{content:"";position:sticky;display:block;bottom:0;left:0;right:0;height:0;pointer-events:none;border-bottom:3px solid #ff9c00;box-shadow:0 0 12px #ff9c00aa;margin-top:-3px}
+.tv-scroll.can-scroll:not(.at-top)::before{content:"";position:sticky;display:block;top:0;left:0;right:0;height:0;pointer-events:none;border-top:3px solid #ff9c00;box-shadow:0 0 12px #ff9c00aa}
+body.tv .tv-scroll{max-height:36vh;font-size:2vh}
+/* Overscan-safe TV margins (~5%: 48px T/B, 80px L/R at 1080p).
+   Plain px first for old WebViews; vh/vw layered after. Highest-specificity TV selectors win over dock chrome. */
+html body.tv,html body.firetv{--tv-safe-t:48px;--tv-safe-b:48px;--tv-safe-x:80px}
+html body.tv #app,html body.firetv #app{padding:48px 80px 0!important;padding:5vh 5vw 0!important;box-sizing:border-box}
+html body.tv #bar,html body.firetv #bar{padding-left:0;padding-right:0}
+html body.tv #main,html body.firetv #main{padding-left:0!important;padding-right:0!important;padding-bottom:calc(48px + 12vh)!important;padding-bottom:calc(5vh + 12vh)!important;scroll-padding-bottom:calc(48px + 12vh)}
+html body.tv #ticker,html body.firetv #ticker{left:80px!important;right:80px!important;bottom:48px!important;left:5vw!important;right:5vw!important;bottom:5vh!important;width:auto!important;box-sizing:border-box}
+html body.tv #hints,html body.tv.tk-on #hints,html body.firetv #hints,html body.firetv.tk-on #hints{left:80px!important;right:80px!important;left:5vw!important;right:5vw!important;transform:none!important}
+html body.tv:not(.tk-on) #hints,html body.firetv:not(.tk-on) #hints{bottom:48px!important;bottom:5vh!important}
+html body.tv.tk-on #hints,html body.firetv.tk-on #hints{bottom:calc(48px + 36px + 8px)!important;bottom:calc(5vh + var(--tkh,36px) + 8px)!important}
+html body.tv #details,html body.firetv #details{padding:48px 80px 48px!important;padding:5vh 5vw 5vh!important;box-sizing:border-box}
+html body.tv #home,html body.firetv #home{padding:0}
+html body.tv #home-ver,html body.firetv #home-ver{top:48px!important;top:5vh!important;right:80px!important;right:5vw!important}
+html body.tv #ml-sync .mi,html body.tv .sync-go,html body.firetv #ml-sync .mi,html body.firetv .sync-go{min-height:48px;min-height:5.2vh}
+html body.tv #ml-sync .mi:focus,html body.tv .sync-go:focus,html body.firetv #ml-sync .mi:focus,html body.firetv .sync-go:focus{outline:0;color:#000;background:linear-gradient(180deg,#fff,#cfe9ff);box-shadow:0 0 0 4px #fff,0 0 0 8px #2fa8ff,0 0 28px #2fa8ffcc;transform:scale(1.05)}
+html body.tv #crumb,html body.tv .ol-div,html body.tv .ml-hist-head,html body.tv .sync-card{margin-left:0;margin-right:0}

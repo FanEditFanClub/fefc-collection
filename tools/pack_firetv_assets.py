@@ -17,7 +17,7 @@ MANIFEST = OUT / '_bundle_manifest.json'
 # Paths / globs relative to ROOT that are copied as-is (or lightly processed).
 SHELL = [
     'index.html', 'style.css', 'sw.js', 'manifest.json',
-    'app.js', 'intro.js', 'clips.js', 'audio.js', 'zoom.js', 'genres.js',
+    'app.js', 'intro.js', 'clips.js', 'json-worker.js', 'audio.js', 'zoom.js', 'genres.js',
     'userdata.js', 'sync.js', 'syncui.js', 'ticker.js', 'tvplayer.js', 'qrgen.js',
     'newarrivals.js', 'readfirst.js', 'details-extra.js', 'eastereggs.js',
 ]

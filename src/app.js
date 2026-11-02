@@ -1,5 +1,20 @@
 (()=>{
-const _fetchOnce=(u,ms)=>Promise.race([fetch(u,{credentials:'same-origin'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()}),new Promise((_,rj)=>setTimeout(()=>rj(Error('timeout '+u)),ms))]);
+/* Large JSON (index ~6.7MB) parses off the main thread via Worker when available — Fire TV Cube janks hard on JSON.parse of the catalog. */
+let _jw=null,_jwN=0;const _jwPend=new Map();
+function _jsonWorker(){if(_jw)return _jw;try{_jw=new Worker('json-worker.js');_jw.onmessage=e=>{const m=e.data||{},p=_jwPend.get(m.id);if(!p)return;_jwPend.delete(m.id);m.ok?p.res(m.value):p.rej(Error(m.error||'worker'))};_jw.onerror=()=>{_jw=null};return _jw}catch(e){_jw=null;return null}}
+function parseJsonYield(text){return new Promise((res,rej)=>{setTimeout(()=>{try{res(JSON.parse(text))}catch(e){rej(e)}},0)})}
+function parseJsonOffMain(text){
+ /* Never post multi-MB strings into a Worker on Fire TV — structured-clone OOMs/hangs the Cube/emu. */
+ if(text&&text.length>800000)return parseJsonYield(text);
+ const w=_jsonWorker();if(!w)return parseJsonYield(text);const id=++_jwN;return new Promise((res,rej)=>{_jwPend.set(id,{res,rej});try{w.postMessage({id,text})}catch(e){_jwPend.delete(id);parseJsonYield(text).then(res,rej)}})}
+function fetchJsonSmart(u,ms){const fire=!!(window.FEFCNative||document.body.classList.contains('tv')||document.body.classList.contains('firetv'));
+ const big=/index\.json|metadata\.json|dates\.json|genres\.json|details/i.test(u)&&fire;
+ /* Prefer Worker fetching the URL itself (no giant postMessage). Fall back to main fetch + yielded parse. */
+ const viaWorkerUrl=()=>{const w=_jsonWorker();if(!w)return null;const id=++_jwN;return new Promise((res,rej)=>{_jwPend.set(id,{res,rej});try{w.postMessage({id,url:u})}catch(e){_jwPend.delete(id);rej(e)}})};
+ const viaMain=()=>fetch(u,{credentials:'same-origin'}).then(r=>{if(!r.ok)throw Error(r.status);return r.text()}).then(t=>parseJsonOffMain(t));
+ const go=big?(viaWorkerUrl()||viaMain()).catch(e=>{console.warn('json worker',e);return viaMain()}):fetch(u,{credentials:'same-origin'}).then(r=>{if(!r.ok)throw Error(r.status);return r.json()});
+ return Promise.race([go,new Promise((_,rj)=>setTimeout(()=>rj(Error('timeout '+u)),ms))])}
+const _fetchOnce=(u,ms)=>fetchJsonSmart(u,ms);
 /* Retry/backoff for flaky Fire TV / mobile networks — never deletes content; just re-asks. */
 function thumbSz(){return (typeof isTvEnv==='function'?isTvEnv():false)||document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative?'w320':'w640'}
 const tmo=(u,ms,tries)=>{tries=tries==null?2:tries;let attempt=0;const go=()=>_fetchOnce(u,ms).catch(e=>{attempt++;if(attempt>tries)throw e;const wait=Math.min(4000,250*Math.pow(2,attempt-1));return new Promise(r=>setTimeout(r,wait)).then(go)});return go()};
@@ -7,6 +22,23 @@ const C=window.FEFC_CONFIG||{},ROOT=C.ROOT_ID,FOLDER='application/vnd.google-app
 const $=s=>document.querySelector(s),P=new URLSearchParams(location.search);
 const isTvEnv=()=>!!(document.body.classList.contains('tv')||document.body.classList.contains('firetv')||window.FEFCNative||P.get('tv')||/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT\w|CrKey|BRAVIA|Android TV|GoogleTV|Silk|FEFCFireTV|Fire TV/i.test(navigator.userAgent));
 if(isTvEnv())document.body.classList.add('tv');
+/* Fire TV native Media3 intro: keep Home fully painted underneath but invisible until first paint is ready + ExoPlayer released. */
+if(window.FEFCNative&&P.get('nointro')){document.body.classList.add('firetv','native-waiting');}
+window.__fefcHomePaintReady=false;
+window.__fefcMarkHomeReady=function(){if(window.__fefcHomePaintReady)return;window.__fefcHomePaintReady=true;try{document.body.classList.add('home-paint-ready')}catch(e){}};
+window.__fefcFrameStats=null;
+window.__fefcStartFrameProbe=function(ms){ms=ms||5000;const t0=performance.now();let last=t0,frames=[];
+ function tick(now){frames.push(now-last);last=now;if(now-t0<ms)requestAnimationFrame(tick);else{const sorted=frames.slice().sort((a,b)=>a-b);const sum=frames.reduce((a,b)=>a+b,0);
+  window.__fefcFrameStats={n:frames.length,avg:+(sum/frames.length).toFixed(1),p50:+(sorted[sorted.length>>1]||0).toFixed(1),p95:+(sorted[Math.floor(sorted.length*.95)]||0).toFixed(1),max:+(sorted[sorted.length-1]||0).toFixed(1),over16:frames.filter(d=>d>16.7).length,over33:frames.filter(d=>d>33).length,over50:frames.filter(d=>d>50).length};
+  try{console.log('FEFC_FRAME_STATS '+JSON.stringify(window.__fefcFrameStats))}catch(e){}}};
+ requestAnimationFrame(tick)};
+window.__fefcRevealHome=function(){const b=document.body.classList;if(!b.contains('native-waiting')&&b.contains('home-revealed'))return 'already';
+ b.remove('native-waiting');b.add('home-revealed','intro-done');
+ try{window.dispatchEvent(new Event('fefc-home-revealed'))}catch(e){}
+ try{window.__fefcStartFrameProbe(5000)}catch(e){}
+ return 'ok'};
+/* Fallback: if native never calls reveal (web-only TV), clear the gate. */
+setTimeout(function(){if(document.body.classList.contains('native-waiting')&&!window.FEFCNative)window.__fefcRevealHome()},8000);
 const HUES=[205,190,220,265,30,160,340,15];
 let token=null,items=new Map(),kids=new Map(),meta={},cur=ROOT,live=false,view='home';
 const hash=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return Math.abs(h)};
@@ -239,7 +271,14 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
   if(v){const ps=posters[v.id]||posters[v.target];L.src=(ps&&ps.url&&String(ps.url).startsWith('assets/'))?ps.url:('https://drive.google.com/thumbnail?sz='+(fire?'w240':'w480')+'&id='+v.target);c.dataset.id=v.id}else{c.style.background='radial-gradient(circle at 60% 30%,hsl('+(Math.random()*360|0)+' 70% 45%),#050a14 80%)'}
   L.style.animationName='none';void L.offsetWidth;L.style.animationName='';L.className=(on?'mi2':'mi1')+' kb'+(Math.random()*4|0);
   layers[on].style.opacity=1;layers[1-on].style.opacity=0};
- cells.forEach(c=>set(c,true));requestAnimationFrame(fitHeader);clearInterval(mosaicTimer);
+ /* Fire TV: stagger first still assignment so decode+layout aren't one main-thread spike; mark paint-ready after first tiles decode. */
+ const paintReady=()=>{const imgs=[].slice.call(document.querySelectorAll('#hub .mc img')).filter(i=>i.src).slice(0,8);
+  const waits=imgs.map(i=>i.decode?i.decode().catch(()=>{}):Promise.resolve());
+  Promise.all(waits).then(()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady(),()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady());
+  setTimeout(()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady(),2500)};
+ if(fire){cells.forEach((c,i)=>setTimeout(()=>{set(c,true);if(i===Math.min(5,cells.length-1))paintReady()},i*45));if(!cells.length)paintReady()}
+ else{cells.forEach(c=>set(c,true));if(window.FEFCNative)paintReady()}
+ requestAnimationFrame(fitHeader);clearInterval(mosaicTimer);
  mosaicTimer=setInterval(()=>{if($('#home').hidden||document.hidden)return;if(tv&&document.body.classList.contains('genres-mode'))return;const k=fire?1:(tv?1:2);for(let j=0;j<k;j++)set(cells[Math.random()*cells.length|0])},fire?9000:tv?6000:1800)}
 let mosT;if(window.ResizeObserver)new ResizeObserver(()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},150)}).observe(document.getElementById('hub'));addEventListener('resize',()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},250)});
 let homeHideTimer=null;
@@ -299,10 +338,10 @@ function myListPage(){const U=window.UD;if(!U)return;const H=U.history(50).map(r
  /* 0.8.6: Check for updates at BOTTOM so D-pad Down from menu lands on list items first. */
  g.innerHTML='<div id="ml-sync"></div>'+histHead+histBody
   +`<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn${mlSort==='date'?' on':''}" data-ml="date">Date starred</button><button class="mi ml-btn${mlSort==='az'?' on':''}" data-ml="az">A–Z</button><b>${St.length}</b></div>`
-  +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+updTV+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>';if(window.FEFCSync){const c=$('#ml-sync');c&&FEFCSync.subscribe&&0}
+  +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+updTV+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>';try{(window.__fefcPaintSync||(window.FEFCSync&&FEFCSync.paintCard)||0)()}catch(e){}
  g.querySelectorAll('.ol-tile').forEach(lazyArt);
  requestAnimationFrame(()=>{if(navBack){try{restoreScroll();return}catch(e){}}
-  if(document.body.classList.contains('tv')){const first=g.querySelector('.ol-tile,.ml-btn,.ml-hist-tog')||$('#ml-update');
+  if(document.body.classList.contains('tv')){const first=g.querySelector('#ml-sync .sync-go,#ml-sync .mi,.ol-tile,.ml-btn,.ml-hist-tog')||$('#ml-update');
    if(first){try{first.focus({preventScroll:true});focusEl(first)}catch(e){}}}})}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-ml]');if(!b)return;S.click();const k=b.dataset.ml;if(k==='update'){try{window.FEFCNative&&FEFCNative.checkUpdate()}catch(err){}return}if(k==='hist'){localStorage.fefcHistCollapsed=localStorage.fefcHistCollapsed==='1'?'0':'1';myListPage();const t=document.querySelector('[data-ml="hist"]');if(t)try{t.focus({preventScroll:true})}catch(err){t.focus()}return}if(k==='clear'){if(confirm('Clear your watch history?'))UD.clearHistory();myListPage();return}if(k==='date'||k==='az'){mlSort=localStorage.fefcStarSort=k;myListPage()}});
 let starLast={};if(window.UD&&UD.subscribe)UD.subscribe(()=>requestAnimationFrame(()=>document.querySelectorAll('[data-star]').forEach(x=>{const on=UD.isStarred(x.dataset.star);if((x.getAttribute('aria-pressed')==='true')!==on)paintStars(x.dataset.star,on)})));
@@ -361,8 +400,10 @@ function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supp
  rfInPlace=true;S.click();p.hidden=false;void p.offsetWidth;RFX.open(p);setTimeout(()=>focusEl($('#rfclose')),60)}
 /* ---------- HASH ROUTER ---------- */
 /* per-folder sound effects (data/folder-sfx.json: folder id or name -> files) */
-let FER={};tmo('data/fanedit-ratings.json',10000).then(j=>{FER=(j&&j.items)||{}}).catch(()=>{});
-let FSFX={};tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m._genres||{}).forEach(g=>{const L=m._genres[g];const V=Array.isArray(L)&&L.length&&Array.isArray(L[0])?L:[L];V.forEach(x=>S.loadFx&&S.loadFx(x))});Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{});
+const _afterHomeIdle=(fn,delay)=>{const run=()=>setTimeout(()=>{(window.requestIdleCallback||(f=>setTimeout(f,0)))(fn,{timeout:6000})},delay|0);
+ if(document.body.classList.contains('native-waiting'))addEventListener('fefc-home-revealed',()=>run(),{once:true});else run()};
+let FER={};_afterHomeIdle(()=>tmo('data/fanedit-ratings.json',10000).then(j=>{FER=(j&&j.items)||{}}).catch(()=>{}),3000);
+let FSFX={};_afterHomeIdle(()=>tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m._genres||{}).forEach(g=>{const L=m._genres[g];const V=Array.isArray(L)&&L.length&&Array.isArray(L[0])?L:[L];V.forEach(x=>S.loadFx&&S.loadFx(x))});Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{}),4000);
 let _lastSfxId=null,_lastSfxAt=0,_sandlerLast=-1,_cruiseLast=-1;
 const DIR_IDS={'1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP':1,'1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4':1,'13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v':1,'1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2':1,'1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg':1,'1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o':1,'1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF':1,'1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el':1,'1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t':1,'1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC':1};
 let _gsfx={k:'',t:0};
@@ -755,12 +796,12 @@ async function details(f,push=true){fitMode();
  else if(isJura){S.fx(['assets/sfx/trex-roar.mp3','assets/sfx/trex-roar.m4a'])}
  else if(isDexter){S.fx(['assets/sfx/dexter-tonights-the-night.mp3','assets/sfx/dexter-tonights-the-night.m4a'])}}
  $('#details').innerHTML=`<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>
- <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button><button class="pill p6" data-act="play" tabindex="0" data-default>▶ Play</button>${(window.FEFCNative&&typeof FEFCNative.openInVlc==='function')?'<button type="button" class="pill p5" data-act="vlc">Open in VLC</button>':''}<a class="pill p3" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
- <div class="lc-body${PU?'':' nopo'}"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<button class="bigplay" data-act="play" aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button></div></div><div>
-  ${desc?`<h3 class="lc-h">Fan edit</h3><p>${esc(desc)}</p>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
+ <div class="lc-side"><button class="pill p1" data-act="back">◀ Back</button>${tr?'<button class="pill p2" data-jump="trailer">Trailer</button>':''}${(()=>{const on=!!(window.UD&&UD.isStarred(f.id));return `<button class="pill p4 star-btn side-star${on?' on':''}" data-star="${f.id}" aria-pressed="${on}">${on?'★ Starred':'☆ Star'}</button>`})()}<div class="grow"></div></div>
+ <div class="lc-body${PU?'':' nopo'}"><div class="lc-head${PU?' has-poster':''}">${PU?`<div class="lc-poster"><img src="${esc(PU)}" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add('wide')"></div>`:''}<div class="lc-info"><h1 class="lc-title">${esc(T)}</h1>${meta1||film.title?`<div class="lc-sub">${esc(film.title&&film.title!==T?film.title:'')}${meta1?(film.title&&film.title!==T?' · ':'')+esc(meta1):''}</div>`:''}${fileChips(f)}<div class="det-acts">${(window.FEFCNative&&typeof FEFCNative.openInVlc==='function')?`<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button><button type="button" class="pill p5 det-ext" data-act="vlc">Open in VLC</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>`:`<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play ${esc(T)}"><span class="tri"></span>PLAY</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/${id}/view" target="_blank" rel="noopener">Open in Drive</a>`}</div></div></div><div>
+  ${desc?`<h3 class="lc-h">Fan edit</h3><div class="tv-scroll" tabindex="0" data-tvscroll="desc"><p>${esc(desc)}</p></div>${m.descriptionSource?`<p class="src">Source: <a href="${esc(m.descriptionSource.url)}" target="_blank" rel="noopener">${esc(m.descriptionSource.name)}</a></p>`:''}`:''}
   <div id="lc-fanedit"></div>
   <h3 class="lc-h l">Source Media</h3><p><b>${esc(film.title||'Unknown')}</b>${film.year?' ('+esc(film.year)+')':''}${film.director?'<br>Directed by '+esc(film.director):''}${F&&F.genres?'<br><span class="src">'+esc(F.genres.join(' · '))+'</span>':''}${m.editor?'<br><span class="src">Fan edit by '+esc(m.editor)+'</span>':''}</p>
-  ${plot?`<h3 class="lc-h l">Overview</h3><p class="plot">${esc(plot)}</p>${F.wiki?`<p class="src">Plot: <a href="${esc(F.wiki)}" target="_blank" rel="noopener">Wikipedia</a></p>`:''}`:''}
+  ${plot?`<h3 class="lc-h l">Overview</h3><div class="tv-scroll" tabindex="0" data-tvscroll="plot"><p class="plot">${esc(plot)}</p></div>${F.wiki?`<p class="src">Plot: <a href="${esc(F.wiki)}" target="_blank" rel="noopener">Wikipedia</a></p>`:''}`:''}
   <div id="lc-eps"></div>
   ${cast.length?`<h3 class="lc-h p">Cast</h3><div class="cast">${cast.map(c=>`<span>${esc(c.name)}</span>`).join('')}</div>`:''}
  </div><div>
@@ -774,7 +815,9 @@ async function details(f,push=true){fitMode();
   $('#details').onclick=e=>{if(e.target.closest('button,a,.pill,.bigplay,.ol-tile')){if(window.S&&S.catMeow)S.catMeow();else S.fx(['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a'])}};
  }
  $('#details').querySelectorAll('[data-jump]').forEach(b=>b.addEventListener('click',()=>{S.chirp(2);const t=$('#lc-'+b.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})}));
- let n=0;$('#details').querySelectorAll('.pill,.rt a,.rt .rr,.bigplay').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)))}
+ let n=0;$('#details').querySelectorAll('.pill,.rt a,.rt .rr,.bigplay').forEach(el=>el.addEventListener('pointerenter',()=>S.chirp(n++)));
+ requestAnimationFrame(()=>{document.querySelectorAll('#details .tv-scroll').forEach(el=>{const o=el.scrollHeight>el.clientHeight+8;el.classList.toggle('can-scroll',o);el.classList.toggle('at-top',el.scrollTop<=0);el.classList.toggle('at-bot',el.scrollTop+el.clientHeight>=el.scrollHeight-2);el.addEventListener('scroll',()=>{el.classList.toggle('at-top',el.scrollTop<=0);el.classList.toggle('at-bot',el.scrollTop+el.clientHeight>=el.scrollHeight-2)},{passive:true})});});
+}
 let playerTimer=null,closedFor=null;
 function stopPlayerTimer(){if(playerTimer){clearTimeout(playerTimer);clearInterval(playerTimer);playerTimer=null}}
 function closePlayer(){try{stopPlayerTimer()}catch(e){}const pl=$('#player');if(pl){pl.hidden=true;pl.classList.remove('floating')}try{killFrame()}catch(e){}document.body.classList.remove('shuf-player');window.__shufPlay=0}
@@ -855,10 +898,10 @@ function play(f){
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
- const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();if(act.dataset.act==='vlc'){S.chirp(1);try{const nb=window.FEFCNative;if(nb&&nb.openInVlc&&f)nb.openInVlc(target(f),parse(f.name).raw)}catch(err){}return;}S.chirp(1);go('#/play/'+f.id);return}
+ const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();if(act.dataset.act==='vlc'){S.chirp(1);try{const nb=window.FEFCNative;if(nb&&nb.openInVlc&&f)nb.openInVlc(target(f),parse(f.name).raw,f.name||'video.mp4')}catch(err){}return;}S.chirp(1);go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.rfhome){S.click();readFirst();return}if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
-let _moveT=0;document.addEventListener('focusin',e=>{if(!e.target.matches('.ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog'+(isTvEnv()?'':',.tk-i:not(.tk-dup)')))return;const tv=isTvEnv()||document.body.classList.contains('tv')||document.body.classList.contains('firetv');if(!tv){S.move();return}const now=Date.now();if(now-_moveT<90)return;_moveT=now;S.move()});
+let _moveT=0;document.addEventListener('focusin',e=>{if(!e.target.matches('.ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog,.sync-go,#ml-sync .mi'+(isTvEnv()?'':',.tk-i:not(.tk-dup)')))return;const tv=isTvEnv()||document.body.classList.contains('tv')||document.body.classList.contains('firetv');if(!tv){S.move();return}const now=Date.now();if(now-_moveT<90)return;_moveT=now;S.move()});
 /* ---------- Semantic concept search (instant local fallback for concept queries like "Space Movies") ---------- */
 const SEMANTIC_MAP = {
   space: ["star wars", "star trek", "interstellar", "2001", "alien", "dune", "spaceballs", "guardians of the galaxy", "martian", "gravity", "apollo", "serenity", "battlestar", "firefly", "solaris", "contact", "galaxy quest", "flash gordon", "stargate", "farscape", "babylon 5", "the expanse", "pitch black", "riddick", "event horizon", "armageddon", "deep impact", "silent running", "first man", "moon", "ad astra", "valerian", "fifth element", "the right stuff"],
@@ -954,7 +997,7 @@ const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
 let qt;$('#q').readOnly=true;['focus','click'].forEach(ev=>$('#q').addEventListener(ev,e=>{if(spOpen())return;e.preventDefault();$('#q').blur();openSpot('')}));
 setTimeout(sm2,0);
 /* ---------- TV / D-PAD SPATIAL NAVIGATION ---------- */
-function focSel(){const base='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,#brand,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#player .pill:not([hidden]),#ptap';return (isTvEnv()||document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative)?base:base+',.tk-i:not(.tk-dup)'}
+function focSel(){const base='.priv-req,.priv-back,.sortpill,.bigplay,#details .ol-tile,#details .epbtn:not([disabled]),#rfclose,#rfdoc,.hb,.hint-btn,#brand,.mi,#ml-update,.ml-btn,.ml-hist-tog,#q,.ol-tile,#details .pill:not(.lab),#details a,#details .tv-scroll,#ml-sync .mi,.sync-go,#player .pill:not([hidden]),#ptap';return (isTvEnv()||document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative)?base:base+',.tk-i:not(.tk-dup)'}
 function visible(el){const r=el.getBoundingClientRect();return r.width>0&&r.height>0&&getComputedStyle(el).visibility!=='hidden'}
 function layer(){if(!$('#rfpanel').hidden)return $('#rfpanel');if(!$('#player').hidden)return $('#player');if(!$('#details').hidden)return $('#details');return $('#app')}
 function move(dir){const L=layer(),els=[].slice.call(L.querySelectorAll(focSel())).filter(visible),a=document.activeElement;
@@ -984,26 +1027,30 @@ document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('
  if(dir&&!$('#rfpanel').hidden&&(k===38||k===40)){e.preventDefault();const w=$('.rf-scroll');if(w)w.scrollBy(0,k===40?220:-220);return}
  if(dir&&!(inInput&&(k===37||k===39))){e.preventDefault();S.unlock();move(dir);return}
  if(k===10009||k===461||k===27||(k===8&&!inInput)||e.key==='GoBack'||e.key==='BrowserBack'){e.preventDefault();goBack();return}
- if((k===13||k===23)&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href],[data-ml],.ml-btn,.ml-hist-tog,.mi')){e.preventDefault();S.unlock();document.activeElement.click()}});
+ if((k===13||k===23)&&document.activeElement&&document.activeElement.matches('.ol-tile,[data-act],[data-nav],[data-href],[data-ml],[data-sync],.ml-btn,.ml-hist-tog,.mi,.sync-go')){e.preventDefault();S.unlock();document.activeElement.click()}});
 /* ---------- TV grid navigation, MODEL-BASED (not viewport geometry) ----------
    rows are rebuilt from DOM order + each grid's column count (computed track list) and offsetTop, so they never depend on what is on screen,
    on scroll position, or on whether the WebView skipped layout/paint of offscreen rows. Up from row N always goes to row N-1 (scrolled into view);
    the menu bar is reached only from the FIRST row of the page. Arrow keys are always preventDefault'ed on TV so the WebView's native focus search never runs. */
 let tvGoalX=null;
 function tvRows(){const c=[$('#arena'),$('#grid')].find(x=>x&&!x.hidden&&x.getClientRects().length);if(!c)return null;
- const els=[].slice.call(c.querySelectorAll('.sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog')).filter(e=>!e.hidden&&!e.closest('[hidden]')&&getComputedStyle(e).display!=='none'),groups=new Map();
+ const els=[].slice.call(c.querySelectorAll('.sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog,#ml-sync .mi,.sync-go')).filter(e=>!e.hidden&&!e.closest('[hidden]')&&getComputedStyle(e).display!=='none'),groups=new Map();
  els.forEach(e=>{const g=e.closest('.sgrid')||e.parentElement;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(e)});
- const rows=[];groups.forEach((a,g)=>{if(getComputedStyle(g).display==='grid'){const n=Math.max(1,getComputedStyle(g).gridTemplateColumns.split(' ').filter(x=>x&&x!=='none').length);for(let i=0;i<a.length;i+=n)rows.push(a.slice(i,i+n))}
-  else{const by={};a.forEach(e=>{const y=Math.round((e.offsetTop||0)/8);(by[y]=by[y]||[]).push(e)});Object.keys(by).map(Number).sort((x,y)=>x-y).forEach(y=>rows.push(by[y]))}});
+ const rows=[];groups.forEach((a,g)=>{const cs=getComputedStyle(g);if(cs.display==='grid'){let n=cs.gridTemplateColumns.split(/\s+/).filter(x=>x&&x!=='none'&&x!=='subgrid').length;n=Math.max(1,n||1);/* Guard: if track count looks absurd vs tile count, derive from first-row geometry. */if(n>a.length)n=a.length||1;if(a.length>1){const y0=a[0].offsetTop,first=a.filter(e=>Math.abs(e.offsetTop-y0)<Math.max(24,a[0].offsetHeight*.35));if(first.length>=2&&first.length!==n)n=first.length}for(let i=0;i<a.length;i+=n)rows.push(a.slice(i,i+n))}
+  else{/* geometry buckets large enough that uneven title heights stay one visual row */const by=[];a.forEach(e=>{const y=e.offsetTop||0;let row=by.find(r=>Math.abs(r.y-y)<Math.max(28,(e.offsetHeight||80)*.4));if(!row){row={y,els:[]};by.push(row)}row.els.push(e)});by.sort((p,q)=>p.y-q.y).forEach(r=>rows.push(r.els))}});
  return rows}
-function tvGridNav(k,a){if(!a||!a.closest)return false;const cur=a.closest('.ol-tile,.sortpill,#na-more,#ml-update,.ml-btn,.ml-hist-tog');if(!cur)return false;let rows=tvRows();if(!rows)return false;
- const find=()=>{for(let i=0;i<rows.length;i++){const j=rows[i].indexOf(cur);if(j>=0)return[i,j]}return null};let p=find();if(!p)return false;let[ri,ci]=p;
+function tvGridNav(k,a){if(!a||!a.closest)return false;const cur=(a.matches&&a.matches('#ml-sync .mi,.sync-go')?a:null)||a.closest('.ol-tile,.sortpill,#na-more,#ml-update,.ml-btn,.ml-hist-tog,.sync-go');if(!cur)return false;let rows=tvRows();if(!rows||!rows.length)return false;
+ /* Flat DOM order across rows — Left/Right always advance to the previous/next tile and wrap across row ends. */
+ const flat=rows.reduce((acc,r)=>acc.concat(r),[]);
+ let fi=flat.indexOf(cur);if(fi<0){/* tile not in model (stale layout): rebuild once */rows=tvRows()||rows;flat.length=0;rows.forEach(r=>r.forEach(e=>flat.push(e)));fi=flat.indexOf(cur);if(fi<0)return false}
  const cx=e=>{const r=e.getBoundingClientRect();return r.left+r.width/2},nearest=(row,x)=>{let b=row[0],bd=1e9;row.forEach(e=>{const d=Math.abs(cx(e)-x);if(d<bd){bd=d;b=e}});return b};
- if(k===37||k===39){const n=rows[ri][ci+(k===39?1:-1)];if(n){focusEl(n);tvGoalX=cx(n)}return true}
+ const find=()=>{for(let i=0;i<rows.length;i++){const j=rows[i].indexOf(cur);if(j>=0)return[i,j]}return null};
+ if(k===37||k===39){const n=flat[fi+(k===39?1:-1)];if(!n)return false;/* edge of grid: let caller try geometric / menu */focusEl(n);tvGoalX=cx(n);tvEnsure(n);return true}
+ let p=find();if(!p)return false;let[ri]=p;
  if(tvGoalX==null)tvGoalX=cx(cur);
  if(k===38){if(ri===0){tvGoalX=null;toMenu();return true}const t=nearest(rows[ri-1],tvGoalX);focusEl(t);tvEnsure(t);return true}
  if(ri>=rows.length-1&&typeof drainOne==='function'){let n=0;try{while(n++<3&&drainOne());}catch(er){}rows=tvRows()||rows;p=find();if(p)ri=p[0]}
- if(ri<rows.length-1){const t=nearest(rows[ri+1],tvGoalX);focusEl(t);tvEnsure(t)}return true}
+ if(ri<rows.length-1){const t=nearest(rows[ri+1],tvGoalX);focusEl(t);tvEnsure(t);return true}return false}
 /* belt and braces: after a vertical jump make sure the target really is inside the visible band of #main */
 function tvEnsure(t){requestAnimationFrame(()=>{const m=$('#main');if(!m||!t.isConnected)return;const r=t.getBoundingClientRect(),bar=$('#bar').getBoundingClientRect();if(r.bottom<bar.bottom||r.top>innerHeight-10){m.scrollTop+=r.top-(bar.bottom+Math.round(innerHeight*.1))}})}
 document.addEventListener('click',()=>{tvGoalX=null},true);
@@ -1046,10 +1093,18 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
     const body=$('#details .lc-body');if(body){const br=best.getBoundingClientRect(),bb=body.getBoundingClientRect();if(br.bottom>bb.bottom-8)body.scrollTop+=br.bottom-bb.bottom+24;if(br.top<bb.top+8)body.scrollTop-=bb.top-br.top+24}}
    return}}
  const tile=a&&a.closest&&a.closest('.ol-tile');if(tile)lastTile=tile;
- if(tv&&k>=37&&k<=40){e.preventDefault();if(tvGridNav(k,a)){e.stopImmediatePropagation();return}}
+ /* (C) Focused long-text block: Up/Down scroll ~1/3 viewport; at end move to next/prev focusable — never trap; Back untouched. */
+ if(a&&a.classList&&a.classList.contains('tv-scroll')&&(k===38||k===40)){e.preventDefault();e.stopImmediatePropagation();
+  const step=Math.max(80,Math.round(a.clientHeight/3));const before=a.scrollTop;
+  if(k===40){a.scrollTop=Math.min(a.scrollHeight-a.clientHeight,a.scrollTop+step);if(a.scrollTop===before||a.scrollTop+a.clientHeight>=a.scrollHeight-2){const els=[].slice.call($('#details').querySelectorAll(focSel())).filter(el=>el.offsetParent&&!el.disabled);const i=els.indexOf(a);const n=els[i+1];if(n)focusEl(n)} }
+  else{a.scrollTop=Math.max(0,a.scrollTop-step);if(a.scrollTop===before||a.scrollTop<=0){const els=[].slice.call($('#details').querySelectorAll(focSel())).filter(el=>el.offsetParent&&!el.disabled);const i=els.indexOf(a);const n=els[i-1];if(n)focusEl(n);else if(!focusAbove($('#details'),a))toMenu()}}
+  return}
+ const tvNav=tv||document.body.classList.contains('firetv')||(typeof isTvEnv==='function'&&isTvEnv());
+ if(tvNav&&k>=37&&k<=40){e.preventDefault();if(tvGridNav(k,a)){e.stopImmediatePropagation();return}
+  /* geometric fallback — must not drop the key when the model miss-fires */const dir={37:'left',38:'up',39:'right',40:'down'}[k];if(dir){move(dir);e.stopImmediatePropagation();return}}
  if(k===38&&tile){const r=tile.getBoundingClientRect(),above=[].slice.call(document.querySelectorAll('#arena .ol-tile,#grid .ol-tile,#grid .sortpill')).some(x=>x!==tile&&x.getClientRects().length&&x.getBoundingClientRect().bottom<=r.top+4);
   if(!above){e.preventDefault();e.stopImmediatePropagation();toMenu();return}}
- if(back&&tv&&$('#details').hidden&&$('#rfpanel').hidden&&tile){e.preventDefault();e.stopImmediatePropagation();try{pulseHint('back')}catch(err){}goBack();return}},true);
+ if(back&&tvNav&&$('#details').hidden&&$('#rfpanel').hidden&&tile){e.preventDefault();e.stopImmediatePropagation();try{pulseHint('back')}catch(err){}goBack();return}},true);
 document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.closest('.ol-tile');if(t)lastTile=t;if(e.target.closest&&e.target.closest('#details')&&e.target.matches&&e.target.matches(focSel()))lastDet=e.target});
 /* TV: search input becomes a 'Search' button that opens an on-screen search overlay */
 (function(){const b=document.createElement('button');b.id='tvq';b.type='button';b.className='mi tv-only';b.innerHTML='<span class="tvq-row"><svg class="tvq-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg><span>Search</span></span>';$('#bar').insertBefore(b,$('#q'));b.onclick=()=>{S.click();openSpot('')}})();
@@ -1224,7 +1279,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.11';
+const HOME_VER_FALLBACK='0.8.12';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}
@@ -1286,17 +1341,27 @@ afterIntro(()=>{tmo('data/posters.json',15000).then(m=>{posters=m;reArt()}).catc
 const TVB=/Tizen|Web0S|webOS|SMART-TV|SmartTV|NetCast|AFT|CrKey|BRAVIA|Android TV|GoogleTV|Silk/i.test(navigator.userAgent)||!!P.get('tv');
 /* On TV the big secondary JSON files (genres 0.5 MB, dates 1.6 MB, metadata 1.7 MB, details extras 3.7 MB) are fetched/parsed one after another after the hub is up, not all at once during startup. */
 const later=(fn,ms)=>TVB?afterIntro(()=>setTimeout(fn,ms)):fn();
+/* After native Home reveal: push non-critical work to idle a few seconds later so first paint stays smooth. */
+const laterIdle=(fn,ms)=>{const kick=()=>{(window.requestIdleCallback||(f=>setTimeout(f,1)))(()=>fn(),{timeout:(ms|0)+8000})};
+ const wait=()=>{if(document.body.classList.contains('native-waiting'))addEventListener('fefc-home-revealed',()=>setTimeout(kick,ms|0),{once:true});else setTimeout(kick,ms|0)};
+ TVB||window.FEFCNative?afterIntro(wait):fn()};
 /* Genres: Fire TV previously raced a 10s timeout vs local/network JSON and .catch(()=>{}) left genreMap={} → FEFCGenres hub stuck on "Loading genres…" forever. Load from bundled/local URL with a long TV timeout, retry once, and surface fail+retry UI. */
 window.loadGenres=(force)=>{if(window._genresP&&!force)return window._genresP;const ms=isTvEnv()?60000:20000;const once=()=>tmo('data/genres.json',ms).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;try{if(window.FEFCGenres&&FEFCGenres.loaded)FEFCGenres.loaded()}catch(e){}softRefresh();return g});window._genresP=once().catch(e=>{console.warn('genres',e);return once()}).then(g=>{window._genresP=Promise.resolve(g);return g},e=>{window._genresP=null;try{if(window.FEFCGenres&&FEFCGenres.fail)FEFCGenres.fail(e&&e.message||e)}catch(err){}throw e});return window._genresP};
-later(()=>window.loadGenres(),isTvEnv()?400:1500);
-afterIntro(()=>{tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic()}).catch(()=>{});});
-later(()=>tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));softRefresh()}).catch(e=>console.warn(e)),3000);
-later(()=>tmo('data/metadata.json',8000).then(m=>{meta=m;refreshOpenDetails()}).catch(e=>console.warn(e)),isTvEnv()?5000:800);later(()=>{const sx=document.createElement('script');sx.src='details-extra.js';sx.onload=()=>{if(window.FEX)FEX.ready.then(()=>refreshOpenDetails()).catch(()=>{})};document.head.appendChild(sx)},isTvEnv()?8000:1200);
+/* Genres/softRefresh deferred until a few seconds after Home reveal on Fire TV. */
+laterIdle(()=>window.loadGenres(),isTvEnv()?3500:1500);
+afterIntro(()=>{tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic();else if(window.FEFCNative)setTimeout(()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady(),1500)}).catch(()=>{if(window.FEFCNative)window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()});});
+laterIdle(()=>tmo('data/dates.json',15000).then(m=>{NA.dates=m;(window.requestIdleCallback||setTimeout)(()=>NA.top(rootVids()));softRefresh()}).catch(e=>console.warn(e)),4000);
+laterIdle(()=>tmo('data/metadata.json',8000).then(m=>{meta=m;refreshOpenDetails()}).catch(e=>console.warn(e)),isTvEnv()?6000:800);laterIdle(()=>{const sx=document.createElement('script');sx.src='details-extra.js';sx.onload=()=>{if(window.FEX)FEX.ready.then(()=>refreshOpenDetails()).catch(()=>{})};document.head.appendChild(sx)},isTvEnv()?9000:1200);
 /* Prefetch the 6.7MB index during the TV CSS intro (no canvas). Longer timeout + one retry — Fire TV WebView often exceeds 15s download/parse and was leaving every hub count at 0. */
 const idxMs=isTvEnv()?180000:30000;
 const idxFetch=()=>tmo('data/index.json',idxMs).catch(e=>{console.warn('index retry',e);return tmo('data/index.json',idxMs)});
 const idxP=(isTvEnv()||document.body.classList.contains('tvintro'))?idxFetch():null;
-afterIntro(()=>{(idxP||idxFetch()).then(async d=>{window._idx=d.items;window._links=d.links||window._links||null;if(!live){add(d.items);applyLinks(window._links);if(!window._links){try{window._links=await tmo('data/links.json',30000);applyLinks(window._links)}catch(e){console.warn('links',e)}}else{tmo('data/links.json',30000).then(L=>{window._links=L;applyLinks(L);softRefresh()}).catch(e=>console.warn('links',e))}}if(d.partial!==false&&!live)tmo('data/index.interim.json',30000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));applyLinks(window._links);window._idx=Array.from(items.values());softRefresh()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{softRefresh();
+afterIntro(()=>{(idxP||idxFetch()).then(async d=>{window._idx=d.items;window._links=d.links||window._links||null;if(!live){add(d.items);applyLinks(window._links);if(!window._links){try{window._links=await tmo('data/links.json',30000);applyLinks(window._links)}catch(e){console.warn('links',e)}}else{tmo('data/links.json',30000).then(L=>{window._links=L;applyLinks(L);if(!document.body.classList.contains('native-waiting'))softRefresh()}).catch(e=>console.warn('links',e))}}if(d.partial!==false&&!live)tmo('data/index.interim.json',30000).then(x=>{add(x.items.filter(f=>!items.has(f.id)));applyLinks(window._links);window._idx=Array.from(items.values());if(!document.body.classList.contains('native-waiting'))softRefresh()}).catch(()=>{})}).catch(e=>{console.warn(e);status('Saved index unavailable')}).then(()=>{
+ /* Index is in memory; paint hub behind intro. Defer softRefresh (genres counts etc.) until after reveal on Fire TV. */
+ const paint=()=>{try{hub()}catch(e){}const mos=$('#mosaic');if(!window.__fefcHomePaintReady&&!(mos&&mos.querySelector('.mc')))setTimeout(()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady(),1200)};
+ paint();
+ const doSoft=()=>{(window.requestIdleCallback||setTimeout)(()=>softRefresh(),{timeout:5000})};
+ if(document.body.classList.contains('native-waiting'))addEventListener('fefc-home-revealed',()=>setTimeout(doSoft,2500),{once:true});else softRefresh();
  if(P.get('focus')){setTimeout(()=>{document.body.classList.add('kbd');const t=document.querySelectorAll('.ol-tile,.hb')[+P.get('focus')];if(t)focusEl(t)},300)}
  const e=P.get('edit');if(e)go('#/edit/'+e);const pp=P.get('play');if(pp)go('#/play/'+pp);if(P.get('readfirst'))go('#/readfirst')});});
 $('#back').addEventListener('click',e=>{e.preventDefault();e.stopPropagation();goBack()});
