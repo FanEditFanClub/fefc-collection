@@ -1,12 +1,18 @@
 (function() {
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  let E = { edits: {}, films: {}, map: {}, conf: {} }, FI = {};
+  let E = { edits: {}, films: {}, map: {}, conf: {} }, FI = {}, DC = { by_id: {} };
   const ld = (u) => fetch(u).then((r) => r.ok ? r.json() : {}).catch(() => ({}));
-  const ready = Promise.all([ld("data/editinfo.json").then((x) => {
-    if (x && x.edits) E = x;
-  }), ld("data/fileinfo.json").then((x) => {
-    FI = x || {};
-  })]);
+  const ready = Promise.all([
+    ld("data/editinfo.json").then((x) => {
+      if (x && x.edits) E = x;
+    }),
+    ld("data/fileinfo.json").then((x) => {
+      FI = x || {};
+    }),
+    ld("data/drive-changes.json").then((x) => {
+      if (x && x.by_id) DC = x;
+    })
+  ]);
   const NAMES = { "faneditfanclub@gmail.com": "Fan Edit Fan Club" };
   const owner = (e) => e ? NAMES[e] || e.split("@")[0] : "";
   const hs = (b) => b >= 1e9 ? (b / 1e9).toFixed(1) + " GB" : b >= 1e6 ? (b / 1e6).toFixed(0) + " MB" : b ? (b / 1e3).toFixed(0) + " KB" : "";
@@ -34,23 +40,69 @@
     const host = sc ? "Shortcut \u2192 hosted by ".concat(esc(owner(o) || "another account")) : "Hosted directly in ".concat(esc(L.top || "Fan Edit Fan Club Collection"));
     return '<h3 class="lc-h b fx-sec" id="lc-fileinfo">File Info</h3><dl class="fx-kv">'.concat(size ? "<dt>Size</dt><dd>".concat(hs(size), "</dd>") : "", "<dt>Hosting</dt><dd>").concat(host, "</dd>").concat(o ? "<dt>Owner</dt><dd>".concat(esc(owner(o))).concat(owner(o) !== o ? ' <span class="src">'.concat(esc(o), "</span>") : "", "</dd>") : "").concat(L.parent ? "<dt>Folder</dt><dd>".concat(esc(L.top && L.top !== L.parent ? L.top + " \u203A " : "")).concat(esc(L.parent), "</dd>") : "", "</dl>");
   }
-  function editHTML(e, F) {
-    if (!e) return "";
-    const link = '<a href="'.concat(esc(e.url), '" target="_blank" rel="noopener">').concat(esc(e.src || "FanEdit.org"), "</a>");
-    const rt = e.runtime ? esc(e.runtime) + (e.origRuntime ? ' <span class="src">vs '.concat(esc(e.origRuntime), " original</span>") : F && F.runtime ? ' <span class="src">vs '.concat(F.runtime, " minutes original</span>") : "") : "";
-    const info = [["Editor", e.editor && esc(e.editor)], ["Edit type", e.type && esc(e.type)], ["Released", e.released && esc(e.released)], ["Runtime", rt], ["IFDB rating", e.rating ? "".concat(e.rating, '/10 <span class="src">').concat(e.reviews || 0, " review").concat(e.reviews === 1 ? "" : "s", "</span>") : ""]].filter((x) => x[1]);
-    const ch = e.changes || [], n = 8;
-    return '<h3 class="lc-h fx-sec">Edit Info</h3><dl class="fx-kv">'.concat(info.map((x) => "<dt>".concat(x[0], "</dt><dd>").concat(x[1], "</dd>")).join(""), '</dl><p class="src">Source: ').concat(link, "</p>") + (e.synopsis || e.intention || e.details || ch.length ? '<h3 class="lc-h p fx-sec" id="lc-changes">Edit Notes \xB7 What\'s Changed</h3>'.concat(e.synopsis ? "<p>".concat(esc(e.synopsis), "</p>") : "").concat(e.intention ? '<p class="fx-q">'.concat(esc(e.intention), "</p>") : "").concat(e.details ? "<p>".concat(esc(e.details), "</p>") : "", "\n ").concat(ch.length ? '<ul class="fx-ch">'.concat(ch.map((c, i) => "<li".concat(i >= n ? " hidden" : "", ">").concat(esc(c), "</li>")).join(""), "</ul>").concat(ch.length > n ? '<button class="fx-more pill" data-fxmore>Show all '.concat(ch.length, " changes</button>") : "") : "", '<p class="src">From the editor\'s notes on ').concat(link, "</p>") : "");
+  function normCh(s) {
+    return String(s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+  }
+  function mergeChanges(driveEnt, e) {
+    const out = [], seen = /* @__PURE__ */ new Set();
+    const push = (text, source) => {
+      const t = String(text || "").trim();
+      if (!t) return;
+      const k = normCh(t);
+      if (k.length < 6 || seen.has(k)) return;
+      seen.add(k);
+      out.push({ text: t, source: source || "" });
+    };
+    const kindOrder = { description: 0, readme: 1 };
+    const dch = ((driveEnt || {}).changes || []).slice().sort((a, b) => {
+      var _a, _b;
+      return ((_a = kindOrder[a.kind]) != null ? _a : 9) - ((_b = kindOrder[b.kind]) != null ? _b : 9);
+    });
+    dch.forEach((c) => push(c.text, c.source || (c.kind === "description" ? "Drive description" : "Drive README")));
+    (e && e.changes || []).forEach((c) => push(c, e && e.src || "FanEdit.org IFDB"));
+    return out;
+  }
+  function editHTML(e, F, driveEnt) {
+    const hasEdit = !!e, ch = mergeChanges(driveEnt, e), n = 8;
+    const link = e ? '<a href="'.concat(esc(e.url), '" target="_blank" rel="noopener">').concat(esc(e.src || "FanEdit.org"), "</a>") : "";
+    const rt = e && e.runtime ? esc(e.runtime) + (e.origRuntime ? ' <span class="src">vs '.concat(esc(e.origRuntime), " original</span>") : F && F.runtime ? ' <span class="src">vs '.concat(F.runtime, " minutes original</span>") : "") : "";
+    const info = e ? [["Editor", e.editor && esc(e.editor)], ["Edit type", e.type && esc(e.type)], ["Released", e.released && esc(e.released)], ["Runtime", rt], ["IFDB rating", e.rating ? "".concat(e.rating, '/10 <span class="src">').concat(e.reviews || 0, " review").concat(e.reviews === 1 ? "" : "s", "</span>") : ""]].filter((x) => x[1]) : [];
+    const srcNote = (() => {
+      const labels = [];
+      if (driveEnt && (driveEnt.sources || []).length) {
+        const uniq = [...new Set(driveEnt.sources.map((s) => s.label || s.kind))];
+        labels.push(...uniq.map((l) => "Drive \xB7 " + l.replace(/^Drive\s+/, "")));
+      }
+      if (e && e.changes && e.changes.length) labels.push((e.src || "FanEdit.org") + " IFDB");
+      return labels.length ? '<p class="src">Change list sources: '.concat(labels.map(esc).join(" \xB7 "), "</p>") : e ? '<p class="src">From the editor\'s notes on '.concat(link, "</p>") : "";
+    })();
+    let html = "";
+    if (hasEdit) {
+      html += '<h3 class="lc-h fx-sec">Edit Info</h3><dl class="fx-kv">'.concat(info.map((x) => "<dt>".concat(x[0], "</dt><dd>").concat(x[1], "</dd>")).join(""), '</dl><p class="src">Source: ').concat(link, "</p>");
+    }
+    if (e && (e.synopsis || e.intention || e.details) || ch.length) {
+      html += '<h3 class="lc-h p fx-sec" id="lc-changes">Edit Notes \xB7 What\'s Changed</h3>';
+      if (e && e.synopsis) html += "<p>".concat(esc(e.synopsis), "</p>");
+      if (e && e.intention) html += '<p class="fx-q">'.concat(esc(e.intention), "</p>");
+      if (e && e.details) html += "<p>".concat(esc(e.details), "</p>");
+      if (ch.length) {
+        html += '<ul class="fx-ch">'.concat(ch.map((c, i) => "<li".concat(i >= n ? " hidden" : "", ">").concat(esc(c.text)).concat(c.source ? ' <span class="src">('.concat(esc(c.source), ")</span>") : "", "</li>")).join(""), "</ul>");
+        if (ch.length > n) html += '<button class="fx-more pill" data-fxmore>Show all '.concat(ch.length, " changes</button>");
+      }
+      html += srcNote;
+    }
+    return html;
   }
   function enhance(f, ctx, F) {
     const D = document.getElementById("details");
     if (!D || D.dataset.id !== f.id) return;
     const t = ctx.target(f), e = E.edits[f.id] || E.edits[t];
+    const driveEnt = DC.by_id[f.id] || DC.by_id[t] || f.targetId && DC.by_id[f.targetId] || null;
     const cols = D.querySelectorAll(".lc-body > div:not(.lc-head)"), L = cols[0], R = cols[1];
     if (!L) return;
     const h = document.createElement("div");
     h.className = "fx";
-    h.innerHTML = editHTML(e, F);
+    h.innerHTML = editHTML(e, F, driveEnt);
     L.insertBefore(h, L.firstChild);
     if (e && e.synopsis) {
       const hs0 = [...L.querySelectorAll(".lc-h")].find((x) => /^Fan edit$/i.test(x.textContent));

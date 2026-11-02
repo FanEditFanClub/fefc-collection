@@ -22,6 +22,86 @@
   ],
   "_rules": [
     {
+      "path": true,
+      "match": "for all mankind",
+      "regex": "for all mankind",
+      "ids": [
+        "1cYZymEVHP-0bqPXmWpr71MFp4NVtYLUD"
+      ],
+      "random": true,
+      "source": "For All Mankind: NASA Armstrong PD 'one small step' / Alexei Leonov S1E1 first words (English broadcast translation from landing coverage: 'I take this step for my country…')",
+      "file": [
+        [
+          "assets/sfx/armstrong-small-step.m4a",
+          "assets/sfx/armstrong-small-step.mp3"
+        ],
+        [
+          "assets/sfx/leonov-moon-step.m4a",
+          "assets/sfx/leonov-moon-step.mp3"
+        ]
+      ]
+    },
+    {
+      "path": true,
+      "match": "and not to yield",
+      "regex": "and not to yield",
+      "ids": [
+        "17IPhh8eXnHgzfxXZmTBpWgy3h63C11t0"
+      ],
+      "random": true,
+      "source": "And Not To Yield sources: Band of Brothers theme; Patton theme + opening-speech quotes (no bastard / die for country / love to fight); Dunkirk theme; SPR Hymn to the Fallen; The Pacific theme; Masters of the Air theme; Midway theme; Man in the High Castle themeNolan braaam (Dunkirk/Nolan hub). ADD atop existing.",
+      "file": [
+        [
+          "assets/sfx/band-of-brothers.m4a",
+          "assets/sfx/band-of-brothers.mp3"
+        ],
+        [
+          "assets/sfx/patton-theme.m4a",
+          "assets/sfx/patton-theme.mp3"
+        ],
+        [
+          "assets/sfx/patton-no-bastard.m4a",
+          "assets/sfx/patton-no-bastard.mp3"
+        ],
+        [
+          "assets/sfx/patton-die-for-country.m4a",
+          "assets/sfx/patton-die-for-country.mp3"
+        ],
+        [
+          "assets/sfx/patton-love-to-fight.m4a",
+          "assets/sfx/patton-love-to-fight.mp3"
+        ],
+        [
+          "assets/sfx/dunkirk-theme.m4a",
+          "assets/sfx/dunkirk-theme.mp3"
+        ],
+        [
+          "assets/sfx/spr-hymn.m4a",
+          "assets/sfx/spr-hymn.mp3"
+        ],
+        [
+          "assets/sfx/pacific-theme.m4a",
+          "assets/sfx/pacific-theme.mp3"
+        ],
+        [
+          "assets/sfx/mota-theme.m4a",
+          "assets/sfx/mota-theme.mp3"
+        ],
+        [
+          "assets/sfx/midway-theme.m4a",
+          "assets/sfx/midway-theme.mp3"
+        ],
+        [
+          "assets/sfx/highcastle-theme.m4a",
+          "assets/sfx/highcastle-theme.mp3"
+        ],
+        [
+          "assets/sfx/nolan-braaam.m4a",
+          "assets/sfx/nolan-braaam.mp3"
+        ]
+      ]
+    },
+    {
       "file": [
         [
           "assets/sfx/predator-choppa.m4a",
@@ -95,13 +175,102 @@
       "match": "predator"
     },
     {
-      "files": [
-        "assets/sfx/great-scott.m4a",
-        "assets/sfx/great-scott.mp3"
-      ],
       "path": true,
-      "source": "myinstants greatscott2.mp3",
-      "match": "back to the future"
+      "match": "back to the future",
+      "regex": "back\\s*to\\s*the\\s*future|\\bbttf\\b",
+      "ids": [
+        "118OGP6UHLnJaSv4y6nR0kV4bdZ3VvYct",
+        "1Hdd-QWWEGs0iOuMyoAMELsry9sIJvZho",
+        "1TyrgzbvdK7ZlgS1MmX8DgW_RuM9Yvd52"
+      ],
+      "random": true,
+      "source": "Shared BTTF playlist for EVERY Back to the Future folder (incl. The Game / Part II / Part III) via one path+regex rule. Quotes: Great Scott; This is heavy; Hello/Think McFly; Nobody calls me chicken; What's wrong McFly chicken; Nobody calls me yellow; Butthead; Make like a tree; And that's back to the future; 88 mph; Roads we don't need roads; physical type; gigawatt. Themes: Silvestri BTTF1 hook, fanfare, BTTF2 main title, BTTF3 main title, chime. Real movie/score audio, no TTS. Atop existing great-scott.",
+      "file": [
+        [
+          "assets/sfx/bttf-great-scott.m4a",
+          "assets/sfx/bttf-great-scott.mp3"
+        ],
+        [
+          "assets/sfx/great-scott.m4a",
+          "assets/sfx/great-scott.mp3"
+        ],
+        [
+          "assets/sfx/bttf-great-scott-alt.m4a",
+          "assets/sfx/bttf-great-scott-alt.mp3"
+        ],
+        [
+          "assets/sfx/bttf-this-is-heavy.m4a",
+          "assets/sfx/bttf-this-is-heavy.mp3"
+        ],
+        [
+          "assets/sfx/bttf-hello-mcfly.m4a",
+          "assets/sfx/bttf-hello-mcfly.mp3"
+        ],
+        [
+          "assets/sfx/bttf-think-mcfly.m4a",
+          "assets/sfx/bttf-think-mcfly.mp3"
+        ],
+        [
+          "assets/sfx/bttf-nobody-chicken.m4a",
+          "assets/sfx/bttf-nobody-chicken.mp3"
+        ],
+        [
+          "assets/sfx/bttf-whats-wrong-chicken.m4a",
+          "assets/sfx/bttf-whats-wrong-chicken.mp3"
+        ],
+        [
+          "assets/sfx/bttf-nobody-yellow.m4a",
+          "assets/sfx/bttf-nobody-yellow.mp3"
+        ],
+        [
+          "assets/sfx/bttf-butthead.m4a",
+          "assets/sfx/bttf-butthead.mp3"
+        ],
+        [
+          "assets/sfx/bttf-make-like-a-tree.m4a",
+          "assets/sfx/bttf-make-like-a-tree.mp3"
+        ],
+        [
+          "assets/sfx/bttf-back-to-the-future.m4a",
+          "assets/sfx/bttf-back-to-the-future.mp3"
+        ],
+        [
+          "assets/sfx/bttf-88mph.m4a",
+          "assets/sfx/bttf-88mph.mp3"
+        ],
+        [
+          "assets/sfx/bttf-no-roads.m4a",
+          "assets/sfx/bttf-no-roads.mp3"
+        ],
+        [
+          "assets/sfx/bttf-physical-type.m4a",
+          "assets/sfx/bttf-physical-type.mp3"
+        ],
+        [
+          "assets/sfx/bttf-gigawatt.m4a",
+          "assets/sfx/bttf-gigawatt.mp3"
+        ],
+        [
+          "assets/sfx/bttf-theme-1.m4a",
+          "assets/sfx/bttf-theme-1.mp3"
+        ],
+        [
+          "assets/sfx/bttf-theme-fanfare.m4a",
+          "assets/sfx/bttf-theme-fanfare.mp3"
+        ],
+        [
+          "assets/sfx/bttf-theme-2.m4a",
+          "assets/sfx/bttf-theme-2.mp3"
+        ],
+        [
+          "assets/sfx/bttf-theme-3.m4a",
+          "assets/sfx/bttf-theme-3.mp3"
+        ],
+        [
+          "assets/sfx/bttf-theme-chime.m4a",
+          "assets/sfx/bttf-theme-chime.mp3"
+        ]
+      ]
     },
     {
       "files": [

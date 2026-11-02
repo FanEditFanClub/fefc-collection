@@ -1,10 +1,15 @@
 /* Details-page extras: fan-edit info (FanEdit.org IFDB), corrected source titles, and File Info.
-   Data is precomputed at build time: data/editinfo.json (tools/editinfo.py), data/fileinfo.json (tools/fileinfo.py). */
+   Data is precomputed at build time: data/editinfo.json (tools/editinfo.py), data/fileinfo.json (tools/fileinfo.py),
+   data/drive-changes.json (tools/drive_changes.py — Drive description + README/info, READ-ONLY). */
 (function(){
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let E={edits:{},films:{},map:{},conf:{}},FI={};
+let E={edits:{},films:{},map:{},conf:{}},FI={},DC={by_id:{}};
 const ld=u=>fetch(u).then(r=>r.ok?r.json():{}).catch(()=>({}));
-const ready=Promise.all([ld('data/editinfo.json').then(x=>{if(x&&x.edits)E=x}),ld('data/fileinfo.json').then(x=>{FI=x||{}})]);
+const ready=Promise.all([
+  ld('data/editinfo.json').then(x=>{if(x&&x.edits)E=x}),
+  ld('data/fileinfo.json').then(x=>{FI=x||{}}),
+  ld('data/drive-changes.json').then(x=>{if(x&&x.by_id)DC=x})
+]);
 const NAMES={'faneditfanclub@gmail.com':'Fan Edit Fan Club'};
 const owner=e=>e?(NAMES[e]||e.split('@')[0]):'';
 const hs=b=>b>=1e9?(b/1e9).toFixed(1)+' GB':b>=1e6?(b/1e6).toFixed(0)+' MB':b?(b/1e3).toFixed(0)+' KB':'';
@@ -19,16 +24,56 @@ function loc(f,ctx){const its=ctx.items,ids=[];let x=f,g=0;while(x&&x.parent&&g+
 function fileInfo(f,ctx){const t=ctx.target(f),T=ctx.items.get(t)||{},r=FI[t]||{},size=r.s||+T.size||+f.size||0,o=r.o,sc=!!(f.targetId&&f.targetId!==f.id),L=loc(f,ctx);
  const host=sc?`Shortcut → hosted by ${esc(owner(o)||'another account')}`:`Hosted directly in ${esc(L.top||'Fan Edit Fan Club Collection')}`;
  return `<h3 class="lc-h b fx-sec" id="lc-fileinfo">File Info</h3><dl class="fx-kv">${size?`<dt>Size</dt><dd>${hs(size)}</dd>`:''}<dt>Hosting</dt><dd>${host}</dd>${o?`<dt>Owner</dt><dd>${esc(owner(o))}${owner(o)!==o?` <span class="src">${esc(o)}</span>`:''}</dd>`:''}${L.parent?`<dt>Folder</dt><dd>${esc(L.top&&L.top!==L.parent?L.top+' › ':'')}${esc(L.parent)}</dd>`:''}</dl>`}
-function editHTML(e,F){if(!e)return'';const link=`<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.src||'FanEdit.org')}</a>`;
- const rt=e.runtime?esc(e.runtime)+(e.origRuntime?` <span class="src">vs ${esc(e.origRuntime)} original</span>`:F&&F.runtime?` <span class="src">vs ${F.runtime} minutes original</span>`:''):'';
- const info=[['Editor',e.editor&&esc(e.editor)],['Edit type',e.type&&esc(e.type)],['Released',e.released&&esc(e.released)],['Runtime',rt],['IFDB rating',e.rating?`${e.rating}/10 <span class="src">${e.reviews||0} review${e.reviews===1?'':'s'}</span>`:'']].filter(x=>x[1]);
- const ch=e.changes||[],n=8;
- return `<h3 class="lc-h fx-sec">Edit Info</h3><dl class="fx-kv">${info.map(x=>`<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('')}</dl><p class="src">Source: ${link}</p>`
- +((e.synopsis||e.intention||e.details||ch.length)?`<h3 class="lc-h p fx-sec" id="lc-changes">Edit Notes · What's Changed</h3>${e.synopsis?`<p>${esc(e.synopsis)}</p>`:''}${e.intention?`<p class="fx-q">${esc(e.intention)}</p>`:''}${e.details?`<p>${esc(e.details)}</p>`:''}
- ${ch.length?`<ul class="fx-ch">${ch.map((c,i)=>`<li${i>=n?' hidden':''}>${esc(c)}</li>`).join('')}</ul>${ch.length>n?`<button class="fx-more pill" data-fxmore>Show all ${ch.length} changes</button>`:''}`:''}<p class="src">From the editor's notes on ${link}</p>`:'')}
+function normCh(s){return String(s||'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}
+function mergeChanges(driveEnt,e){
+  // Prefer Drive description/readme first, then IFDB/MRDb (editinfo). Dedupe by normalized text.
+  const out=[], seen=new Set();
+  const push=(text,source)=>{
+    const t=String(text||'').trim(); if(!t)return;
+    const k=normCh(t); if(k.length<6||seen.has(k))return;
+    seen.add(k); out.push({text:t,source:source||''});
+  };
+  const kindOrder={description:0,readme:1};
+  const dch=((driveEnt||{}).changes||[]).slice().sort((a,b)=>(kindOrder[a.kind]??9)-(kindOrder[b.kind]??9));
+  dch.forEach(c=>push(c.text,c.source||(c.kind==='description'?'Drive description':'Drive README')));
+  (e&&e.changes||[]).forEach(c=>push(c, (e&&e.src)||'FanEdit.org IFDB'));
+  return out;
+}
+function editHTML(e,F,driveEnt){
+ const hasEdit=!!e, ch=mergeChanges(driveEnt,e), n=8;
+ const link=e?`<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.src||'FanEdit.org')}</a>`:'';
+ const rt=e&&e.runtime?esc(e.runtime)+(e.origRuntime?` <span class="src">vs ${esc(e.origRuntime)} original</span>`:F&&F.runtime?` <span class="src">vs ${F.runtime} minutes original</span>`:''):'';
+ const info=e?[['Editor',e.editor&&esc(e.editor)],['Edit type',e.type&&esc(e.type)],['Released',e.released&&esc(e.released)],['Runtime',rt],['IFDB rating',e.rating?`${e.rating}/10 <span class="src">${e.reviews||0} review${e.reviews===1?'':'s'}</span>`:'']].filter(x=>x[1]):[];
+ const srcNote=(()=>{
+   const labels=[];
+   if(driveEnt&&(driveEnt.sources||[]).length){
+     const uniq=[...new Set(driveEnt.sources.map(s=>s.label||s.kind))];
+     labels.push(...uniq.map(l=>'Drive · '+l.replace(/^Drive\s+/,'')));
+   }
+   if(e&&e.changes&&e.changes.length) labels.push((e.src||'FanEdit.org')+' IFDB');
+   return labels.length?`<p class="src">Change list sources: ${labels.map(esc).join(' · ')}</p>`:(e?`<p class="src">From the editor's notes on ${link}</p>`:'');
+ })();
+ let html='';
+ if(hasEdit){
+   html+=`<h3 class="lc-h fx-sec">Edit Info</h3><dl class="fx-kv">${info.map(x=>`<dt>${x[0]}</dt><dd>${x[1]}</dd>`).join('')}</dl><p class="src">Source: ${link}</p>`;
+ }
+ if((e&&(e.synopsis||e.intention||e.details))||ch.length){
+   html+=`<h3 class="lc-h p fx-sec" id="lc-changes">Edit Notes · What's Changed</h3>`;
+   if(e&&e.synopsis) html+=`<p>${esc(e.synopsis)}</p>`;
+   if(e&&e.intention) html+=`<p class="fx-q">${esc(e.intention)}</p>`;
+   if(e&&e.details) html+=`<p>${esc(e.details)}</p>`;
+   if(ch.length){
+     html+=`<ul class="fx-ch">${ch.map((c,i)=>`<li${i>=n?' hidden':''}>${esc(c.text)}${c.source?` <span class="src">(${esc(c.source)})</span>`:''}</li>`).join('')}</ul>`;
+     if(ch.length>n) html+=`<button class="fx-more pill" data-fxmore>Show all ${ch.length} changes</button>`;
+   }
+   html+=srcNote;
+ }
+ return html;
+}
 function enhance(f,ctx,F){const D=document.getElementById('details');if(!D||D.dataset.id!==f.id)return;const t=ctx.target(f),e=E.edits[f.id]||E.edits[t];
+ const driveEnt=DC.by_id[f.id]||DC.by_id[t]||(f.targetId&&DC.by_id[f.targetId])||null;
  const cols=D.querySelectorAll('.lc-body > div:not(.lc-head)'),L=cols[0],R=cols[1];if(!L)return;
- const h=document.createElement('div');h.className='fx';h.innerHTML=editHTML(e,F);L.insertBefore(h,L.firstChild);
+ const h=document.createElement('div');h.className='fx';h.innerHTML=editHTML(e,F,driveEnt);L.insertBefore(h,L.firstChild);
  // old short "Fan edit" description is superseded when IFDB notes exist
  if(e&&e.synopsis){const hs0=[...L.querySelectorAll('.lc-h')].find(x=>/^Fan edit$/i.test(x.textContent));if(hs0){let n=hs0.nextElementSibling;hs0.remove();while(n&&!n.classList.contains('lc-h')&&n.tagName==='P'){const k=n.nextElementSibling;n.remove();n=k}}}
  // Overview heading for the source plot; Cast & Crew with directors

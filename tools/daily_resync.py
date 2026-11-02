@@ -104,6 +104,12 @@ def main():
     except Exception as e:
         print(f"Warning during editinfo: {e}", flush=True)
 
+    # 3a. Drive change lists (file DESCRIPTION + README/info/changelog in edit folders). READ-ONLY.
+    try:
+        run_cmd("python3 tools/drive_changes.py")
+    except Exception as e:
+        print(f"Warning during drive_changes: {e}", flush=True)
+
     try:
         run_cmd("python3 tools/metadata.py")
     except Exception as e:

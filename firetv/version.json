@@ -2,7 +2,7 @@
     "versionCode": 10,
     "versionName": "0.8.2",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.2: Picard quote SFX on Star Trek + Sci-Fi; Directors folder cover (chair + megaphone); iOS Safari landscape home (hide remote bar on touch, safer tile titles, compact ticker). Web badge matches; APK versionCode still 10.",
+    "notes": "Beta 0.8.2: Picard quotes on Star Trek + Sci-Fi; For All Mankind Armstrong/Leonov SFX; And Not To Yield war-source playlist (no Churchill TTS); shared Back to the Future quote+Silvestri rotation (all BTTF folders incl. The Game); Game Movie & Series Fan Edits arcade cover; Directors chair+megaphone cover; iOS Safari landscape home; Drive README/changelog on details; nightly resync 7am ET before 9am notifier (CF token via secret). Web badge matches; APK versionCode still 10.",
     "size": 59078,
     "sha256": "4bdb8d17013db4853ea62ef054ff38af7c10657c31071757f86dbd632f45d403"
 }
