@@ -1,0 +1,63 @@
+name: daily-resync
+
+# Finish BEFORE the collection file notifier posts "new files" at 9:00 AM Eastern
+# (FanEditFanClub/New-Fan-Edit-Fan-Club-Collection-File-Notifier — do not edit that
+# repo's workflow or state). Cron is UTC-only; 12:00 UTC = 7:00 AM EST / 8:00 AM EDT.
+# ~2h window for full Drive index + metadata + Cloudflare Pages deploy.
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+    inputs:
+      skip_ratings:
+        description: "Skip fanedit_ratings.py (faster smoke test)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-resync
+  cancel-in-progress: false
+
+jobs:
+  resync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install JS deps
+        run: npm ci || npm install
+
+      - name: Git identity (nightly data commits)
+        run: |
+          git config user.name "fefc-collection-resync"
+          git config user.email "actions@github.com"
+
+      - name: Nightly collection resync
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SKIP_RATINGS: ${{ inputs.skip_ratings }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CLOUDFLARE_API_TOKEN:-}" ]; then
+            echo "CLOUDFLARE_API_TOKEN secret is missing" >&2
+            exit 1
+          fi
+          # Never echo the token value
+          echo "Cloudflare token present: yes (length ${#CLOUDFLARE_API_TOKEN})"
+          python3 tools/daily_resync.py

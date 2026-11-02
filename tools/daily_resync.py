@@ -23,15 +23,36 @@ from datetime import datetime
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT_DIR)
 
-NODE_BIN = "/Users/carson/.gemini/antigravity/scratch/tools/node-v20.18.0-darwin-arm64/bin"
+# Optional Mac-local node bin (only if present). On GitHub Actions, setup-node PATH is used.
+_MAC_NODE = "/Users/carson/.gemini/antigravity/scratch/tools/node-v20.18.0-darwin-arm64/bin"
+NODE_BIN = os.environ.get("FEFC_NODE_BIN", "")
+if not NODE_BIN and os.path.isdir(_MAC_NODE):
+    NODE_BIN = _MAC_NODE
+
 ENV = dict(os.environ)
-ENV["PATH"] = f"{NODE_BIN}:{ENV.get('PATH', '')}"
+if NODE_BIN:
+    ENV["PATH"] = f"{NODE_BIN}:{ENV.get('PATH', '')}"
 ENV["XDG_CONFIG_HOME"] = os.path.join(ROOT_DIR, ".config")
 ENV["XDG_DATA_HOME"] = os.path.join(ROOT_DIR, ".data")
-ENV["CLOUDFLARE_API_TOKEN"] = "cfut_OOek1tIQDJlG128flXJHC5H1M9wLALl0lCC1vHFad4728f78"
-ENV["CLOUDFLARE_ACCOUNT_ID"] = "770241106ff0deecb47b7761b2e752c2"
 
-CHANGELOG_REPO = "/Users/carson/.gemini/antigravity/scratch/fanedit-daily-changelog"
+# Cloudflare: never hardcode. Prefer GitHub Actions secret CLOUDFLARE_API_TOKEN.
+# Account id is not secret; allow env override, else known FEFC Pages account.
+ENV.setdefault("CLOUDFLARE_ACCOUNT_ID", "770241106ff0deecb47b7761b2e752c2")
+if not ENV.get("CLOUDFLARE_API_TOKEN"):
+    raise SystemExit(
+        "CLOUDFLARE_API_TOKEN is required (set the GitHub Actions secret or export it locally). "
+        "Do not hardcode the token. Owner should rotate the previously exposed token."
+    )
+
+# Changelog repo for optional nightly entry (entries.jsonl only — never touch its workflow/state).
+_MAC_CHANGELOG = "/Users/carson/.gemini/antigravity/scratch/fanedit-daily-changelog"
+_SIBLING_CHANGELOG = os.path.abspath(os.path.join(ROOT_DIR, "..", "fanedit-daily-changelog"))
+CHANGELOG_REPO = os.environ.get("CHANGELOG_REPO", "")
+if not CHANGELOG_REPO:
+    for candidate in (_SIBLING_CHANGELOG, _MAC_CHANGELOG):
+        if os.path.isdir(candidate):
+            CHANGELOG_REPO = candidate
+            break
 
 def run_cmd(cmd, check=True):
     print(f"--> Running: {cmd}", flush=True)
@@ -89,10 +110,14 @@ def main():
         print(f"Warning during metadata: {e}", flush=True)
 
     # 3b. Fan-edit community ratings (MRDb crawl continues each night; IFDB reported as blocked if Cloudflare challenges it)
-    try:
-        run_cmd("python3 tools/fanedit_ratings.py --budget-sec 900")
-    except Exception as e:
-        print(f"Warning during fanedit ratings: {e}", flush=True)
+    # Set SKIP_RATINGS=1 for a faster workflow_dispatch smoke test.
+    if os.environ.get("SKIP_RATINGS", "").strip().lower() in ("1", "true", "yes"):
+        print("Skipping fanedit_ratings (SKIP_RATINGS set)", flush=True)
+    else:
+        try:
+            run_cmd("python3 tools/fanedit_ratings.py --budget-sec 900")
+        except Exception as e:
+            print(f"Warning during fanedit ratings: {e}", flush=True)
 
     # 4. Artwork sync
     try:

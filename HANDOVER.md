@@ -12,7 +12,7 @@ Live site: https://collection.faneditfanclub.com
 - faneditfanclub.com is registered via Cloudflare Registrar on the same account.
 
 ## Data
-- Content comes from Google Drive (root folder `1kGaeK1unqWD1VOl3-DGWLAxISBhDR3cg`); the index in `data/` is rebuilt by a nightly resync (~3 AM ET).
+- Content comes from Google Drive (root folder `1kGaeK1unqWD1VOl3-DGWLAxISBhDR3cg`); the index in `data/` is rebuilt by a nightly GitHub Actions resync (`daily-resync.yml`, 7:00 AM ET / 12:00 UTC) so it finishes before the 9:00 AM ET collection file notifier.
 - Count rules: resolve shortcuts; count videos only via `kind`; dedupe by size; drop samples, trailers and extras; exclude To Be Catalogued from Main.
 - Don't modify Drive from the app.
 
@@ -67,5 +67,5 @@ Worker (`_worker.js`, `feedApi`): Cloudflare Cache API + `s-maxage=600`, merges 
 - **Search overlay (mobile)**: `.sp-opt` CSS collision with the Sync panel fixed (sync rules scoped to `.sp-opts`), `visualViewport` fit, LEAN rendering, 600-result cap, 220 ms debounce.
 - **Install**: top-bar install button removed; the bottom legend "Install App" button and bottom card remain.
 - **Fan edit ratings**: `tools/fanedit_ratings.py` writes `data/fanedit-ratings.json` (run nightly from `tools/daily_resync.py`, step 3b). Sources from Master Links registries: Movies Remastered / MRDb (polite 1 req/s sitemap crawl, cached in `data/.fanedit-ratings-cache.json`; title+path token match), FanEdit.org / IFDB scores + **Fan Edit Changes** (Cuts/Additions lists) from `data/editinfo.json` — Master Links has no separate Changes site. IFDB live pages sit behind Cloudflare; the tool detects challenges and skips (use `--from-dir` for saved HTML). Details page "Fan Edit Ratings" shows IFDB, MRDb, and Fan Edit Changes rows; Edit Notes lists change text.
-- **Security**: `tools/daily_resync.py` contains a hardcoded Cloudflare API token. Rotate it and move it to a secret.
+- **Security**: Cloudflare deploy uses Actions secret `CLOUDFLARE_API_TOKEN` (and `CLOUDFLARE_ACCOUNT_ID`). The old hardcoded token was removed from `tools/daily_resync.py` — **owner should rotate that exposed token** in the Cloudflare dashboard.
 
