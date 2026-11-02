@@ -131,7 +131,9 @@ function deepCounts(id){if(_dc[id]&&_dc[id].k===items.size&&_dc[id].d===!!NA.dat
 /* per-folder stats for sorting AND the in-collection subtitle: own subtree only (real subfolders; folder shortcuts are not followed, so cross-links can't inflate counts). n = unique video files only: never folders, never docs/images/subtitles */
 const _sc={};function sortCounts(id){const c=_sc[id];if(c&&c.k===items.size&&c.d===!!NA.dates)return c;let n=0,sz=0,nw='';const seen={},fs={},st=[id];while(st.length){const x=st.pop();if(seen[x])continue;seen[x]=1;(kids.get(x)||[]).forEach(f=>{if(isFolder(f)){const t=target(f);if(t===f.id&&!f.targetId&&(items.get(t)||f).parent===x&&t!==ROOT&&!Object.values(FOLD).includes(t))st.push(t)}else if(!JUNK.test(f.name||'')&&isVid(f)&&!fs[target(f)]){fs[target(f)]=1;const ck=vcanon(f);if(ck===null||fs['c:'+ck])return;fs['c:'+ck]=1;n++;sz+=f.size||0;const m=mdate(f);if(m>nw)nw=m}})}return _sc[id]={k:items.size,d:!!NA.dates,n,sz,nw}}
 const fmtN=n=>n.toLocaleString('en-US');
-function countsLine(id){const d=deepCounts(id);return fmtN(d.c)+(d.c===1?' collection':' collections')+' · '+fmtN(d.n)+(d.n===1?' file':' files')}
+function immFolderCount(id){let c=0;const seen={};(kids.get(id)||[]).forEach(f=>{if(!isFolder(f))return;const t=target(f);if(seen[t])return;seen[t]=1;c++});return c}
+/* Hub / Main Collection / Fan Edit Collections / TBC labels: collection count = immediate child folders only (not recursive). File totals stay deep. */
+function countsLine(id){const d=deepCounts(id);const c=(id===ROOT||id===FOLD.collections||id===FOLD.tbc)?immFolderCount(id):d.c;return fmtN(c)+(c===1?' collection':' collections')+' · '+fmtN(d.n)+(d.n===1?' file':' files')}
 /* Any Drive file link (details "Open in Drive" etc.) counts as opening the file: record it in History like Play */
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href*="drive.google.com"],a[href*="docs.google.com"]');if(!a||!window.UD)return;
  const m=a.href.match(/\/(?:file|document|spreadsheets|presentation)\/d\/([\w-]{20,})/)||a.href.match(/[?&]id=([\w-]{20,})/);if(!m)return;
@@ -141,7 +143,7 @@ function cnt(id){const k=kids.get(id);return k?k.length:0}
 function hub(){if(document.body.classList.contains('genres-mode')&&window.FEFCGenres&&FEFCGenres.hub)return FEFCGenres.hub();const newN=NA.newCount(rootVids());
  const T=[['readfirst','Read First',''],['arena','New Arrivals',newN?newN+(newN===1?' New File':' New Files'):''],['support','Support Us','Patreon · PayPal · Venmo'],
   ['folder:'+FOLD.collections,'Fan Edit Collections',countsLine(FOLD.collections)],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',countsLine(FOLD.tbc)],
-  ['people','Actors\n&\nDirectors',NA.plural(peopleList().length,'Collection')],['mylist','My List','History & Starred'],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
+  ['people','Actors\n&\nDirectors',NA.plural(peopleList().length,'Collection')],['mylist','My List',(()=>{const n=(window.UD&&UD.stars)?UD.stars().length:0;return n+' starred'})()],['genres','Genres',(()=>{const h={};Object.keys(genreMap).forEach(x=>genreMap[x].genres.forEach(g=>h[g]=1));const n=GORDER.filter(g=>h[g]).length;return n?n+(n===1?' Genre':' Genres'):''})()]];
  const keep=[].slice.call(document.querySelectorAll('#hub .mc'));$('#hub').innerHTML=T.map((t,i)=>t[0]==='main'?`<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small><small class="hb-cnt">${esc(countsLine(ROOT)).replace(/ · /g,' <wbr>· ')}</small></button>`
   :`<button class="hb" data-hub="${t[0]}">${t[0]==='mylist'?'<i class="hb-star" aria-hidden="true">★</i>':''}<span>${esc(t[1]).replace(/\n&amp;\n/,'<br><i class="amp">&amp;</i><br>').replace(/\n/g,'<br>')}</span>${t[2]?`<small>${esc(t[2]).replace(/ · /g,' <wbr>· ')}</small>`:''}</button>`).join('');keep.forEach(x=>$('#hub').appendChild(x))}
 function syncTag(){placeHeader()}
@@ -201,10 +203,14 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
  mosaicTimer=setInterval(()=>{if($('#home').hidden||document.hidden)return;const k=tv?1:2;for(let j=0;j<k;j++)set(cells[Math.random()*cells.length|0])},tv?3500:1800)}
 let mosT;if(window.ResizeObserver)new ResizeObserver(()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},150)}).observe(document.getElementById('hub'));addEventListener('resize',()=>{clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},250)});
 let homeHideTimer=null;
+const VIEW_MS=(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion:reduce)').matches)?1:220;
+function viewFade(main){if(!main||VIEW_MS<=1)return;main.classList.remove('view-enter');main.classList.add('view-fade');}
+function viewEnter(main){if(!main)return;if(VIEW_MS<=1){main.classList.remove('view-fade','view-enter');return}requestAnimationFrame(()=>{main.classList.remove('view-fade');main.classList.add('view-enter');clearTimeout(viewEnter._t);viewEnter._t=setTimeout(()=>main.classList.remove('view-enter'),VIEW_MS+40);});}
+
 function showHome(gm){
  clearTimeout(homeHideTimer);
  closeRF();
- if(!$('#details').hidden){$('#details').hidden=true;document.body.classList.remove('details-open')}
+ if(!$('#details').hidden){const d=$('#details');d.classList.remove('leaving');d.hidden=true;document.body.classList.remove('details-open')}
  if(!$('#player').hidden)closePlayer();
  const home=$('#home'),main=$('#main'),bar=$('#bar');
  home.classList.remove('leaving');main.classList.remove('entering');bar.classList.remove('entering');
@@ -215,17 +221,16 @@ function hideHome(){
  document.body.classList.remove('at-home');
  const home=$('#home'),main=$('#main'),bar=$('#bar');
  if(!home.hidden){
-  home.classList.add('leaving');
-  main.hidden=false;
-  main.classList.add('entering');
-  bar.hidden=false;
-  bar.classList.add('entering');
+  /* paint main/bar first, then fade home out — no blank flash */
+  main.hidden=false;bar.hidden=false;
+  main.classList.add('entering');bar.classList.add('entering');
+  requestAnimationFrame(()=>{home.classList.add('leaving')});
   homeHideTimer=setTimeout(()=>{
    home.hidden=true;
    home.classList.remove('leaving');
    main.classList.remove('entering');
    bar.classList.remove('entering');
-  },420);
+  },VIEW_MS);
  }else{
   home.hidden=true;main.hidden=false;bar.hidden=false;
  }
@@ -243,11 +248,14 @@ function myListPage(){const U=window.UD;if(!U)return;const H=U.history(50).map(r
  let St=U.stars().map(r=>({r,f:items.get(r.id)})).filter(x=>x.f);St.sort(mlSort==='az'?(a,b)=>a.f.name.localeCompare(b.f.name):(a,b)=>b.r.starredAt-a.r.starredAt);St=St.map(x=>x.f);
  pageShell('My List',`${NA.plural(St.length,'Starred')} · ${H.length} in history`.replace('Starreds','Starred'));const g=$('#grid');g.className='sectioned mylist';
  const vids_=a=>a.filter(f=>!isFolder(f)),fold_=a=>a.filter(isFolder);
- g.innerHTML='<div id="ml-sync"></div>'+secHTML('vids','HISTORY',H,H.length?'<button class="mi ml-btn" data-ml="clear">Clear history</button>':'')+(H.length?'':'<p class="ml-empty">Fan edits you open in the player show up here.</p>')
+ const histCollapsed=localStorage.fefcHistCollapsed==='1';
+ const histHead=`<div class="ol-div ml-hist-head"><button type="button" class="ml-hist-tog" data-ml="hist" aria-expanded="${histCollapsed?'false':'true'}" aria-controls="ml-hist-body"><span class="ml-hist-chev" aria-hidden="true">${histCollapsed?'▶':'▼'}</span><span>HISTORY</span></button><i></i>${(!histCollapsed&&H.length)?'<button class="mi ml-btn" data-ml="clear">Clear history</button>':''}<b>${H.length}</b></div>`;
+ const histBody=`<div id="ml-hist-body" class="ml-hist-body${histCollapsed?' is-collapsed':''}"${histCollapsed?' hidden':''}>`+(H.length?`<div class="sgrid vids">${H.map(f=>tile(f)).join('')}</div>`:'<p class="ml-empty">Fan edits you open in the player show up here.</p>')+'</div>';
+ g.innerHTML='<div id="ml-sync"></div>'+histHead+histBody
   +`<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn${mlSort==='date'?' on':''}" data-ml="date">Date starred</button><button class="mi ml-btn${mlSort==='az'?' on':''}" data-ml="az">A–Z</button><b>${St.length}</b></div>`
   +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>'+(document.body.classList.contains('tv')&&window.FEFCNative&&typeof FEFCNative.checkUpdate==='function'?'<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>':'');if(window.FEFCSync){const c=$('#ml-sync');c&&FEFCSync.subscribe&&0}
  g.querySelectorAll('.ol-tile').forEach(lazyArt)}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-ml]');if(!b)return;S.click();const k=b.dataset.ml;if(k==='update'){try{window.FEFCNative&&FEFCNative.checkUpdate()}catch(err){}return}if(k==='clear'){if(confirm('Clear your watch history?'))UD.clearHistory()}else{mlSort=localStorage.fefcStarSort=k}myListPage()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-ml]');if(!b)return;S.click();const k=b.dataset.ml;if(k==='update'){try{window.FEFCNative&&FEFCNative.checkUpdate()}catch(err){}return}if(k==='hist'){localStorage.fefcHistCollapsed=localStorage.fefcHistCollapsed==='1'?'0':'1';myListPage();const t=document.querySelector('[data-ml="hist"]');if(t)try{t.focus({preventScroll:true})}catch(err){t.focus()}return}if(k==='clear'){if(confirm('Clear your watch history?'))UD.clearHistory();myListPage();return}if(k==='date'||k==='az'){mlSort=localStorage.fefcStarSort=k;myListPage()}});
 let starLast={};if(window.UD&&UD.subscribe)UD.subscribe(()=>requestAnimationFrame(()=>document.querySelectorAll('[data-star]').forEach(x=>{const on=UD.isStarred(x.dataset.star);if((x.getAttribute('aria-pressed')==='true')!==on)paintStars(x.dataset.star,on)})));
 function starToast(t){let el=$('#startoast');if(!el){el=document.createElement('div');el.id='startoast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');document.body.appendChild(el)}el.textContent=t;el.classList.remove('show');void el.offsetWidth;el.classList.add('show');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),1600)}
 function paintStars(id,on){document.querySelectorAll('[data-star="'+id+'"]').forEach(x=>{x.classList.toggle('on',on);x.setAttribute('aria-pressed',String(on));if(x.classList.contains('star')){x.textContent=on?'★':'☆';x.setAttribute('aria-label',on?'Remove from My List':'Add to My List');x.title=(on?'Starred':'Star')+(document.body.classList.contains('firetv')?' (Menu)':' (S)');x.classList.remove('pop');void x.offsetWidth;x.classList.add('pop')}else if(x.classList.contains('star-btn'))x.textContent=on?'★ Starred':'☆ Star'})}
@@ -290,7 +298,7 @@ $('#rfpanel').addEventListener('click',e=>{if(!e.target.closest('.rf-in'))rfDism
 const RF_IDS={'1KWjoQ-wDzkj1f97lHoe1H_o41V-IYCwXj48pamczPVk':1};
 function isReadFirst(f){if(!f)return false;const n=f.name||'';if(/\bread (first|me)\b/i.test(n))return true;/* Drive folder "01 - Read First" and sibling docs */return /^\s*\d{0,2}[A-Z]?\s*-\s*read first\b/i.test(n)}
 function rfKind(f){if(!f||isFolder(f)||isMedia(f))return null;if(/support|patreon|paypal|venmo/i.test(f.name))return 'support';if(isReadFirst(f))return 'readfirst';return null}
-const RF_HOME_TILE=`<button class="ol-tile rfhome" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>`;
+const RF_HOME_TILE=`<button class="ol-tile fold rfhome" data-rfhome="1" data-hub="readfirst" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>`;
 function stripReadFirst(list){return list.filter(f=>!isReadFirst(f))}
 function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supportus');return}const p=$('#rfpanel'),d=$('#rfdoc'),src='data/readfirst.html',ttl='Read First';
  const sp=p.querySelector('.rf-top span');if(sp)sp.textContent=ttl;if(d.dataset.src!==src){d.dataset.src=src;d.dataset.ok=1;d.innerHTML='';fetch(src).then(r=>{if(!r.ok)throw 0;return r.text()}).catch(()=>fetch('data/readfirst.html').then(r=>r.text())).then(h=>{d.innerHTML=h}).catch(()=>{})}
@@ -369,7 +377,7 @@ function route(){const r=parseH(),k=r[0]||'';
  // overlays
  if(k!=='play')closedFor=null;
  if(k!=='play'&&!$('#player').hidden){closePlayer();window.__shufPrevHash=null;if(started())S.ambience(true)}
- if(k!=='edit'&&k!=='play'&&!$('#details').hidden){$('#details').hidden=true;document.body.classList.remove('details-open')}
+ if(k!=='edit'&&k!=='play'&&!$('#details').hidden){const d=$('#details');const hide=()=>{d.hidden=true;d.classList.remove('leaving');document.body.classList.remove('details-open')};if(VIEW_MS<=1)hide();else{d.classList.add('leaving');setTimeout(hide,VIEW_MS)}}
  if(k!=='readfirst')closeRF();
  if(k==='edit'){details(itemOr(r[1]),false);try{warmStream(itemOr(r[1]))}catch(e){}if(baseKey===null)renderBase('');return}
  if(k==='play'){
@@ -468,14 +476,14 @@ function shuffle(scope){const f=shufPick(scope);if(!f){status('Nothing to shuffl
 const shufBtn=scope=>`<button class="sortpill shuf-btn" data-shuffle="${esc(scope)}" title="Play a random fan edit">${SHUF_ICON}Shuffle Play</button>`;
 document.addEventListener('click',e=>{const b=e.target.closest('[data-shuffle]');if(!b)return;e.preventDefault();S.unlock&&S.unlock();shuffle(b.dataset.shuffle)});
 function render(list,title,mode){const _list=(cur===ROOT)?stripReadFirst(list):list;const fold=_list.filter(isFolder).sort((a,b)=>a.name.localeCompare(b.name)),vids=_list.filter(f=>!isFolder(f)).sort((a,b)=>a.name.localeCompare(b.name));const showRF=cur===ROOT&&(mode==='all'||mode==='home'||!mode);
- $('#crumb').textContent=title;hideHome();
+ const _main=$('#main');viewFade(_main);$('#crumb').textContent=title;hideHome();
  $('#arena').innerHTML='';NA.top(rootVids());const isNew={};if(mode!=='collections')list.forEach(f=>{if(NA.isNew(f))isNew[f.id]=1});
  const all=mode==='arena'?vids:mode==='collections'?fold:[...fold,...vids];
  $('#sec2').textContent=mode==='arena'?'Every fan edit in the collection · newest first':(cur===ROOT||cur===FOLD.collections||cur===FOLD.tbc)?countsLine(cur):cur==='virtual'?`${fold.length} collections · ${fmtN(vids.filter(isVid).length)} files`:`${fold.length} ${fold.length===1?'collection':'collections'} · ${fmtN(sortCounts(cur).n)} ${sortCounts(cur).n===1?'file':'files'}`;
  const isAd=f=>!isVid(f)&&/^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name),nat=(a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true,sensitivity:'base'}),docs=vids.filter(f=>!isVid(f)&&!isAd(f)),ck=mode==='arena'?'az':csortGet(cur),evs=csortList(vids.filter(f=>isVid(f)||isAd(f)),ck,isAd),Q=[],sec=(k,l,a)=>{if(!a.length)return '';const qi=Q.length;Q.push(a.slice(FIRST_TILES));return `<div class="ol-div"><span>${l}</span><i></i><b>${a.length}</b></div><div class="sgrid ${k}" data-q="${qi}">${a.slice(0,FIRST_TILES).map(f=>tile(f,isNew[f.id])).join('')}</div>`};
  const g=$('#grid');if(mode==='arena'){$('#arena').innerHTML='';NA.render(rootVids(),tile,art,i=>items.get(i),typeof shufBtn==='function'?shufBtn('newarrivals'):'')}else if(mode==='all'&&cur===ROOT){g.className='sectioned';sortedAll(fold,vids,g,typeof shufBtn==='function'?shufBtn('all'):'')}else{g.className='sectioned';const shs=cur===ROOT&&mode!=='collections'?'all':(cur===FOLD.collections||mode==='collections')?'collections':(cur===FOLD.tbc||underTBC(cur)||/to be catalogued/i.test(title))?'tbc':cur==='virtual'&&window.__gscope&&title===window.__gtitle?window.__gscope:'',sb=(list.length>1&&cur!=='virtual')||shs?`<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="${cur}">${shs?shufBtn(shs):''}${cur==='virtual'?'':CSORTS.map(([v,l])=>`<button class="sortpill${v===ck?' on':''}" data-csort="${v}" aria-pressed="${v===ck}">${l}</button>`).join('')}</div>`:'';const fsorted=csortList(fold,ck,isAd);const _rf=(cur===ROOT&&mode!=='arena')?RF_HOME_TILE:'';g.innerHTML=sb+sec('folds','COLLECTIONS',fsorted.filter(f=>!people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/,'$1'+_rf)+sec('folds','PEOPLE',fsorted.filter(f=>people[target(f)]))+(mode==='collections'?'':sec('vids','FAN EDITS',evs)+sec('docs','DOCUMENTS',docs))}
  document.querySelectorAll('#arena .ol-tile,#grid .ol-tile').forEach(lazyArt);if(mode!=='arena'&&!(mode==='all'&&cur===ROOT))drain(Q,isNew);
- status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll()}
+ status(all.length?'':(live?'Empty':'Nothing here yet'));menu();restoreScroll();viewEnter(_main)}
 /* ---------- private / not-shared folders: Request Access prompt (app-side only, no requests sent) ---------- */
 const DENIED=new Set();let INACC=new Set();tmo('data/inaccessible.json',10000).then(j=>{INACC=new Set(j.ids||[]);document.querySelectorAll('.ol-tile.fold').forEach(el=>{const f=items.get(el.dataset.id);if(f&&isDenied(target(f))&&!el.querySelector('.lockb'))el.insertAdjacentHTML('beforeend','<span class="lockb" title="Private library" aria-label="Private">🔒</span>')})}).catch(()=>{});
 function isDenied(id){return DENIED.has(id)||INACC.has(id)}
@@ -581,7 +589,7 @@ async function details(f,push=true){fitMode();S.open();S.ambience(false);
  const FE=[],fer=FER[f.id]||FER[id]||{},fsc=x=>x&&x.score!=null?(+x.score).toFixed(1).replace(/\.0$/,'')+'/'+(x.scale||10):'VIEW ›',fsub=x=>x&&x.votes?fmtV(x.votes)+' vote'+(x.votes===1?'':'s'):'';
  {const x=fer.ifdb||(ifdb?{url:ifdb}:null);if(x&&x.url)FE.push({ico:'fe',name:'FanEdit.org',val:fsc(x),sub:fsub(x)||'IFDB entry',url:x.url})}
  {const mro=old.find(r=>/Movies Remastered/.test(r.source)&&(r.url||r.value)),x=fer.mrdb||(mro?{url:mro.url,score:null}:null);if(x&&x.url)FE.push({ico:'mr',name:'Movies Remastered',val:fsc(x),sub:fsub(x)||'MRDb entry',url:x.url})}
- {const x=fer.changes;if(x&&x.url)FE.push({ico:'fe',name:'Fan Edit Changes',val:fsc(x),sub:fsub(x),url:x.url})}
+ {const x=fer.changes;if(x&&x.url)FE.push({ico:'fe',name:'Fan Edit Changes',val:x.label||(x.n!=null?x.n+' changes':'VIEW ›'),sub:x.label?'IFDB change list':(fsub(x)||'IFDB change list'),url:x.url})}
  const tr=m.trailer&&m.trailer.youtubeId?{id:m.trailer.youtubeId}:F&&F.trailer;
  const rt=R.map(r=>`<a ${r.url?`href="${esc(r.url)}" target="_blank" rel="noopener"`:''} class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')||'<p class="src">No ratings found for the source film.</p>';
  const T=m.title||p.raw,meta1=[film.year,F&&F.runtime?F.runtime+' min':'',F&&F.tv?'TV series':''].filter(Boolean).join(' · ');
@@ -604,7 +612,7 @@ async function details(f,push=true){fitMode();S.open();S.ambience(false);
   <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">${rt}</div>${FE.length?`<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">${FE.map(r=>`<a href="${esc(r.url)}" target="_blank" rel="noopener" class="rr"><span class="rn">${ICO[r.ico]}<span>${esc(r.name)}${r.sub?`<small>${esc(r.sub)}</small>`:''}</span></span><b>${esc(r.val)}</b></a>`).join('')}</div>`:''}
   <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer${film.title?' · '+esc(film.title):''}</h3><div class="trailer">${tr?`<iframe src="https://www.youtube-nocookie.com/embed/${esc(tr.id)}" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>`:`<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query=${encodeURIComponent((film.title||p.raw)+' '+(film.year||'')+' official trailer')}" target="_blank" rel="noopener">Search YouTube ›</a></span>`}</div>
  </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>`;
- $('#details').hidden=false;$('#details').dataset.id=f.id;detBackdrop(f,PU);const E=episodes(f);epWire(f,E);if(window.FEX)FEX.ready.then(()=>FEX.enhance(f,{items,target,root:ROOT},F));$('#details').scrollTop=0;const lb=$('#details .lc-body');if(lb)lb.scrollTop=0;
+ const _det=$('#details');_det.classList.remove('leaving');_det.dataset.id=f.id;_det.classList.add('det-enter');_det.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>_det.classList.remove('det-enter')));detBackdrop(f,PU);const E=episodes(f);epWire(f,E);if(window.FEX)FEX.ready.then(()=>FEX.enhance(f,{items,target,root:ROOT},F));$('#details').scrollTop=0;const lb=$('#details .lc-body');if(lb)lb.scrollTop=0;
  if(isPurr){
   $('#details').onclick=e=>{if(e.target.closest('button,a,.pill,.bigplay,.ol-tile')){if(window.S&&S.catMeow)S.catMeow();else S.fx(['assets/sfx/cat-meow.wav','assets/sfx/cat-meow.m4a'])}};
  }

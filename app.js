@@ -759,9 +759,22 @@ var __spreadValues = (a, b) => {
     return _sc[id] = { k: items.size, d: !!NA.dates, n, sz: sz2, nw };
   }
   const fmtN = (n) => n.toLocaleString("en-US");
+  function immFolderCount(id) {
+    let c = 0;
+    const seen = {};
+    (kids.get(id) || []).forEach((f) => {
+      if (!isFolder(f)) return;
+      const t = target(f);
+      if (seen[t]) return;
+      seen[t] = 1;
+      c++;
+    });
+    return c;
+  }
   function countsLine(id) {
     const d = deepCounts(id);
-    return fmtN(d.c) + (d.c === 1 ? " collection" : " collections") + " \xB7 " + fmtN(d.n) + (d.n === 1 ? " file" : " files");
+    const c = id === ROOT || id === FOLD.collections || id === FOLD.tbc ? immFolderCount(id) : d.c;
+    return fmtN(c) + (c === 1 ? " collection" : " collections") + " \xB7 " + fmtN(d.n) + (d.n === 1 ? " file" : " files");
   }
   document.addEventListener("click", (e) => {
     const a = e.target.closest && e.target.closest('a[href*="drive.google.com"],a[href*="docs.google.com"]');
@@ -789,7 +802,10 @@ var __spreadValues = (a, b) => {
       ["main", "", ""],
       ["folder:" + FOLD.tbc, "To Be Catalogued", countsLine(FOLD.tbc)],
       ["people", "Actors\n&\nDirectors", NA.plural(peopleList().length, "Collection")],
-      ["mylist", "My List", "History & Starred"],
+      ["mylist", "My List", (() => {
+        const n = window.UD && UD.stars ? UD.stars().length : 0;
+        return n + " starred";
+      })()],
       ["genres", "Genres", (() => {
         const h = {};
         Object.keys(genreMap).forEach((x) => genreMap[x].genres.forEach((g) => h[g] = 1));
@@ -1005,11 +1021,32 @@ var __spreadValues = (a, b) => {
     }, 250);
   });
   let homeHideTimer = null;
+  const VIEW_MS = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion:reduce)").matches ? 1 : 220;
+  function viewFade(main) {
+    if (!main || VIEW_MS <= 1) return;
+    main.classList.remove("view-enter");
+    main.classList.add("view-fade");
+  }
+  function viewEnter(main) {
+    if (!main) return;
+    if (VIEW_MS <= 1) {
+      main.classList.remove("view-fade", "view-enter");
+      return;
+    }
+    requestAnimationFrame(() => {
+      main.classList.remove("view-fade");
+      main.classList.add("view-enter");
+      clearTimeout(viewEnter._t);
+      viewEnter._t = setTimeout(() => main.classList.remove("view-enter"), VIEW_MS + 40);
+    });
+  }
   function showHome(gm) {
     clearTimeout(homeHideTimer);
     closeRF();
     if (!$("#details").hidden) {
-      $("#details").hidden = true;
+      const d = $("#details");
+      d.classList.remove("leaving");
+      d.hidden = true;
       document.body.classList.remove("details-open");
     }
     if (!$("#player").hidden) closePlayer();
@@ -1052,17 +1089,19 @@ var __spreadValues = (a, b) => {
     document.body.classList.remove("at-home");
     const home = $("#home"), main = $("#main"), bar = $("#bar");
     if (!home.hidden) {
-      home.classList.add("leaving");
       main.hidden = false;
-      main.classList.add("entering");
       bar.hidden = false;
+      main.classList.add("entering");
       bar.classList.add("entering");
+      requestAnimationFrame(() => {
+        home.classList.add("leaving");
+      });
       homeHideTimer = setTimeout(() => {
         home.hidden = true;
         home.classList.remove("leaving");
         main.classList.remove("entering");
         bar.classList.remove("entering");
-      }, 420);
+      }, VIEW_MS);
     } else {
       home.hidden = true;
       main.hidden = false;
@@ -1119,7 +1158,10 @@ var __spreadValues = (a, b) => {
     const g = $("#grid");
     g.className = "sectioned mylist";
     const vids_ = (a) => a.filter((f) => !isFolder(f)), fold_ = (a) => a.filter(isFolder);
-    g.innerHTML = '<div id="ml-sync"></div>' + secHTML("vids", "HISTORY", H, H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "") + (H.length ? "" : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>' + (document.body.classList.contains("tv") && window.FEFCNative && typeof FEFCNative.checkUpdate === "function" ? '<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>' : "");
+    const histCollapsed = localStorage.fefcHistCollapsed === "1";
+    const histHead = '<div class="ol-div ml-hist-head"><button type="button" class="ml-hist-tog" data-ml="hist" aria-expanded="'.concat(histCollapsed ? "false" : "true", '" aria-controls="ml-hist-body"><span class="ml-hist-chev" aria-hidden="true">').concat(histCollapsed ? "\u25B6" : "\u25BC", "</span><span>HISTORY</span></button><i></i>").concat(!histCollapsed && H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "", "<b>").concat(H.length, "</b></div>");
+    const histBody = '<div id="ml-hist-body" class="ml-hist-body'.concat(histCollapsed ? " is-collapsed" : "", '"').concat(histCollapsed ? " hidden" : "", ">") + (H.length ? '<div class="sgrid vids">'.concat(H.map((f) => tile(f)).join(""), "</div>") : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + "</div>";
+    g.innerHTML = '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>' + (document.body.classList.contains("tv") && window.FEFCNative && typeof FEFCNative.checkUpdate === "function" ? '<div class="ml-upd-wrap"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button></div>' : "");
     if (window.FEFCSync) {
       const c = $("#ml-sync");
       c && FEFCSync.subscribe && 0;
@@ -1138,12 +1180,26 @@ var __spreadValues = (a, b) => {
       }
       return;
     }
+    if (k === "hist") {
+      localStorage.fefcHistCollapsed = localStorage.fefcHistCollapsed === "1" ? "0" : "1";
+      myListPage();
+      const t = document.querySelector('[data-ml="hist"]');
+      if (t) try {
+        t.focus({ preventScroll: true });
+      } catch (err) {
+        t.focus();
+      }
+      return;
+    }
     if (k === "clear") {
       if (confirm("Clear your watch history?")) UD.clearHistory();
-    } else {
-      mlSort = localStorage.fefcStarSort = k;
+      myListPage();
+      return;
     }
-    myListPage();
+    if (k === "date" || k === "az") {
+      mlSort = localStorage.fefcStarSort = k;
+      myListPage();
+    }
   });
   let starLast = {};
   if (window.UD && UD.subscribe) UD.subscribe(() => requestAnimationFrame(() => document.querySelectorAll("[data-star]").forEach((x) => {
@@ -1406,7 +1462,7 @@ var __spreadValues = (a, b) => {
     if (isReadFirst(f)) return "readfirst";
     return null;
   }
-  const RF_HOME_TILE = '<button class="ol-tile rfhome" data-rfhome="1" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>';
+  const RF_HOME_TILE = '<button class="ol-tile fold rfhome" data-rfhome="1" data-hub="readfirst" aria-label="Read First"><span class="rf-t">Read First</span><small class="rf-s">Start here</small></button>';
   function stripReadFirst(list) {
     return list.filter((f) => !isReadFirst(f));
   }
@@ -1651,8 +1707,17 @@ var __spreadValues = (a, b) => {
       if (started()) S.ambience(true);
     }
     if (k !== "edit" && k !== "play" && !$("#details").hidden) {
-      $("#details").hidden = true;
-      document.body.classList.remove("details-open");
+      const d = $("#details");
+      const hide = () => {
+        d.hidden = true;
+        d.classList.remove("leaving");
+        document.body.classList.remove("details-open");
+      };
+      if (VIEW_MS <= 1) hide();
+      else {
+        d.classList.add("leaving");
+        setTimeout(hide, VIEW_MS);
+      }
     }
     if (k !== "readfirst") closeRF();
     if (k === "edit") {
@@ -2124,6 +2189,8 @@ var __spreadValues = (a, b) => {
     const _list = cur === ROOT ? stripReadFirst(list) : list;
     const fold = _list.filter(isFolder).sort((a, b) => a.name.localeCompare(b.name)), vids2 = _list.filter((f) => !isFolder(f)).sort((a, b) => a.name.localeCompare(b.name));
     const showRF = cur === ROOT && (mode === "all" || mode === "home" || !mode);
+    const _main = $("#main");
+    viewFade(_main);
     $("#crumb").textContent = title;
     hideHome();
     $("#arena").innerHTML = "";
@@ -2159,6 +2226,7 @@ var __spreadValues = (a, b) => {
     status(all.length ? "" : live ? "Empty" : "Nothing here yet");
     menu2();
     restoreScroll();
+    viewEnter(_main);
   }
   const DENIED = /* @__PURE__ */ new Set();
   let INACC = /* @__PURE__ */ new Set();
@@ -2597,7 +2665,7 @@ var __spreadValues = (a, b) => {
     }
     {
       const x = fer.changes;
-      if (x && x.url) FE.push({ ico: "fe", name: "Fan Edit Changes", val: fsc(x), sub: fsub(x), url: x.url });
+      if (x && x.url) FE.push({ ico: "fe", name: "Fan Edit Changes", val: x.label || (x.n != null ? x.n + " changes" : "VIEW \u203A"), sub: x.label ? "IFDB change list" : fsub(x) || "IFDB change list", url: x.url });
     }
     const tr = m.trailer && m.trailer.youtubeId ? { id: m.trailer.youtubeId } : F2 && F2.trailer;
     const rt = R.map((r) => "<a ".concat(r.url ? 'href="'.concat(esc(r.url), '" target="_blank" rel="noopener"') : "", ' class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join("") || '<p class="src">No ratings found for the source film.</p>';
@@ -2629,8 +2697,12 @@ var __spreadValues = (a, b) => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
     })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<button class="bigplay" data-act="play" aria-label="Play ').concat(esc(T), '"><span class="tri"></span>PLAY</button></div></div><div>\n  ').concat(desc ? '<h3 class="lc-h">Fan edit</h3><p>'.concat(esc(desc), "</p>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <h3 class="lc-h l">Source ').concat(F2 && F2.tv ? "series" : "film", "</h3><p><b>").concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? "<p>".concat(esc(plot), "</p>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", '\n </div><div>\n  <h3 class="lc-h b" id="lc-ratings">Ratings</h3><div class="rt">').concat(rt, "</div>").concat(FE.length ? '<h4 class="fer-h">Fan Edit Ratings</h4><div class="rt fer">'.concat(FE.map((r) => '<a href="'.concat(esc(r.url), '" target="_blank" rel="noopener" class="rr"><span class="rn">').concat(ICO[r.ico], "<span>").concat(esc(r.name)).concat(r.sub ? "<small>".concat(esc(r.sub), "</small>") : "", "</span></span><b>").concat(esc(r.val), "</b></a>")).join(""), "</div>") : "", '\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
-    $("#details").hidden = false;
-    $("#details").dataset.id = f.id;
+    const _det = $("#details");
+    _det.classList.remove("leaving");
+    _det.dataset.id = f.id;
+    _det.classList.add("det-enter");
+    _det.hidden = false;
+    requestAnimationFrame(() => requestAnimationFrame(() => _det.classList.remove("det-enter")));
     detBackdrop(f, PU);
     const E = episodes(f);
     epWire(f, E);

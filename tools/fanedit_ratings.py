@@ -8,13 +8,16 @@ Sources (each isolated; one failing/blocked site never breaks the others):
   ifdb  FanEdit.org / IFDB          fanedit.org/<slug>/   (Cloudflare-protected: if a challenge page is returned the
         site is reported as "blocked" and skipped -- we never try to get around it. Pages can instead be supplied with
         --from-dir DIR, a folder of saved .html pages, e.g. exported from a browser by the owner.)
-  changes  "Fan Edit Changes" -- no public URL configured yet: set env FEC_BASE or --changes-base to enable.
+  changes  "Fan Edit Changes" -- IFDB Cuts/Additions lists via data/editinfo.json (Master Links has no separate
+        Fan Edit Changes site; FanEdit.org pages are the change lists). Optional --changes-base reserved for a future
+        dedicated index.
 
 Usage:
   tools/fanedit_ratings.py [--budget-sec 1200] [--sources mrdb,ifdb,changes] [--from-dir DIR] [--report]
 Nightly: tools/daily_resync.py calls it with a bounded budget; the cache lets later nights continue where the last stopped.
-Matching: normalised title equality (year/"Fan Edit"/cut-name noise removed); when several candidates share a title the
-editor name must appear in the file name or its folders. Coverage per site is printed and stored under "_coverage".
+Matching (MRDb): exact normalised title on the file name, then token-containment against file+folder path; when several
+candidates share a title the editor name must appear in the path (soft: unique containment matches are kept even without
+an editor). IFDB + change lists come from data/editinfo.json. Coverage per site is printed and stored under "_coverage".
 """
 import argparse, json, os, re, sys, time, unicodedata, urllib.request, urllib.error, html as H
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -152,36 +155,88 @@ def main():
     if "ifdb" in src:
         if a.from_dir: ingest_dir(a.from_dir, cache, log)
         elif a.budget_sec: crawl_ifdb(cache, meta, a.budget_sec, log)
-    if "changes" in src: log["changes"] = "not configured (no base URL)" if not a.changes_base else "configured but no parser yet"
+    # changes resolved after editinfo merge below
     json.dump(cache, open(CACHE, "w"))
     # --- match onto catalogue video items
     idx = load_json(os.path.join(ROOT, "data/index.json"), {"items": []})["items"]
     byid = {x["id"]: x for x in idx}
     vids = [x for x in idx if x.get("kind") == "video" or str(x.get("mimeType", "")).startswith("video/")]
+    STOP = set("fan edit fanedit movie remix edition cut version recut restored extended theatrical unrated the a an of and to for with from by in on hd 4k 1080p 720p bluray blu ray remaster remastered enhanced special definitive ultimate final new".split())
+    def toks(s):
+        return [t for t in norm(s).split() if t and t not in STOP and not t.isdigit() and len(t) > 1]
     def path(x):
         s, g = x["name"], 0
-        while x.get("parent") in byid and g < 12: x = byid[x["parent"]]; s += " " + x["name"]; g += 1
-        return norm(s)
-    mr = {}
-    for e in cache.get("mrdb", {}).values():
-        if e.get("title"): mr.setdefault(norm(e["title"]), []).append(e)
-    out = {}; cov = {"mrdb": 0, "ifdb": 0}
+        while x.get("parent") in byid and g < 12:
+            x = byid[x["parent"]]; s += " " + x["name"]; g += 1
+        return s
+    # inverted indexes for MRDb
+    name_ix, inv = {}, {}
+    vid_meta = []  # (v, name_norm, path_norm, path_toks)
+    for v in vids:
+        nt, pt = norm(v["name"]), norm(path(v))
+        tk = set(toks(path(v)))
+        name_ix.setdefault(nt, []).append(v)
+        vid_meta.append((v, nt, pt, tk))
+        for t in tk:
+            if len(t) >= 3: inv.setdefault(t, set()).add(len(vid_meta) - 1)
+    mr_entries = [e for e in cache.get("mrdb", {}).values() if isinstance(e, dict) and e.get("title")]
+    out = {}; cov = {"mrdb": 0, "ifdb": 0, "changes": 0}
     ifdb_by_url = cache.get("ifdb", {})
     ifdb_urls = meta.get("ifdb") or {}
+
+    def pick_mrdb(e):
+        """Return list of catalogue videos for one MRDb entry (0..few)."""
+        nt = norm(e["title"]); ed = norm(e.get("editor") or ""); tt = toks(e["title"])
+        cands, how = [], None
+        if nt in name_ix:
+            cands, how = list(name_ix[nt]), "exact"
+        if not cands and len(tt) >= 2:
+            keys = [t for t in tt if len(t) >= 3]
+            if keys and all(t in inv for t in keys):
+                inter = set.intersection(*(inv[t] for t in keys))
+                cands = [vid_meta[i][0] for i in inter]; how = "contain"
+        if not cands:
+            return []
+        if ed:
+            filt = [c for c in cands if ed in norm(path(c))]
+            if filt:
+                cands = filt
+            elif how != "exact" and len(cands) > 1:
+                return []  # ambiguous containment without editor
+            elif how != "exact" and len(cands) == 1:
+                # unique containment without editor in path — keep
+                pass
+            elif how != "exact":
+                return []
+        if len(cands) > 6:
+            return []
+        return cands
+
+    for e in mr_entries:
+        for v in pick_mrdb(e):
+            key = v["id"]
+            ent = out.setdefault(key, {})
+            # prefer scored entry if we already matched another id
+            prev = ent.get("mrdb")
+            cand = {"url": f"https://www.moviesremastered.com/movieinfo.php?id={e['id']}",
+                    "score": e.get("score"),
+                    "scale": scale_of(e.get("raw")) if e.get("score") is not None else None,
+                    "votes": e.get("votes", 0),
+                    "title": e.get("title"), "editor": e.get("editor")}
+            if not prev or (prev.get("score") is None and cand.get("score") is not None):
+                ent["mrdb"] = cand
+    cov["mrdb"] = sum(1 for e in out.values() if "mrdb" in e)
+
     for v in vids:
-        key = v.get("targetId") or v["id"]; ent = {}
-        nt = norm(v["name"]); p = None
-        cands = mr.get(nt) or []
-        if len(cands) > 1: cands = [c for c in cands if c.get("editor") and norm(c["editor"]) and norm(c["editor"]) in path(v)] or []
-        if len(cands) == 1:
-            c = cands[0]; ent["mrdb"] = {"url": f"https://www.moviesremastered.com/movieinfo.php?id={c['id']}", "score": c.get("score"), "scale": scale_of(c.get("raw")) if c.get("score") is not None else None, "votes": c.get("votes", 0)}; cov["mrdb"] += 1
+        key = v.get("targetId") or v["id"]
         u = ifdb_urls.get(v["id"]) or ifdb_urls.get(key)
         if u:
+            ent = out.setdefault(v["id"], {})
             c = ifdb_by_url.get(u)
             ent["ifdb"] = {"url": u, "score": c.get("score") if c else None, "scale": c.get("scale") if c else None, "votes": c.get("votes", 0) if c else 0}
             if c and c.get("score") is not None: cov["ifdb"] += 1
-        if ent: out[v["id"]] = ent
-    # IFDB scores already harvested by tools/editinfo.py (data/editinfo.json "edits", keyed by Drive id): authoritative for those edits
+
+    # IFDB scores + Fan Edit Changes (Cuts/Additions) from editinfo harvest
     ei = load_json(os.path.join(ROOT, "data/editinfo.json"), {}).get("edits", {})
     for k, e in ei.items():
         if not e.get("url"): continue
@@ -189,11 +244,26 @@ def main():
         ent = out.setdefault(k, {})
         ent["ifdb"] = {"url": e["url"], "score": float(r) if r not in (None, "") else None, "scale": 10, "votes": int(e.get("reviews") or 0)}
         if r not in (None, ""): cov["ifdb"] += 1
+        ch = e.get("changes") or []
+        if ch:
+            # Fan Edit Changes row: link to IFDB page (Master Links has no separate Changes site)
+            ent["changes"] = {"url": e["url"], "score": None, "scale": None, "votes": 0, "n": len(ch),
+                              "label": f"{len(ch)} change" + ("s" if len(ch) != 1 else "")}
+            cov["changes"] += 1
+        elif "changes" in src and a.changes_base:
+            pass  # reserved
+    if "changes" in src:
+        log["changes"] = (f"{cov['changes']} IFDB change lists via editinfo.json"
+                          if cov["changes"] else ("not configured (no base URL)" if not a.changes_base else "configured but no parser yet"))
     log.setdefault("ifdb", f"live fetch skipped; {len(ei)} edits from data/editinfo.json (harvested earlier)")
+    # drop empty ents
+    out = {k: v for k, v in out.items() if v}
     n_ifdb_links = sum(1 for e in out.values() if "ifdb" in e); n_mr = sum(1 for e in out.values() if "mrdb" in e)
     cov_doc = {"catalogue_fan_edits": len(vids), "mrdb_cached_pages": sum(1 for v in cache.get("mrdb", {}).values() if v.get("title")),
                "mrdb_matched": n_mr, "mrdb_with_score": sum(1 for e in out.values() if e.get("mrdb", {}).get("score") is not None),
-               "ifdb_links": n_ifdb_links, "ifdb_with_score": cov["ifdb"], "site_status": log}
+               "ifdb_links": n_ifdb_links, "ifdb_with_score": sum(1 for e in out.values() if e.get("ifdb", {}).get("score") is not None),
+               "changes_lists": cov["changes"],
+               "site_status": log}
     json.dump({"v": 1, "generated": time.strftime("%Y-%m-%d %H:%M"), "_coverage": cov_doc, "items": out}, open(OUT, "w"), separators=(",", ":"))
     print(json.dumps(cov_doc, indent=1))
 

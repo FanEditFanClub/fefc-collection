@@ -428,7 +428,11 @@ export default {
     // Pages advanced-mode (_worker) can ignore _headers; pin no-cache on install-critical assets so Pixel/Chrome PWA can update.
     if (path === '/sw.js' || path === '/manifest.json' || path === '/' || path === '/index.html' || /\.(?:js|css)$/.test(path)) {
       const h = new Headers(res.headers);
-      h.set('cache-control', 'no-cache');
+      h.set('cache-control', 'no-cache, must-revalidate');
+      // Cloudflare edge can keep an older max-age for sw.js; force edge bypass.
+      h.set('cdn-cache-control', 'no-store');
+      h.set('cloudflare-cdn-cache-control', 'no-store');
+      if (path === '/sw.js') h.set('service-worker-allowed', '/');
       if (path === '/manifest.json') h.set('content-type', 'application/manifest+json');
       return new Response(res.body, { status: res.status, statusText: res.statusText, headers: h });
     }

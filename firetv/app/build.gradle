@@ -4,6 +4,10 @@ def ksProps = new Properties()
 def ksFile = rootProject.file('signing.properties')
 if (ksFile.exists()) ksFile.withInputStream { ksProps.load(it) }
 
+// Single source of truth for web + Fire TV: repo-root VERSION (versionCode + versionName).
+// publishUpdateMeta writes firetv/version.json from these same values; the web home badge
+// fetches /firetv/version.json (and npm build stamps HOME_VER_FALLBACK from VERSION).
+def verJson = new groovy.json.JsonSlurper().parse(rootProject.file('../VERSION'))
 android {
     namespace 'com.faneditfanclub.collection'
     compileSdk 34
@@ -11,8 +15,8 @@ android {
         applicationId 'com.faneditfanclub.collection'
         minSdk 22
         targetSdk 33
-        versionCode 10
-        versionName '0.8.1'
+        versionCode verJson.versionCode as int
+        versionName verJson.versionName as String
         // The live site URL; the app always loads this, so web changes need no reinstall.
         buildConfigField 'String', 'START_URL', '"https://collection.faneditfanclub.com/?tv=1"'
     }

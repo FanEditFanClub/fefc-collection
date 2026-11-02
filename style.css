@@ -383,6 +383,13 @@ body.tv .ol-tile .star{width:3.6vh;height:3.6vh;font-size:2.2vh}
 #hub .hb[data-hub="mylist"]{overflow:hidden}
 #hub .hb[data-hub="mylist"]:after{content:"★";position:absolute;right:6%;top:4%;font-size:clamp(18px,4.5vmin,60px);color:#ff9c00;opacity:.85;text-shadow:0 0 14px #ff9c0088;pointer-events:none}
 .ol-div .ml-btn{margin-left:8px;font-size:12px;padding:3px 10px}.ol-div .ml-btn.on{background:#ff9c00;color:#000;border-color:#ff9c00}
+.ml-hist-tog{appearance:none;-webkit-appearance:none;background:transparent;border:0;color:#ffb347;font:inherit;letter-spacing:inherit;display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:4px 8px;margin:0;border-radius:8px}
+.ml-hist-tog:focus,.ml-hist-tog:focus-visible{outline:2px solid #ff9c00;outline-offset:3px}
+.ml-hist-chev{display:inline-block;width:1.1em;text-align:center;opacity:.9}
+.ml-hist-body.is-collapsed,.ml-hist-body[hidden]{display:none}
+body.tv .ml-hist-tog{font-size:1.8vh;padding:0.6vh 1.2vh}
+body.tv .ml-hist-tog:focus{outline:3px solid #ff9c00;outline-offset:4px;background:#ff9c0022}
+
 .ml-empty{color:#9fb6cf;margin:8px 4px 22px;font-size:14px}
 #intro .isnd{position:absolute;left:50%;bottom:4.5vh;transform:translateX(-50%);z-index:5;padding:.45em 1.2em;border-radius:3px;border:1px solid #6d7c8f88;background:linear-gradient(180deg,#2c333ecc,#0b0e13cc);color:#e8eef6;font:600 clamp(12px,1.8vmin,20px) 'Source Sans 3',sans-serif;letter-spacing:.04em;opacity:0;transition:opacity .6s;pointer-events:none}
 #intro .isnd.on{opacity:.92;animation:isndp 2.4s ease-in-out infinite}@keyframes isndp{50%{opacity:.6}}
@@ -787,13 +794,30 @@ body.tv .op-cue{font-size:3vh}
 @keyframes ssPlume{0%{opacity:.8;transform:scaleX(0.9)}100%{opacity:1;transform:scaleX(1.15)}}
 @keyframes ssTextFade{0%,20%{opacity:0;transform:translateY(20px)}35%,80%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-20px)}}
 
-/* Home -> Main Collection Smooth Camera Plunge */
-#home{transition:opacity .42s cubic-bezier(0.2,0.8,0.2,1),transform .42s cubic-bezier(0.2,0.8,0.2,1),filter .42s ease;will-change:opacity,transform,filter}
-#home.leaving{opacity:0;transform:scale(1.09) translateZ(0);filter:blur(2px);pointer-events:none}
-#main.entering{animation:mainSmoothIn .42s cubic-bezier(0.16,1,0.3,1) forwards}
-#bar.entering{animation:barSmoothIn .36s ease forwards}
-@keyframes mainSmoothIn{from{opacity:0;transform:scale(0.98) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
-@keyframes barSmoothIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+/* Screen transitions: GPU opacity/transform only (~220ms ease-out). No height/top/left. */
+#home{transition:opacity .22s ease-out,transform .22s ease-out;transform:translateZ(0)}
+#home.leaving{opacity:0;transform:scale(1.02) translateZ(0);pointer-events:none}
+#main.entering{animation:mainSmoothIn .22s ease-out forwards}
+#bar.entering{animation:barSmoothIn .2s ease-out forwards}
+@keyframes mainSmoothIn{from{opacity:0;transform:translate3d(0,8px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+@keyframes barSmoothIn{from{opacity:0;transform:translate3d(0,-4px,0)}to{opacity:1;transform:translate3d(0,0,0)}}
+/* Details: render content first, then opacity/transform fade (no layout anim). */
+#details{transition:opacity .22s ease-out,transform .22s ease-out}
+#details.det-enter{opacity:0;transform:translate3d(0,10px,0)}
+#details:not([hidden]):not(.det-enter):not(.leaving){opacity:1;transform:translate3d(0,0,0)}
+#details.leaving{opacity:0;transform:translate3d(0,6px,0);pointer-events:none}
+/* In-main route content fade (folders / grids). */
+#main.view-fade #grid,#main.view-fade #arena,#main.view-fade #crumb,#main.view-fade #sec2{opacity:0;transform:translate3d(0,6px,0)}
+#grid,#arena,#crumb,#sec2{transition:opacity .2s ease-out,transform .2s ease-out;transform:translateZ(0)}
+#main.view-enter #grid,#main.view-enter #arena,#main.view-enter #crumb,#main.view-enter #sec2{opacity:1;transform:translate3d(0,0,0)}
+body.tv #home.leaving{filter:none}
+@media (prefers-reduced-motion:reduce){
+ #home,#details,#grid,#arena,#crumb,#sec2{transition:none!important}
+ #home.leaving,#details.leaving{opacity:0;transform:none}
+ #main.entering,#bar.entering{animation:none!important;opacity:1;transform:none}
+ #details:not([hidden]){opacity:1;transform:none}
+ #main.view-fade #grid,#main.view-fade #arena,#main.view-fade #crumb,#main.view-fade #sec2{opacity:1;transform:none}
+}
 
 /* =========================================================================
    EASTER EGGS CSS SUITE
@@ -974,7 +998,6 @@ body.tv #bar .mi:focus,body.tv #bar .mi:focus-visible{transform:none;box-shadow:
 body.tv .sortpill.shuf-btn:focus{transform:none;box-shadow:0 0 0 4px #fff,0 0 0 8px #2fa8ff}
 body.tv .ol-tile.person img.pbg{filter:none;opacity:.55;transform:none}
 body.tv .ol-tile .star{transition:none;transform:none}
-body.tv #home.leaving{filter:none;transform:none}
 body.tv #home.enter{animation:none}
 body.tv #hints{background:#0b0e13;box-shadow:none;bottom:2.4vh}
 body.tv #player.floating{background:#000}
@@ -1052,10 +1075,26 @@ body.tv .ml-upd{font-size:2.1vh;min-height:48px;padding:1vh 2.6vh}
 body.tv .ml-upd:focus,body.tv .ml-upd:focus-visible{outline:0;color:#000;background:linear-gradient(180deg,#fff,#cfe9ff);box-shadow:0 0 0 4px #fff,0 0 0 8px #2fa8ff}
 
 
-/* Read First tile in All/Main — home-hub look, single entry */
-.ol-tile.rfhome{order:-2;grid-column:span 2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35em;text-align:center;background:linear-gradient(180deg,#2c333e,#0b0e13);border:2px solid #9fb6cf;color:#fff;font-family:'Source Sans 3','Segoe UI','PT Sans',sans-serif;padding:12px;min-width:0;box-sizing:border-box;overflow:hidden}
-.ol-tile.rfhome .rf-t{font-size:clamp(20px,2.2vw,40px);font-weight:700;line-height:1.05;text-shadow:0 1px 3px #000}
-.ol-tile.rfhome .rf-s{color:#ffa31a;font-size:clamp(11px,.95vw,18px);font-weight:600}
-.ol-tile.rfhome:hover,.ol-tile.rfhome:focus{outline:0;border-color:#ffb02e;box-shadow:inset 0 0 0 1px #000,inset 0 0 26px #ff9c0033,0 0 0 2px #ff9c00,0 0 24px #ff9c00cc}
-body.tv .ol-tile.rfhome .rf-t{font-size:3.4vh}body.tv .ol-tile.rfhome .rf-s{font-size:1.7vh}
-@media (max-width:600px){.ol-tile.rfhome{grid-column:1/-1}}
+/* Read First in Main Collection: same cell size as other folder tiles; home-hub artwork */
+.ol-tile.rfhome{order:-2;grid-column:auto;aspect-ratio:16/9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2em;text-align:center;background:linear-gradient(180deg,#2c333e,#0b0e13);border:2px solid #9fb6cf;color:#fff;font-family:'Source Sans 3','Segoe UI','PT Sans',sans-serif;padding:8px;min-width:0;width:auto;height:auto;box-sizing:border-box;overflow:hidden}
+.ol-tile.rfhome .rf-t{font-size:clamp(16px,min(4.2vw,3.6vh),28px);font-weight:700;line-height:1.02;letter-spacing:-.01em;text-shadow:0 1px 3px #000;max-width:100%}
+.ol-tile.rfhome .rf-s{color:#ffa31a;font-size:clamp(10px,min(1.8vw,1.6vh),14px);font-weight:600}
+.ol-tile.rfhome:hover,.ol-tile.rfhome:focus{outline:0;border-color:#ffb02e;box-shadow:inset 0 0 0 1px #000,inset 0 0 26px #ff9c0033,0 0 0 2px #ff9c00,0 0 24px #ff9c00cc;transform:scale(1.07);z-index:3}
+body.tv .ol-tile.rfhome .rf-t{font-size:2.6vh}body.tv .ol-tile.rfhome .rf-s{font-size:1.5vh}
+
+/* Pixel Fold / mid-width: kill sideways blank scroll; fill grid */
+html,body{overflow-x:hidden;max-width:100%}
+#app,#main{max-width:100%;overflow-x:hidden;box-sizing:border-box}
+#main{overflow-x:hidden}
+body.touch #hints{max-width:100%;box-sizing:border-box;overflow:hidden}
+body.touch #hints .hint-btn>span{overflow:hidden;text-overflow:ellipsis;max-width:100%}
+@media (max-width:600px){#spot .sp-panel{width:calc(100% - 16px);max-width:100%}}
+/* ~840–900px fold / tablet portrait: fill width with auto-fill folds, not a forced sparse 2-col */
+@media (orientation:portrait) and (min-width:700px) and (max-width:1100px){
+ #grid.sectioned .sgrid.folds,#grid.sectioned .sgrid.docs{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))!important}
+ #grid:not(.sectioned),#arena{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))!important;gap:12px}
+}
+@media (orientation:portrait) and (max-width:900px){
+ #grid:not(.sectioned),#arena{grid-template-columns:repeat(auto-fill,minmax(42vw,1fr));gap:10px}
+}
+body.touch.at-home #home-ver{bottom:calc(var(--dock,56px) + .55vh + env(safe-area-inset-bottom,0px));opacity:.7}
