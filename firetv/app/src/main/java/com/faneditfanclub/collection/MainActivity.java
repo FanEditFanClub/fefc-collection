@@ -422,7 +422,7 @@ public class MainActivity extends Activity {
                 if (down && e.getRepeatCount() == 0) handleBack();
                 return true;
             case KeyEvent.KEYCODE_MENU:
-                // Fire TV remote Menu (three lines) → a DOM key the page treats as "open search". Not the letter R (also keyCode 82).
+                // Fire TV remote Menu (three lines) → DOM "Menu"; page toggles star/My List on the focused tile or detail. Not the letter R (also keyCode 82).
                 if (down && e.getRepeatCount() == 0 && !failed) sendKey("Menu", 82);
                 return true;
             case KeyEvent.KEYCODE_BUTTON_Y:

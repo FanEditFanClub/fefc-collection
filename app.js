@@ -1173,7 +1173,7 @@ var __spreadValues = (a, b) => {
       if (x.classList.contains("star")) {
         x.textContent = on ? "\u2605" : "\u2606";
         x.setAttribute("aria-label", on ? "Remove from My List" : "Add to My List");
-        x.title = (on ? "Starred" : "Star") + " (S)";
+        x.title = (on ? "Starred" : "Star") + (document.body.classList.contains("firetv") ? " (Menu)" : " (S)");
         x.classList.remove("pop");
         void x.offsetWidth;
         x.classList.add("pop");
@@ -1188,7 +1188,7 @@ var __spreadValues = (a, b) => {
     const f = items.get(id), on = UD.toggleStar(id, f && f.name);
     S.chirp && S.chirp(on ? 1 : 0);
     paintStars(id, on);
-    starToast(on ? "Added to My List" : "Removed from My List");
+    starToast(on ? "Starred" : "Unstarred");
     if (view !== "home" && parseH()[0] === "mylist" && !on) myListPage();
     if (!$("#home").hidden) hub();
   }
@@ -1199,15 +1199,19 @@ var __spreadValues = (a, b) => {
     e.stopPropagation();
     toggleStarFor(st.dataset.star);
   }, true);
+  function starFocused() {
+    const a = document.activeElement, t = a && a.closest && a.closest(".ol-tile");
+    const id = t ? t.dataset.id : !$("#details").hidden ? $("#details").dataset.id : null;
+    if (id && (t ? t.querySelector("[data-star]") : !$("#details").hidden && $("#details").dataset.id === id)) {
+      toggleStarFor(id);
+      return true;
+    }
+    return false;
+  }
   document.addEventListener("keydown", (e) => {
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     if (e.keyCode === 83 || e.keyCode === 405 || e.key === "ColorF2Yellow") {
-      const a = document.activeElement, t = a && a.closest && a.closest(".ol-tile");
-      const id = t ? t.dataset.id : !$("#details").hidden ? $("#details").dataset.id : null;
-      if (id && (t ? t.querySelector("[data-star]") : 1)) {
-        e.preventDefault();
-        toggleStarFor(id);
-      }
+      if (starFocused()) e.preventDefault();
     }
   });
   function _x() {
@@ -1283,6 +1287,11 @@ var __spreadValues = (a, b) => {
     if (!h) return;
     const k = h.dataset.hint;
     if (k === "search") return doSearch();
+    if (k === "star") {
+      S.click && S.click();
+      starFocused();
+      return;
+    }
     if (k === "mute") return doMute();
     if (k === "home") {
       S.click && S.click();
@@ -1325,7 +1334,10 @@ var __spreadValues = (a, b) => {
     }
     if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
     const menuKey = e.key === "Menu" || e.key === "ContextMenu" || e.keyCode === 93 || e.keyCode === 82 && e.key !== "r" && e.key !== "R";
-    if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403 || menuKey) {
+    if (menuKey) {
+      e.preventDefault();
+      starFocused();
+    } else if (e.key === "y" || e.key === "Y" || e.key === "/" || e.keyCode === 403) {
       e.preventDefault();
       doSearch();
     } else if (e.key === "m" || e.key === "M" || e.keyCode === 404) {
@@ -3867,16 +3879,23 @@ var __spreadValues = (a, b) => {
   if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
     document.body.classList.add("firetv");
     const BK = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20 11H7.83l4.58-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H20v-2z"/></svg>', MN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>';
-    const backI = document.querySelector("#hints .hb-back .g"), searchI = document.querySelector("#hints .hb-search .g");
+    const backI = document.querySelector("#hints .hb-back .g"), starBtn = document.querySelector("#hints .hb-search"), starI = starBtn && starBtn.querySelector(".g");
     if (backI) {
       backI.className = "g g-ftv g-ftv-back";
       backI.setAttribute("aria-hidden", "true");
       backI.innerHTML = BK;
     }
-    if (searchI) {
-      searchI.className = "g g-ftv g-ftv-menu";
-      searchI.setAttribute("aria-hidden", "true");
-      searchI.innerHTML = MN;
+    if (starBtn) {
+      starBtn.classList.add("hb-star");
+      starBtn.dataset.hint = "star";
+      starBtn.setAttribute("aria-label", "Star / My List");
+      const lab = starBtn.querySelector("span");
+      if (lab) lab.textContent = "Star";
+    }
+    if (starI) {
+      starI.className = "g g-ftv g-ftv-menu";
+      starI.setAttribute("aria-hidden", "true");
+      starI.innerHTML = MN;
     }
   }
   document.addEventListener("keydown", () => document.body.classList.add("kbd"), { once: true });
