@@ -1305,6 +1305,16 @@ body.tv #hmute .g-ftv-spk svg{width:78%;height:78%;display:block}
 #tvmenu .tvm-i:focus,#tvmenu .tvm-i:focus-visible{outline:0;border-color:#fff;background:linear-gradient(180deg,#fff,#cfe9ff);color:#000;box-shadow:0 0 0 4px #2fa8ff88}
 #tvmenu .tvm-i:disabled{opacity:.45}
 body.tvmenu-open #hints{pointer-events:none}
+#shufpick{position:fixed;inset:0;z-index:10000;background:#000c;display:flex;align-items:center;justify-content:center;padding:4vh 4vw}
+#shufpick[hidden]{display:none!important}
+#shufpick .shuf-box{min-width:min(42vw,520px);max-width:70vw;background:linear-gradient(180deg,#2c333e,#0b0e13);border:2px solid #6d7c8f;border-radius:12px;padding:2.4vh 2vw;display:flex;flex-direction:column;gap:1.2vh;box-shadow:0 12px 48px #000c}
+#shufpick .shuf-h{margin:0 0 .4vh;color:#9fb6cf;font-size:1.6vh;letter-spacing:.12em;text-transform:uppercase}
+#shufpick .shuf-opt{appearance:none;border:2px solid #5a6678;border-radius:8px;background:#141a24;color:#fff;font:600 2.2vh 'Source Sans 3',sans-serif;min-height:6.4vh;padding:0 1.4vw;text-align:left;cursor:pointer}
+#shufpick .shuf-opt:focus,#shufpick .shuf-opt:focus-visible{outline:0;border-color:#fff;background:linear-gradient(180deg,#fff,#cfe9ff);color:#000;box-shadow:0 0 0 4px #2fa8ff88}
+#shufpick .shuf-opt[hidden]{display:none!important}
+#shufpick .shuf-hint{margin:.6vh 0 0;color:#7a8a9c;font-size:1.4vh}
+body.shufpick-open #hints{pointer-events:none}
+
 
 /* 0.8.6 Menu / Search icons match g-ftv SVG line+fill (no emoji) */
 #tvmenu .tvm-row{display:inline-flex;align-items:center;gap:.7em}
@@ -1368,7 +1378,7 @@ html body.tv #main,html body.firetv #main{padding-left:0!important;padding-right
 html body.tv #ticker,html body.firetv #ticker{left:80px!important;right:80px!important;bottom:48px!important;left:5vw!important;right:5vw!important;bottom:5vh!important;width:auto!important;box-sizing:border-box}
 html body.tv #hints,html body.tv.tk-on #hints,html body.firetv #hints,html body.firetv.tk-on #hints{left:80px!important;right:80px!important;left:5vw!important;right:5vw!important;transform:none!important}
 html body.tv:not(.tk-on) #hints,html body.firetv:not(.tk-on) #hints{bottom:48px!important;bottom:5vh!important}
-html body.tv.tk-on #hints,html body.firetv.tk-on #hints{bottom:calc(48px + 36px + 8px)!important;bottom:calc(5vh + var(--tkh,36px) + 8px)!important}
+html body.tv.tk-on #hints,html body.firetv.tk-on #hints{bottom:calc(48px + 36px)!important;bottom:calc(5vh + var(--tkh,36px))!important}
 html body.tv #details,html body.firetv #details{padding:48px 80px 48px!important;padding:5vh 5vw 5vh!important;box-sizing:border-box}
 html body.tv #home,html body.firetv #home{padding:0}
 html body.tv #home-ver,html body.firetv #home-ver{top:48px!important;top:5vh!important;right:80px!important;right:5vw!important}
@@ -1389,13 +1399,14 @@ html body.tv #bar,html body.firetv #bar{overflow:visible!important;align-items:c
 /* Hints sit directly on the ticker — no 8px gap — as one bottom safe-area unit. */
 html body.tv.tk-on #hints,html body.firetv.tk-on #hints,
 body.tv.tk-on #hints,body.firetv.tk-on #hints{
-  bottom:calc(48px + var(--tkh,36px))!important;
-  bottom:calc(5vh + var(--tkh,36px))!important;
+  /* Flush on ticker: bottom = overscan + ticker height (unit sits above safe bottom). */
+  bottom:calc(5vh + var(--tkh,clamp(24px,3.7vh,46px)))!important;
   margin:0!important;border-bottom:0!important;border-radius:0!important}
 html body.tv #ticker,html body.firetv #ticker{
   border-top:1px solid #35506b;margin:0!important;box-shadow:none!important;
   -webkit-mask-image:none!important;mask-image:none!important}
-body.tk-on #hints{bottom:var(--tkh,clamp(24px,3.7vh,46px))!important;margin:0}
+body.tk-on #hints{bottom:calc(var(--tkh,clamp(24px,3.7vh,46px)) + env(safe-area-inset-bottom,0px))!important;margin:0}
+body.tv.tk-on #hints,body.firetv.tk-on #hints{bottom:calc(5vh + var(--tkh,clamp(24px,3.7vh,46px)))!important;margin:0}
 body.tk-on:not(.tv):not(.firetv) #hints{bottom:calc(var(--tkh,36px) + env(safe-area-inset-bottom,0px))!important}
 
 /* Performance mode (body.perf — default ON for TV): flat paint, no Ken Burns/glow/blur/ticker rAF cost helpers */
@@ -1425,3 +1436,80 @@ body.tier-lite #home,body.tier-low #home,body.tier-lite .mc,body.tier-low .mc,bo
 body.tier-lite .ol-tile,body.tier-low .ol-tile{-webkit-box-reflect:none!important}
 body.tier-lite #player.floating,body.tier-low #player.floating{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:#000e}
 body.tier-lite .hb:hover,body.tier-lite .hb:focus,body.tier-low .hb:hover,body.tier-low .hb:focus{box-shadow:inset 0 0 0 1px #000,0 0 0 2px #ff9c00}
+
+/* ---- 0.8.14: ticker+hints flush unit; ~5% overscan all edges; Drive pill visible ---- */
+/* Safe inset ~5% (96px @1080p / 5vw). Keep ticker+hints as one stacked unit above bottom safe edge. */
+html body.tv,html body.firetv{
+  --tv-safe-t:5vh;--tv-safe-b:5vh;--tv-safe-x:5vw;
+  --tv-safe-t-px:54px;--tv-safe-b-px:54px;--tv-safe-x-px:96px;
+}
+html body.tv #app,html body.firetv #app{
+  padding:54px 96px 0!important;padding:5vh 5vw 0!important;box-sizing:border-box;
+}
+/* Home hub stays inside the padded #app; add a touch more left/right inset so Dynex overscan can't clip tiles. */
+html body.tv #home,html body.firetv #home{
+  padding:0 0.5vw!important;box-sizing:border-box;
+}
+html body.tv #hub,html body.firetv #hub{
+  width:min(48vw,calc(40vh*1.55))!important;
+}
+html body.tv #main,html body.firetv #main{
+  padding-left:0.5vw!important;padding-right:0.5vw!important;
+}
+html body.tv #crumb,html body.firetv #crumb,
+html body.tv .ml-hist-head,html body.firetv .ml-hist-head{
+  padding-left:0.25vw;margin-left:0;
+}
+html body.tv #bar,html body.firetv #bar{
+  padding-left:0.5vw!important;padding-right:0.5vw!important;box-sizing:border-box;
+}
+html body.tv #details,html body.firetv #details{
+  padding:5vh 5.5vw 5vh 5.5vw!important;box-sizing:border-box;
+}
+/* Ticker: overscan-safe from bottom/sides. Hints sit flush on top of ticker (zero gap). */
+html body.tv #ticker,html body.firetv #ticker{
+  left:5vw!important;right:5vw!important;bottom:5vh!important;
+  width:auto!important;margin:0!important;box-sizing:border-box;
+  border-top:1px solid #35506b;border-radius:0;box-shadow:none!important;
+  -webkit-mask-image:none!important;mask-image:none!important;
+}
+html body.tv #hints,html body.tv.tk-on #hints,html body.firetv #hints,html body.firetv.tk-on #hints,
+body.tv #hints,body.tv.tk-on #hints,body.firetv #hints,body.firetv.tk-on #hints{
+  left:5vw!important;right:5vw!important;width:auto!important;max-width:none!important;
+  transform:none!important;margin:0!important;border-radius:0!important;border-bottom:0!important;
+  box-sizing:border-box;
+}
+/* Flush stacked unit: hints bottom edge = ticker top edge = 5vh + --tkh from screen bottom. */
+html body.tv.tk-on #hints,html body.firetv.tk-on #hints,
+body.tv.tk-on #hints,body.firetv.tk-on #hints{
+  bottom:calc(5vh + var(--tkh,clamp(24px,3.7vh,46px)))!important;
+}
+html body.tv:not(.tk-on) #hints,html body.firetv:not(.tk-on) #hints,
+body.tv:not(.tk-on) #hints,body.firetv:not(.tk-on) #hints{
+  bottom:5vh!important;
+}
+html body.tv #home-ver,html body.firetv #home-ver{
+  top:5vh!important;right:5vw!important;
+}
+html body.tv #fefc-perfhud,html body.firetv #fefc-perfhud{
+  right:5vw;top:5vh;
+}
+/* Open in Drive / VLC pills: force visible label + focus ring on Fire TV WebView */
+.det-acts .det-ext,
+button.det-ext.pill,
+a.det-ext.pill{
+  color:#000!important;opacity:1!important;visibility:visible!important;
+  font-family:Antonio,'Source Sans 3',sans-serif!important;font-weight:700!important;
+  letter-spacing:.08em;text-transform:uppercase;
+  justify-content:center!important;text-align:center;
+  min-width:9em;white-space:nowrap;
+  background-clip:padding-box;
+}
+.det-acts .pill.p3.det-ext{background:#99ccff!important;color:#000!important}
+.det-acts .pill.p5.det-ext{background:#ffcc66!important;color:#000!important}
+body.tv .det-acts .det-ext:focus,body.tv .det-acts .det-ext:focus-visible,
+body.firetv .det-acts .det-ext:focus,body.firetv .det-acts .det-ext:focus-visible{
+  outline:5px solid #fff!important;outline-offset:3px;filter:brightness(1.15);
+  box-shadow:0 0 0 8px #2fa8ff,0 0 28px #2fa8ffaa;
+  color:#000!important;
+}

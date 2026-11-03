@@ -1041,10 +1041,9 @@ var __spreadValues = (a, b) => {
     const k = kids.get(id);
     return k ? k.length : 0;
   }
-  function hub() {
-    if (document.body.classList.contains("genres-mode") && window.FEFCGenres && FEFCGenres.hub) return FEFCGenres.hub();
+  function hubTiles() {
     const newN = NA.newCount(rootVids());
-    const T = [
+    return [
       ["readfirst", "Read First", ""],
       ["arena", "New Arrivals", newN ? newN + (newN === 1 ? " New File" : " New Files") : ""],
       ["support", "Support Us", "Patreon \xB7 PayPal \xB7 Venmo"],
@@ -1063,14 +1062,86 @@ var __spreadValues = (a, b) => {
         return n ? n + (n === 1 ? " Genre" : " Genres") : "";
       })()]
     ];
-    const keep = [].slice.call(document.querySelectorAll("#hub .mc"));
-    $("#hub").innerHTML = T.map((t, i) => t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small><small class="hb-cnt">'.concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>") : '<button class="hb" data-hub="'.concat(t[0], '">').concat(t[0] === "mylist" ? '<i class="hb-star" aria-hidden="true">\u2605</i>' : "", "<span>").concat(esc(t[1]).replace(/\n&amp;\n/, '<br><i class="amp">&amp;</i><br>').replace(/\n/g, "<br>"), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]).replace(/ · /g, " <wbr>\xB7 "), "</small>") : "", "</button>")).join("");
-    keep.forEach((x) => $("#hub").appendChild(x));
+  }
+  function hubHtml(t) {
+    return t[0] === "main" ? '<button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small><small class="hb-cnt">'.concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>") : '<button class="hb" data-hub="'.concat(t[0], '">').concat(t[0] === "mylist" ? '<i class="hb-star" aria-hidden="true">\u2605</i>' : "", "<span>").concat(esc(t[1]).replace(/\n&amp;\n/, '<br><i class="amp">&amp;</i><br>').replace(/\n/g, "<br>"), "</span>").concat(t[2] ? "<small>".concat(esc(t[2]).replace(/ · /g, " <wbr>\xB7 "), "</small>") : "", "</button>");
+  }
+  function hubPatchOne(el, t) {
+    if (!el || !t) return;
+    if (t[0] === "main") {
+      const sm3 = el.querySelector(".hb-cnt");
+      if (sm3) sm3.innerHTML = esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 ");
+      return;
+    }
+    const sp = el.querySelector("span");
+    if (sp) sp.innerHTML = esc(t[1]).replace(/\n&amp;\n/, '<br><i class="amp">&amp;</i><br>').replace(/\n/g, "<br>");
+    let sm = el.querySelector("small");
+    if (t[2]) {
+      if (!sm) {
+        sm = document.createElement("small");
+        el.appendChild(sm);
+      }
+      sm.innerHTML = esc(t[2]).replace(/ · /g, " <wbr>\xB7 ");
+    } else if (sm) sm.remove();
+  }
+  function hub() {
+    if (document.body.classList.contains("genres-mode") && window.FEFCGenres && FEFCGenres.hub) return FEFCGenres.hub();
+    const box = $("#hub");
+    if (!box) return;
+    const T = hubTiles();
+    const ae = document.activeElement;
+    const fhub = ae && box.contains(ae) && ae.getAttribute && ae.getAttribute("data-hub") || window.__fefcFocusRec && window.__fefcFocusRec.type === "hub" && window.__fefcFocusRec.hub || null;
+    const mcs = [].slice.call(box.querySelectorAll(".mc"));
+    let ok = T.length > 0;
+    const have = /* @__PURE__ */ new Set();
+    for (let i = 0; i < T.length; i++) {
+      const t = T[i];
+      const el = box.querySelector('.hb[data-hub="' + CSS.escape(t[0]) + '"]');
+      if (!el) {
+        ok = false;
+        break;
+      }
+      hubPatchOne(el, t);
+      have.add(t[0]);
+    }
+    if (ok) {
+      [].slice.call(box.querySelectorAll(".hb[data-hub]")).forEach((el) => {
+        if (!have.has(el.getAttribute("data-hub"))) el.remove();
+      });
+      if (fhub) {
+        const el = box.querySelector('.hb[data-hub="' + CSS.escape(fhub) + '"]');
+        if (el && document.activeElement !== el) try {
+          focusEl(el);
+        } catch (e) {
+        }
+      }
+      return;
+    }
+    box.innerHTML = T.map(hubHtml).join("");
+    mcs.forEach((x) => box.appendChild(x));
+    if (fhub) {
+      const el = box.querySelector('.hb[data-hub="' + CSS.escape(fhub) + '"]');
+      if (el) try {
+        focusEl(el);
+      } catch (e) {
+      }
+    }
   }
   function syncTag() {
     placeHeader();
   }
+  let _placeHdrRaf = 0, _placeHdrNeed = 0;
   function placeHeader() {
+    _placeHdrNeed = 1;
+    if (_placeHdrRaf) return;
+    _placeHdrRaf = requestAnimationFrame(() => {
+      _placeHdrRaf = 0;
+      if (!_placeHdrNeed) return;
+      _placeHdrNeed = 0;
+      placeHeaderNow();
+    });
+  }
+  function placeHeaderNow() {
     const tg = $("#tagline"), hb = $("#hub"), sp = $("#tagline span"), wm = $("#wordmark");
     if (!tg || !hb || !sp) return;
     const W = innerWidth, H = innerHeight;
@@ -1166,7 +1237,6 @@ var __spreadValues = (a, b) => {
     });
   }
   addEventListener("resize", () => requestAnimationFrame(placeHeader));
-  addEventListener("resize", syncTag);
   function bandFit(el, D, g) {
     const sh = Math.max(0, D - 2 * g), tw = el._tw || 0;
     let w = tw, h = tw * 9 / 16;
@@ -1293,14 +1363,15 @@ var __spreadValues = (a, b) => {
       } else {
         c.style.background = "radial-gradient(circle at 60% 30%,hsl(" + (Math.random() * 360 | 0) + " 70% 45%),#050a14 80%)";
       }
-      L.style.animationName = "none";
-      void L.offsetWidth;
-      L.style.animationName = "";
-      if (perf) {
+      if (perf || document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite")) {
         L.className = on ? "mi2" : "mi1";
         L.style.transform = "none";
         L.style.willChange = "auto";
+        L.style.animationName = "none";
       } else {
+        L.style.animationName = "none";
+        void L.offsetWidth;
+        L.style.animationName = "";
         L.className = (on ? "mi2" : "mi1") + " kb" + (Math.random() * 4 | 0);
       }
       layers[on].style.opacity = 1;
@@ -1328,23 +1399,24 @@ var __spreadValues = (a, b) => {
     mosaicTimer = setInterval(() => {
       if ($("#home").hidden || document.hidden) return;
       if (tv && document.body.classList.contains("genres-mode")) return;
-      const k = fire || perf ? 1 : tv ? 1 : 2;
-      for (let j = 0; j < k; j++) set(cells[Math.random() * cells.length | 0]);
-    }, perf ? fire ? 14e3 : tv ? 1e4 : 4e3 : fire ? 9e3 : tv ? 6e3 : 1800);
+      if (document.body.classList.contains("shufpick-open") || document.body.classList.contains("tvmenu-open")) return;
+      const k = fire || perf || document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite") ? 1 : tv ? 1 : 2;
+      for (let j = 0; j < k; j++) {
+        const c = cells[Math.random() * cells.length | 0];
+        if (c) set(c);
+      }
+    }, perf ? fire ? 16e3 : tv ? 12e3 : 5e3 : fire ? 1e4 : tv ? 7e3 : 2200);
   }
   let mosT;
-  if (window.ResizeObserver) new ResizeObserver(() => {
+  const mosDeb = () => {
+    const tvish = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative;
     clearTimeout(mosT);
     mosT = setTimeout(() => {
       if (!$("#home").hidden) mosaic();
-    }, 150);
-  }).observe(document.getElementById("hub"));
-  addEventListener("resize", () => {
-    clearTimeout(mosT);
-    mosT = setTimeout(() => {
-      if (!$("#home").hidden) mosaic();
-    }, 250);
-  });
+    }, tvish ? 450 : 250);
+  };
+  if (window.ResizeObserver) new ResizeObserver(mosDeb).observe(document.getElementById("hub"));
+  addEventListener("resize", mosDeb);
   let homeHideTimer = null;
   const VIEW_MS = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion:reduce)").matches ? 1 : 220;
   function viewFade(main) {
@@ -1398,23 +1470,28 @@ var __spreadValues = (a, b) => {
     setTimeout(lay, 500);
     setTimeout(lay, 1500);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(lay);
-    setTimeout(() => {
-      if (document.body.classList.contains("kbd") || document.body.classList.contains("tv")) {
-        const st = history.state;
-        let done = false;
-        if (navBack || st && st.fefc && st.focus) {
-          try {
-            restoreScroll();
-            done = !!(st && st.focus);
-          } catch (e) {
-          }
-        }
-        if (!done) {
-          const t = $(".hb-logo") || $("#hub .hb:not(.gempty)");
-          if (t) focusEl(t);
+    const focusMain = () => {
+      if (!(document.body.classList.contains("kbd") || document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative)) return;
+      const st = history.state;
+      let done = false;
+      if (navBack || st && st.fefc && st.focus) {
+        try {
+          restoreScroll();
+          done = !!(document.activeElement && document.activeElement !== document.body && ($("#hub").contains(document.activeElement) || $("#main").contains(document.activeElement)));
+        } catch (e) {
         }
       }
-    }, 30);
+      if (!done) {
+        const t = document.querySelector("#hub .hb-logo") || document.querySelector('#hub .hb[data-hub="main"]') || document.querySelector("#hub .hb");
+        if (t) {
+          focusEl(t);
+          window.__fefcFocusRec = { type: "hub", hub: "main" };
+        }
+      }
+    };
+    setTimeout(focusMain, 30);
+    setTimeout(focusMain, 400);
+    setTimeout(() => recoverFocus(true), 1200);
     try {
       resolveHomeVer();
     } catch (e) {
@@ -1751,6 +1828,18 @@ var __spreadValues = (a, b) => {
     }
   })();
   let _menuHoldT = null, _menuHoldFired = false;
+  try {
+    if (P.get("perfhud") === "1" || P.get("perfhud") === "true") {
+      document.addEventListener("DOMContentLoaded", () => togglePerfHud(true));
+      setTimeout(() => {
+        try {
+          togglePerfHud(true);
+        } catch (e) {
+        }
+      }, 1200);
+    }
+  } catch (e) {
+  }
   function ensurePerfHud() {
     let el = $("#fefc-perfhud");
     if (el) return el;
@@ -2204,14 +2293,51 @@ var __spreadValues = (a, b) => {
     return items.get(id) || { id, name: "Fan edit", mimeType: "video/mp4" };
   }
   let baseKey = null;
+  let _softRaf = 0, _softPending = 0;
   function softRefresh() {
+    _softPending = 1;
+    if (_softRaf) return;
+    _softRaf = requestAnimationFrame(() => {
+      _softRaf = 0;
+      if (!_softPending) return;
+      _softPending = 0;
+      softRefreshNow();
+    });
+  }
+  function softRefreshNow() {
     try {
       if (!$("#player").hidden) return;
       const r = parseH(), k = r[0] || "";
       if (!$("#home").hidden || !k || k === "home") {
+        const ae0 = document.activeElement;
+        const fhub0 = ae0 && ae0.dataset && ae0.dataset.hub;
+        const fid0 = ae0 && ae0.dataset && ae0.dataset.id;
         hub();
         const M = $("#mosaic");
         if (M && !M.querySelector(".mc") && mosaicList.length) mosaic();
+        requestAnimationFrame(() => {
+          if (fhub0) {
+            const el = document.querySelector('#hub [data-hub="' + CSS.escape(fhub0) + '"]');
+            if (el) {
+              try {
+                focusEl(el);
+              } catch (e) {
+              }
+              return;
+            }
+          }
+          if (fid0) {
+            const el = document.querySelector('[data-id="' + CSS.escape(fid0) + '"]');
+            if (el) {
+              try {
+                focusEl(el);
+              } catch (e) {
+              }
+              return;
+            }
+          }
+          recoverFocus(true);
+        });
         return;
       }
       if (/^(folder|all|arena|newarrivals|people|actors|directors|mylist|genre|genres|search|support|supportus)$/.test(k)) {
@@ -2287,7 +2413,7 @@ var __spreadValues = (a, b) => {
       if (!$("#player").hidden && $("#player").dataset.pid === r[1]) return;
       {
         const nf = itemOr(r[1]), nb = window.FEFCNative;
-        if (nf && nb && nb.playVideo && !window.__shufPlay) {
+        if (nf && nb && nb.playVideo && (!window.__shufPlay || window.__shufFullscreen)) {
           let ok = false;
           try {
             nb.playVideo(target(nf), parse(nf.name).raw);
@@ -2443,7 +2569,51 @@ var __spreadValues = (a, b) => {
     if (tvq) return { type: "id", id: "tvq" };
     const star = el.closest("[data-star]");
     if (star) return { type: "star", id: star.dataset.star };
+    const sh = el.closest && el.closest("#shufpick .shuf-opt");
+    if (sh && sh.dataset && sh.dataset.shuf) return { type: "shuf", shuf: sh.dataset.shuf };
     return null;
+  }
+  window.__fefcFocusRec = null;
+  document.addEventListener("focusin", (e) => {
+    const rec = readFocusTarget(e.target);
+    if (rec) window.__fefcFocusRec = rec;
+    else if (e.target && e.target.matches && e.target.matches(".hb,.ol-tile,.sortpill,.mi,.pill,.bigplay,.hint-btn")) {
+      const r = readFocusTarget(e.target);
+      if (r) window.__fefcFocusRec = r;
+    }
+  }, true);
+  function recoverFocus(preferHub) {
+    const a = document.activeElement;
+    if (a && a !== document.body && a !== document.documentElement && document.contains(a)) {
+      if (a.isConnected !== false) return false;
+    }
+    const rec = window.__fefcFocusRec;
+    if (rec) {
+      try {
+        applyFocusRec(rec);
+        if (document.activeElement && document.activeElement !== document.body) return true;
+      } catch (e) {
+      }
+    }
+    if (preferHub || !$("#home").hidden) {
+      const t = document.querySelector("#hub .hb-logo") || document.querySelector('#hub .hb[data-hub="main"]') || document.querySelector("#hub .hb");
+      if (t) {
+        try {
+          focusEl(t);
+        } catch (e) {
+        }
+        return true;
+      }
+    }
+    const first = document.querySelector(focSel());
+    if (first) {
+      try {
+        focusEl(first);
+      } catch (e) {
+      }
+      return true;
+    }
+    return false;
   }
   function captureNavState(focusId) {
     const m = $("#main");
@@ -2757,34 +2927,157 @@ var __spreadValues = (a, b) => {
     }
     return f;
   }
-  function shuffle(scope) {
+  function closeShufPick() {
+    const el = $("#shufpick");
+    if (!el || el.hidden) return false;
+    el.hidden = true;
+    el.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("shufpick-open");
+    const prev = window.__shufPickPrev;
+    window.__shufPickPrev = null;
+    if (prev && document.contains(prev)) try {
+      focusEl(prev);
+    } catch (e) {
+    }
+    return true;
+  }
+  function shufRun(mode, scope) {
     const f = shufPick(scope);
     if (!f) {
       status("Nothing to shuffle yet");
       return;
     }
-    const doWarp = () => {
+    try {
+      sessionStorage.fefcShufScope = scope;
+    } catch (e) {
+    }
+    if (!window.__shufPrevHash && location.hash && !/^#\/play\//.test(location.hash)) window.__shufPrevHash = location.hash;
+    closeShufPick();
+    const tid = target(f), title = parse(f.name).raw || f.name || "Fan edit", nb = window.FEFCNative;
+    if (mode === "vlc") {
+      S.chirp && S.chirp(1);
       try {
-        sessionStorage.fefcShufScope = scope;
+        if (nb && nb.openInVlc) nb.openInVlc(tid, title, f.name || "video.mp4");
+        else status("VLC not available");
+      } catch (e) {
+        status("Could not open VLC");
+      }
+      return;
+    }
+    if (mode === "drive") {
+      S.chirp && S.chirp(1);
+      try {
+        if (nb && typeof nb.openInDrive === "function") nb.openInDrive(tid, title);
+        else window.open("https://drive.google.com/file/d/" + tid + "/view", "_blank");
       } catch (e) {
       }
-      if (!window.__shufPrevHash && location.hash && !/^#\/play\//.test(location.hash)) {
-        window.__shufPrevHash = location.hash;
-      }
-      window.__shufPlay = 1;
-      const targetHash = "#/play/" + encodeURIComponent(f.id);
-      if (parseH()[0] === "play") {
-        history.replaceState({ fefc: 1 }, "", targetHash);
-        route();
-      } else {
-        go(targetHash);
-      }
-    };
-    if (window.FEFCHotStage) {
-      window.FEFCHotStage(doWarp);
-    } else {
-      doWarp();
+      return;
     }
+    window.__shufPlay = 0;
+    window.__shufFullscreen = 1;
+    if (nb && nb.playVideo) {
+      let ok = false;
+      try {
+        nb.playVideo(tid, title);
+        ok = true;
+      } catch (e) {
+      }
+      if (ok) {
+        try {
+          window.UD && UD.opened(f.id, f.name);
+        } catch (e) {
+        }
+        S.ambience(false);
+        if (!window.__editFrom) {
+          const _h = location.hash || "#/";
+          window.__editFrom = /^#\/(edit|play)\//.test(_h) ? "#/" : _h;
+          try {
+            sessionStorage.fefcEditFrom = window.__editFrom;
+          } catch (e) {
+          }
+        }
+        history.replaceState({ fefc: 1 }, "", "#/edit/" + encodeURIComponent(f.id));
+        route();
+        return;
+      }
+    }
+    const targetHash = "#/play/" + encodeURIComponent(f.id);
+    if (parseH()[0] === "play") {
+      history.replaceState({ fefc: 1 }, "", targetHash);
+      route();
+    } else {
+      go(targetHash);
+    }
+  }
+  function openShufPick(scope) {
+    let el = $("#shufpick");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "shufpick";
+      el.setAttribute("role", "dialog");
+      el.setAttribute("aria-label", "Shuffle Play");
+      el.innerHTML = '<div class="shuf-box"><p class="shuf-h">Shuffle Play</p><button type="button" class="shuf-opt" data-shuf="fullscreen">Play Full Screen</button><button type="button" class="shuf-opt" data-shuf="vlc">Open in VLC</button><button type="button" class="shuf-opt" data-shuf="drive">Open in Drive</button><p class="shuf-hint">Back to cancel</p></div>';
+      document.body.appendChild(el);
+      el.addEventListener("click", (e) => {
+        if (e.target === el) {
+          closeShufPick();
+          return;
+        }
+        const b = e.target.closest("[data-shuf]");
+        if (!b) return;
+        e.preventDefault();
+        S.unlock && S.unlock();
+        S.click && S.click();
+        shufRun(b.dataset.shuf, el._scope || "all");
+      });
+      el.addEventListener("keydown", (e) => {
+        const k = e.keyCode;
+        if (k === 10009 || k === 461 || k === 27 || e.key === "GoBack" || e.key === "BrowserBack" || k === 8 && !(e.target && e.target.matches && e.target.matches("input,textarea"))) {
+          e.preventDefault();
+          e.stopPropagation();
+          closeShufPick();
+          return;
+        }
+        if (k !== 37 && k !== 38 && k !== 39 && k !== 40 && k !== 13 && k !== 23) return;
+        const L = [].slice.call(el.querySelectorAll(".shuf-opt:not([hidden])"));
+        if (!L.length) return;
+        e.preventDefault();
+        let i = L.indexOf(document.activeElement);
+        if (k === 13 || k === 23) {
+          if (i >= 0) L[i].click();
+          return;
+        }
+        if (i < 0) i = 0;
+        else if (k === 40 || k === 39) i = Math.min(L.length - 1, i + 1);
+        else i = Math.max(0, i - 1);
+        try {
+          L[i].focus({ preventScroll: true });
+        } catch (err) {
+          L[i].focus();
+        }
+      });
+    }
+    el._scope = scope || "all";
+    window.__shufPickPrev = document.activeElement;
+    el.hidden = false;
+    el.setAttribute("aria-hidden", "false");
+    document.body.classList.add("shufpick-open");
+    const hasV = !!(window.FEFCNative && typeof FEFCNative.openInVlc === "function");
+    const hasD = !!(window.FEFCNative && typeof FEFCNative.openInDrive === "function") || true;
+    el.querySelector('[data-shuf="vlc"]').hidden = !hasV;
+    el.querySelector('[data-shuf="vlc"]').disabled = !hasV;
+    el.querySelector('[data-shuf="drive"]').hidden = false;
+    requestAnimationFrame(() => {
+      const first = el.querySelector('[data-shuf="fullscreen"]');
+      if (first) try {
+        first.focus({ preventScroll: true });
+      } catch (e) {
+        first.focus();
+      }
+    });
+  }
+  function shuffle(scope) {
+    openShufPick(scope || "all");
   }
   const shufBtn = (scope) => '<button class="sortpill shuf-btn" data-shuffle="'.concat(esc(scope), '" title="Play a random fan edit">').concat(SHUF_ICON, "Shuffle Play</button>");
   document.addEventListener("click", (e) => {
@@ -3334,7 +3627,7 @@ var __spreadValues = (a, b) => {
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button>'.concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
-    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<div class="det-acts">').concat(window.FEFCNative && typeof FEFCNative.openInVlc === "function" ? '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><button type="button" class="pill p5 det-ext" data-act="vlc">Open in VLC</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>') : '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>'), "</div></div></div><div>\n  ").concat(desc ? '<h3 class="lc-h">Fan edit</h3><div class="tv-scroll" tabindex="0" data-tvscroll="desc"><p>'.concat(esc(desc), "</p></div>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <div id="lc-fanedit"></div>\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? '<h3 class="lc-h l">Overview</h3><div class="tv-scroll" tabindex="0" data-tvscroll="plot"><p class="plot">'.concat(esc(plot), "</p></div>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", "\n </div><div>\n  ").concat(FE.length ? '<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">'.concat(feRt, "</div>") : "", '\n  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">').concat(rt, '</div>\n  <div id="lc-fileinfo-slot"></div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
+    })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<div class="det-acts">').concat(window.FEFCNative && typeof FEFCNative.openInVlc === "function" ? '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><button type="button" class="pill p5 det-ext" data-act="vlc" aria-label="Open in VLC">Open in VLC</button><button type="button" class="pill p3 det-ext" data-act="drive" aria-label="Open in Drive">Open in Drive</button>') : '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>'), "</div></div></div><div>\n  ").concat(desc ? '<h3 class="lc-h">Fan edit</h3><div class="tv-scroll" tabindex="0" data-tvscroll="desc"><p>'.concat(esc(desc), "</p></div>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <div id="lc-fanedit"></div>\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? '<h3 class="lc-h l">Overview</h3><div class="tv-scroll" tabindex="0" data-tvscroll="plot"><p class="plot">'.concat(esc(plot), "</p></div>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", "\n </div><div>\n  ").concat(FE.length ? '<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">'.concat(feRt, "</div>") : "", '\n  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">').concat(rt, '</div>\n  <div id="lc-fileinfo-slot"></div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     const _det = $("#details");
     _det.classList.remove("leaving");
     _det.dataset.id = f.id;
@@ -3676,9 +3969,10 @@ var __spreadValues = (a, b) => {
     }
     S.ambience(false);
     S.click();
-    const isShuf = !!(window.__shufPlay || sessionStorage.fefcShufScope);
+    const isShuf = !!(window.__shufPlay || !window.__shufFullscreen && sessionStorage.fefcShufScope);
     document.body.classList.toggle("shuf-player", isShuf);
     $("#player").classList.toggle("floating", isShuf);
+    if (window.__shufFullscreen) window.__shufFullscreen = 0;
     const sub = findSidecarSub(f);
     $("#player").dataset.pid = f.id;
     $("#ptitle").textContent = parse(f.name).raw;
@@ -3730,6 +4024,20 @@ var __spreadValues = (a, b) => {
         try {
           const nb = window.FEFCNative;
           if (nb && nb.openInVlc && f) nb.openInVlc(target(f), parse(f.name).raw, f.name || "video.mp4");
+        } catch (err) {
+        }
+        return;
+      }
+      if (act.dataset.act === "drive") {
+        S.chirp(1);
+        try {
+          const nb = window.FEFCNative;
+          const did = target(f);
+          if (nb && typeof nb.openInDrive === "function" && did) {
+            nb.openInDrive(did, parse(f.name).raw || f.name || "");
+          } else {
+            window.open("https://drive.google.com/file/d/" + did + "/view", "_blank");
+          }
         } catch (err) {
         }
         return;
@@ -3933,7 +4241,8 @@ var __spreadValues = (a, b) => {
   }
   function move(dir) {
     const L = layer(), els = [].slice.call(L.querySelectorAll(focSel())).filter(visible), a = document.activeElement;
-    if (!a || !L.contains(a) || a === document.body) {
+    if (!a || !L.contains(a) || a === document.body || a === document.documentElement) {
+      if (recoverFocus(!$("#home").hidden)) return;
       if (els[0]) focusEl(els[0]);
       return;
     }
@@ -4014,6 +4323,51 @@ var __spreadValues = (a, b) => {
       });
     });
   }
+  window.__fefcConsumeBack = function() {
+    try {
+      if (closeShufPick && closeShufPick()) return true;
+    } catch (e) {
+    }
+    try {
+      if (window.__fefcCloseSync && document.body.classList.contains("sp-open")) {
+        window.__fefcCloseSync();
+        return true;
+      }
+      var sp = document.getElementById("syncpanel");
+      if (sp && !sp.hidden && window.__fefcCloseSync) {
+        window.__fefcCloseSync();
+        return true;
+      }
+    } catch (e) {
+    }
+    try {
+      if (closeTvMenu && closeTvMenu()) return true;
+    } catch (e) {
+    }
+    try {
+      var am = document.querySelector(".acct-menu");
+      if (am && !am.hidden) {
+        am.hidden = true;
+        return true;
+      }
+    } catch (e) {
+    }
+    try {
+      if (typeof closeSpot === "function" && document.body.classList.contains("sp-lock")) {
+        closeSpot();
+        return true;
+      }
+    } catch (e) {
+    }
+    try {
+      if (typeof rfDismiss === "function" && !$("#rfpanel").hidden) {
+        rfDismiss();
+        return true;
+      }
+    } catch (e) {
+    }
+    return false;
+  };
   function goBack() {
     const nw = Date.now();
     if (nw - gbT < 250) return;
@@ -4044,6 +4398,15 @@ var __spreadValues = (a, b) => {
       if (it && (!it.classList.contains("done") || Date.now() - (window.__ie || 0) < 900)) return;
     }
     const dir = { 37: "left", 38: "up", 39: "right", 40: "down" }[k];
+    const shp = $("#shufpick");
+    if (shp && !shp.hidden) {
+      if (k === 10009 || k === 461 || k === 27 || k === 8 && !inInput || e.key === "GoBack" || e.key === "BrowserBack") {
+        e.preventDefault();
+        closeShufPick();
+        return;
+      }
+      return;
+    }
     const tvm = $("#tvmenu");
     if (tvm && !tvm.hidden) {
       if (k === 10009 || k === 461 || k === 27 || k === 8 && !inInput || e.key === "GoBack" || e.key === "BrowserBack") {
@@ -4910,7 +5273,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.13";
+  const HOME_VER_FALLBACK = "0.8.14";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

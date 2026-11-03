@@ -318,6 +318,16 @@ public class MainActivity extends Activity {
                 url += "&tier=" + deviceTier.tier;
                 Log.i("FEFC", "device_tier_force " + deviceTier.toJson());
             }
+            if (getIntent() != null && getIntent().getBooleanExtra("perfhud", false)) {
+                url += "&perfhud=1";
+            }
+            // QA: am start --es route people|/f/<id>|#/people appends hash after load params
+            String route = getIntent() != null ? getIntent().getStringExtra("route") : null;
+            if (route != null && !route.isEmpty()) {
+                if (route.startsWith("#")) url += route;
+                else if (route.startsWith("/")) url += "#" + route;
+                else url += "#/" + route;
+            }
         } catch (Throwable ignored) {}
         web.loadUrl(url);
     }
@@ -711,6 +721,24 @@ public class MainActivity extends Activity {
             });
         }
 
+
+        /** Open a Drive file/folder view in the system browser (or Drive app if present). */
+        @JavascriptInterface
+        public void openInDrive(final String driveId, final String title) {
+            if (driveId == null || !driveId.matches("[A-Za-z0-9_-]{10,100}")) return;
+            ui.post(() -> {
+                final Uri uri = Uri.parse("https://drive.google.com/file/d/" + driveId + "/view");
+                try {
+                    Intent i = new Intent(Intent.ACTION_VIEW, uri);
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(MainActivity.this, "No browser to open Drive", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+
     }
 
     private void tapAt(float x, float y) {
@@ -731,12 +759,21 @@ public class MainActivity extends Activity {
     // ---- remote control mapping ----
 
     /** Dispatches a DOM keydown/keyup (with legacy keyCode) into the page. */
+        private void sendKeyPhase(String key, int code, String phase) {
+        String js = "(function(){var e=new KeyboardEvent('" + phase + "',{key:'" + key + "',bubbles:true,cancelable:true});"
+                + "Object.defineProperty(e,'keyCode',{get:function(){return " + code + "}});"
+                + "Object.defineProperty(e,'which',{get:function(){return " + code + "}});"
+                + "(document.activeElement||document.body).dispatchEvent(e);})();";
+        web.evaluateJavascript(js, null);
+    }
+
     private void sendKey(String key, int code) {
         String js = "(function(){function f(t){var e=new KeyboardEvent(t,{key:'" + key + "',bubbles:true,cancelable:true});"
                 + "Object.defineProperty(e,'keyCode',{get:function(){return " + code + "}});"
                 + "Object.defineProperty(e,'which',{get:function(){return " + code + "}});"
                 + "(document.activeElement||document.body).dispatchEvent(e);}f('keydown');f('keyup');})();";
         web.evaluateJavascript(js, null);
+
     }
 
     private void mediaToggle() {
@@ -747,27 +784,36 @@ public class MainActivity extends Activity {
 
     private void handleBack() {
         if (failed) { finish(); return; }
-        // True Home dashboard only (not Genres hub / overlays that keep #home visible). Double-Back exits there;
-        // every other screen gets GoBack so the web app navigates up.
+        // Close any modal/menu first (sync panel, TV menu, account menu, spot search, Read First).
+        // Only when nothing was consumed: Home → double-Back exit toast; else send GoBack for in-app nav.
         web.evaluateJavascript("(function(){"
+                + "try{if(typeof window.__fefcConsumeBack==='function'&&window.__fefcConsumeBack())return 'modal'}catch(e){}"
                 + "var h=document.getElementById('home'),d=document.getElementById('details'),"
                 + "p=document.getElementById('player'),rf=document.getElementById('rfpanel'),"
                 + "b=document.body.classList,hash=(location.hash||'').replace(/^#\\/?/,'');"
-                + "if(!h||h.hidden)return false;"
-                + "if(b.contains('genres-mode'))return false;"
-                + "if(d&&!d.hidden)return false;"
-                + "if(p&&!p.hidden)return false;"
-                + "if(rf&&!rf.hidden)return false;"
-                + "if(hash&&hash!=='/')return false;"
-                + "return true})()", val -> {
-            boolean atHome = "true".equals(val);
+                + "if(b.contains('sp-open')||b.contains('tvmenu-open')||b.contains('sp-lock'))return 'modal';"
+                + "var sp=document.getElementById('syncpanel');if(sp&&!sp.hidden)return 'modal';"
+                + "var tm=document.getElementById('tvmenu');if(tm&&!tm.hidden)return 'modal';"
+                + "var am=document.querySelector('.acct-menu');if(am&&!am.hidden){am.hidden=true;return 'modal'}"
+                + "if(!h||h.hidden)return 'nav';"
+                + "if(b.contains('genres-mode'))return 'nav';"
+                + "if(d&&!d.hidden)return 'nav';"
+                + "if(p&&!p.hidden)return 'nav';"
+                + "if(rf&&!rf.hidden)return 'nav';"
+                + "if(hash&&hash!=='/')return 'nav';"
+                + "return 'home'})()", val -> {
+            // evaluateJavascript quotes string results: "\"modal\"" / "\"home\"" / "\"nav\""
+            String r = val == null ? "" : val;
+            if ("\"modal\"".equals(r) || "modal".equals(r)) {
+                return; // overlay closed — Back consumed, never show exit toast
+            }
+            boolean atHome = "\"home\"".equals(r) || "home".equals(r);
             if (atHome) {
                 long now = System.currentTimeMillis();
                 if (now - lastBack < 2500) { finish(); return; }
                 lastBack = now;
                 Toast.makeText(this, "Press Back again to exit", Toast.LENGTH_SHORT).show();
             } else {
-                // The app's own back handler (closes player / details / folder / genres), which uses history.back().
                 sendKey("GoBack", 27);
             }
         });
@@ -793,8 +839,12 @@ public class MainActivity extends Activity {
                 if (down && e.getRepeatCount() == 0) handleBack();
                 return true;
             case KeyEvent.KEYCODE_MENU:
-                // Fire TV remote Menu (three lines) → DOM "Menu"; page toggles star/My List on the focused tile or detail. Not the letter R (also keyCode 82).
-                if (down && e.getRepeatCount() == 0 && !failed) sendKey("Menu", 82);
+                // Fire TV Menu: forward keydown + keyup separately so JS can detect Menu-hold (≥3s → FPS HUD).
+                // Short press still opens TV menu / stars via keyup path in app.js.
+                if (!failed) {
+                    if (down && e.getRepeatCount() == 0) sendKeyPhase("Menu", 82, "keydown");
+                    else if (!down) sendKeyPhase("Menu", 82, "keyup");
+                }
                 return true;
             case KeyEvent.KEYCODE_BUTTON_Y:
                 if (down && e.getRepeatCount() == 0 && !failed) sendKey("y", 89); // gamepad Y, also search

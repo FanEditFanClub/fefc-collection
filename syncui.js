@@ -148,10 +148,24 @@
   }
   var VIEWS = {
     menu: { html: function() {
-      var A = agg(), srvNote = cfg && !cfg.configured ? '<p class="sp-note">Cloud sync for TV code, QR and sync codes is not switched on yet.</p>' : "";
+      var A = agg(), cloud = cfg && cfg.configured, tvOk = cfg && cfg.tv;
+      var srvNote = !cloud ? FIRETV ? "" : '<p class="sp-note">Cloud sync is warming up. You can still export or import your list below.</p>' : "";
+      var opts = "";
+      if (cloud) {
+        opts += opt("pair", "6-digit sync code", "No Google account needed. Create a code and enter it on another device.", 1);
+        opts += opt("qr", "Scan a QR code with your phone", "Your phone (signed in to this site) approves this device.");
+        if (tvOk) opts += opt("device", "Google TV code", "Show a short code, then enter it at google.com/device on your phone.");
+      }
+      if (!FIRETV) {
+        opts += opt("export", "Export My List", "Save a backup file of your stars and watch history.");
+        opts += opt("import", "Import My List", "Restore stars and history from a backup file.");
+        opts += opt("drive", "Sign in with Google here", "Google Drive sync in this browser.");
+      } else if (!cloud) {
+        opts += '<p class="sp-note">After this app update finishes installing, use a 6-digit sync code or QR to link devices.</p>';
+      }
       return frame(
         "Sync My List",
-        (A.on ? '<p class="sp-sub">' + (A.user && A.user.email ? "Signed in as " + esc(A.user.email) : "Linked with a " + esc(A.via)) + (A.syncing ? " \xB7 syncing\u2026" : " \xB7 synced") + "</p>" : '<p class="sp-sub">Choose how to keep your stars and watch history on all your devices.</p>') + srvNote + '<div class="sp-opts">' + opt("device", "Google TV code", "Show a short code, then enter it at google.com/device on your phone.", 1) + opt("qr", "Scan a QR code with your phone", "Your phone (signed in to this site) approves this device.") + opt("pair", "6-digit sync code", "No Google account needed. Create a code and enter it on another device.") + (FIRETV ? "" : opt("drive", "Sign in with Google here", "Google Drive sync in this browser.")) + "</div>",
+        (A.on ? '<p class="sp-sub">' + (A.user && A.user.email ? "Signed in as " + esc(A.user.email) : "Linked with a " + esc(A.via)) + (A.syncing ? " \xB7 syncing\u2026" : " \xB7 synced") + "</p>" : '<p class="sp-sub">Choose how to keep your stars and watch history on all your devices.</p>') + srvNote + '<div class="sp-opts">' + opts + "</div>",
         (A.on ? btn("out", "Sign out") : "") + btn("close", "Close")
       );
     } },
@@ -384,6 +398,55 @@
       } else if (k === "drive") {
         close();
         G.signIn();
+      } else if (k === "export") {
+        try {
+          var j = window.UD && UD.exportJSON && UD.exportJSON();
+          if (!j) throw 0;
+          var blob = new Blob([j], { type: "application/json" });
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "fefc-mylist-" + (/* @__PURE__ */ new Date()).toISOString().slice(0, 10) + ".json";
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function() {
+            URL.revokeObjectURL(a.href);
+            a.remove();
+          }, 500);
+          done("My List backup saved. Keep the file to import on another device.");
+        } catch (err) {
+          fail("Could not export My List.", 1);
+        }
+      } else if (k === "import") {
+        var inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "application/json,.json";
+        inp.style.position = "fixed";
+        inp.style.left = "-9999px";
+        document.body.appendChild(inp);
+        inp.onchange = function() {
+          var f = inp.files && inp.files[0];
+          inp.remove();
+          if (!f) return;
+          var r = new FileReader();
+          r.onload = function() {
+            try {
+              UD.importJSON(String(r.result || ""), false);
+              done("My List imported. Stars and history are updated.");
+              if (window.__fefcPaintSync) __fefcPaintSync();
+              try {
+                if (location.hash.indexOf("mylist") >= 0 && typeof myListPage === "function") myListPage();
+              } catch (e2) {
+              }
+            } catch (err) {
+              fail("That file is not a valid My List backup.", 1);
+            }
+          };
+          r.onerror = function() {
+            fail("Could not read that file.", 1);
+          };
+          r.readAsText(f);
+        };
+        inp.click();
       } else if (k === "retry") go(P.prevView || "menu");
       else if (k === "approve-go") {
         V.qrApprove(P.id).then(function() {
@@ -477,8 +540,7 @@
       }
     }
     if (k === 27 || k === 10009 || k === 461 || key === "GoBack" || key === "BrowserBack" || k === 8) {
-      if (P.view === "menu" || P.view === "done") close();
-      else if (P.view === "approve") close();
+      if (P.view === "menu" || P.view === "done" || P.view === "error" || P.view === "approve") close();
       else go(P.view === "pair-enter" ? "pair" : "menu");
       return true;
     }
@@ -505,6 +567,7 @@
     }
   }
   window.__fefcPaintSync = paintCard;
+  window.__fefcCloseSync = close;
   paintChip();
   paintCard();
   checkLink();

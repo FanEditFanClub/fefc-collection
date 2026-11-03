@@ -44,10 +44,23 @@ function done(msg){go('done',{msg:msg})}
 function fail(msg,retry){go('error',{msg:msg,retry:retry})}
 function srvOff(){return !cfg||!cfg.configured}
 var VIEWS={
- menu:{html:function(){var A=agg(),srvNote=cfg&&!cfg.configured?'<p class="sp-note">Cloud sync for TV code, QR and sync codes is not switched on yet.</p>':'';
-  return frame('Sync My List',(A.on?'<p class="sp-sub">'+(A.user&&A.user.email?'Signed in as '+esc(A.user.email):'Linked with a '+esc(A.via))+(A.syncing?' \u00B7 syncing\u2026':' \u00B7 synced')+'</p>':'<p class="sp-sub">Choose how to keep your stars and watch history on all your devices.</p>')+srvNote+
-  '<div class="sp-opts">'+opt('device','Google TV code','Show a short code, then enter it at google.com/device on your phone.',1)+opt('qr','Scan a QR code with your phone','Your phone (signed in to this site) approves this device.')+opt('pair','6-digit sync code','No Google account needed. Create a code and enter it on another device.')+
-  (FIRETV?'':opt('drive','Sign in with Google here','Google Drive sync in this browser.'))+'</div>',
+ menu:{html:function(){var A=agg(),cloud=cfg&&cfg.configured,tvOk=cfg&&cfg.tv;
+  var srvNote=!cloud?(FIRETV?'':'<p class="sp-note">Cloud sync is warming up. You can still export or import your list below.</p>'):'';
+  var opts='';
+  if(cloud){
+    opts+=opt('pair','6-digit sync code','No Google account needed. Create a code and enter it on another device.',1);
+    opts+=opt('qr','Scan a QR code with your phone','Your phone (signed in to this site) approves this device.');
+    if(tvOk)opts+=opt('device','Google TV code','Show a short code, then enter it at google.com/device on your phone.');
+  }
+  if(!FIRETV){
+    opts+=opt('export','Export My List','Save a backup file of your stars and watch history.');
+    opts+=opt('import','Import My List','Restore stars and history from a backup file.');
+    opts+=opt('drive','Sign in with Google here','Google Drive sync in this browser.');
+  } else if(!cloud){
+    opts+='<p class="sp-note">After this app update finishes installing, use a 6-digit sync code or QR to link devices.</p>';
+  }
+  return frame('Sync My List',(A.on?'<p class="sp-sub">'+(A.user&&A.user.email?'Signed in as '+esc(A.user.email):'Linked with a '+esc(A.via))+(A.syncing?' · syncing…':' · synced')+'</p>':'<p class="sp-sub">Choose how to keep your stars and watch history on all your devices.</p>')+srvNote+
+  '<div class="sp-opts">'+opts+'</div>',
   (A.on?btn('out','Sign out'):'')+btn('close','Close'))}},
  device:{enter:function(g){if(srvOff()||!cfg.tv)return fail(srvOff()?'Cloud sync is not switched on yet.':'Google TV code sign-in is not set up yet.');
    V.deviceStart().then(function(d){if(g!==gen)return;P.d=d;P.left=d.expires_in;render();tick(g);poll(g,d.id,(d.interval||5)*1000)},function(e){if(g===gen)fail('Could not start Google sign-in. Try again.',1)})},
@@ -92,6 +105,8 @@ document.addEventListener('click',function(e){
   if(k==='close')close();else if(k==='menu'){go('menu');V&&V.status().then(function(c){cfg=c;if(P&&P.view==='menu')render()})}
   else if(k==='out'){G.state.state!=='out'&&G.signOut();if(V&&V.connected())V.signOut();close()}
   else if(k==='drive'){close();G.signIn()}
+  else if(k==='export'){try{var j=window.UD&&UD.exportJSON&&UD.exportJSON();if(!j)throw 0;var blob=new Blob([j],{type:'application/json'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fefc-mylist-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500);done('My List backup saved. Keep the file to import on another device.')}catch(err){fail('Could not export My List.',1)}}
+  else if(k==='import'){var inp=document.createElement('input');inp.type='file';inp.accept='application/json,.json';inp.style.position='fixed';inp.style.left='-9999px';document.body.appendChild(inp);inp.onchange=function(){var f=inp.files&&inp.files[0];inp.remove();if(!f)return;var r=new FileReader();r.onload=function(){try{UD.importJSON(String(r.result||''),false);done('My List imported. Stars and history are updated.');if(window.__fefcPaintSync)__fefcPaintSync();try{if(location.hash.indexOf('mylist')>=0&&typeof myListPage==='function')myListPage()}catch(e){}}catch(err){fail('That file is not a valid My List backup.',1)}};r.onerror=function(){fail('Could not read that file.',1)};r.readAsText(f)};inp.click()}
   else if(k==='retry')go(P.prevView||'menu');
   else if(k==='approve-go'){V.qrApprove(P.id).then(function(){go('done',{msg:'Your TV is linked.'})},function(){fail('Could not approve. The link may have expired.')})}
   else if(k==='approve-google'){var g0=gen;G.signIn();var iv=setInterval(function(){if(!P||g0!==gen){clearInterval(iv);return}if(V.connected()){clearInterval(iv);render()}},800);timers.push(iv)}
@@ -116,14 +131,15 @@ window.__fefcModal=function(e){
  if(e.type!=='keydown')return true;
  var digit=k>=48&&k<=57?String(k-48):k>=96&&k<=105?String(k-96):null;
  if(P.view==='pair-enter'){if(digit!==null){enterDigit(digit);return true}if(k===8){enterDigit('del');return true}}
- if(k===27||k===10009||k===461||key==='GoBack'||key==='BrowserBack'||k===8){if(P.view==='menu'||P.view==='done')close();else if(P.view==='approve')close();else go(P.view==='pair-enter'?'pair':'menu');return true}
+ if(k===27||k===10009||k===461||key==='GoBack'||key==='BrowserBack'||k===8){if(P.view==='menu'||P.view==='done'||P.view==='error'||P.view==='approve')close();else go(P.view==='pair-enter'?'pair':'menu');return true}
  if(k===37||k===38||k===39||k===40){nav({37:'left',38:'up',39:'right',40:'down'}[k]);return true}
  if(k===13||k===23){var a=document.activeElement;if(a&&el().contains(a)&&a.tagName==='BUTTON')a.click();return true}
  return true};
 // ---------- QR link from phone: /?link=<id> ----------
 function checkLink(){try{var id=new URLSearchParams(location.search).get('link');if(!id||!/^[\w-]{20,30}$/.test(id))return;
  history.replaceState(null,'',location.pathname+location.hash);setTimeout(function(){open('approve',{id:id})},400)}catch(e){}}
-window.__fefcPaintSync=paintCard;paintChip();paintCard();checkLink();
+window.__fefcPaintSync=paintCard;window.__fefcCloseSync=close;
+paintChip();paintCard();checkLink();
 })();
 /* 0.8.12 sync key: Select/Enter on focused Sync My List controls */
 document.addEventListener('keydown',function(e){var k=e.keyCode;if(k!==13&&k!==23)return;var a=document.activeElement;if(!a||!a.closest)return;var b=a.closest('[data-sync]');if(!b)return;e.preventDefault();b.click()});

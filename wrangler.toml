@@ -6,3 +6,7 @@ pages_build_output_dir = "."
 [[r2_buckets]]
 binding = "MEDIA"
 bucket_name = "fan-edit-media"
+
+[[kv_namespaces]]
+binding = "SYNC"
+id = "1e228c19661241c290ea2cce6f51d901"
