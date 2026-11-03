@@ -1,1 +1,1 @@
-Beta 0.8.15: Verified Dynex 1–5 on Fire TV (Back closes popups; Sync My List pair/QR; Open in Drive labeled; ticker+hints flush with ~5% safe margin; left edge not clipped). Same web+APK bridge as 0.8.14 with version bump for sideload/updater.
+Beta 0.8.16: Fire TV video-details episode selector — no edge clipping, ~5% overscan-safe, focused episode stays in view, season switch to first ep, D-pad never stuck, Back OK, Select plays episode, low-tier scroll perf. Web+TV sync.

@@ -1,8 +1,8 @@
 {
-    "versionCode": 25,
-    "versionName": "0.8.15",
+    "versionCode": 26,
+    "versionName": "0.8.16",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.15: Verified Dynex 1\u20135 on Fire TV (Back closes popups; Sync My List pair/QR; Open in Drive labeled; ticker+hints flush with ~5% safe margin; left edge not clipped). Same web+APK bridge as 0.8.14 with version bump for sideload/updater.",
-    "size": 102328431,
-    "sha256": "62ba5483b7567832f8405ed24e562f82225e4537e683e21e9aa3d7abbc5b6d0d"
+    "notes": "Beta 0.8.16: Fire TV video-details episode selector \u2014 no edge clipping, ~5% overscan-safe, focused episode stays in view, season switch to first ep, D-pad never stuck, Back OK, Select plays episode, low-tier scroll perf. Web+TV sync.",
+    "size": 102329826,
+    "sha256": "d4de988d9759907c805b1d05da7e52709de8f01f2396a71ec473717ac2b4077d"
 }

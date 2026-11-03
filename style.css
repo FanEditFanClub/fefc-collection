@@ -1513,3 +1513,101 @@ body.firetv .det-acts .det-ext:focus,body.firetv .det-acts .det-ext:focus-visibl
   box-shadow:0 0 0 8px #2fa8ff,0 0 28px #2fa8ffaa;
   color:#000!important;
 }
+
+/* ---- 0.8.16: Fire TV episode selector — no clip, overscan-safe, scroll focused ---- */
+html body.tv.fit #details #lc-eps,
+html body.firetv.fit #details #lc-eps,
+html body.tv #details #lc-eps,
+html body.firetv #details #lc-eps{
+  /* Cap inside ~5% overscan + chrome (bar/head/ticker/hints); scroll internally — never clip with overflow:hidden */
+  max-height:min(46vh, calc(100vh - 5vh - 5vh - 30vh))!important;
+  overflow:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  margin:0.5vh 0 1vh;
+  min-width:0;
+  padding:4px 2px 8px;
+  scroll-padding:8px;
+  contain:content;
+}
+html body.tv.tier-low.fit #details #lc-eps,
+html body.tv.tier-lite.fit #details #lc-eps,
+html body.firetv.tier-low.fit #details #lc-eps,
+html body.firetv.tier-lite.fit #details #lc-eps{
+  max-height:min(40vh, calc(100vh - 5vh - 5vh - 32vh))!important;
+  scroll-behavior:auto!important;
+}
+/* Season chips: horizontal scroll row; never clip focus rings */
+html body.tv #details .seas,
+html body.firetv #details .seas{
+  display:flex!important;
+  flex-wrap:nowrap;
+  gap:0.7vh;
+  overflow-x:auto;
+  overflow-y:hidden;
+  max-height:none;
+  padding:4px 2px 8px;
+  scroll-snap-type:x proximity;
+  scroll-padding:8px;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;
+}
+html body.tv #details .seat,
+html body.firetv #details .seat{
+  flex:0 0 auto;
+  width:11vh;
+  min-width:11vh;
+  max-width:14vh;
+  min-height:7vh;
+  max-height:12vh;
+  aspect-ratio:16/9;
+  scroll-snap-align:start;
+  outline-offset:-2px;
+  box-sizing:border-box;
+}
+html body.tv #details .eps,
+html body.firetv #details .eps{
+  grid-template-columns:repeat(auto-fill,minmax(13vh,1fr));
+  gap:0.7vh;
+  padding:4px 4px 8px 2px;
+  overflow:visible;
+  scroll-padding:8px;
+}
+html body.tv #details .eps.all,
+html body.firetv #details .eps.all{
+  max-height:min(34vh, calc(100% - 8vh))!important;
+  overflow:auto!important;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  contain:content;
+  scroll-behavior:auto;
+}
+html body.tv.tier-low #details .eps.all,
+html body.tv.tier-lite #details .eps.all,
+html body.firetv.tier-low #details .eps.all,
+html body.firetv.tier-lite #details .eps.all{
+  max-height:min(28vh, calc(100% - 8vh))!important;
+  scroll-behavior:auto!important;
+}
+html body.tv #details .ept,
+html body.firetv #details .ept{
+  min-height:7vh;
+  max-height:13vh;
+  outline-offset:-2px;
+  box-sizing:border-box;
+}
+html body.tv.fit #details .lc-body,
+html body.firetv.fit #details .lc-body{
+  scroll-padding-bottom:calc(5vh + var(--tkh, 40px) + 10vh)!important;
+  padding-bottom:calc(5vh + var(--tkh, 40px) + 8vh)!important;
+}
+/* Fit mid column must not clip seasons/episodes */
+html body.tv.fit #details .lc-body>div:nth-of-type(2),
+html body.firetv.fit #details .lc-body>div:nth-of-type(2){
+  overflow:visible!important;
+  max-height:none!important;
+}
+html body.tv #details .epnav,
+html body.firetv #details .epnav{
+  display:flex;flex-wrap:wrap;gap:0.6vh;padding:2px;align-items:center;
+}

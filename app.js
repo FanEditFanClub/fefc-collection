@@ -3434,27 +3434,101 @@ var __spreadValues = (a, b) => {
   }
   function epWire(f, E) {
     const box = $("#lc-eps");
-    if (!box || !E) return;
+    if (!box || !E) {
+      if (box) box.innerHTML = "";
+      return;
+    }
     let all = false;
+    const tvish = () => document.body.classList.contains("tv") || document.body.classList.contains("firetv") || !!window.FEFCNative;
+    const reveal = (el) => {
+      if (!el || !el.getBoundingClientRect) return;
+      try {
+        el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "auto" });
+      } catch (_) {
+      }
+      const scrollers = [];
+      let p = el.parentElement;
+      while (p && p !== document.body) {
+        try {
+          const cs = getComputedStyle(p);
+          if (/(auto|scroll)/.test((cs.overflow || "") + (cs.overflowX || "") + (cs.overflowY || ""))) scrollers.push(p);
+        } catch (_) {
+        }
+        if (p.id === "details" || p.classList && p.classList.contains("lc-body")) {
+          if (scrollers.indexOf(p) < 0) scrollers.push(p);
+          break;
+        }
+        p = p.parentElement;
+      }
+      const body = $("#details .lc-body");
+      if (body && scrollers.indexOf(body) < 0) scrollers.push(body);
+      for (const sc of scrollers) {
+        const er = el.getBoundingClientRect(), sr = sc.getBoundingClientRect();
+        if (er.bottom > sr.bottom - 8) sc.scrollTop += er.bottom - sr.bottom + 16;
+        if (er.top < sr.top + 8) sc.scrollTop -= sr.top - er.top + 16;
+        if (er.right > sr.right - 8) sc.scrollLeft += er.right - sr.right + 16;
+        if (er.left < sr.left + 8) sc.scrollLeft -= sr.left - er.left + 16;
+      }
+    };
+    const firstEpId = (seat) => {
+      const id = seat && seat.dataset && seat.dataset.id, folder = id && items.get(id);
+      if (folder && isFolder(folder)) {
+        const list = kids.get(target(folder)) || [];
+        const vids2 = list.filter((x) => !isFolder(x) && isVid(x)).map((x) => ({ f: x, i: epInfo(x.name) })).filter((o) => o.i).sort((a, b) => (a.i.e || 0) - (b.i.e || 0));
+        if (vids2.length) return vids2[0].f.id;
+        const any = list.find((x) => !isFolder(x) && isVid(x));
+        return any ? any.id : null;
+      }
+      return id;
+    };
     const draw = () => {
       box.innerHTML = epHTML(E, all);
+      requestAnimationFrame(() => {
+        const c = box.querySelector(".ept.cur,.seat.cur");
+        if (c) reveal(c);
+      });
     };
     draw();
-    box.addEventListener("click", (e) => {
-      const a = e.target.closest("[data-epall]"), g = e.target.closest("[data-epgo]");
+    box.onclick = (e) => {
+      const a = e.target.closest("[data-epall]"), g = e.target.closest("[data-epgo]"), seat = e.target.closest(".seat[data-ep]"), ept = e.target.closest(".ept[data-ep]");
       if (a) {
+        e.preventDefault();
+        e.stopPropagation();
         S.chirp(3);
         all = !all;
         draw();
         const n = box.querySelector("[data-epall]");
         if (n) focusEl(n);
-        const c = box.querySelector(".ept.cur");
-        if (c) c.scrollIntoView({ block: "nearest" });
-      } else if (g && g.dataset.epgo) {
+        return;
+      }
+      if (g && g.dataset.epgo) {
+        e.preventDefault();
+        e.stopPropagation();
         S.click();
         go("#/edit/" + g.dataset.epgo);
+        return;
       }
-    });
+      if (seat) {
+        e.preventDefault();
+        e.stopPropagation();
+        S.click();
+        const to = firstEpId(seat);
+        if (to) go("#/edit/" + to);
+        return;
+      }
+      if (ept) {
+        e.preventDefault();
+        e.stopPropagation();
+        S.click();
+        if (tvish()) go("#/play/" + ept.dataset.id);
+        else go("#/edit/" + ept.dataset.id);
+        return;
+      }
+    };
+    box.onfocusin = (e) => {
+      const t = e.target.closest && e.target.closest(".ept,.seat,.epbtn");
+      if (t) reveal(t);
+    };
   }
   function fileChips(f) {
     const t = items.get(target(f)) || f, g = (k) => f[k] != null ? f[k] : t[k];
@@ -4728,6 +4802,14 @@ var __spreadValues = (a, b) => {
             if (br.bottom > bb.bottom - 8) body.scrollTop += br.bottom - bb.bottom + 24;
             if (br.top < bb.top + 8) body.scrollTop -= bb.top - br.top + 24;
           }
+          const epSc = best.closest && best.closest(".seas,.eps.all,#lc-eps");
+          if (epSc) {
+            const br = best.getBoundingClientRect(), sr = epSc.getBoundingClientRect();
+            if (br.bottom > sr.bottom - 6) epSc.scrollTop += br.bottom - sr.bottom + 12;
+            if (br.top < sr.top + 6) epSc.scrollTop -= sr.top - br.top + 12;
+            if (br.right > sr.right - 6) epSc.scrollLeft += br.right - sr.right + 12;
+            if (br.left < sr.left + 6) epSc.scrollLeft -= sr.left - br.left + 12;
+          }
         }
         return;
       }
@@ -5273,7 +5355,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.15";
+  const HOME_VER_FALLBACK = "0.8.16";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

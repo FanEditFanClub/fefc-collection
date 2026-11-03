@@ -864,8 +864,31 @@ function epHTML(E,showAll){if(!E)return'';const{eps,idx,seasons,me}=E,lo=showAll
  const lab=o=>(o.i.s!=null?'S'+o.i.s+' · ':'')+(/part/i.test(o.f.name)&&!/episode/i.test(o.f.name)?'Part ':'Ep ')+o.i.e;
  return (seasons.length>1?`<h3 class="lc-h l">Seasons</h3><div class="seas">${seasons.map(x=>`<button class="ol-tile seat${x.cur?' cur':''}" data-id="${esc(x.id)}" data-ep="1"><b>SEASON</b><span>${x.n}</span></button>`).join('')}</div>`:'')
  +(eps.length>1?`<h3 class="lc-h p">Episodes <small>${idx+1} of ${eps.length}</small></h3><div class="epnav"><button class="pill p4 epbtn" data-epgo="${idx>0?esc(eps[idx-1].f.id):''}" ${idx>0?'':'disabled'}>◀ Previous</button><button class="pill p2 epbtn" data-epall="1">${showAll?'Show fewer':'Show all '+eps.length}</button><button class="pill p4 epbtn" data-epgo="${idx<eps.length-1?esc(eps[idx+1].f.id):''}" ${idx<eps.length-1?'':'disabled'}>Next ▶</button></div><div class="eps${showAll?' all':''}">${eps.slice(lo,hi).map((o,k)=>`<button class="ol-tile ept${lo+k===idx?' cur':''}" data-id="${esc(o.f.id)}" data-ep="1"><b>${esc(lab(o))}</b><span>${esc(o.i.title||parse(o.f.name).raw)}</span></button>`).join('')}</div>`:'')}
-function epWire(f,E){const box=$('#lc-eps');if(!box||!E)return;let all=false;const draw=()=>{box.innerHTML=epHTML(E,all)};draw();
- box.addEventListener('click',e=>{const a=e.target.closest('[data-epall]'),g=e.target.closest('[data-epgo]');if(a){S.chirp(3);all=!all;draw();const n=box.querySelector('[data-epall]');if(n)focusEl(n);const c=box.querySelector('.ept.cur');if(c)c.scrollIntoView({block:'nearest'})}else if(g&&g.dataset.epgo){S.click();go('#/edit/'+g.dataset.epgo)}})}
+function epWire(f,E){const box=$('#lc-eps');if(!box||!E){if(box)box.innerHTML='';return}let all=false;
+ /* 0.8.16: season→first ep details; Select on ept plays on TV; keep focused ep visible; no stacked listeners */
+ const tvish=()=>document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative;
+ const reveal=el=>{
+  if(!el||!el.getBoundingClientRect)return;
+  try{el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'})}catch(_){}
+  const scrollers=[];let p=el.parentElement;while(p&&p!==document.body){try{const cs=getComputedStyle(p);if(/(auto|scroll)/.test((cs.overflow||'')+(cs.overflowX||'')+(cs.overflowY||'')))scrollers.push(p)}catch(_){}
+   if(p.id==='details'||p.classList&&p.classList.contains('lc-body')){if(scrollers.indexOf(p)<0)scrollers.push(p);break}p=p.parentElement}
+  const body=$('#details .lc-body');if(body&&scrollers.indexOf(body)<0)scrollers.push(body);
+  for(const sc of scrollers){const er=el.getBoundingClientRect(),sr=sc.getBoundingClientRect();
+   if(er.bottom>sr.bottom-8)sc.scrollTop+=er.bottom-sr.bottom+16;if(er.top<sr.top+8)sc.scrollTop-=sr.top-er.top+16;
+   if(er.right>sr.right-8)sc.scrollLeft+=er.right-sr.right+16;if(er.left<sr.left+8)sc.scrollLeft-=sr.left-er.left+16}
+ };
+ const firstEpId=seat=>{const id=seat&&seat.dataset&&seat.dataset.id,folder=id&&items.get(id);
+  if(folder&&isFolder(folder)){const list=kids.get(target(folder))||[];
+   const vids=list.filter(x=>!isFolder(x)&&isVid(x)).map(x=>({f:x,i:epInfo(x.name)})).filter(o=>o.i).sort((a,b)=>(a.i.e||0)-(b.i.e||0));
+   if(vids.length)return vids[0].f.id;const any=list.find(x=>!isFolder(x)&&isVid(x));return any?any.id:null}
+  return id};
+ const draw=()=>{box.innerHTML=epHTML(E,all);requestAnimationFrame(()=>{const c=box.querySelector('.ept.cur,.seat.cur');if(c)reveal(c)})};draw();
+ box.onclick=e=>{const a=e.target.closest('[data-epall]'),g=e.target.closest('[data-epgo]'),seat=e.target.closest('.seat[data-ep]'),ept=e.target.closest('.ept[data-ep]');
+  if(a){e.preventDefault();e.stopPropagation();S.chirp(3);all=!all;draw();const n=box.querySelector('[data-epall]');if(n)focusEl(n);return}
+  if(g&&g.dataset.epgo){e.preventDefault();e.stopPropagation();S.click();go('#/edit/'+g.dataset.epgo);return}
+  if(seat){e.preventDefault();e.stopPropagation();S.click();const to=firstEpId(seat);if(to)go('#/edit/'+to);return}
+  if(ept){e.preventDefault();e.stopPropagation();S.click();if(tvish())go('#/play/'+ept.dataset.id);else go('#/edit/'+ept.dataset.id);return}};
+ box.onfocusin=e=>{const t=e.target.closest&&e.target.closest('.ept,.seat,.epbtn');if(t)reveal(t)}}
 function fileChips(f){const t=items.get(target(f))||f,g=k=>f[k]!=null?f[k]:t[k];let ext=g('ext');const mt=g('mimeType')||'';
  if(!ext){const m=(t.name||f.name).match(/\.([a-z0-9]{2,4})$/i);ext=m?m[1]:({'video/mp4':'mp4','video/x-matroska':'mkv','video/x-msvideo':'avi','video/quicktime':'mov','video/webm':'webm','video/mp2t':'ts','video/x-m4v':'m4v','video/mpeg':'mpg','video/x-ms-wmv':'wmv'}[mt]||(/^video\/(?:x-)?([a-z0-9]+)$/.exec(mt)||[])[1])}
  let size=+g('size')||0;if(!size&&window.FEX&&FEX.size){try{size=+FEX.size(target(f))||0}catch(e){}}
@@ -1216,7 +1239,12 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
     let ok=false;if(k===39)ok=dx>8&&Math.abs(dy)<=Math.abs(dx)+40;else if(k===37)ok=dx<-8&&Math.abs(dy)<=Math.abs(dx)+40;else if(k===40)ok=dy>8&&Math.abs(dx)<=Math.abs(dy)+80;else if(k===38)ok=dy<-8&&Math.abs(dx)<=Math.abs(dy)+80;
     if(!ok)return;const d=Math.hypot(dx,dy)+(k===40||k===38?Math.abs(dx)*.35:Math.abs(dy)*.35);if(d<bd){bd=d;best=el}});
    if(best){focusEl(best);try{best.scrollIntoView({block:'nearest',inline:'nearest'})}catch(err){}
-    const body=$('#details .lc-body');if(body){const br=best.getBoundingClientRect(),bb=body.getBoundingClientRect();if(br.bottom>bb.bottom-8)body.scrollTop+=br.bottom-bb.bottom+24;if(br.top<bb.top+8)body.scrollTop-=bb.top-br.top+24}}
+    const body=$('#details .lc-body');if(body){const br=best.getBoundingClientRect(),bb=body.getBoundingClientRect();if(br.bottom>bb.bottom-8)body.scrollTop+=br.bottom-bb.bottom+24;if(br.top<bb.top+8)body.scrollTop-=bb.top-br.top+24}
+    /* 0.8.16: keep focused episode/season chip visible inside its own scroller */
+    const epSc=best.closest&&best.closest('.seas,.eps.all,#lc-eps');
+    if(epSc){const br=best.getBoundingClientRect(),sr=epSc.getBoundingClientRect();
+     if(br.bottom>sr.bottom-6)epSc.scrollTop+=br.bottom-sr.bottom+12;if(br.top<sr.top+6)epSc.scrollTop-=sr.top-br.top+12;
+     if(br.right>sr.right-6)epSc.scrollLeft+=br.right-sr.right+12;if(br.left<sr.left+6)epSc.scrollLeft-=sr.left-br.left+12}}
    return}}
  const tile=a&&a.closest&&a.closest('.ol-tile');if(tile)lastTile=tile;
  /* (C) Focused long-text block: Up/Down scroll ~1/3 viewport; at end move to next/prev focusable — never trap; Back untouched. */
@@ -1405,7 +1433,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.15';
+const HOME_VER_FALLBACK='0.8.16';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}
