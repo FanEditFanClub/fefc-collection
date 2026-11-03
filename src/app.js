@@ -24,10 +24,12 @@ const isTvEnv=()=>!!(document.body.classList.contains('tv')||document.body.class
 if(isTvEnv())document.body.classList.add('tv');
 /* Fire TV native Media3 intro: keep Home fully painted underneath but invisible until first paint is ready + ExoPlayer released. */
 if(window.FEFCNative&&P.get('nointro')){document.body.classList.add('firetv','native-waiting');}
-/* 0.8.13 Performance mode: default ON for TV/Fire TV. Cuts mosaic video/CSS/ticker/DOM cost without removing features. ?noperf=1 or localStorage.fefcPerf=0 to disable. */
-window.__fefcPerfOn=function(){try{if(P.get('noperf')==='1'||P.get('perf')==='0')return false;if(P.get('perf')==='1')return true;const ls=localStorage.fefcPerf;if(ls==='0')return false;if(ls==='1')return true}catch(e){}return !!(document.body.classList.contains('tv')||document.body.classList.contains('firetv')||window.FEFCNative)};
-window.__fefcApplyPerf=function(on){const b=document.body.classList;if(on){b.add('perf');try{localStorage.fefcPerf='1'}catch(e){}}else{b.remove('perf');try{localStorage.fefcPerf='0'}catch(e){}}try{window.dispatchEvent(new CustomEvent('fefc-perf',{detail:{on:!!on}}))}catch(e){}};
+/* 0.8.17: Performance mode menu removed. Auto device-tier (LOW/MID/HIGH) owns cost. Debug: ?perf=1 forces body.perf; ?noperf=1 / ?perf=0 forces off. Clear+ignore stale localStorage.fefcPerf so users aren't stuck degraded. */
+try{localStorage.removeItem('fefcPerf')}catch(e){}
+window.__fefcPerfOn=function(){try{if(P.get('noperf')==='1'||P.get('perf')==='0')return false;if(P.get('perf')==='1')return true}catch(e){}return false};
+window.__fefcApplyPerf=function(on){const b=document.body.classList;if(on)b.add('perf');else b.remove('perf');try{localStorage.removeItem('fefcPerf')}catch(e){}try{window.dispatchEvent(new CustomEvent('fefc-perf',{detail:{on:!!on}}))}catch(e){}};
 if(window.__fefcPerfOn())document.body.classList.add('perf');
+else document.body.classList.remove('perf');
 /* 0.8.13 device tier from native (LOW/MID/HIGH). ?tier= overrides for profile tests. */
 (function applyTier(){try{
   let t=null;const q=new URLSearchParams(location.search).get('tier');
@@ -1433,7 +1435,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.16';
+const HOME_VER_FALLBACK='0.8.17';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 function paintHomeVer(name){const el=$('#home-ver');if(!el)return;const label=formatHomeVer(name);if(label){el.textContent=label;el.dataset.ver=String(name||'')}}
 function resolveHomeVer(){const el=$('#home-ver');if(!el)return;try{const nb=window.FEFCNative;if(nb&&typeof nb.version==='function'){const v=nb.version();if(v!=null&&String(v).trim()!==''){paintHomeVer(v);el.dataset.src='native';return}}}catch(e){}
@@ -1451,13 +1453,12 @@ function closeTvMenu(){const el=$('#tvmenu');if(!el||el.hidden)return false;el.h
 function openTvMenu(){if(!document.body.classList.contains('tv')&&!document.body.classList.contains('firetv')){starFocused();return}
   let el=$('#tvmenu');
   if(!el){el=document.createElement('div');el.id='tvmenu';el.setAttribute('role','dialog');el.setAttribute('aria-label','Menu');
-   el.innerHTML='<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search"></button><button type="button" class="tvm-i" data-tm="mute"></button><button type="button" class="tvm-i" data-tm="perf"></button></div>';
+   el.innerHTML='<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search"></button><button type="button" class="tvm-i" data-tm="mute"></button></div>';
    document.body.appendChild(el);
    el.addEventListener('click',e=>{const b=e.target.closest('[data-tm]');if(!b)return;const k=b.dataset.tm;S.click&&S.click();
     if(k==='star'){closeTvMenu();starFocused();return}
     if(k==='search'){closeTvMenu();doSearch();return}
-    if(k==='mute'){doMute();paintTvMenu();try{b.focus({preventScroll:true})}catch(err){}return}
-    if(k==='perf'){const on=!document.body.classList.contains('perf');window.__fefcApplyPerf(on);try{if($('#home')&&!$('#home').hidden)mosaic()}catch(err){}try{window.dispatchEvent(new Event('fefc-perf'))}catch(err){}paintTvMenu();try{b.focus({preventScroll:true})}catch(err){}return}});
+    if(k==='mute'){doMute();paintTvMenu();try{b.focus({preventScroll:true})}catch(err){}return}});
   }
   _tvMenuPrev=document.activeElement;
   paintTvMenu();
@@ -1465,14 +1466,13 @@ function openTvMenu(){if(!document.body.classList.contains('tv')&&!document.body
   const first=el.querySelector('.tvm-i');if(first)try{first.focus({preventScroll:true})}catch(e){first.focus()}
 }
 function paintTvMenu(){const el=$('#tvmenu');if(!el)return;const id=focusedMediaId()||(_tvMenuPrev&&_tvMenuPrev.closest&&_tvMenuPrev.closest('.ol-tile')&&_tvMenuPrev.closest('.ol-tile').dataset.id)||($('#details').hidden?null:$('#details').dataset.id);
-  const star=el.querySelector('[data-tm="star"]'),mute=el.querySelector('[data-tm="mute"]'),search=el.querySelector('[data-tm="search"]'),perfBtn=el.querySelector('[data-tm="perf"]');
+  const star=el.querySelector('[data-tm="star"]'),mute=el.querySelector('[data-tm="mute"]'),search=el.querySelector('[data-tm="search"]');
   let on=false;try{on=!!(id&&window.UD&&UD.isStarred(id))}catch(e){}
-  const ST='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.6l2.7 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.8 5.99 21.1l1.62-6.8L2.3 9.7l7-.6L12 2.6z"/></svg>',SO='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3.2l2.4 5.8 6.2.5-4.7 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6-4.7-4.1 6.2-.5L12 3.2z"/></svg>',SE='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg>',SK='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9v6h3.2L12 19V5L7.2 9H4zm11.5 3a3.5 3.5 0 00-1.1-2.55l1.2-1.2A5.2 5.2 0 0118.2 12a5.2 5.2 0 01-2.6 4.55l-1.2-1.2A3.5 3.5 0 0015.5 12z"/></svg>',SX='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM14 3.23v2.06c1.94.6 3.5 2.1 4.06 4.06h2.08C19.4 6.04 17 3.85 14 3.23zM12 5.5l-1.91 1.91L12 9.32V5.5z"/></svg>',PF='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h2v-2h2v-2h-2v-2h-2v2h-2v2h2v2zm4 3h2v-4h-2v4z"/></svg>';
+  const ST='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.6l2.7 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.8 5.99 21.1l1.62-6.8L2.3 9.7l7-.6L12 2.6z"/></svg>',SO='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3.2l2.4 5.8 6.2.5-4.7 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6-4.7-4.1 6.2-.5L12 3.2z"/></svg>',SE='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg>',SK='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9v6h3.2L12 19V5L7.2 9H4zm11.5 3a3.5 3.5 0 00-1.1-2.55l1.2-1.2A5.2 5.2 0 0118.2 12a5.2 5.2 0 01-2.6 4.55l-1.2-1.2A3.5 3.5 0 0015.5 12z"/></svg>',SX='<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM14 3.23v2.06c1.94.6 3.5 2.1 4.06 4.06h2.08C19.4 6.04 17 3.85 14 3.23zM12 5.5l-1.91 1.91L12 9.32V5.5z"/></svg>';
   const ico=(svg,lab)=>'<span class="tvm-row">'+svg+'<span class="tvm-lab">'+lab+'</span></span>';
   if(star){star.disabled=!id;star.innerHTML=ico(on?ST:SO,id?(on?'Unstar this item':'Star this item'):'Star (select a title first)');star.setAttribute('aria-disabled',id?'false':'true')}
   if(search)search.innerHTML=ico(SE,'Search');
-  if(mute)mute.innerHTML=ico(S.muted?SX:SK,(S.muted?'Sound off':'Sound on')+' — tap to toggle');
-  if(perfBtn){const pon=document.body.classList.contains('perf');perfBtn.innerHTML=ico(PF,'Performance mode: '+(pon?'ON':'OFF')+' — tap to toggle')}}
+  if(mute)mute.innerHTML=ico(S.muted?SX:SK,(S.muted?'Sound off':'Sound on')+' — tap to toggle')}
 if(document.body.classList.contains('tv')&&(/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent)||window.FEFCNative)){document.body.classList.add('firetv');
  /* Alexa Voice Remote Gen3: Back = left-curving U-turn ↩; Select = solid center in thin D-pad ring; Home glyph = FEFC logo. */
  const BK='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M15.2 7.2h-3.4c-3.1 0-5.6 2.4-5.6 5.4s2.5 5.4 5.6 5.4h6.2"/><path fill="currentColor" d="M15.05 4.55L11.2 7.35l3.85 2.8V4.55z"/></svg>',MN='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M3 6h18v2.2H3V6zm0 4.9h18v2.2H3v-2.2zM3 15.8h18V18H3z"/></svg>',SEL='<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.85"/><circle cx="12" cy="12" r="4.35" fill="currentColor"/></svg>',HM='<img class="g-ftv-logo" src="assets/fefc-logo-carson.png" alt="" width="24" height="24" decoding="async">';
@@ -1480,7 +1480,7 @@ if(document.body.classList.contains('tv')&&(/AFT\w|FEFCFireTV|Fire TV/i.test(nav
  if(homeI){homeI.className='g g-ftv g-ftv-home';homeI.setAttribute('aria-hidden','true');homeI.innerHTML=HM}
  if(backI){backI.className='g g-ftv g-ftv-back';backI.setAttribute('aria-hidden','true');backI.innerHTML=BK}
  if(selI){selI.className='g g-ftv g-ftv-sel';selI.setAttribute('aria-hidden','true');selI.innerHTML=SEL}
- /* 3-line control opens Menu popup (Star / Search / Sound) — not star-direct. Web keeps Y/S/M shortcuts. */
+ /* 3-line control opens Menu popup (Star / Search / Sound) — not star-direct. Performance mode removed 0.8.17 (tiers auto). Web keeps Y/S/M shortcuts. */
  if(menuBtn){menuBtn.classList.add('hb-menu');menuBtn.classList.remove('hb-star');menuBtn.dataset.hint='menu';menuBtn.setAttribute('aria-label','Menu');const lab=menuBtn.querySelector('span');if(lab)lab.textContent='Menu'}
  if(menuI){menuI.className='g g-ftv g-ftv-menu';menuI.setAttribute('aria-hidden','true');menuI.innerHTML=MN}
  try{sm2()}catch(e){}}

@@ -1,8 +1,8 @@
 {
-    "versionCode": 26,
-    "versionName": "0.8.16",
+    "versionCode": 27,
+    "versionName": "0.8.17",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.16: Fire TV video-details episode selector \u2014 no edge clipping, ~5% overscan-safe, focused episode stays in view, season switch to first ep, D-pad never stuck, Back OK, Select plays episode, low-tier scroll perf. Web+TV sync.",
-    "size": 102329826,
-    "sha256": "d4de988d9759907c805b1d05da7e52709de8f01f2396a71ec473717ac2b4077d"
+    "notes": "Beta 0.8.17: Removed Performance mode from the TV/web Menu. Automatic device-tier (LOW/MID/HIGH) optimizations stay on. Stale localStorage.fefcPerf cleared/ignored so nobody stays stuck in a degraded mode. Debug ?perf=1 still works (not shown in UI). Menu focus order Star \u2192 Search \u2192 Sound. Web+TV sync.",
+    "size": 102329666,
+    "sha256": "64a3f1421a78d43ef7ff7943c1176369e1b3c9144807c79d2b7510942d886445"
 }

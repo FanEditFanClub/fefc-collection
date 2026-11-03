@@ -1,1 +1,1 @@
-Beta 0.8.16: Fire TV video-details episode selector — no edge clipping, ~5% overscan-safe, focused episode stays in view, season switch to first ep, D-pad never stuck, Back OK, Select plays episode, low-tier scroll perf. Web+TV sync.
+Beta 0.8.17: Removed Performance mode from the TV/web Menu. Automatic device-tier (LOW/MID/HIGH) optimizations stay on. Stale localStorage.fefcPerf cleared/ignored so nobody stays stuck in a degraded mode. Debug ?perf=1 still works (not shown in UI). Menu focus order Star → Search → Sound. Web+TV sync.

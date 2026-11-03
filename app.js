@@ -116,31 +116,25 @@ var __spreadValues = (a, b) => {
   if (window.FEFCNative && P.get("nointro")) {
     document.body.classList.add("firetv", "native-waiting");
   }
+  try {
+    localStorage.removeItem("fefcPerf");
+  } catch (e) {
+  }
   window.__fefcPerfOn = function() {
     try {
       if (P.get("noperf") === "1" || P.get("perf") === "0") return false;
       if (P.get("perf") === "1") return true;
-      const ls = localStorage.fefcPerf;
-      if (ls === "0") return false;
-      if (ls === "1") return true;
     } catch (e) {
     }
-    return !!(document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative);
+    return false;
   };
   window.__fefcApplyPerf = function(on) {
     const b = document.body.classList;
-    if (on) {
-      b.add("perf");
-      try {
-        localStorage.fefcPerf = "1";
-      } catch (e) {
-      }
-    } else {
-      b.remove("perf");
-      try {
-        localStorage.fefcPerf = "0";
-      } catch (e) {
-      }
+    if (on) b.add("perf");
+    else b.remove("perf");
+    try {
+      localStorage.removeItem("fefcPerf");
+    } catch (e) {
     }
     try {
       window.dispatchEvent(new CustomEvent("fefc-perf", { detail: { on: !!on } }));
@@ -148,6 +142,7 @@ var __spreadValues = (a, b) => {
     }
   };
   if (window.__fefcPerfOn()) document.body.classList.add("perf");
+  else document.body.classList.remove("perf");
   (function applyTier() {
     try {
       let t = null;
@@ -5355,7 +5350,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.16";
+  const HOME_VER_FALLBACK = "0.8.17";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -5427,7 +5422,7 @@ var __spreadValues = (a, b) => {
       el.id = "tvmenu";
       el.setAttribute("role", "dialog");
       el.setAttribute("aria-label", "Menu");
-      el.innerHTML = '<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search"></button><button type="button" class="tvm-i" data-tm="mute"></button><button type="button" class="tvm-i" data-tm="perf"></button></div>';
+      el.innerHTML = '<div class="tvm-box"><p class="tvm-h">Menu</p><button type="button" class="tvm-i" data-tm="star"></button><button type="button" class="tvm-i" data-tm="search"></button><button type="button" class="tvm-i" data-tm="mute"></button></div>';
       document.body.appendChild(el);
       el.addEventListener("click", (e) => {
         const b = e.target.closest("[data-tm]");
@@ -5453,24 +5448,6 @@ var __spreadValues = (a, b) => {
           }
           return;
         }
-        if (k === "perf") {
-          const on = !document.body.classList.contains("perf");
-          window.__fefcApplyPerf(on);
-          try {
-            if ($("#home") && !$("#home").hidden) mosaic();
-          } catch (err) {
-          }
-          try {
-            window.dispatchEvent(new Event("fefc-perf"));
-          } catch (err) {
-          }
-          paintTvMenu();
-          try {
-            b.focus({ preventScroll: true });
-          } catch (err) {
-          }
-          return;
-        }
       });
     }
     _tvMenuPrev = document.activeElement;
@@ -5489,13 +5466,13 @@ var __spreadValues = (a, b) => {
     const el = $("#tvmenu");
     if (!el) return;
     const id = focusedMediaId() || _tvMenuPrev && _tvMenuPrev.closest && _tvMenuPrev.closest(".ol-tile") && _tvMenuPrev.closest(".ol-tile").dataset.id || ($("#details").hidden ? null : $("#details").dataset.id);
-    const star = el.querySelector('[data-tm="star"]'), mute = el.querySelector('[data-tm="mute"]'), search = el.querySelector('[data-tm="search"]'), perfBtn = el.querySelector('[data-tm="perf"]');
+    const star = el.querySelector('[data-tm="star"]'), mute = el.querySelector('[data-tm="mute"]'), search = el.querySelector('[data-tm="search"]');
     let on = false;
     try {
       on = !!(id && window.UD && UD.isStarred(id));
     } catch (e) {
     }
-    const ST = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.6l2.7 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.8 5.99 21.1l1.62-6.8L2.3 9.7l7-.6L12 2.6z"/></svg>', SO = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3.2l2.4 5.8 6.2.5-4.7 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6-4.7-4.1 6.2-.5L12 3.2z"/></svg>', SE = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg>', SK = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9v6h3.2L12 19V5L7.2 9H4zm11.5 3a3.5 3.5 0 00-1.1-2.55l1.2-1.2A5.2 5.2 0 0118.2 12a5.2 5.2 0 01-2.6 4.55l-1.2-1.2A3.5 3.5 0 0015.5 12z"/></svg>', SX = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM14 3.23v2.06c1.94.6 3.5 2.1 4.06 4.06h2.08C19.4 6.04 17 3.85 14 3.23zM12 5.5l-1.91 1.91L12 9.32V5.5z"/></svg>', PF = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 3h2v-2h2v-2h-2v-2h-2v2h-2v2h2v2zm4 3h2v-4h-2v4z"/></svg>';
+    const ST = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M12 2.6l2.7 6.5 7 .6-5.3 4.6 1.6 6.8L12 17.8 5.99 21.1l1.62-6.8L2.3 9.7l7-.6L12 2.6z"/></svg>', SO = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 3.2l2.4 5.8 6.2.5-4.7 4.1 1.4 6-5.3-3.2-5.3 3.2 1.4-6-4.7-4.1 6.2-.5L12 3.2z"/></svg>', SE = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg>', SK = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 9v6h3.2L12 19V5L7.2 9H4zm11.5 3a3.5 3.5 0 00-1.1-2.55l1.2-1.2A5.2 5.2 0 0118.2 12a5.2 5.2 0 01-2.6 4.55l-1.2-1.2A3.5 3.5 0 0015.5 12z"/></svg>', SX = '<svg class="tvm-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.9 8.9 0 003.69-1.81L19.73 21 21 19.73 4.27 3zM14 3.23v2.06c1.94.6 3.5 2.1 4.06 4.06h2.08C19.4 6.04 17 3.85 14 3.23zM12 5.5l-1.91 1.91L12 9.32V5.5z"/></svg>';
     const ico = (svg, lab) => '<span class="tvm-row">' + svg + '<span class="tvm-lab">' + lab + "</span></span>";
     if (star) {
       star.disabled = !id;
@@ -5504,10 +5481,6 @@ var __spreadValues = (a, b) => {
     }
     if (search) search.innerHTML = ico(SE, "Search");
     if (mute) mute.innerHTML = ico(S.muted ? SX : SK, (S.muted ? "Sound off" : "Sound on") + " \u2014 tap to toggle");
-    if (perfBtn) {
-      const pon = document.body.classList.contains("perf");
-      perfBtn.innerHTML = ico(PF, "Performance mode: " + (pon ? "ON" : "OFF") + " \u2014 tap to toggle");
-    }
   }
   if (document.body.classList.contains("tv") && (/AFT\w|FEFCFireTV|Fire TV/i.test(navigator.userAgent) || window.FEFCNative)) {
     document.body.classList.add("firetv");
