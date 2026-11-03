@@ -1,8 +1,8 @@
 {
-    "versionCode": 24,
-    "versionName": "0.8.14",
+    "versionCode": 25,
+    "versionName": "0.8.15",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.14: Lag \u2014 softRefresh/placeHeader coalesce, slower TV mosaic, skip slideshow reflow on perf/low; focus recovery after hub softRefresh; Shuffle Play chooser (Full Screen default / VLC / Drive \u2014 never windowed). Dynex overscan ~5% all edges; ticker+hints flush; Back closes sync/TV/shuf menus; Sync My List Worker+QR; Open in Drive+VLC.",
-    "size": 102328416,
-    "sha256": "d7feb9b65d432575d429e718d6dac77cef92a9afc356c6a8954a8acfef3367f9"
+    "notes": "Beta 0.8.15: Verified Dynex 1\u20135 on Fire TV (Back closes popups; Sync My List pair/QR; Open in Drive labeled; ticker+hints flush with ~5% safe margin; left edge not clipped). Same web+APK bridge as 0.8.14 with version bump for sideload/updater.",
+    "size": 102328431,
+    "sha256": "62ba5483b7567832f8405ed24e562f82225e4537e683e21e9aa3d7abbc5b6d0d"
 }
