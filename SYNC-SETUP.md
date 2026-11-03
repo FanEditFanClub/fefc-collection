@@ -23,4 +23,4 @@ The code for these is in the repo. Nothing works until these dashboard items exi
 4. OAuth consent screen: make sure publishing status is **In production** (scopes openid/email/profile need no verification), otherwise only listed test users can sign in.
 5. Nothing to change on the existing web client. (Optional env `GOOGLE_WEB_CLIENT_ID` only if that client ID ever changes.)
 
-Options 2 and 3 only need the KV binding. Option 1 also needs the two secrets. Until they exist the panel says the option isn't set up yet.
+Options 2 and 3 only need the KV binding. Option 1 also needs the two secrets. Until those TV OAuth secrets exist, Fire TV still shows **Sign in with Google** first — it uses the QR + phone Google sign-in path (same Worker sessions) instead of google.com/device.

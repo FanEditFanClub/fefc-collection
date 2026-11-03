@@ -1255,6 +1255,9 @@ body.tv #brand span{display:none}
 /* My List: Check for updates pinned under the bar (Fire TV D-pad) */
 .ml-upd-wrap.ml-upd-bot,.ml-upd-wrap.ml-upd-top{padding:18px 12px 28px;justify-content:flex-start;gap:12px;align-items:center;flex-wrap:wrap}
 .ml-upd-hint{margin:0;color:#9fb6cf;font-size:13px;opacity:.9}
+.ml-upd-ver{display:inline-flex;align-items:center;margin:0 4px 0 2px;padding:6px 12px;border-radius:999px;border:1px solid #4a5a6e;background:#12171f;color:#cfe0f5;font-size:14px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+body.tv .ml-upd-ver{font-size:1.7vh;padding:.7vh 1.4vh;border-width:2px}
+
 body.tv .ml-upd-hint{font-size:1.6vh}
 body.tv .ml-upd-wrap.ml-upd-bot,body.tv .ml-upd-wrap.ml-upd-top{padding:2vh 1.5vw 3vh}
 

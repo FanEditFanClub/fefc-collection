@@ -20,7 +20,7 @@ function paintChip(){var c=chip();if(!c)return;var A=agg();
  '<button class="mi" data-sync="panel">Sync My List</button>'+(A.reconnect?'<button class="mi" data-sync="in">Reconnect</button>':'<button class="mi" data-sync="now">Sync now</button>')+'<button class="mi" data-sync="out">Sign out</button></div>'}
 // ---------- My List card ----------
 function paintCard(){var el=document.getElementById('ml-sync');if(!el)return;var A=agg();
- el.innerHTML=!A.on?'<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: TV code, QR code, or a 6-digit sync code.</span></div><button class="mi sync-go" tabindex="0" data-sync="panel">Sync My List</button></div>':
+ el.innerHTML=!A.on?'<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: Google sign-in, or a 6-digit sync code.</span></div><button class="mi sync-go" tabindex="0" data-sync="panel">Sync My List</button></div>':
  A.reconnect?'<div class="sync-card"><div><b>Sync paused</b><span>Reconnect your Google account to resume syncing.</span></div><button class="mi sync-go" tabindex="0" data-sync="in">Reconnect</button><button class="mi" data-sync="panel">Sync My List</button></div>':
  '<div class="sync-card on"><div><b>'+(A.syncing?'Syncing\u2026':'Synced')+'</b><span>'+esc(A.user&&A.user.email||'Linked with a '+A.via)+(A.error?' \u00B7 '+esc(A.error):'')+'</span></div><button class="mi" data-sync="panel">Sync My List</button><button class="mi" data-sync="out">Sign out</button></div>'}
 function repaint(){paintChip();paintCard();if(P&&P.view==='menu')render()}
@@ -47,28 +47,38 @@ var VIEWS={
  menu:{html:function(){var A=agg(),cloud=cfg&&cfg.configured,tvOk=cfg&&cfg.tv;
   var srvNote=!cloud?(FIRETV?'':'<p class="sp-note">Cloud sync is warming up. You can still export or import your list below.</p>'):'';
   var opts='';
+  /* 0.8.19: Google always on TOP of sync-code. Fire TV uses device-code when Worker has TV OAuth,
+     else QR phone flow (Sign in with Google on phone then Approve). Never a dead-end when cfg.tv is false. */
   if(cloud){
-    opts+=opt('pair','6-digit sync code','No Google account needed. Create a code and enter it on another device.',1);
-    opts+=opt('qr','Scan a QR code with your phone','Your phone (signed in to this site) approves this device.');
-    if(tvOk)opts+=opt('device','Google TV code','Show a short code, then enter it at google.com/device on your phone.');
+    if(FIRETV){
+      if(tvOk) opts+=opt('device','Sign in with Google','Show a short code — enter it at google.com/device on your phone.',1);
+      else opts+=opt('google-qr','Sign in with Google','Scan a QR on your phone, sign in with Google, then Approve.',1);
+      opts+=opt('pair','6-digit sync code','No Google account needed. Create a code and enter it on another device.');
+      opts+=opt('qr','Scan a QR code with your phone','Your phone (already syncing) approves this device.');
+    } else {
+      opts+=opt('drive','Sign in with Google','Sign in here so stars and history sync across devices.',1);
+      opts+=opt('pair','6-digit sync code','No Google account needed. Create a code and enter it on another device.');
+      opts+=opt('qr','Scan a QR code with your phone','Approve another device from this browser.');
+      if(tvOk) opts+=opt('device','Google TV code','Show a short code for google.com/device (good for a second TV).');
+    }
+  } else if(FIRETV){
+    opts+='<p class="sp-note">Cloud sync is still connecting. Try again in a moment.</p>';
   }
   if(!FIRETV){
     opts+=opt('export','Export My List','Save a backup file of your stars and watch history.');
     opts+=opt('import','Import My List','Restore stars and history from a backup file.');
-    opts+=opt('drive','Sign in with Google here','Google Drive sync in this browser.');
-  } else if(!cloud){
-    opts+='<p class="sp-note">After this app update finishes installing, use a 6-digit sync code or QR to link devices.</p>';
   }
   return frame('Sync My List',(A.on?'<p class="sp-sub">'+(A.user&&A.user.email?'Signed in as '+esc(A.user.email):'Linked with a '+esc(A.via))+(A.syncing?' · syncing…':' · synced')+'</p>':'<p class="sp-sub">Choose how to keep your stars and watch history on all your devices.</p>')+srvNote+
   '<div class="sp-opts">'+opts+'</div>',
   (A.on?btn('out','Sign out'):'')+btn('close','Close'))}},
- device:{enter:function(g){if(srvOff()||!cfg.tv)return fail(srvOff()?'Cloud sync is not switched on yet.':'Google TV code sign-in is not set up yet.');
-   V.deviceStart().then(function(d){if(g!==gen)return;P.d=d;P.left=d.expires_in;render();tick(g);poll(g,d.id,(d.interval||5)*1000)},function(e){if(g===gen)fail('Could not start Google sign-in. Try again.',1)})},
-  html:function(){var d=P.d;return frame('Google TV code',d?'<p class="sp-sub">On your phone or computer, go to</p><div class="sp-url">'+esc((d.verification_url||'').replace(/^https?:\/\//,''))+'</div><p class="sp-sub">and enter this code</p><div class="sp-code">'+esc(d.user_code)+'</div><p class="sp-note" id="sp-left">Waiting for you to approve\u2026 '+mmss(P.left)+'</p>':'<p class="sp-sub">Getting a code\u2026</p>',btn('menu','Cancel','',' data-default'))}},
+ device:{enter:function(g){if(srvOff())return fail('Cloud sync is not switched on yet.');
+   if(!cfg.tv){go('qr',{google:1});return}
+   V.deviceStart().then(function(d){if(g!==gen)return;P.d=d;P.left=d.expires_in;render();tick(g);poll(g,d.id,(d.interval||5)*1000)},function(e){if(g!==gen)return;go('qr',{google:1})})},
+  html:function(){var d=P.d;return frame('Sign in with Google',d?'<p class="sp-sub">On your phone or computer, go to</p><div class="sp-url">'+esc((d.verification_url||'').replace(/^https?:\/\//,''))+'</div><p class="sp-sub">and enter this code</p><div class="sp-code">'+esc(d.user_code)+'</div><p class="sp-note" id="sp-left">Waiting for you to approve\u2026 '+mmss(P.left)+'</p>':'<p class="sp-sub">Getting a code\u2026</p>',btn('menu','Cancel','',' data-default'))}},
  qr:{enter:function(g){if(srvOff())return fail('Cloud sync is not switched on yet.');
    loadQR().then(function(){return V.qrStart()}).then(function(q){if(g!==gen)return;P.q=q;P.left=q.expires_in;render();tick(g);pollQR(g,q)},function(){if(g===gen)fail('Could not make a QR code. Try again.',1)})},
-  html:function(){var q=P.q,svg='';if(q&&window.qrcode){var c=window.qrcode(0,'M');c.addData(q.url);c.make();svg=c.createSvgTag({cellSize:6,margin:3,scalable:true})}
-   return frame('Scan with your phone',q?'<div class="sp-qr">'+svg+'</div><p class="sp-sub">Open your phone camera, scan, then tap Approve.<br>Confirm code on your phone: <b class="sp-ver">'+esc(q.verify)+'</b></p><p class="sp-note" id="sp-left">Waiting\u2026 '+mmss(P.left)+'</p>':'<p class="sp-sub">Making a QR code\u2026</p>',btn('menu','Cancel','',' data-default'))}},
+  html:function(){var q=P.q,svg='',gog=!!(P.opt&&P.opt.google);if(q&&window.qrcode){var c=window.qrcode(0,'M');c.addData(q.url);c.make();svg=c.createSvgTag({cellSize:6,margin:3,scalable:true})}
+   return frame(gog?'Sign in with Google':'Scan with your phone',q?'<div class="sp-qr">'+svg+'</div><p class="sp-sub">'+(gog?'Open your phone camera, scan, then <b>Sign in with Google</b> and Approve.':'Open your phone camera, scan, then tap Approve.')+'<br>Confirm code on your phone: <b class="sp-ver">'+esc(q.verify)+'</b></p><p class="sp-note" id="sp-left">Waiting… '+mmss(P.left)+'</p>':'<p class="sp-sub">Making a QR code…</p>',btn('menu','Cancel','',' data-default'))}},
  pair:{html:function(){return frame('6-digit sync code','<p class="sp-sub">No Google account needed.</p><div class="sp-opts">'+opt('pair-new','Create a code','Show a code to enter on your other device.')+opt('pair-enter','Enter a code','Type the code shown on another device.')+'</div>',btn('menu','Back','',' data-default'))}},
  'pair-new':{enter:function(g){if(srvOff())return fail('Cloud sync is not switched on yet.');
    V.pairCreate().then(function(r){if(g!==gen)return;P.code=r.code;P.left=r.expires_in;var p=r.token?V.adopt(r):Promise.resolve();return p.then(function(){if(g!==gen)return;render();tick(g)})},function(e){if(g===gen)fail('Could not create a code. Try again.',1)})},
@@ -88,7 +98,7 @@ function tick(g){later(function(){if(!P)return;P.left--;var l=$('#sp-left');if(l
 function poll(g,id,ms){later(function(){V.devicePoll(id).then(function(r){if(g!==gen)return;
   if(r.status==='ok')V.adopt(r).then(function(){done('Google sign-in worked.')});else if(r.status==='denied')fail('Sign-in was cancelled.',1);else if(r.status==='expired')fail('That code expired.',1);else poll(g,id,ms)},function(){if(g===gen)poll(g,id,ms*2)})},ms,g)}
 function pollQR(g,q){later(function(){V.qrPoll(q.id,q.secret).then(function(r){if(g!==gen)return;
-  if(r.status==='ok')V.adopt(r).then(function(){done('Linked with your phone.')});else if(r.status==='expired')fail('That QR code expired.',1);else pollQR(g,q)},function(){if(g===gen)pollQR(g,q)})},2500,g)}
+  if(r.status==='ok')V.adopt(r).then(function(){done((P.opt&&P.opt.google)?'Google sign-in worked. Your list is syncing.':'Linked with your phone.')});else if(r.status==='expired')fail('That QR code expired.',1);else pollQR(g,q)},function(){if(g===gen)pollQR(g,q)})},2500,g)}
 var qrLoading=null;
 function loadQR(){if(window.qrcode)return Promise.resolve();return qrLoading||(qrLoading=new Promise(function(res,rej){var s=document.createElement('script');s.src='qrgen.js';s.onload=res;s.onerror=function(){qrLoading=null;rej()};document.head.appendChild(s)}))}
 function enterDigit(d){if(!P||P.view!=='pair-enter')return;P.digits=(P.digits||'');P.bad='';
@@ -111,6 +121,7 @@ document.addEventListener('click',function(e){
   else if(k==='approve-go'){V.qrApprove(P.id).then(function(){go('done',{msg:'Your TV is linked.'})},function(){fail('Could not approve. The link may have expired.')})}
   else if(k==='approve-google'){var g0=gen;G.signIn();var iv=setInterval(function(){if(!P||g0!==gen){clearInterval(iv);return}if(V.connected()){clearInterval(iv);render()}},800);timers.push(iv)}
   else if(k==='approve-anon'){V.pairCreate().then(function(r){return r.token?V.adopt(r):0}).then(function(){render()},function(){fail('Could not link without Google.')})}
+  else if(k==='google-qr'){P.prevView='google-qr';go('qr',{google:1})}
   else if(VIEWS[k]){P.prevView=k;go(k)}
   return}
  var b2=e.target.closest('[data-sync]');

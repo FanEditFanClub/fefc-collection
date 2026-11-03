@@ -562,6 +562,9 @@ public class MainActivity extends Activity {
         /** App versionName for the web UI (e.g. home "v0.8.1 beta" badge). */
         public String version() { return BuildConfig.VERSION_NAME; }
 
+        /** App versionCode for the web UI (Check for updates row). */
+        public int versionCode() { return BuildConfig.VERSION_CODE; }
+
         /** Device tier JSON: {tier,videoTiles,ramMb,...}. Used by mosaic decoder caps. */
         @JavascriptInterface
         public String deviceTier() {
