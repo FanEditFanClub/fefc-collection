@@ -52,7 +52,7 @@
     var el2 = document.getElementById("ml-sync");
     if (!el2) return;
     var A = agg();
-    el2.innerHTML = !A.on ? '<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: TV code, QR code, or a 6-digit sync code.</span></div><button class="mi sync-go" tabindex="0" data-sync="panel">Sync My List</button></div>' : A.reconnect ? '<div class="sync-card"><div><b>Sync paused</b><span>Reconnect your Google account to resume syncing.</span></div><button class="mi sync-go" tabindex="0" data-sync="in">Reconnect</button><button class="mi" data-sync="panel">Sync My List</button></div>' : '<div class="sync-card on"><div><b>' + (A.syncing ? "Syncing\u2026" : "Synced") + "</b><span>" + esc(A.user && A.user.email || "Linked with a " + A.via) + (A.error ? " \xB7 " + esc(A.error) : "") + '</span></div><button class="mi" data-sync="panel">Sync My List</button><button class="mi" data-sync="out">Sign out</button></div>';
+    el2.innerHTML = !A.on ? '<div class="sync-card"><div><b>Sync My List</b><span>Keep your stars and watch history on every device: Google sign-in, or a 6-digit sync code.</span></div><button class="mi sync-go" tabindex="0" data-sync="panel">Sync My List</button></div>' : A.reconnect ? '<div class="sync-card"><div><b>Sync paused</b><span>Reconnect your Google account to resume syncing.</span></div><button class="mi sync-go" tabindex="0" data-sync="in">Reconnect</button><button class="mi" data-sync="panel">Sync My List</button></div>' : '<div class="sync-card on"><div><b>' + (A.syncing ? "Syncing\u2026" : "Synced") + "</b><span>" + esc(A.user && A.user.email || "Linked with a " + A.via) + (A.error ? " \xB7 " + esc(A.error) : "") + '</span></div><button class="mi" data-sync="panel">Sync My List</button><button class="mi" data-sync="out">Sign out</button></div>';
   }
   function repaint() {
     paintChip();
@@ -152,16 +152,23 @@
       var srvNote = !cloud ? FIRETV ? "" : '<p class="sp-note">Cloud sync is warming up. You can still export or import your list below.</p>' : "";
       var opts = "";
       if (cloud) {
-        opts += opt("pair", "6-digit sync code", "No Google account needed. Create a code and enter it on another device.", 1);
-        opts += opt("qr", "Scan a QR code with your phone", "Your phone (signed in to this site) approves this device.");
-        if (tvOk) opts += opt("device", "Google TV code", "Show a short code, then enter it at google.com/device on your phone.");
+        if (FIRETV) {
+          if (tvOk) opts += opt("device", "Sign in with Google", "Show a short code \u2014 enter it at google.com/device on your phone.", 1);
+          else opts += opt("google-qr", "Sign in with Google", "Scan a QR on your phone, sign in with Google, then Approve.", 1);
+          opts += opt("pair", "6-digit sync code", "No Google account needed. Create a code and enter it on another device.");
+          opts += opt("qr", "Scan a QR code with your phone", "Your phone (already syncing) approves this device.");
+        } else {
+          opts += opt("drive", "Sign in with Google", "Sign in here so stars and history sync across devices.", 1);
+          opts += opt("pair", "6-digit sync code", "No Google account needed. Create a code and enter it on another device.");
+          opts += opt("qr", "Scan a QR code with your phone", "Approve another device from this browser.");
+          if (tvOk) opts += opt("device", "Google TV code", "Show a short code for google.com/device (good for a second TV).");
+        }
+      } else if (FIRETV) {
+        opts += '<p class="sp-note">Cloud sync is still connecting. Try again in a moment.</p>';
       }
       if (!FIRETV) {
         opts += opt("export", "Export My List", "Save a backup file of your stars and watch history.");
         opts += opt("import", "Import My List", "Restore stars and history from a backup file.");
-        opts += opt("drive", "Sign in with Google here", "Google Drive sync in this browser.");
-      } else if (!cloud) {
-        opts += '<p class="sp-note">After this app update finishes installing, use a 6-digit sync code or QR to link devices.</p>';
       }
       return frame(
         "Sync My List",
@@ -171,7 +178,11 @@
     } },
     device: {
       enter: function(g) {
-        if (srvOff() || !cfg.tv) return fail(srvOff() ? "Cloud sync is not switched on yet." : "Google TV code sign-in is not set up yet.");
+        if (srvOff()) return fail("Cloud sync is not switched on yet.");
+        if (!cfg.tv) {
+          go("qr", { google: 1 });
+          return;
+        }
         V.deviceStart().then(function(d) {
           if (g !== gen) return;
           P.d = d;
@@ -180,12 +191,13 @@
           tick(g);
           poll(g, d.id, (d.interval || 5) * 1e3);
         }, function(e) {
-          if (g === gen) fail("Could not start Google sign-in. Try again.", 1);
+          if (g !== gen) return;
+          go("qr", { google: 1 });
         });
       },
       html: function() {
         var d = P.d;
-        return frame("Google TV code", d ? '<p class="sp-sub">On your phone or computer, go to</p><div class="sp-url">' + esc((d.verification_url || "").replace(/^https?:\/\//, "")) + '</div><p class="sp-sub">and enter this code</p><div class="sp-code">' + esc(d.user_code) + '</div><p class="sp-note" id="sp-left">Waiting for you to approve\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Getting a code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
+        return frame("Sign in with Google", d ? '<p class="sp-sub">On your phone or computer, go to</p><div class="sp-url">' + esc((d.verification_url || "").replace(/^https?:\/\//, "")) + '</div><p class="sp-sub">and enter this code</p><div class="sp-code">' + esc(d.user_code) + '</div><p class="sp-note" id="sp-left">Waiting for you to approve\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Getting a code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
       }
     },
     qr: {
@@ -205,14 +217,14 @@
         });
       },
       html: function() {
-        var q = P.q, svg = "";
+        var q = P.q, svg = "", gog = !!(P.opt && P.opt.google);
         if (q && window.qrcode) {
           var c = window.qrcode(0, "M");
           c.addData(q.url);
           c.make();
           svg = c.createSvgTag({ cellSize: 6, margin: 3, scalable: true });
         }
-        return frame("Scan with your phone", q ? '<div class="sp-qr">' + svg + '</div><p class="sp-sub">Open your phone camera, scan, then tap Approve.<br>Confirm code on your phone: <b class="sp-ver">' + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
+        return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + '</div><p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + '<br>Confirm code on your phone: <b class="sp-ver">' + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
       }
     },
     pair: { html: function() {
@@ -316,7 +328,7 @@
       V.qrPoll(q.id, q.secret).then(function(r) {
         if (g !== gen) return;
         if (r.status === "ok") V.adopt(r).then(function() {
-          done("Linked with your phone.");
+          done(P.opt && P.opt.google ? "Google sign-in worked. Your list is syncing." : "Linked with your phone.");
         });
         else if (r.status === "expired") fail("That QR code expired.", 1);
         else pollQR(g, q);
@@ -476,6 +488,9 @@
         }, function() {
           fail("Could not link without Google.");
         });
+      } else if (k === "google-qr") {
+        P.prevView = "google-qr";
+        go("qr", { google: 1 });
       } else if (VIEWS[k]) {
         P.prevView = k;
         go(k);

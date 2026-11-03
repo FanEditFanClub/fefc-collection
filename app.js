@@ -1640,10 +1640,15 @@ var __spreadValues = (a, b) => {
     const histCollapsed = localStorage.fefcHistCollapsed === "1";
     const histHead = '<div class="ol-div ml-hist-head"><button type="button" class="ml-hist-tog" data-ml="hist" aria-expanded="'.concat(histCollapsed ? "false" : "true", '" aria-controls="ml-hist-body"><span class="ml-hist-chev" aria-hidden="true">').concat(histCollapsed ? "\u25B6" : "\u25BC", "</span><span>HISTORY</span></button><i></i>").concat(!histCollapsed && H.length ? '<button class="mi ml-btn" data-ml="clear">Clear history</button>' : "", "<b>").concat(H.length, "</b></div>");
     const histBody = '<div id="ml-hist-body" class="ml-hist-body'.concat(histCollapsed ? " is-collapsed" : "", '"').concat(histCollapsed ? " hidden" : "", ">") + (H.length ? '<div class="sgrid vids">'.concat(H.map((f) => tile(f)).join(""), "</div>") : '<p class="ml-empty">Fan edits you open in the player show up here.</p>') + "</div>";
-    const updTV = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap ml-upd-bot"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button><p class="ml-upd-hint">Looks for a newer Fire TV / Android TV build.</p></div>' : "";
+    const updTV = document.body.classList.contains("tv") || document.body.classList.contains("firetv") || window.FEFCNative ? '<div class="ml-upd-wrap ml-upd-bot"><button type="button" class="mi ml-upd" id="ml-update" data-ml="update">Check for updates</button><span class="ml-upd-ver" id="ml-upd-ver" aria-label="Installed version"></span><p class="ml-upd-hint">Looks for a newer Fire TV / Android TV build.</p></div>' : "";
     g.innerHTML = '<div id="ml-sync"></div>' + histHead + histBody + '<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn'.concat(mlSort === "date" ? " on" : "", '" data-ml="date">Date starred</button><button class="mi ml-btn').concat(mlSort === "az" ? " on" : "", '" data-ml="az">A\u2013Z</button><b>').concat(St.length, "</b></div>") + (St.length ? (fold_(St).length ? '<div class="sgrid folds">'.concat(fold_(St).map((f) => tile(f)).join(""), "</div>") : "") + (vids_(St).length ? '<div class="sgrid vids">'.concat(vids_(St).map((f) => tile(f)).join(""), "</div>") : "") : '<p class="ml-empty">Star fan edits and collections with \u2605 to keep them here.</p>') + updTV + '<footer class="ml-foot"><a href="privacy.html">Privacy</a> \xB7 <a href="terms.html">Terms</a></footer>';
     try {
       (window.__fefcPaintSync || window.FEFCSync && FEFCSync.paintCard || 0)();
+    } catch (e) {
+    }
+    ;
+    try {
+      paintMlUpdVer();
     } catch (e) {
     }
     g.querySelectorAll(".ol-tile").forEach(lazyArt);
@@ -5434,12 +5439,48 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.18";
+  const HOME_VER_FALLBACK = "0.8.19";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
     const base = n.replace(/\s*beta$/i, "").trim();
     return "v" + base + " beta";
+  }
+  function formatMlUpdVer(name, code) {
+    const n = String(name || "").trim();
+    if (!n) return "";
+    const base = n.replace(/^v/i, "").replace(/\s*beta$/i, "").trim();
+    return "v" + base;
+  }
+  function paintMlUpdVer() {
+    const el = document.getElementById("ml-upd-ver");
+    if (!el) return;
+    let name = "", code = null;
+    try {
+      const nb = window.FEFCNative;
+      if (nb) {
+        if (typeof nb.version === "function") {
+          const v = nb.version();
+          if (v != null && String(v).trim() !== "") name = String(v).trim();
+        }
+        if (typeof nb.versionCode === "function") {
+          const c = nb.versionCode();
+          if (c != null && String(c).trim() !== "") code = c;
+        }
+      }
+    } catch (e) {
+    }
+    if (!name) {
+      try {
+        const hv = document.getElementById("home-ver");
+        if (hv && hv.dataset && hv.dataset.ver) name = hv.dataset.ver;
+      } catch (e) {
+      }
+    }
+    if (!name) name = HOME_VER_FALLBACK;
+    el.textContent = formatMlUpdVer(name, code);
+    if (code != null) el.title = "versionCode " + code;
+    else el.removeAttribute("title");
   }
   function paintHomeVer(name) {
     const el = $("#home-ver");
@@ -5460,6 +5501,10 @@ var __spreadValues = (a, b) => {
         if (v != null && String(v).trim() !== "") {
           paintHomeVer(v);
           el.dataset.src = "native";
+          try {
+            paintMlUpdVer();
+          } catch (e) {
+          }
           return;
         }
       }
@@ -5469,7 +5514,13 @@ var __spreadValues = (a, b) => {
     if (el.dataset.src === "native" || resolveHomeVer._once) return;
     resolveHomeVer._once = 1;
     tmo("firetv/version.json", 8e3).then((m) => {
-      if (m && m.versionName) paintHomeVer(m.versionName);
+      if (m && m.versionName) {
+        paintHomeVer(m.versionName);
+        try {
+          paintMlUpdVer();
+        } catch (e) {
+        }
+      }
     }).catch(() => {
     });
   }

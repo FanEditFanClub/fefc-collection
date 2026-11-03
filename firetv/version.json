@@ -1,8 +1,8 @@
 {
-  "versionCode": 28,
-  "versionName": "0.8.18",
-  "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-  "notes": "0.8.18 \u2014 Blank Home fix + OnLive mosaic atlas (web+TV parity).\n- Bundle-first catalog; watchdog counts #hub .mc.\n- Single mosaic-atlas (720/1080); Fire: direct src then fetch\u2192blob; one attempt then stills.\n- Mosaic bundled posters on Fire/TV/low; atlas on Fire even if reduced-motion.\n- TV-only: update check, VLC, native intro.\n",
-  "size": 106682115,
-  "sha256": "36ed983a229c86b5aeab61313d631a4a8c1b99c901184bc1572bc073cc281503"
+    "versionCode": 29,
+    "versionName": "0.8.19",
+    "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
+    "notes": "0.8.19 \u2014 Version badge + Google Sync My List restored on Fire TV.\n- My List: installed version (v0.8.19) shown next to Check for updates.\n- Sync My List: Sign in with Google is back on top of the 6-digit sync code (web + Fire TV).\n- Fire TV Google: device code when Worker has TV OAuth; otherwise QR \u2192 phone Google sign-in \u2192 Approve.\n- No Drive content/sharing changes; Worker list sync only.",
+    "size": 106682601,
+    "sha256": "0b824700090ee2d1d15a24d2b3c083b5124f66090e6012c8113bd38a7ffee57c"
 }
