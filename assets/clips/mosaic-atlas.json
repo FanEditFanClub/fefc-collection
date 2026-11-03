@@ -1,0 +1,12 @@
+{
+  "cols": 5,
+  "rows": 3,
+  "duration": 12,
+  "fps": 24,
+  "insight": "OnLive Arena: one precomposited media stream; client decodes 1 video",
+  "files": {
+    "LOW": "assets/clips/mosaic-atlas-720.mp4",
+    "MID": "assets/clips/mosaic-atlas-720.mp4",
+    "HIGH": "assets/clips/mosaic-atlas-1080.mp4"
+  }
+}

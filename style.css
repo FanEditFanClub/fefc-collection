@@ -1611,3 +1611,49 @@ html body.tv #details .epnav,
 html body.firetv #details .epnav{
   display:flex;flex-wrap:wrap;gap:0.6vh;padding:2px;align-items:center;
 }
+
+/* ===== 0.8.18 Fire TV / OnLive-style mosaic atlas + compositing-only ===== */
+#home{position:relative;isolation:isolate}
+#mosaic-atlas{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;background:#050a14}
+body.mosaic-atlas #hub .mc{opacity:0!important;pointer-events:none!important}
+body.mosaic-atlas #hub .hb{position:relative;z-index:2;/* opaque so atlas does not show through hub */}
+body.mosaic-atlas #hub .hb-logo img{filter:none!important}
+body.tv #home.enter,body.firetv #home.enter{filter:none!important;animation:homeEnterTv .45s ease-out both!important}
+@keyframes homeEnterTv{0%{transform:scale(1.04);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* Amazon Fire TV / tablet web best practices: avoid box-shadow, blur, backdrop-filter on TV.
+   Focus via transform:scale + outline only (GPU compositing). */
+body.tv .ol-tile,body.firetv .ol-tile,
+body.tv .hb,body.firetv .hb,
+body.tv .gt,body.firetv .gt,
+body.tv .mi,body.firetv .mi,
+body.tv #bar,body.firetv #bar,
+body.tv #ticker,body.firetv #ticker,
+body.tv .ins-card,body.firetv .ins-card,
+body.tv .bigplay,body.firetv .bigplay{
+  box-shadow:none!important;filter:none!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
+  -webkit-box-reflect:none!important}
+body.tv .ol-tile:focus,body.tv .ol-tile:focus-visible,body.firetv .ol-tile:focus,body.firetv .ol-tile:focus-visible{
+  transform:scale(1.06);outline:3px solid #2fa8ff;outline-offset:2px;border-color:#fff;box-shadow:none!important;z-index:3}
+body.tv .hb:focus,body.tv .hb:focus-visible,body.firetv .hb:focus,body.firetv .hb:focus-visible{
+  transform:scale(1.04);outline:3px solid #ff9c00;outline-offset:2px;box-shadow:none!important}
+body.tv #bar .mi:focus,body.tv #bar .mi:focus-visible,body.firetv #bar .mi:focus,body.firetv #bar .mi:focus-visible{
+  transform:scale(1.08);outline:3px solid #2fa8ff;outline-offset:2px;box-shadow:none!important;background:linear-gradient(180deg,#fff,#cfe9ff);color:#000}
+body.tv #player.floating,body.firetv #player.floating,
+body.tv #spot .sp-back,body.firetv #spot .sp-back{
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:#000e!important}
+body.tv .ol-tile.person img.pbg,body.firetv .ol-tile.person img.pbg{filter:brightness(.55)!important}
+body.tv #wordmark,body.firetv #wordmark{filter:none!important}
+body.tier-mid .glow,body.tier-mid .tvi-glow,body.tier-mid .tvi-ring,body.tier-mid .tvi-pulse{display:none!important}
+body.tier-mid #home,body.tier-mid .mc,body.tier-mid .hb{filter:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+
+/* Ticker: CSS transform marquee on TV (no scrollLeft main-thread tax) */
+@keyframes tkMarquee{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(-50%,0,0)}}
+#ticker.tk-css{overflow:hidden!important}
+#ticker.tk-css .tk-track{
+  will-change:transform;transform:translate3d(0,0,0);
+  animation-name:tkMarquee;animation-timing-function:linear;animation-iteration-count:infinite;
+  animation-play-state:running}
+#ticker.tk-css.tk-hold .tk-track,#ticker.tk-css:not(.on) .tk-track{animation-play-state:paused}
+body.tv #ticker,body.firetv #ticker{-webkit-mask-image:none!important;mask-image:none!important}

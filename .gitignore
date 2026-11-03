@@ -8,3 +8,7 @@ __pycache__/
 
 # Packed by tools/pack_firetv_assets.py before assembleRelease (do not commit)
 firetv/app/src/main/assets/www/
+
+# APK exceeds GitHub 100MB; ship via R2 + GH release assets
+firetv/FEFC-Collection.apk
+firetv/app/build/outputs/**/*.apk

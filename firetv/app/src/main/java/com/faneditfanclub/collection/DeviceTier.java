@@ -137,19 +137,19 @@ public final class DeviceTier {
         int videoTiles;
         int webH;
         boolean reduce;
+        /* 0.8.18: Fire TV HW decoders are typically 1–2. Prefer a single mosaic-atlas
+         * stream (OnLive Arena model). Cap leftover per-tile videos tightly. */
         if (HIGH.equals(tier)) {
-            // Full hub ring — enough for typical Chebyshev ring-1 (~10–16)
-            videoTiles = 12;
+            videoTiles = 4; // Cube max; atlas path uses 1
             webH = 1080;
             reduce = false;
         } else if (MID.equals(tier)) {
-            videoTiles = 4; // Stick 4K / 4K Max; JS may drop to 3 under perf
+            videoTiles = 1; // Stick 4K: atlas or one tile
             webH = 1080;
-            reduce = false;
+            reduce = true; // MID also drops expensive CSS on TV
         } else {
-            // LOW: 1–2 near hub. Prefer 1 on ≤1GB / ≤2 cores; else 2.
-            videoTiles = (ramMb > 0 && ramMb < 1100) || cores <= 2 ? 1 : 2;
-            webH = minDim > 0 && minDim <= 800 ? 720 : 720; // weak SoC: always 720p layout
+            videoTiles = 1;
+            webH = 720;
             reduce = true;
         }
 
@@ -164,9 +164,9 @@ public final class DeviceTier {
         if (forceTier == null) return this;
         String f = forceTier.trim().toUpperCase();
         if (!LOW.equals(f) && !MID.equals(f) && !HIGH.equals(f)) return this;
-        int vt = HIGH.equals(f) ? 12 : MID.equals(f) ? 4 : ((ramMb > 0 && ramMb < 1100) || cpuCores <= 2 ? 1 : 2);
+        int vt = HIGH.equals(f) ? 4 : 1;
         int wh = LOW.equals(f) ? 720 : 1080;
-        boolean red = LOW.equals(f);
+        boolean red = !HIGH.equals(f);
         return new DeviceTier(f, model, manufacturer, ramMb, cpuCores, maxHwDecoderInstances,
                 hwVideoDecoders, screenW, screenH, vt, wh, red, reason + ";force=" + f);
     }

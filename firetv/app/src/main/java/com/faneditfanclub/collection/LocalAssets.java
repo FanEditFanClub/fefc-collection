@@ -23,8 +23,9 @@ import java.util.zip.GZIPInputStream;
  * art, sfx, and tile-preview clips. Full fan-edit videos are never bundled —
  * Drive /api/stream URLs always hit the network.
  *
- * Catalog JSON (index/links/dates/added): newest remote wins. Bundled APK copy
- * is offline fallback only. Background refresh writes www_refresh overlay.
+ * Catalog JSON (index/links/dates/added): 0.8.18+ serves www_refresh / bundled
+ * APK copy immediately (never block WebView intercept on network). Background
+ * refresh writes www_refresh overlay and triggers softRefresh.
  */
 final class LocalAssets {
     static final String HOST = "collection.faneditfanclub.com";
@@ -66,17 +67,23 @@ final class LocalAssets {
     }
 
     WebResourceResponse open(Uri u) {
+        return open(u, null);
+    }
+
+    /** Serve bundled/cached asset; honor Range for media so HTML5 <video> can decode mosaics. */
+    WebResourceResponse open(Uri u, Map<String, String> reqHeaders) {
         if (!canServe(u)) return null;
         String path = u.getPath();
         if (path == null || path.isEmpty() || "/".equals(path)) path = "/index.html";
         String rel = path.startsWith("/") ? path.substring(1) : path;
         try {
-            if (isCatalog(rel)) {
-                InputStream remote = tryFetchCatalog(rel);
-                if (remote != null) return responseNoCache(mimeFor(rel), remote);
-            }
+            /* 0.8.18: ALWAYS serve catalog from www_refresh / APK bundle first.
+               Never block shouldInterceptRequest on a multi-MB network download —
+               that hung Fire TV Home (native-waiting opacity 0) when Wi-Fi was slow.
+               Background refreshDataInBackground() still updates www_refresh + softRefresh. */
+            long len = lengthRel(rel);
             InputStream in = openRel(rel);
-            if (in == null && "data/index.json".equals(rel)) {
+            if (in == null && ("data/index.json".equals(rel) || "data/index.json.gz".equals(rel))) {
                 InputStream gz = openRel("data/index.json.gz");
                 if (gz != null) {
                     in = new GZIPInputStream(new BufferedInputStream(gz));
@@ -84,15 +91,45 @@ final class LocalAssets {
                 }
             }
             if (in == null) return null;
-            if (isCatalog(rel)) return responseNoCache(mimeFor(rel), in);
-            return response(mimeFor(rel), in);
+            String mime = mimeFor(rel);
+            if (isCatalog(rel)) return responseNoCache(mime, in);
+            String range = null;
+            if (reqHeaders != null) {
+                range = reqHeaders.get("Range");
+                if (range == null) range = reqHeaders.get("range");
+            }
+            if (range != null && range.startsWith("bytes=") && len > 0 && isMedia(rel)) {
+                return responseRange(mime, in, len, range);
+            }
+            return response(mime, in, len, isMedia(rel));
         } catch (IOException e) {
             return null;
         }
     }
 
+    private static boolean isMedia(String rel) {
+        if (rel == null) return false;
+        String l = rel.toLowerCase();
+        return l.endsWith(".mp4") || l.endsWith(".webm") || l.endsWith(".mp3")
+                || l.endsWith(".m4a") || l.endsWith(".wav") || l.endsWith(".ogg");
+    }
+
+    private long lengthRel(String rel) {
+        File cached = new File(cacheDir, rel);
+        if (cached.isFile()) return cached.length();
+        try {
+            android.content.res.AssetFileDescriptor afd =
+                    ctx.getAssets().openFd(ASSET_ROOT + "/" + rel);
+            long len = afd.getLength();
+            afd.close();
+            return len;
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
     /**
-     * Network-first for catalog: if remote generated >= local, use remote and cache it.
+     * Unused by open() since 0.8.18 (bundle-first). Network refresh is refreshDataInBackground().
      * Returns null to fall back to www_refresh / bundled.
      */
     private InputStream tryFetchCatalog(String rel) {
@@ -186,13 +223,78 @@ final class LocalAssets {
     }
 
     private static WebResourceResponse response(String mime, InputStream in) {
+        return response(mime, in, -1, false);
+    }
+
+    private static WebResourceResponse response(String mime, InputStream in, long len, boolean media) {
         Map<String, String> headers = new HashMap<>();
         headers.put("Access-Control-Allow-Origin", "*");
         headers.put("Cache-Control", "public, max-age=86400");
+        if (media) headers.put("Accept-Ranges", "bytes");
+        if (len >= 0) headers.put("Content-Length", Long.toString(len));
+        /* Binary media must not claim a text encoding — breaks Chromium <video> demux. */
+        String enc = media ? null : "UTF-8";
         if (android.os.Build.VERSION.SDK_INT >= 21) {
-            return new WebResourceResponse(mime, "UTF-8", 200, "OK", headers, in);
+            return new WebResourceResponse(mime, enc, 200, "OK", headers, in);
         }
-        return new WebResourceResponse(mime, "UTF-8", in);
+        return new WebResourceResponse(mime, enc, in);
+    }
+
+    private static WebResourceResponse responseRange(String mime, InputStream in, long len, String rangeHeader) throws IOException {
+        // bytes=start-end | bytes=start-
+        String spec = rangeHeader.substring(6).trim();
+        if (spec.contains(",")) spec = spec.split(",")[0].trim();
+        long start = 0, end = len - 1;
+        int dash = spec.indexOf('-');
+        if (dash < 0) { in.close(); return null; }
+        String a = spec.substring(0, dash);
+        String b = spec.substring(dash + 1);
+        if (!a.isEmpty()) start = Long.parseLong(a);
+        if (!b.isEmpty()) end = Long.parseLong(b);
+        if (start < 0) start = 0;
+        if (end >= len) end = len - 1;
+        if (start > end || start >= len) {
+            in.close();
+            Map<String, String> h = new HashMap<>();
+            h.put("Content-Range", "bytes */" + len);
+            h.put("Accept-Ranges", "bytes");
+            return new WebResourceResponse(mime, null, 416, "Range Not Satisfiable", h, new ByteArrayInputStream(new byte[0]));
+        }
+        long skip = start;
+        while (skip > 0) {
+            long n = in.skip(skip);
+            if (n <= 0) break;
+            skip -= n;
+        }
+        final long want = end - start + 1;
+        InputStream limited = new BoundedInputStream(in, want);
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Access-Control-Allow-Origin", "*");
+        headers.put("Accept-Ranges", "bytes");
+        headers.put("Content-Range", "bytes " + start + "-" + end + "/" + len);
+        headers.put("Content-Length", Long.toString(want));
+        headers.put("Cache-Control", "public, max-age=86400");
+        return new WebResourceResponse(mime, null, 206, "Partial Content", headers, limited);
+    }
+
+    /** Cap an InputStream to at most maxBytes (for Range bodies). */
+    private static final class BoundedInputStream extends InputStream {
+        private final InputStream in;
+        private long left;
+        BoundedInputStream(InputStream in, long maxBytes) { this.in = in; this.left = maxBytes; }
+        @Override public int read() throws IOException {
+            if (left <= 0) return -1;
+            int r = in.read();
+            if (r >= 0) left--;
+            return r;
+        }
+        @Override public int read(byte[] b, int off, int len) throws IOException {
+            if (left <= 0) return -1;
+            int n = in.read(b, off, (int) Math.min(len, left));
+            if (n > 0) left -= n;
+            return n;
+        }
+        @Override public void close() throws IOException { in.close(); }
     }
 
     private static WebResourceResponse responseNoCache(String mime, InputStream in) {

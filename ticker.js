@@ -78,19 +78,37 @@
       return "<" + (tv ? "span" : "a") + ' class="tk-i' + (p.join ? " tk-join" : "") + (dup ? " tk-dup" : "") + '"' + (tv ? "" : ' href="' + esc(p.url) + '" target="_blank" rel="noopener"') + (inert ? ' tabindex="-1" aria-hidden="true"' : ' aria-label="' + esc(NAME[p.src] + ": " + p.title) + ' (opens in a new tab)"') + ">" + icon(p.src) + "<b>" + esc(p.title) + "</b>" + meta + (p.join ? "<u>JOIN</u>" : "") + "</" + (tv ? "span" : "a") + ">";
     }).join("");
   }
+  function useCssTicker() {
+    return tvMode() || document.body.classList.contains("firetv") || !!window.FEFCNative;
+  }
   function render(items) {
     track.innerHTML = html(items, 0) + (rm ? "" : html(items, 1));
     bar.classList.add("ready");
     pos = 0;
     bar.scrollLeft = 0;
+    if (track) {
+      track.style.transform = "";
+      track.style.animationDuration = "";
+    }
     measure();
   }
   function measure() {
     half = rm ? 0 : track.scrollWidth / 2;
+    if (useCssTicker() && track && half > 0 && !rm) {
+      var secs = Math.max(40, Math.round(half / 28));
+      track.style.animationDuration = secs + "s";
+      bar.classList.add("tk-css");
+      bar.scrollLeft = 0;
+    } else if (bar) {
+      bar.classList.remove("tk-css");
+    }
   }
   var _skip = 0;
   function step(t) {
     raf = requestAnimationFrame(step);
+    if (useCssTicker()) {
+      return;
+    }
     var perf = document.body.classList.contains("perf");
     if (perf && ++_skip & 1) return;
     var dt = Math.min(64, t - (last || t));
@@ -106,8 +124,9 @@
   }
   function setHold(v) {
     hold = v;
+    if (bar) bar.classList.toggle("tk-hold", !!v);
     if (!v) {
-      pos = bar.scrollLeft;
+      pos = bar ? bar.scrollLeft : 0;
       last = 0;
     }
   }

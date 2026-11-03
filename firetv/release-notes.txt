@@ -1,1 +1,5 @@
-Beta 0.8.17: Removed Performance mode from the TV/web Menu. Automatic device-tier (LOW/MID/HIGH) optimizations stay on. Stale localStorage.fefcPerf cleared/ignored so nobody stays stuck in a degraded mode. Debug ?perf=1 still works (not shown in UI). Menu focus order Star → Search → Sound. Web+TV sync.
+0.8.18 — Blank Home fix + OnLive mosaic atlas (web+TV parity).
+- Bundle-first catalog; watchdog counts #hub .mc.
+- Single mosaic-atlas (720/1080); Fire: direct src then fetch→blob; one attempt then stills.
+- Mosaic bundled posters on Fire/TV/low; atlas on Fire even if reduced-motion.
+- TV-only: update check, VLC, native intro.

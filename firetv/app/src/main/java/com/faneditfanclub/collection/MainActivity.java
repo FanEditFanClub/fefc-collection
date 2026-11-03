@@ -289,6 +289,12 @@ public class MainActivity extends Activity {
         // "Android TV" makes the web app switch on its TV layout and focus navigation.
         s.setUserAgentString(s.getUserAgentString() + " Android TV FEFCFireTV/" + BuildConfig.VERSION_NAME);
         w.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        // 0.8.18: keep Chromium renderer at high priority while visible (Android 8+).
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                w.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, false);
+            }
+        } catch (Throwable ignored) {}
         try {
             java.lang.reflect.Method m = WebView.class.getMethod("setOffscreenPreRaster", boolean.class);
             m.invoke(w, true);
@@ -429,7 +435,7 @@ public class MainActivity extends Activity {
             if (r == null || localAssets == null) return super.shouldInterceptRequest(v, r);
             if (!"GET".equalsIgnoreCase(r.getMethod())) return super.shouldInterceptRequest(v, r);
             try {
-                WebResourceResponse local = localAssets.open(r.getUrl());
+                WebResourceResponse local = localAssets.open(r.getUrl(), r.getRequestHeaders());
                 if (local != null) return local;
             } catch (Exception ignored) {}
             return super.shouldInterceptRequest(v, r);

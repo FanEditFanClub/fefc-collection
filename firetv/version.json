@@ -1,8 +1,8 @@
 {
-    "versionCode": 27,
-    "versionName": "0.8.17",
-    "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "Beta 0.8.17: Removed Performance mode from the TV/web Menu. Automatic device-tier (LOW/MID/HIGH) optimizations stay on. Stale localStorage.fefcPerf cleared/ignored so nobody stays stuck in a degraded mode. Debug ?perf=1 still works (not shown in UI). Menu focus order Star \u2192 Search \u2192 Sound. Web+TV sync.",
-    "size": 102329666,
-    "sha256": "64a3f1421a78d43ef7ff7943c1176369e1b3c9144807c79d2b7510942d886445"
+  "versionCode": 28,
+  "versionName": "0.8.18",
+  "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
+  "notes": "0.8.18 \u2014 Blank Home fix + OnLive mosaic atlas (web+TV parity).\n- Bundle-first catalog; watchdog counts #hub .mc.\n- Single mosaic-atlas (720/1080); Fire: direct src then fetch\u2192blob; one attempt then stills.\n- Mosaic bundled posters on Fire/TV/low; atlas on Fire even if reduced-motion.\n- TV-only: update check, VLC, native intro.\n",
+  "size": 106682115,
+  "sha256": "36ed983a229c86b5aeab61313d631a4a8c1b99c901184bc1572bc073cc281503"
 }

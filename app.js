@@ -83,7 +83,8 @@ var __spreadValues = (a, b) => {
       if (!r.ok) throw Error(r.status);
       return r.text();
     }).then((t) => parseJsonOffMain(t));
-    const go2 = big ? (viaWorkerUrl() || viaMain()).catch((e) => {
+    const preferBundle = !!window.FEFCNative || /index\.json/i.test(u);
+    const go2 = big ? (preferBundle ? viaMain() : viaWorkerUrl() || viaMain()).catch((e) => {
       console.warn("json worker", e);
       return viaMain();
     }) : fetch(u, { credentials: "same-origin" }).then((r) => {
@@ -147,7 +148,7 @@ var __spreadValues = (a, b) => {
     try {
       let t = null;
       const q = new URLSearchParams(location.search).get("tier");
-      if (q && /^(LOW|MID|HIGH)$/i.test(q)) t = { tier: q.toUpperCase(), videoTiles: q.toUpperCase() === "HIGH" ? 12 : q.toUpperCase() === "MID" ? 4 : 2, reduceEffects: q.toUpperCase() === "LOW" };
+      if (q && /^(LOW|MID|HIGH)$/i.test(q)) t = { tier: q.toUpperCase(), videoTiles: q.toUpperCase() === "HIGH" ? 4 : 1, reduceEffects: q.toUpperCase() !== "HIGH" };
       else if (window.FEFCNative && FEFCNative.deviceTier) {
         try {
           t = JSON.parse(FEFCNative.deviceTier());
@@ -227,6 +228,12 @@ var __spreadValues = (a, b) => {
   setTimeout(function() {
     if (document.body.classList.contains("native-waiting") && !window.FEFCNative) window.__fefcRevealHome();
   }, 8e3);
+  setTimeout(function() {
+    if (document.body.classList.contains("native-waiting")) {
+      console.warn("FEFC_REVEAL_WATCHDOG");
+      window.__fefcRevealHome && window.__fefcRevealHome();
+    }
+  }, 1e4);
   const HUES = [205, 190, 220, 265, 30, 160, 340, 15];
   let token = null, items = /* @__PURE__ */ new Map(), kids = /* @__PURE__ */ new Map(), meta = {}, cur = ROOT, live = false, view = "home";
   const hash = (s) => {
@@ -235,6 +242,18 @@ var __spreadValues = (a, b) => {
     return Math.abs(h);
   };
   const esc = (s) => String(s != null ? s : "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  if (!window.CSS) window.CSS = {};
+  if (typeof CSS.escape !== "function") CSS.escape = (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, (c) => {
+    const h = c.charCodeAt(0).toString(16);
+    return "\\" + h + " ";
+  });
+  const cssEsc = (s) => {
+    try {
+      return CSS.escape(String(s));
+    } catch (e) {
+      return String(s).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    }
+  };
   const isFolder = (f) => !!f && (f.mimeType === FOLDER || f.targetMime === FOLDER || f.mimeType === SC && f.targetMime === FOLDER || !!f.targetId && f.targetId !== f.id && (items.get(f.targetId) || {}).mimeType === FOLDER);
   const target = (f) => f.targetId || f.id;
   function add(list) {
@@ -1080,45 +1099,71 @@ var __spreadValues = (a, b) => {
     } else if (sm) sm.remove();
   }
   function hub() {
-    if (document.body.classList.contains("genres-mode") && window.FEFCGenres && FEFCGenres.hub) return FEFCGenres.hub();
-    const box = $("#hub");
-    if (!box) return;
-    const T = hubTiles();
-    const ae = document.activeElement;
-    const fhub = ae && box.contains(ae) && ae.getAttribute && ae.getAttribute("data-hub") || window.__fefcFocusRec && window.__fefcFocusRec.type === "hub" && window.__fefcFocusRec.hub || null;
-    const mcs = [].slice.call(box.querySelectorAll(".mc"));
-    let ok = T.length > 0;
-    const have = /* @__PURE__ */ new Set();
-    for (let i = 0; i < T.length; i++) {
-      const t = T[i];
-      const el = box.querySelector('.hb[data-hub="' + CSS.escape(t[0]) + '"]');
-      if (!el) {
-        ok = false;
-        break;
+    try {
+      if (document.body.classList.contains("genres-mode") && window.FEFCGenres && FEFCGenres.hub) return FEFCGenres.hub();
+      const box = $("#hub");
+      if (!box) return;
+      let T;
+      try {
+        T = hubTiles();
+      } catch (e) {
+        console.warn("hubTiles", e);
+        T = [["readfirst", "Read First", ""], ["arena", "New Arrivals", ""], ["support", "Support Us", "Patreon \xB7 PayPal \xB7 Venmo"], ["folder:" + FOLD.collections, "Fan Edit Collections", ""], ["main", "", ""], ["folder:" + FOLD.tbc, "To Be Catalogued", ""], ["people", "Actors\n&\nDirectors", ""], ["mylist", "My List", "History \xB7 0 Starred"], ["genres", "Genres", ""]];
       }
-      hubPatchOne(el, t);
-      have.add(t[0]);
-    }
-    if (ok) {
-      [].slice.call(box.querySelectorAll(".hb[data-hub]")).forEach((el) => {
-        if (!have.has(el.getAttribute("data-hub"))) el.remove();
-      });
+      const ae = document.activeElement;
+      const fhub = ae && box.contains(ae) && ae.getAttribute && ae.getAttribute("data-hub") || window.__fefcFocusRec && window.__fefcFocusRec.type === "hub" && window.__fefcFocusRec.hub || null;
+      const mcs = [].slice.call(box.querySelectorAll(".mc"));
+      let ok = T.length > 0;
+      const have = /* @__PURE__ */ new Set();
+      for (let i = 0; i < T.length; i++) {
+        const t = T[i];
+        const el = box.querySelector('.hb[data-hub="' + cssEsc(t[0]) + '"]');
+        if (!el) {
+          ok = false;
+          break;
+        }
+        hubPatchOne(el, t);
+        have.add(t[0]);
+      }
+      if (ok) {
+        [].slice.call(box.querySelectorAll(".hb[data-hub]")).forEach((el) => {
+          if (!have.has(el.getAttribute("data-hub"))) el.remove();
+        });
+        if (fhub) {
+          const el = box.querySelector('.hb[data-hub="' + cssEsc(fhub) + '"]');
+          if (el && document.activeElement !== el) try {
+            focusEl(el);
+          } catch (e) {
+          }
+        }
+        try {
+          if (box.querySelector(".hb")) window.__fefcMarkHomeReady && window.__fefcMarkHomeReady();
+        } catch (e) {
+        }
+        return;
+      }
+      box.innerHTML = T.map(hubHtml).join("");
+      mcs.forEach((x) => box.appendChild(x));
       if (fhub) {
-        const el = box.querySelector('.hb[data-hub="' + CSS.escape(fhub) + '"]');
-        if (el && document.activeElement !== el) try {
+        const el = box.querySelector('.hb[data-hub="' + cssEsc(fhub) + '"]');
+        if (el) try {
           focusEl(el);
         } catch (e) {
         }
       }
-      return;
-    }
-    box.innerHTML = T.map(hubHtml).join("");
-    mcs.forEach((x) => box.appendChild(x));
-    if (fhub) {
-      const el = box.querySelector('.hb[data-hub="' + CSS.escape(fhub) + '"]');
-      if (el) try {
-        focusEl(el);
+      try {
+        if (box.querySelector(".hb")) window.__fefcMarkHomeReady && window.__fefcMarkHomeReady();
       } catch (e) {
+      }
+    } catch (e) {
+      console.warn("hub", e);
+      try {
+        const box = $("#hub");
+        if (box && !box.querySelector(".hb")) {
+          box.innerHTML = '<button class="hb" data-hub="readfirst"><span>Read First</span></button><button class="hb" data-hub="arena"><span>New Arrivals</span></button><button class="hb" data-hub="support"><span>Support Us</span></button><button class="hb" data-hub="folder:' + FOLD.collections + '"><span>Fan Edit Collections</span></button><button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button><button class="hb" data-hub="folder:' + FOLD.tbc + '"><span>To Be Catalogued</span></button><button class="hb" data-hub="people"><span>Actors<br><i class="amp">&amp;</i><br>Directors</span></button><button class="hb" data-hub="mylist"><i class="hb-star" aria-hidden="true">\u2605</i><span>My List</span></button><button class="hb" data-hub="genres"><span>Genres</span></button>';
+          window.__fefcMarkHomeReady && window.__fefcMarkHomeReady();
+        }
+      } catch (e2) {
       }
     }
   }
@@ -1279,7 +1324,7 @@ var __spreadValues = (a, b) => {
     const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
     const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 2;
     const lowTier = document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite");
-    let budget = lowTier ? 12 : perf ? fire ? 18 : tv ? 22 : 60 : fire ? 36 : tv ? 48 : 90;
+    let budget = fire ? lowTier || perf ? 8 : 14 : lowTier ? 12 : perf ? tv ? 22 : 60 : tv ? 48 : 90;
     const cands = [];
     for (let r = -rows; r < 3 + rows; r++) for (let c = -cols; c < 3 + cols; c++) {
       const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
@@ -1353,7 +1398,24 @@ var __spreadValues = (a, b) => {
       const L = layers[on];
       if (v) {
         const ps = posters[v.id] || posters[v.target];
-        L.src = ps && ps.url && String(ps.url).startsWith("assets/") ? ps.url : "https://drive.google.com/thumbnail?sz=" + (document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite") ? "w160" : fire || perf ? "w240" : "w480") + "&id=" + v.target;
+        let src = null;
+        if (ps && ps.url && String(ps.url).startsWith("assets/")) src = ps.url;
+        const wantLocal = fire || document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite") || document.body.classList.contains("firetv");
+        if (!src && wantLocal) {
+          let h = 0;
+          const id = String(v.id || v.target || "");
+          for (let i = 0; i < id.length; i++) h = h * 31 + id.charCodeAt(i) | 0;
+          src = "assets/clips/" + Math.abs(h) % 164 + ".jpg";
+        }
+        if (!src) src = "https://drive.google.com/thumbnail?sz=" + (document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite") ? "w160" : fire || perf ? "w240" : "w480") + "&id=" + v.target;
+        L.src = src;
+        L.decoding = "async";
+        L.loading = "eager";
+        L.onerror = function() {
+          this.onerror = null;
+          this.style.display = "none";
+          c.style.background = c.style.background || "radial-gradient(circle at 40% 30%,hsl(" + Math.abs((v.id || "").length * 37) % 360 + " 55% 32%),#050a14 75%)";
+        };
         c.dataset.id = v.id;
       } else {
         c.style.background = "radial-gradient(circle at 60% 30%,hsl(" + (Math.random() * 360 | 0) + " 70% 45%),#050a14 80%)";
@@ -1453,7 +1515,15 @@ var __spreadValues = (a, b) => {
     document.body.classList.add("at-home");
     main.hidden = true;
     bar.hidden = true;
-    hub();
+    try {
+      hub();
+    } catch (e) {
+      console.warn(e);
+    }
+    try {
+      if (document.querySelector("#hub .hb")) window.__fefcMarkHomeReady && window.__fefcMarkHomeReady();
+    } catch (e) {
+    }
     const lay = () => {
       const r = $("#hub").getBoundingClientRect(), k = Math.round(r.left) + "x" + Math.round(r.top) + "x" + Math.round(r.width);
       if ($("#mosaic")._k !== k) {
@@ -2312,7 +2382,7 @@ var __spreadValues = (a, b) => {
         if (M && !M.querySelector(".mc") && mosaicList.length) mosaic();
         requestAnimationFrame(() => {
           if (fhub0) {
-            const el = document.querySelector('#hub [data-hub="' + CSS.escape(fhub0) + '"]');
+            const el = document.querySelector('#hub [data-hub="' + cssEsc(fhub0) + '"]');
             if (el) {
               try {
                 focusEl(el);
@@ -2322,7 +2392,7 @@ var __spreadValues = (a, b) => {
             }
           }
           if (fid0) {
-            const el = document.querySelector('[data-id="' + CSS.escape(fid0) + '"]');
+            const el = document.querySelector('[data-id="' + cssEsc(fid0) + '"]');
             if (el) {
               try {
                 focusEl(el);
@@ -2341,13 +2411,13 @@ var __spreadValues = (a, b) => {
         renderBase(location.hash);
         if (main) main.scrollTop = st;
         if (fid) {
-          const el = document.querySelector('[data-id="' + CSS.escape(fid) + '"]');
+          const el = document.querySelector('[data-id="' + cssEsc(fid) + '"]');
           if (el) try {
             focusEl(el);
           } catch (e) {
           }
         } else if (fhub) {
-          const el = document.querySelector('[data-hub="' + CSS.escape(fhub) + '"]');
+          const el = document.querySelector('[data-hub="' + cssEsc(fhub) + '"]');
           if (el) try {
             focusEl(el);
           } catch (e) {
@@ -4309,17 +4379,28 @@ var __spreadValues = (a, b) => {
     return $("#app");
   }
   function move(dir) {
+    const t0 = window.__fefcKeyT0 = performance.now();
     const L = layer(), els = [].slice.call(L.querySelectorAll(focSel())).filter(visible), a = document.activeElement;
     if (!a || !L.contains(a) || a === document.body || a === document.documentElement) {
       if (recoverFocus(!$("#home").hidden)) return;
       if (els[0]) focusEl(els[0]);
       return;
     }
-    const r = a.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const rectOf = (e) => {
+      let r2 = e._fefcR;
+      if (!r2 || e._fefcRFrame !== window.__fefcKeyFrame) {
+        r2 = e.getBoundingClientRect();
+        e._fefcR = r2;
+        e._fefcRFrame = window.__fefcKeyFrame;
+      }
+      return r2;
+    };
+    window.__fefcKeyFrame = (window.__fefcKeyFrame || 0) + 1;
+    const r = rectOf(a), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
     let best = null, bd = 1e9;
     els.forEach((e) => {
       if (e === a) return;
-      const q = e.getBoundingClientRect(), x = q.left + q.width / 2, y = q.top + q.height / 2, dx = x - cx, dy = y - cy;
+      const q = rectOf(e), x = q.left + q.width / 2, y = q.top + q.height / 2, dx = x - cx, dy = y - cy;
       const ok = dir === "left" ? q.right <= r.left + 4 : dir === "right" ? q.left >= r.right - 4 : dir === "up" ? q.bottom <= r.top + 4 : q.top >= r.bottom - 4;
       if (!ok) return;
       const main = dir === "left" || dir === "right" ? Math.abs(dx) : Math.abs(dy), off = dir === "left" || dir === "right" ? Math.abs(dy) : Math.abs(dx), d = main + off * 2.5;
@@ -4330,6 +4411,12 @@ var __spreadValues = (a, b) => {
     });
     if (best) {
       focusEl(best);
+      try {
+        const ms = +(performance.now() - t0).toFixed(1);
+        window.__fefcLastKeyMs = ms;
+        if (ms > 24) console.log("FEFC_KEY_LAT " + ms);
+      } catch (e) {
+      }
       return;
     }
     if (dir === "down" && !mvRetry && typeof drainOne === "function" && document.body.classList.contains("tv")) {
@@ -4575,10 +4662,7 @@ var __spreadValues = (a, b) => {
       fi = flat.indexOf(cur2);
       if (fi < 0) return false;
     }
-    const cx = (e) => {
-      const r = e.getBoundingClientRect();
-      return r.left + r.width / 2;
-    }, nearest = (row, x) => {
+    const cx = (e) => e.offsetLeft + (e.offsetWidth || 0) / 2, nearest = (row, x) => {
       let b = row[0], bd = 1e9;
       row.forEach((e) => {
         const d = Math.abs(cx(e) - x);
@@ -5350,7 +5434,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.17";
+  const HOME_VER_FALLBACK = "0.8.18";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -5638,67 +5722,77 @@ var __spreadValues = (a, b) => {
     console.warn("index retry", e);
     return tmo("data/index.json", idxMs);
   });
-  const idxP = isTvEnv() || document.body.classList.contains("tvintro") ? idxFetch() : null;
-  afterIntro(() => {
-    (idxP || idxFetch()).then(async (d) => {
-      window._idx = d.items;
-      window._links = d.links || window._links || null;
-      if (!live) {
-        add(d.items);
-        applyLinks(window._links);
-        if (!window._links) {
-          try {
-            window._links = await tmo("data/links.json", 3e4);
-            applyLinks(window._links);
-          } catch (e) {
-            console.warn("links", e);
-          }
-        } else {
-          tmo("data/links.json", 3e4).then((L) => {
-            window._links = L;
-            applyLinks(L);
-            if (!document.body.classList.contains("native-waiting")) softRefresh();
-          }).catch((e) => console.warn("links", e));
-        }
-      }
-      if (d.partial !== false && !live) tmo("data/index.interim.json", 3e4).then((x) => {
-        add(x.items.filter((f) => !items.has(f.id)));
-        applyLinks(window._links);
-        window._idx = Array.from(items.values());
-        if (!document.body.classList.contains("native-waiting")) softRefresh();
-      }).catch(() => {
-      });
-    }).catch((e) => {
-      console.warn(e);
-      status("Saved index unavailable");
-    }).then(() => {
-      const paint = () => {
+  const startIndex = () => idxFetch().then(async (d) => {
+    window._idx = d.items;
+    window._links = d.links || window._links || null;
+    if (!live) {
+      add(d.items);
+      applyLinks(window._links);
+      if (!window._links) {
         try {
-          hub();
-        } catch (e2) {
+          window._links = await tmo("data/links.json", 3e4);
+          applyLinks(window._links);
+        } catch (e) {
+          console.warn("links", e);
         }
-        const mos = $("#mosaic");
-        if (!window.__fefcHomePaintReady && !(mos && mos.querySelector(".mc"))) setTimeout(() => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady(), 1200);
-      };
-      paint();
-      const doSoft = () => {
-        (window.requestIdleCallback || setTimeout)(() => softRefresh(), { timeout: 5e3 });
-      };
-      if (document.body.classList.contains("native-waiting")) addEventListener("fefc-home-revealed", () => setTimeout(doSoft, 2500), { once: true });
-      else softRefresh();
-      if (P.get("focus")) {
-        setTimeout(() => {
-          document.body.classList.add("kbd");
-          const t = document.querySelectorAll(".ol-tile,.hb")[+P.get("focus")];
-          if (t) focusEl(t);
-        }, 300);
+      } else {
+        tmo("data/links.json", 3e4).then((L) => {
+          window._links = L;
+          applyLinks(L);
+          if (!document.body.classList.contains("native-waiting")) softRefresh();
+        }).catch((e) => console.warn("links", e));
       }
-      const e = P.get("edit");
-      if (e) go("#/edit/" + e);
-      const pp = P.get("play");
-      if (pp) go("#/play/" + pp);
-      if (P.get("readfirst")) go("#/readfirst");
+    }
+    if (d.partial !== false && !live) tmo("data/index.interim.json", 3e4).then((x) => {
+      add(x.items.filter((f) => !items.has(f.id)));
+      applyLinks(window._links);
+      window._idx = Array.from(items.values());
+      if (!document.body.classList.contains("native-waiting")) softRefresh();
+    }).catch(() => {
     });
+  }).catch((e) => {
+    console.warn(e);
+    status("Saved index unavailable");
+  }).then(() => {
+    const paint = () => {
+      try {
+        hub();
+      } catch (e2) {
+      }
+      const mos = $("#mosaic");
+      if (!window.__fefcHomePaintReady && !(mos && mos.querySelector(".mc"))) setTimeout(() => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady(), 1200);
+    };
+    paint();
+    const doSoft = () => {
+      (window.requestIdleCallback || setTimeout)(() => softRefresh(), { timeout: 5e3 });
+    };
+    if (document.body.classList.contains("native-waiting")) addEventListener("fefc-home-revealed", () => setTimeout(doSoft, 2500), { once: true });
+    else softRefresh();
+    if (P.get("focus")) {
+      setTimeout(() => {
+        document.body.classList.add("kbd");
+        const t = document.querySelectorAll(".ol-tile,.hb")[+P.get("focus")];
+        if (t) focusEl(t);
+      }, 300);
+    }
+    const e = P.get("edit");
+    if (e) go("#/edit/" + e);
+    const pp = P.get("play");
+    if (pp) go("#/play/" + pp);
+    if (P.get("readfirst")) go("#/readfirst");
+  });
+  afterIntro(() => {
+    const run = () => startIndex();
+    if (document.body.classList.contains("native-waiting")) {
+      const go2 = () => setTimeout(run, 400);
+      if (window.__fefcHomePaintReady) go2();
+      else {
+        addEventListener("fefc-home-revealed", go2, { once: true });
+        setTimeout(run, 12e3);
+      }
+    } else if (isTvEnv()) {
+      (window.requestIdleCallback || setTimeout)(run, { timeout: 2500 });
+    } else run();
   });
   $("#back").addEventListener("click", (e) => {
     e.preventDefault();
@@ -5714,6 +5808,50 @@ var __spreadValues = (a, b) => {
   });
   if (/^#\/(folder|all|arena|newarrivals|people|actors|directors|mylist|genres|genre|support|supportus|search|edit|play|readfirst)\b/.test(location.hash)) route();
   else showHome();
+  (function fefcHomeWatchdog() {
+    const kick = (why) => {
+      try {
+        if (document.body.classList.contains("native-waiting")) {
+          console.warn("FEFC_HOME_WATCHDOG reveal", why);
+          window.__fefcRevealHome && window.__fefcRevealHome();
+        }
+        const home = $("#home"), hub2 = $("#hub"), mos = $("#mosaic");
+        if (!home || home.hidden) return;
+        const nHb = hub2 ? hub2.querySelectorAll(".hb").length : 0;
+        const nMc = document.querySelectorAll("#hub .mc").length || (mos ? mos.querySelectorAll(".mc").length : 0);
+        if (nHb < 9) {
+          console.warn("FEFC_HOME_WATCHDOG empty hub", why, "hb=" + nHb);
+          try {
+            hub2();
+          } catch (e) {
+          }
+          try {
+            showHome(document.body.classList.contains("genres-mode"));
+          } catch (e) {
+          }
+        } else if (nMc < 1 && (mosaicList && mosaicList.length)) {
+          console.warn("FEFC_HOME_WATCHDOG empty mosaic", why, "nMc=" + nMc);
+          try {
+            mosaic();
+          } catch (e) {
+          }
+        } else {
+          try {
+            console.log("FEFC_HOME_WATCHDOG ok", why, "hb=" + nHb, "mc=" + nMc);
+          } catch (e) {
+          }
+        }
+        try {
+          placeHeader();
+        } catch (e) {
+        }
+      } catch (e) {
+        console.warn("FEFC_HOME_WATCHDOG", e);
+      }
+    };
+    setTimeout(() => kick(2500), 2500);
+    setTimeout(() => kick(5e3), 5e3);
+  })();
 })();
 (function() {
   const isStandalone = () => matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: fullscreen)").matches || navigator.standalone === true;
@@ -5861,12 +5999,20 @@ var __spreadValues = (a, b) => {
     }
   }, 400);
 })();
-addEventListener("load", () => {
-  const s = document.createElement("script");
-  s.src = "clips.js?v=" + (document.querySelector('script[src*="app.js?v="]') || { src: "" }).src.split("v=")[1];
-  s.async = true;
-  document.body.appendChild(s);
-});
+(function() {
+  let done = 0;
+  const inj = () => {
+    if (done || document.querySelector('script[src*="clips.js"]')) return;
+    done = 1;
+    const s = document.createElement("script");
+    s.src = "clips.js?v=" + (document.querySelector('script[src*="app.js?v="]') || { src: "" }).src.split("v=")[1];
+    s.async = true;
+    document.body.appendChild(s);
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", inj);
+  else inj();
+  addEventListener("load", inj);
+})();
 ;
 (function() {
   const sync = () => {
