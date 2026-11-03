@@ -357,20 +357,43 @@ async function feedApi(req, env, ctx, url) {
   return res;
 }
 
-// ---- /api/stream/:id[/file.ext]  -> Drive file bytes via the Drive API (API key), Range-aware. Secret: GOOGLE_API_KEY (Drive API enabled).
+// ---- /api/stream/:id[/file.ext]  -> Drive file bytes via Drive API alt=media, Range-aware.
+// Auth preference: faneditfanclub@gmail.com OAuth (secrets GOOGLE_DRIVE_CLIENT_ID / GOOGLE_DRIVE_CLIENT_SECRET /
+// GOOGLE_DRIVE_REFRESH_TOKEN, scope drive.readonly) so restricted files play without viewer sign-in.
+// Fallback: GOOGLE_API_KEY (public/"anyone with the link" only), then Drive usercontent.
+// Never change Drive sharing or content. Never log token values.
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/';
 const sidCache = new Map();                       // shortcut/file id -> { id, t }
-async function resolveDriveId(id, key) {
+let driveTok = null;                              // { access, exp }
+async function driveAccessToken(env) {
+  const rt = env.GOOGLE_DRIVE_REFRESH_TOKEN, cid = env.GOOGLE_DRIVE_CLIENT_ID, sec = env.GOOGLE_DRIVE_CLIENT_SECRET;
+  if (!rt || !cid || !sec) return null;
+  if (driveTok && driveTok.exp > Date.now() + 60e3) return driveTok.access;
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: cid, client_secret: sec, refresh_token: rt, grant_type: 'refresh_token' }),
+    signal: AbortSignal.timeout(12000)
+  });
+  if (!r.ok) { console.log('drive oauth refresh fail', r.status); driveTok = null; return null; }
+  const j = await r.json();
+  if (!j.access_token) { driveTok = null; return null; }
+  driveTok = { access: j.access_token, exp: Date.now() + Math.max(60, (+j.expires_in || 3600) - 120) * 1000 };
+  return driveTok.access;
+}
+async function resolveDriveId(id, auth) {
+  // auth: { bearer } or { key } or null (public view redirect)
   const c = sidCache.get(id); if (c && Date.now() - c.t < 6 * 3600e3) return c.id;
   let out = id;
-  if (key) {
-    const r = await fetch(DRIVE + id + '?fields=id,mimeType,shortcutDetails&supportsAllDrives=true&key=' + encodeURIComponent(key), { signal: AbortSignal.timeout(8000) });
+  if (auth && (auth.bearer || auth.key)) {
+    const q = DRIVE + id + '?fields=id,mimeType,shortcutDetails&supportsAllDrives=true' + (auth.key ? ('&key=' + encodeURIComponent(auth.key)) : '');
+    const headers = auth.bearer ? { Authorization: 'Bearer ' + auth.bearer } : {};
+    const r = await fetch(q, { headers, signal: AbortSignal.timeout(8000) });
     if (!r.ok) { const e = new Error('meta ' + r.status); e.status = r.status; e.body = await r.text().catch(() => ''); throw e; }
     const m = await r.json();
     out = m.mimeType === 'application/vnd.google-apps.shortcut' && m.shortcutDetails && m.shortcutDetails.targetId ? m.shortcutDetails.targetId : m.id;
   } else {
     // Catalog IDs are often Drive shortcuts; usercontent fails on the shortcut id ("Can't download file" HTML).
-    // Resolve via the public file-view redirect without needing GOOGLE_API_KEY.
     try {
       const r = await fetch('https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view', { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(8000) });
       const loc = r.headers.get('location') || '';
@@ -384,7 +407,7 @@ async function resolveDriveId(id, key) {
 function driveErr(status, body) {
   let reason = ''; try { reason = JSON.parse(body).error.errors[0].reason; } catch (_) {}
   if (status === 403 && /quota|rateLimit|download/i.test(reason + body.slice(0, 400))) return json({ error: 'quota_exceeded', hint: 'Drive download quota for this file is used up; use the Drive preview player.' }, 429);
-  if (status === 403 || status === 401) return json({ error: 'not_shared', hint: 'The file owner has not shared this file with "anyone with the link".' }, 403);
+  if (status === 403 || status === 401) return json({ error: 'not_shared', hint: 'Drive denied access. If this file is only shared with faneditfanclub@gmail.com, set Worker OAuth secrets (GOOGLE_DRIVE_*). Do not change Drive sharing.' }, 403);
   if (status === 404) return json({ error: 'not_found' }, 404);
   if (status === 429) return json({ error: 'quota_exceeded' }, 429);
   return json({ error: 'upstream', status }, 502);
@@ -414,7 +437,7 @@ function rangeHeaders(req) {
   else if (req.method === 'HEAD') h.set('range', 'bytes=0-0');
   else h.set('range', 'bytes=0-');
   const ir = req.headers.get('if-range'); if (ir && h.has('range')) h.set('if-range', ir);
-  h.set('user-agent', 'FEFC-Stream-Proxy/0.8.13');
+  h.set('user-agent', 'FEFC-Stream-Proxy/0.8.19');
   return h;
 }
 async function streamViaUsercontent(tid, req, fileName, CORS) {
@@ -448,6 +471,23 @@ async function streamViaUsercontent(tid, req, fileName, CORS) {
   }
   return new Response(req.method === 'HEAD' ? null : up.body, { status, headers: o });
 }
+async function streamViaDriveApi(tid, req, fileName, CORS, auth) {
+  // auth: { bearer } and/or { key }. Prefer Bearer (faneditfanclub OAuth) so restricted files stream without viewer login.
+  const h = rangeHeaders(req);
+  let url = DRIVE + tid + '?alt=media&supportsAllDrives=true&acknowledgeAbuse=true';
+  if (auth.bearer) h.set('Authorization', 'Bearer ' + auth.bearer);
+  else if (auth.key) url += '&key=' + encodeURIComponent(auth.key);
+  else return null;
+  const up = await fetch(url, { method: 'GET', headers: h });
+  if (up.status === 416) return new Response(null, { status: 416, headers: { ...CORS, 'content-range': up.headers.get('content-range') || '' } });
+  if (up.ok) {
+    const o = streamOutHeaders(CORS, fileName, up, 'video/mp4');
+    return new Response(req.method === 'HEAD' ? null : up.body, { status: up.status, headers: o });
+  }
+  const b = await up.text().catch(() => '');
+  console.log('stream api fail', up.status, String(b).slice(0, 80));
+  return { __err: true, status: up.status, body: b };
+}
 async function streamApi(req, env, url) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
   const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range,accept-ranges,content-length,content-type,content-disposition' };
@@ -458,31 +498,29 @@ async function streamApi(req, env, url) {
   const fileName = (slash < 0 ? '' : rest.slice(slash + 1).split('/').pop() || '').replace(/[^\w.\- ()\[\]]+/g, '_') || '';
   if (!/^[\w-]{10,80}$/.test(id)) return json({ error: 'bad_id' }, 400);
   const key = env.GOOGLE_API_KEY;
+  const bearer = await driveAccessToken(env);
+  const auth = bearer ? { bearer } : (key ? { key } : null);
   let tid = id;
-  if (key) {
-    try { tid = await resolveDriveId(id, key); } catch (e) {
-      // Fall through to usercontent with the raw id when meta fails (still useful for public files).
+  if (auth) {
+    try { tid = await resolveDriveId(id, auth); } catch (e) {
       console.log('stream meta fail', e.status || 0);
     }
-    const h = rangeHeaders(req);
-    // Prefer Drive API alt=media + acknowledgeAbuse (bypasses virus-scan HTML for large files).
-    const up = await fetch(DRIVE + tid + '?alt=media&supportsAllDrives=true&acknowledgeAbuse=true&key=' + encodeURIComponent(key), { method: 'GET', headers: h });
-    if (up.status === 416) return new Response(null, { status: 416, headers: { ...CORS, 'content-range': up.headers.get('content-range') || '' } });
-    if (up.ok) {
-      const o = streamOutHeaders(CORS, fileName, up, 'video/mp4');
-      return new Response(req.method === 'HEAD' ? null : up.body, { status: up.status, headers: o });
+    const res = await streamViaDriveApi(tid, req, fileName, CORS, auth);
+    if (res && !res.__err) return res;
+    // Bearer failed: if we also have an API key and did not already use it, try key once.
+    if (bearer && key) {
+      try { tid = await resolveDriveId(id, { key }); } catch (_) {}
+      const res2 = await streamViaDriveApi(tid, req, fileName, CORS, { key });
+      if (res2 && !res2.__err) return res2;
     }
-    const b = await up.text().catch(() => '');
-    // API key present but Drive refused — try usercontent before surfacing the error.
-    console.log('stream api fail', up.status, String(b).slice(0, 80));
     try {
       const fb = await streamViaUsercontent(tid, req, fileName, CORS);
       if (fb.status < 400) return fb;
     } catch (_) {}
-    return driveErr(up.status, b);
+    if (res && res.__err) return driveErr(res.status, res.body);
+    return json({ error: 'upstream' }, 502);
   }
-  // No GOOGLE_API_KEY: resolve shortcuts via Drive view redirect, then proxy usercontent (Range forced).
-  // Set Pages secret GOOGLE_API_KEY for Drive API alt=media + acknowledgeAbuse (more reliable on huge files).
+  // No OAuth / API key: public view redirect + usercontent (Range forced).
   try { tid = await resolveDriveId(id, null); } catch (_) {}
   return streamViaUsercontent(tid, req, fileName, CORS);
 }

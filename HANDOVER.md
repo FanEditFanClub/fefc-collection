@@ -46,7 +46,8 @@ Worker (`_worker.js`, `feedApi`): Cloudflare Cache API + `s-maxage=600`, merges 
 
 ## Video streaming proxy — `GET /api/stream/:id`
 - `_worker.js` streams the file bytes through the Drive API (`files/ID?alt=media&key=…`) and honours `Range` (206 / `Content-Range`), so seeking works and Drive's virus-scan interstitial for big files is bypassed. Shortcut IDs are resolved to their target first (`shortcutDetails.targetId`, cached 6 h per isolate).
-- **Needs the Pages secret `GOOGLE_API_KEY`** (Pages > Settings > Variables and Secrets): a Google API key from project 965770773324 with the **Drive API enabled** (restrict it to the Drive API). Nothing is created automatically. Without it the endpoint answers `503 {"error":"not_configured"}`.
+- **Preferred:** Pages secrets `GOOGLE_DRIVE_CLIENT_ID`, `GOOGLE_DRIVE_CLIENT_SECRET`, `GOOGLE_DRIVE_REFRESH_TOKEN` (faneditfanclub@gmail.com, scope `drive.readonly`) so `/api/stream` can read files shared with that account without viewer Google sign-in. See `STREAM-SETUP.md`. Never change Drive sharing from the app.
+- **Also useful:** Pages secret `GOOGLE_API_KEY` (Pages > Settings > Variables and Secrets): a Google API key from project 965770773324 with the **Drive API enabled** (restrict it to the Drive API). Nothing is created automatically. Without it the endpoint answers `503 {"error":"not_configured"}`.
 - Errors: `403 not_shared` (owner hasn't shared with "anyone with the link"), `429 quota_exceeded` (Drive download quota), `404 not_found`, `502 upstream`.
 - Clients (web, Fire TV WebView, native `PlayerActivity` in APK v1.0.4+) try the proxy first and fall back to the Drive `/preview` iframe (or, in the APK's native player, the direct `drive.usercontent.google.com` URL) on any error.
 - Only files shared "anyone with the link" can be streamed; files that are private to their (third-party) owner can't be played by anyone without the owner's sharing.

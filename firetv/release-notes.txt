@@ -1,5 +1,5 @@
-0.8.19 — Version badge + Google Sync My List restored on Fire TV.
+0.8.19 — Version badge, Google Sync restored, authenticated stream proxy.
 - My List: installed version (v0.8.19) shown next to Check for updates.
-- Sync My List: Sign in with Google is back on top of the 6-digit sync code (web + Fire TV).
-- Fire TV Google: device code when Worker has TV OAuth; otherwise QR → phone Google sign-in → Approve.
-- No Drive content/sharing changes; Worker list sync only.
+- Sync My List: Sign in with Google back on top of the 6-digit sync code (web + Fire TV).
+- Fire TV Google: device code when Worker has TV OAuth; else QR → phone Google → Approve.
+- /api/stream: optional faneditfanclub OAuth (drive.readonly) so restricted edits play without viewer sign-in; VLC uses the same proxy. No Drive sharing/content changes.
