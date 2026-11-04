@@ -81,8 +81,9 @@ const isFolder=f=>!!f&&(f.mimeType===FOLDER||f.targetMime===FOLDER||(f.mimeType=
 const target=f=>f.targetId||f.id;
 function add(list){for(const f of list){items.set(f.id,f);const p=f.parent||ROOT;if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);if(!a.some(x=>x.id===f.id))a.push(f)}}
 function applyLinks(L){if(!L)return;for(const p in L){if(!kids.has(p))kids.set(p,[]);const a=kids.get(p);for(const id of L[p]){const f=items.get(id);if(f&&!a.includes(f))a.push(f)}}}
-function parse(n){const base=n.replace(/\.[a-z0-9]{2,4}$/i,'');const parts=base.split(' - ').map(s=>s.trim()).filter(s=>!/^fan edit$/i.test(s));
- return{title:parts.length>1?parts.slice(1).join(' · '):parts[0],series:parts.length>1?parts[0]:'',raw:base,film:parts[0].replace(/\s*\(\d{4}\)\s*/,''),year:(base.match(/\((\d{4})\)/)||[])[1]}}
+function parse(n){const base=String(n??'').replace(/\.[a-z0-9]{2,4}$/i,'');const parts=base.split(' - ').map(s=>s.trim()).filter(s=>s&&!/^fan edit$/i.test(s));
+ const head=parts[0]||base||'Fan edit';
+ return{title:parts.length>1?parts.slice(1).join(' · '):head,series:parts.length>1?parts[0]:'',raw:base||head,film:head.replace(/\s*\(\d{4}\)\s*/,''),year:(base.match(/\((\d{4})\)/)||[])[1]}}
 const sz=b=>b?(b/1e9).toFixed(2)+' GB':'';
 /* ---------- INTRO ---------- */
 (function(){var d=document.createElement('div').style;if(!('perspective' in d||'webkitPerspective' in d))document.documentElement.classList.add('no3d')})();
@@ -591,7 +592,8 @@ function softRefresh(){ /* 0.8.14: coalesce bursts from index/links/genres/dates
  _softPending=1;if(_softRaf)return;_softRaf=requestAnimationFrame(()=>{_softRaf=0;if(!_softPending)return;_softPending=0;softRefreshNow()})}
 function softRefreshNow(){
  try{
-  if(!$('#player').hidden)return;
+  if(!$('#player').hidden){try{restreamIfNamed()}catch(e){}return}
+  if((parseH()[0]==='play')&&$('#player').hidden){try{route()}catch(e){}return}
   const r=parseH(),k=r[0]||'';
   if(!$('#home').hidden||!k||k==='home'){
    const ae0=document.activeElement;const fhub0=ae0&&ae0.dataset&&ae0.dataset.hub;const fid0=ae0&&ae0.dataset&&ae0.dataset.id;
@@ -991,13 +993,40 @@ async function details(f,push=true){fitMode();
 }
 let playerTimer=null,closedFor=null;
 function stopPlayerTimer(){if(playerTimer){clearTimeout(playerTimer);clearInterval(playerTimer);playerTimer=null}}
-function closePlayer(){try{stopPlayerTimer()}catch(e){}const pl=$('#player');if(pl){pl.hidden=true;pl.classList.remove('floating')}try{killFrame()}catch(e){}document.body.classList.remove('shuf-player');window.__shufPlay=0}
-function killFrame(){killVideo();const o=$('#pframe');if(o){const n=o.cloneNode(false);n.removeAttribute('src');o.replaceWith(n)}}
-/* Player source: our /api/stream/:id proxy (Range-aware, no virus-scan page) in a native <video>; falls back to the Drive preview iframe
-   when the proxy isn't configured (503), the file isn't shared / quota is used up (403/429), or the video errors. */
+function closePlayer(){try{stopPlayerTimer()}catch(e){}clearStreamWait();const pl=$('#player');if(pl){pl.hidden=true;pl.classList.remove('floating')}try{killFrame()}catch(e){}const fb=$('#pstream-fallback');if(fb)fb.hidden=true;document.body.classList.remove('shuf-player');window.__shufPlay=0}
+function killFrame(){killVideo();const o=$('#pframe');if(o){o.removeAttribute('src');o.hidden=true}}
+/* Web player (Silk on Fire TV included): HTML5 <video> pointed at /api/stream/{id}/{file}.
+   Never a Drive preview iframe and never a Google sign-in gate. The old probe fetched
+   Range: bytes=0-0 and, when the edge answered with the whole file, Silk waited on that
+   download forever, then swapped in drive.google.com/file/preview (sign-in / spinner). */
 let streamTok=0;
-function killVideo(){streamTok++;const v=$('#pvideo');if(v){try{v.pause()}catch(e){}v.removeAttribute('src');try{v.load()}catch(e){}v.remove()}const w=$('#player .pwrap');if(w)w.classList.remove('vid')}
-function previewFallback(id){killVideo();const w=$('#player .pwrap');if(w)w.classList.remove('vid');newFrame(`https://drive.google.com/file/d/${id}/preview`)}
+function clearStreamWait(){if(startStream._t){clearTimeout(startStream._t);startStream._t=0}}
+function killVideo(){streamTok++;clearStreamWait();const v=$('#pvideo');if(v){try{v.pause()}catch(e){}v.removeAttribute('src');try{v.load()}catch(e){}v.remove()}const w=$('#player .pwrap');if(w)w.classList.remove('vid')}
+const STREAM_EXT=/^(mp4|m4v|mkv|webm|mov|avi|mpg|mpeg|m2ts|ts)$/i;
+function streamUrlFor(id,name){
+ let ext=(String(name||'').match(/\.([a-z0-9]{2,5})$/i)||[])[1]||'';
+ ext=ext.toLowerCase();
+ if(!STREAM_EXT.test(ext))ext='mp4';
+ const base=String(name||'video').replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9._-]+/g,'_').slice(0,72)||'video';
+ return '/api/stream/'+encodeURIComponent(id)+'/'+encodeURIComponent(base+'.'+ext);
+}
+function hideDriveFrame(){const o=$('#pframe');if(!o)return;o.removeAttribute('src');o.hidden=true}
+function showStreamFallback(id,url,name,why){
+ clearStreamWait();
+ const v=$('#pvideo');if(v){try{v.pause()}catch(e){}v.hidden=true}
+ hideDriveFrame();
+ const w=$('#player .pwrap');if(!w)return;
+ w.classList.remove('vid');
+ let box=$('#pstream-fallback');
+ if(!box){box=document.createElement('div');box.id='pstream-fallback';w.appendChild(box)}
+ const abs=new URL(url,location.origin).href;
+ const mkv=/\.mkv$/i.test(name||'')||/\.mkv$/i.test(url);
+ const msg=why||(mkv?'This .mkv can’t play in the Fire TV browser.':'The video didn’t start.');
+ box.hidden=false;
+ box.innerHTML=`<p class="psf-why">${esc(msg)}</p><p class="psf-sub">The stream does not need a Google sign-in. Open it directly, or open the file in Drive.</p><div class="psf-row"><a class="pill p2" href="${esc(abs)}" target="_blank" rel="noopener">Open stream</a><a class="pill p3" href="${'https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view'}" target="_blank" rel="noopener">Open in Drive</a><button type="button" class="pill p5" id="psf-retry">Try again</button></div>`;
+ const b=box.querySelector('#psf-retry');if(b)b.onclick=()=>{box.hidden=true;startStream(id,name)};
+ try{b&&b.focus({preventScroll:true})}catch(e){}
+}
 
 /* Sidecar captions in the same Drive folder (matching base name, optional .en/.sdh/…). Read-only stream via /api/stream. */
 const SUB_LANG_SUF=['.en','.eng','.en-us','.en-gb','.es','.fr','.de','.it','.pt','.ja','.ko','.zh','.forced','.sdh','.cc','.hi','.nl','.ru'];
@@ -1045,18 +1074,45 @@ function ensurePlayerExtras(){
   const au=mk('paudio','Audio','Audio track');au.onclick=()=>{S.chirp(1);const v=$('#pvideo');const list=v&&v.audioTracks;if(!list||!list.length){au.textContent='Audio n/a';return}let i=0;for(let x=0;x<list.length;x++)if(list[x].enabled)i=x;const n=(i+1)%list.length;for(let x=0;x<list.length;x++)list[x].enabled=x===n;au.textContent='Audio '+(n+1)+'/'+list.length};
   setPlayerScale(playerScaleMode());
 }
-function startStream(id){
- killVideo();const tok=streamTok,fo=$('#pframe');if(fo){const n=fo.cloneNode(false);n.removeAttribute('src');fo.replaceWith(n)}
- const w=$('#player .pwrap'),url='/api/stream/'+encodeURIComponent(id);
- if(!w||!window.fetch||location.protocol==='file:'){previewFallback(id);return}
- const ac=window.AbortController?new AbortController():null,to=setTimeout(()=>{try{ac&&ac.abort()}catch(e){}},7000);
- fetch(url,{headers:{Range:'bytes=0-0'},signal:ac?ac.signal:undefined}).then(r=>{clearTimeout(to);if(tok!==streamTok)return;try{r.body&&r.body.cancel&&r.body.cancel()}catch(e){}
-  if(!(r.status===206||r.status===200)||!/video|octet/i.test(r.headers.get('content-type')||'')){previewFallback(id);return}
-  const v=document.createElement('video');v.id='pvideo';v.controls=true;v.autoplay=true;v.playsInline=true;v.preload='auto';v.setAttribute('playsinline','');v.tabIndex=-1;v.style.objectFit=playerScaleMode();
-  v.addEventListener('error',()=>{if(tok===streamTok)previewFallback(id)});
-  v.src=url;w.classList.add('vid');w.appendChild(v);try{const f=items.get($('#player').dataset.pid);attachSidecarTrack(v,findSidecarSub(f))}catch(e){}ensurePlayerExtras();setPlayerScale(playerScaleMode());const pp=v.play&&v.play();if(pp&&pp.catch)pp.catch(()=>{});
- }).catch(()=>{clearTimeout(to);if(tok===streamTok)previewFallback(id)})}
-function newFrame(u){const o=$('#pframe'),n=o.cloneNode(false);n.src=u;o.replaceWith(n)}
+function restreamIfNamed(){
+ const pl=$('#player');if(!pl||pl.hidden)return;
+ const fb=$('#pstream-fallback');if(fb&&!fb.hidden)return;
+ const f=items.get(pl.dataset.pid);if(!f||!f.name||f.name==='Fan edit')return;
+ const url=streamUrlFor(target(f),f.name);
+ const v=$('#pvideo');
+ if(v&&v.dataset.stream===url)return;
+ if(v&&v.readyState>=3)return;
+ startStream(target(f),f.name);
+}
+function startStream(id,name){
+ killVideo();const tok=streamTok;
+ const w=$('#player .pwrap');if(!w)return;
+ hideDriveFrame();
+ const fb=$('#pstream-fallback');if(fb)fb.hidden=true;
+ const url=streamUrlFor(id,name||'');
+ const ext=(url.match(/\.([a-z0-9]+)$/i)||[])[1]||'';
+ const v=document.createElement('video');
+ v.id='pvideo';v.controls=true;v.autoplay=true;v.playsInline=true;v.preload='auto';
+ v.setAttribute('playsinline','');v.tabIndex=-1;v.style.objectFit=playerScaleMode();
+ v.dataset.stream=url;
+ let live=true;
+ const giveUp=why=>{if(!live||tok!==streamTok)return;live=false;showStreamFallback(id,url,name,why)};
+ /* Silk often never fires error for .mkv and never reaches canplay when moov is at the end of a multi-hundred-MB file. Cap the wait. */
+ startStream._t=setTimeout(()=>{
+  if(!live||tok!==streamTok)return;
+  if(v.readyState>=3||v.currentTime>0){live=false;return}
+  giveUp(ext==='mkv'?'This .mkv can’t play in Silk on Fire TV. Open the stream (no sign-in) or Open in Drive.':'The video didn’t start in this browser. Open the stream, or Open in Drive.');
+ },8000);
+ v.addEventListener('canplay',()=>{if(tok!==streamTok)return;live=false;clearStreamWait();const box=$('#pstream-fallback');if(box)box.hidden=true;v.hidden=false});
+ v.addEventListener('error',()=>{
+  if(tok!==streamTok)return;clearStreamWait();
+  giveUp(ext==='mkv'?'This .mkv can’t play in the browser. Open the stream link or Open in Drive.':'Playback stopped. Open the stream link or Open in Drive.');
+ });
+ v.src=url;w.classList.add('vid');w.appendChild(v);
+ try{const f=items.get($('#player').dataset.pid);attachSidecarTrack(v,findSidecarSub(f))}catch(e){}
+ ensurePlayerExtras();setPlayerScale(playerScaleMode());
+ const pp=v.play&&v.play();if(pp&&pp.catch)pp.catch(()=>{});
+}
 function started(){return !!window._u&&document.body.classList.contains('intro-done')}
 /* Fire TV: when a details page opens, warm the streaming proxy (shortcut resolve cache + TLS) so the native player starts faster */
 const _warm={};function warmStream(f){const nb=window.FEFCNative;if(!f||!nb||!nb.playVideo||isFolder(f)||!isVid(f))return;const id=target(f);if(_warm[id])return;_warm[id]=1;try{const ac=new AbortController();fetch('/api/stream/'+id,{headers:{Range:'bytes=0-0'},signal:ac.signal,cache:'no-store'}).then(()=>ac.abort(),()=>{}).catch(()=>{})}catch(e){}}
@@ -1065,7 +1121,7 @@ function play(f){
  const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();
  const isShuf=!!(window.__shufPlay||((!window.__shufFullscreen)&&sessionStorage.fefcShufScope));document.body.classList.toggle('shuf-player',isShuf);$('#player').classList.toggle('floating',isShuf);if(window.__shufFullscreen)window.__shufFullscreen=0;
  const sub=findSidecarSub(f);$('#player').dataset.pid=f.id;$('#ptitle').textContent=parse(f.name).raw;$('#player').dataset.did=id;if(sub){$('#player').dataset.sub=sub.id;$('#player').dataset.submime=sub.mime||''}else{delete $('#player').dataset.sub;delete $('#player').dataset.submime}
- startStream(id);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;ensurePlayerExtras();
+ startStream(id,f&&f.name);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;ensurePlayerExtras();
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
@@ -1460,7 +1516,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.19';
+const HOME_VER_FALLBACK='0.8.20';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 
 function formatMlUpdVer(name,code){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/^v/i,'').replace(/\s*beta$/i,'').trim();return 'v'+base}

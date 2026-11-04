@@ -1,8 +1,8 @@
 {
     "versionCode": 29,
-    "versionName": "0.8.19",
+    "versionName": "0.8.20",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "0.8.19 \u2014 Version badge + Google Sync My List restored on Fire TV.\n- My List: installed version (v0.8.19) shown next to Check for updates.\n- Sync My List: Sign in with Google is back on top of the 6-digit sync code (web + Fire TV).\n- Fire TV Google: device code when Worker has TV OAuth; otherwise QR \u2192 phone Google sign-in \u2192 Approve.\n- No Drive content/sharing changes; Worker list sync only.",
+    "notes": "0.8.20 \u2014 Web player streams through /api/stream. No Drive preview iframe and no Google sign-in gate.\n- Play and Shuffle use an HTML5 video pointed at /api/stream/{id}.\n- Silk on Fire TV: if the picture does not start within 8s (typical for .mkv), show Open stream and Open in Drive instead of spinning.\n- versionCode stays 29 (no APK). Open in Drive is unchanged. No Drive sharing changes.",
     "size": 106682601,
     "sha256": "0b824700090ee2d1d15a24d2b3c083b5124f66090e6012c8113bd38a7ffee57c"
 }

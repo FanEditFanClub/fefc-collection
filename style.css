@@ -87,6 +87,13 @@ body.tv.native-waiting #home.enter,body.firetv.native-waiting #home.enter{animat
 .ptop{display:flex;align-items:center;gap:8px;padding:8px}.ptop h2{flex:1;margin:0;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ptop .bar{display:none}.ptop .pill{min-height:40px}
 .pwrap{flex:1;margin:0 8px 8px;border:4px solid var(--o);border-radius:0 0 0 30px;overflow:hidden}#pframe{width:100%;height:100%;border:0}#pvideo{width:100%;height:100%;display:block;background:#000;outline:0}
+#pframe[hidden]{display:none!important}
+#pstream-fallback{position:absolute;inset:0;z-index:4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2vh;padding:4vh 6vw;box-sizing:border-box;background:#0b0e13;color:#fff;text-align:center;font-family:'Source Sans 3',sans-serif}
+#pstream-fallback[hidden]{display:none!important}
+#pstream-fallback .psf-why{margin:0;font-size:clamp(18px,2.4vh,28px);font-weight:700;line-height:1.3;max-width:46rem}
+#pstream-fallback .psf-sub{margin:0;color:#c5d4e6;font-size:clamp(14px,1.8vh,20px);max-width:40rem}
+#pstream-fallback .psf-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.pwrap{position:relative}
 /* Shuffle Play floating player modal */
 body.shuf-player #bar{display:flex!important;position:fixed;left:0;right:0;top:0;z-index:50}
 body.shuf-player #hints{display:flex!important;z-index:50}
