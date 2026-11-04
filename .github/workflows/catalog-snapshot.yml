@@ -115,7 +115,7 @@ jobs:
           git add -A assets/ 2>/dev/null || true
           if git diff --cached --quiet; then echo "no changes"; echo "changed=false" >> "$GITHUB_OUTPUT"; else
             git commit -m "Daily catalogue + enrichment refresh ($(date -u +%F))"
-            git pull --rebase origin main
+            git pull --rebase --autostash origin main
             git push origin main
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
