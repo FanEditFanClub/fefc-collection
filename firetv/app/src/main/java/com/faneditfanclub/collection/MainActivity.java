@@ -3,8 +3,10 @@ package com.faneditfanclub.collection;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -677,56 +679,10 @@ public class MainActivity extends Activity {
                 final Uri uri = Uri.parse(PROXY + driveId + "/" + Uri.encode(fname, "._-"));
                 final String uriStr = uri.toString();
                 android.util.Log.i("FEFC-VLC", "openInVlc uri=" + uriStr + " mime=" + mime + " id=" + driveId);
-                // Debug toast: exact URI handed to VLC (helps diagnose "location cannot be played").
                 Toast.makeText(MainActivity.this, "VLC → " + uriStr, Toast.LENGTH_LONG).show();
-
-                // Prefer Uri.parse + setPackage only (no mime) — typed intents fail on some VLC/Fire TV builds.
-                try {
-                    Intent bare = new Intent(Intent.ACTION_VIEW);
-                    bare.setData(uri);
-                    bare.setPackage("org.videolan.vlc");
-                    bare.putExtra("title", title != null ? title : fname);
-                    bare.putExtra("from_start", true);
-                    bare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(bare);
-                    return;
-                } catch (ActivityNotFoundException eBare) {
-                    try {
-                        Intent vlc = new Intent(Intent.ACTION_VIEW);
-                        vlc.setDataAndType(uri, mime);
-                        vlc.setPackage("org.videolan.vlc");
-                        vlc.putExtra("title", title != null ? title : fname);
-                        vlc.putExtra("from_start", true);
-                        vlc.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(vlc);
-                        return;
-                    } catch (ActivityNotFoundException e) {
-                        try {
-                            Intent d = new Intent(Intent.ACTION_VIEW);
-                            d.setDataAndType(uri, mime);
-                            d.putExtra("title", title != null ? title : fname);
-                            d.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            startActivity(d);
-                            return;
-                        } catch (ActivityNotFoundException e2) { /* fall through */ }
-                    }
-                }
-                // VLC not installed → Amazon Appstore listing
-                try {
-                    Intent store = new Intent(Intent.ACTION_VIEW,
-                            Uri.parse("amzn://apps/android?p=org.videolan.vlc"));
-                    store.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(store);
-                } catch (ActivityNotFoundException e3) {
-                    try {
-                        Intent web = new Intent(Intent.ACTION_VIEW,
-                                Uri.parse("https://www.amazon.com/gp/mas/dl/android?p=org.videolan.vlc"));
-                        web.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(web);
-                    } catch (Exception e4) {
-                        Toast.makeText(MainActivity.this, "Install VLC to use Open in VLC", Toast.LENGTH_LONG).show();
-                    }
-                }
+                // Release WebView/ambience/atlas audio BEFORE VLC starts, then bring VLC's video activity forward.
+                // setPackage-only let VLC's audio service play in the background on Fire TV Cube.
+                quietThen(() -> startVlc(uri, title != null ? title : fname));
             });
         }
 
@@ -936,6 +892,85 @@ public class MainActivity extends Activity {
         } catch (Exception ignored) {}
         holdingAudioFocus = false;
         Log.i("FEFC", "audiofocus abandoned");
+    }
+
+    /** Run JS pause first (it is async), then drop WebView audio focus, then launch. */
+    private void quietThen(Runnable launch) {
+        if (web == null) { launch.run(); return; }
+        try {
+            web.evaluateJavascript(SUSPEND_AUDIO_JS, v -> ui.post(() -> {
+                try { web.onPause(); } catch (Exception ignored) {}
+                try { web.pauseTimers(); } catch (Exception ignored) {}
+                if (nativeIntro != null) { try { nativeIntro.pause(); } catch (Exception ignored) {} }
+                abandonAudioFocus();
+                audioSuspended = true;
+                launch.run();
+            }));
+        } catch (Exception e) {
+            abandonAudioFocus();
+            launch.run();
+        }
+    }
+
+    /**
+     * Explicit VLC video activity so the player comes to the foreground (video+audio).
+     * Chooser only when that component is not installed. Appstore if nothing can view the stream.
+     */
+    private void startVlc(Uri uri, String title) {
+        final ComponentName video = new ComponentName(
+                "org.videolan.vlc", "org.videolan.vlc.gui.video.VideoPlayerActivity");
+        Intent explicit = new Intent(Intent.ACTION_VIEW);
+        explicit.setComponent(video);
+        explicit.setDataAndType(uri, "video/*");
+        explicit.putExtra("title", title);
+        explicit.putExtra("from_start", true);
+        explicit.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TOP
+                | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        boolean componentKnown = false;
+        try {
+            getPackageManager().getActivityInfo(video, PackageManager.MATCH_DEFAULT_ONLY);
+            componentKnown = true;
+        } catch (PackageManager.NameNotFoundException ignored) { /* try start anyway; visibility can hide it */ }
+        if (componentKnown) {
+            try {
+                startActivity(explicit);
+                return;
+            } catch (ActivityNotFoundException e) {
+                Log.i("FEFC-VLC", "explicit VideoPlayerActivity missing at start");
+            }
+        } else {
+            try {
+                startActivity(explicit);
+                return;
+            } catch (ActivityNotFoundException e) {
+                Log.i("FEFC-VLC", "explicit VideoPlayerActivity not present");
+            }
+        }
+        Intent view = new Intent(Intent.ACTION_VIEW);
+        view.setDataAndType(uri, "video/*");
+        view.putExtra("title", title);
+        view.putExtra("from_start", true);
+        view.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            startActivity(Intent.createChooser(view, "Open with").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            return;
+        } catch (ActivityNotFoundException e) { /* no handler */ }
+        try {
+            Intent store = new Intent(Intent.ACTION_VIEW, Uri.parse("amzn://apps/android?p=org.videolan.vlc"));
+            store.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(store);
+        } catch (ActivityNotFoundException e3) {
+            try {
+                Intent webStore = new Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://www.amazon.com/gp/mas/dl/android?p=org.videolan.vlc"));
+                webStore.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(webStore);
+            } catch (Exception e4) {
+                Toast.makeText(MainActivity.this, "Install VLC to use Open in VLC", Toast.LENGTH_LONG).show();
+                resumeAppAudio();
+            }
+        }
     }
 
     /** Pause WebView media timers, native intro, and ask JS to suspend AudioContext + media elements. */

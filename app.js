@@ -3041,6 +3041,7 @@ var __spreadValues = (a, b) => {
     if (mode === "vlc") {
       S.chirp && S.chirp(1);
       try {
+        quietForExternal();
         if (nb && nb.openInVlc) nb.openInVlc(tid, title, f.name || "video.mp4");
         else status("VLC not available");
       } catch (e) {
@@ -3870,6 +3871,21 @@ var __spreadValues = (a, b) => {
       startStream._t = 0;
     }
   }
+  function quietForExternal() {
+    try {
+      if (window.SFX && SFX.suspendAll) SFX.suspendAll();
+    } catch (e) {
+    }
+    try {
+      document.querySelectorAll("video,audio").forEach((m) => {
+        try {
+          m.pause();
+        } catch (err) {
+        }
+      });
+    } catch (e) {
+    }
+  }
   function killVideo() {
     streamTok++;
     clearStreamWait();
@@ -4241,6 +4257,7 @@ var __spreadValues = (a, b) => {
       if (act.dataset.act === "vlc") {
         S.chirp(1);
         try {
+          quietForExternal();
           const nb = window.FEFCNative;
           if (nb && nb.openInVlc && f) nb.openInVlc(target(f), parse(f.name).raw, f.name || "video.mp4");
         } catch (err) {
@@ -5514,7 +5531,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.20";
+  const HOME_VER_FALLBACK = "0.8.21";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

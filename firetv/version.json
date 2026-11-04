@@ -2,7 +2,7 @@
     "versionCode": 29,
     "versionName": "0.8.20",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "0.8.20 \u2014 Web player streams through /api/stream. No Drive preview iframe and no Google sign-in gate.\n- Play and Shuffle use an HTML5 video pointed at /api/stream/{id}.\n- Silk on Fire TV: if the picture does not start within 8s (typical for .mkv), show Open stream and Open in Drive instead of spinning.\n- versionCode stays 29 (no APK). Open in Drive is unchanged. No Drive sharing changes.",
+    "notes": "0.8.20 web — stream player, no Drive preview sign-in. versionCode stays 29 until a signed 0.8.21 APK (versionCode 31) is published: Open in VLC targets VLC VideoPlayerActivity in the foreground. Do not raise versionCode here without that APK's size and sha256.",
     "size": 106682601,
     "sha256": "0b824700090ee2d1d15a24d2b3c083b5124f66090e6012c8113bd38a7ffee57c"
 }

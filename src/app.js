@@ -783,7 +783,7 @@ function shufRun(mode,scope){const f=shufPick(scope);if(!f){status('Nothing to s
  if(!window.__shufPrevHash&&location.hash&&!/^#\/play\//.test(location.hash))window.__shufPrevHash=location.hash;
  closeShufPick();
  const tid=target(f),title=parse(f.name).raw||f.name||'Fan edit',nb=window.FEFCNative;
- if(mode==='vlc'){S.chirp&&S.chirp(1);try{if(nb&&nb.openInVlc)nb.openInVlc(tid,title,f.name||'video.mp4');else status('VLC not available')}catch(e){status('Could not open VLC')}return}
+ if(mode==='vlc'){S.chirp&&S.chirp(1);try{quietForExternal();if(nb&&nb.openInVlc)nb.openInVlc(tid,title,f.name||'video.mp4');else status('VLC not available')}catch(e){status('Could not open VLC')}return}
  if(mode==='drive'){S.chirp&&S.chirp(1);try{if(nb&&typeof nb.openInDrive==='function')nb.openInDrive(tid,title);else window.open('https://drive.google.com/file/d/'+tid+'/view','_blank')}catch(e){}return}
  /* Full Screen (default): NEVER windowed shuffle. Native fullscreen when bridge exists; else #/play without floating shuf-player. */
  window.__shufPlay=0;window.__shufFullscreen=1;
@@ -1001,6 +1001,7 @@ function killFrame(){killVideo();const o=$('#pframe');if(o){o.removeAttribute('s
    download forever, then swapped in drive.google.com/file/preview (sign-in / spinner). */
 let streamTok=0;
 function clearStreamWait(){if(startStream._t){clearTimeout(startStream._t);startStream._t=0}}
+function quietForExternal(){try{if(window.SFX&&SFX.suspendAll)SFX.suspendAll()}catch(e){}try{document.querySelectorAll('video,audio').forEach(m=>{try{m.pause()}catch(err){}})}catch(e){}}
 function killVideo(){streamTok++;clearStreamWait();const v=$('#pvideo');if(v){try{v.pause()}catch(e){}v.removeAttribute('src');try{v.load()}catch(e){}v.remove()}const w=$('#player .pwrap');if(w)w.classList.remove('vid')}
 const STREAM_EXT=/^(mp4|m4v|mkv|webm|mov|avi|mpg|mpeg|m2ts|ts)$/i;
 function streamUrlFor(id,name){
@@ -1125,7 +1126,7 @@ function play(f){
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
- const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();if(act.dataset.act==='vlc'){S.chirp(1);try{const nb=window.FEFCNative;if(nb&&nb.openInVlc&&f)nb.openInVlc(target(f),parse(f.name).raw,f.name||'video.mp4')}catch(err){}return;}if(act.dataset.act==='drive'){S.chirp(1);try{const nb=window.FEFCNative;const did=target(f);if(nb&&typeof nb.openInDrive==='function'&&did){nb.openInDrive(did,parse(f.name).raw||f.name||'')}else{window.open('https://drive.google.com/file/d/'+did+'/view','_blank')}}catch(err){}return;}S.chirp(1);go('#/play/'+f.id);return}
+ const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();if(act.dataset.act==='vlc'){S.chirp(1);try{quietForExternal();const nb=window.FEFCNative;if(nb&&nb.openInVlc&&f)nb.openInVlc(target(f),parse(f.name).raw,f.name||'video.mp4')}catch(err){}return;}if(act.dataset.act==='drive'){S.chirp(1);try{const nb=window.FEFCNative;const did=target(f);if(nb&&typeof nb.openInDrive==='function'&&did){nb.openInDrive(did,parse(f.name).raw||f.name||'')}else{window.open('https://drive.google.com/file/d/'+did+'/view','_blank')}}catch(err){}return;}S.chirp(1);go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.rfhome){S.click();readFirst();return}if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
 let _moveT=0;document.addEventListener('focusin',e=>{if(!e.target.matches('.ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog,.sync-go,#ml-sync .mi'+(isTvEnv()?'':',.tk-i:not(.tk-dup)')))return;const tv=isTvEnv()||document.body.classList.contains('tv')||document.body.classList.contains('firetv');if(!tv){S.move();return}const now=Date.now();if(now-_moveT<90)return;_moveT=now;S.move()});
@@ -1516,7 +1517,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.20';
+const HOME_VER_FALLBACK='0.8.21';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 
 function formatMlUpdVer(name,code){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/^v/i,'').replace(/\s*beta$/i,'').trim();return 'v'+base}
