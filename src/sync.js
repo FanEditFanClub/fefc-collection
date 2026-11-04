@@ -73,7 +73,9 @@ function srvClient(){
  function adopt(r){if(!r||!r.token)throw new Error('no token');localStorage.setItem(KT,r.token);localStorage.setItem(KK,r.kind||'code');localStorage.setItem(KU,JSON.stringify(r.user||null));load();persistNative();wire();emit();return run().then(function(){return S})}
  function clear(){localStorage.removeItem(KT);localStorage.removeItem(KK);localStorage.removeItem(KU);persistNative();load();emit()}
  function tryRestore(){if(tok())return Promise.resolve(false);var id=devId();if(!id)return Promise.resolve(false);
-  return api('restore',{deviceId:id},false).then(function(r){if(r&&r.token){adopt(r);return true}return false}).catch(function(){return false})}
+  return api('restore',{deviceId:id},false).then(function(r){if(r&&r.token){adopt(r);return true}return false}).catch(function(e){if(e&&e.status===404)offerRepair();return false})}
+ /* 0.8.23: TVs that lost pairing in 0.8.21 never registered their device id, so restore finds nothing. Offer a clear one-time re-enter-code prompt (upgraded installs only, shown once). */
+ function offerRepair(){try{var N=window.FEFCNative;if(!N||!N.upgradedFrom||!(N.upgradedFrom()>0)||tok())return;if(localStorage.getItem('fefcRepairShown'))return;var n=0;(function t(){if(typeof window.__fefcSyncRepair==='function'&&document.body&&document.body.classList.contains('intro-done')){localStorage.setItem('fefcRepairShown','1');window.__fefcSyncRepair();return}if(++n<240)setTimeout(t,500)})()}catch(e){}}
  var A={
   get state(){return S},subscribe:function(f){subs.push(f);f(S)},
   status:function(){return cfg||(cfg=api('status',undefined,false).catch(function(){return {configured:false,tv:false}}))},

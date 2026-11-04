@@ -261,6 +261,9 @@
       });
       return frame("Enter your sync code", '<div class="sp-slots' + (P.bad ? " bad" : "") + '">' + slots + "</div>" + (P.bad ? '<p class="sp-note bad">' + esc(P.bad) + "</p>" : '<p class="sp-sub">Use the number buttons, or type on a keyboard.</p>') + '<div class="sp-pad">' + keys + "</div>", btn("pair", "Back"));
     } },
+    repair: { html: function() {
+      return frame("Re-enter your sync code", '<p class="sp-sub">An app update reset this TV\u2019s link to My List. Enter your 6-digit sync code once to bring your stars and history back. Create the code on your phone or another device (My List, Sync My List, 6-digit sync code, Create a code).</p><div class="sp-opts">' + opt("pair-enter", "Enter a sync code", "Type the code shown on another device.", 1) + opt("menu", "Other ways to sync", "Sign in with Google or scan a QR code.") + "</div>", btn("close", "Not now"));
+    } },
     done: { html: function() {
       var A = agg();
       return frame("You\u2019re synced", ' <p class="sp-sub">' + esc(P.opt.msg || "") + (A.user && A.user.email ? " Signed in as " + esc(A.user.email) + "." : "") + "</p>", btn("close", "Done", "", " data-default"));
@@ -555,7 +558,7 @@
       }
     }
     if (k === 27 || k === 10009 || k === 461 || key === "GoBack" || key === "BrowserBack" || k === 8) {
-      if (P.view === "menu" || P.view === "done" || P.view === "error" || P.view === "approve") close();
+      if (P.view === "menu" || P.view === "done" || P.view === "error" || P.view === "approve" || P.view === "repair") close();
       else go(P.view === "pair-enter" ? "pair" : "menu");
       return true;
     }
@@ -581,6 +584,9 @@
     } catch (e) {
     }
   }
+  window.__fefcSyncRepair = function() {
+    open("repair");
+  };
   window.__fefcPaintSync = paintCard;
   window.__fefcCloseSync = close;
   paintChip();

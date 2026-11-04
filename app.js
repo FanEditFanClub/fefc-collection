@@ -870,10 +870,36 @@ var __spreadValues = (a, b) => {
     if (f && f.id) _tfC.set(f.id, r);
     return r;
   }
+  let VG = {}, _goC = /* @__PURE__ */ new Map(), _goK = "";
   function genresOf(f) {
-    const t = topFolder(f), g = t && genreMap[t];
-    return g ? g.genres : ["Uncategorized"];
+    if (!f) return ["Uncategorized"];
+    const k = Object.keys(genreMap).length + "|" + Object.keys(VG).length;
+    if (_goK !== k) {
+      _goK = k;
+      _goC = /* @__PURE__ */ new Map();
+    }
+    let r = _goC.get(f.id);
+    if (r) return r;
+    const hit = [];
+    let x = f, n = 0;
+    while (x && n++ < 40) {
+      const a = genreMap[x.id], b = VG[x.id];
+      if (a && a.genres) {
+        for (const g of a.genres) if (g !== "Uncategorized" && hit.indexOf(g) < 0) hit.push(g);
+      }
+      if (b) {
+        for (const g of b) if (hit.indexOf(g) < 0) hit.push(g);
+      }
+      x = items.get(x.parent);
+    }
+    if (f.targetId && VG[f.targetId]) {
+      for (const g of VG[f.targetId]) if (hit.indexOf(g) < 0) hit.push(g);
+    }
+    r = hit.length ? hit : ["Uncategorized"];
+    _goC.set(f.id, r);
+    return r;
   }
+  window.__fefcVG = () => VG;
   let _glC = {}, _glK = "";
   function genreList(g) {
     const k = items.size + "|" + Object.keys(genreMap).length;
@@ -1519,6 +1545,22 @@ var __spreadValues = (a, b) => {
     restoreScroll();
   }
   let mlSort = localStorage.fefcStarSort || "date";
+  function fitMlFoot() {
+    const f = document.querySelector(".ml-foot"), h = document.getElementById("hints"), m = document.getElementById("main");
+    if (!f || !m) return;
+    const set = () => {
+      const hr = h && h.getBoundingClientRect();
+      const b = hr && hr.height && getComputedStyle(h).visibility !== "hidden" ? Math.max(0, window.innerHeight - hr.top + 8 - (parseFloat(getComputedStyle(m).paddingBottom) || 0) - (m.getBoundingClientRect().bottom < window.innerHeight ? window.innerHeight - m.getBoundingClientRect().bottom : 0)) : Math.round(window.innerHeight * 0.05);
+      m.style.setProperty("--ml-foot-b", b + "px");
+    };
+    set();
+    if (!window.__mlFootRs) {
+      window.__mlFootRs = 1;
+      addEventListener("resize", () => {
+        document.querySelector(".ml-foot") && set();
+      });
+    }
+  }
   function myListPage() {
     const U = window.UD;
     if (!U) return;
@@ -1542,6 +1584,11 @@ var __spreadValues = (a, b) => {
     ;
     try {
       paintMlUpdVer();
+    } catch (e) {
+    }
+    ;
+    try {
+      fitMlFoot();
     } catch (e) {
     }
     g.querySelectorAll(".ol-tile").forEach(lazyArt);
@@ -5018,6 +5065,10 @@ var __spreadValues = (a, b) => {
           }, null);
           if (hop) best = hop;
         }
+        if (k === 38 && !best) {
+          toMenu();
+          return;
+        }
         if (best) {
           focusEl(best);
           try {
@@ -5121,7 +5172,7 @@ var __spreadValues = (a, b) => {
     };
   })();
   const OPT_SVG = '<div class="op-ph" aria-hidden="true"><div class="op-scene"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><div class="op-screen"><div class="op-stars"></div><div class="op-ship s1"></div><div class="op-ship s2"></div><div class="op-laser"></div><div class="op-term"><b>&gt; SEARCH:</b><i class="op-cur"></i></div></div><div class="op-kernel"><div class="op-corn-puff"></div></div><div class="op-screen-glow"></div><div class="op-type-hands"></div></div><b class="op-cue"></b></div>';
-  let spEl = null, spSeq = 0, spT = null, spAiT = null, spMoodT = null, spIdx = null, spIdxN = -1, spSel = -1, spLastFocus = null;
+  let spKeyFn = null, spEl = null, spSeq = 0, spT = null, spAiT = null, spMoodT = null, spIdx = null, spIdxN = -1, spSel = -1, spLastFocus = null;
   const spOpen = () => !!(spEl && spEl.classList.contains("on"));
   const spNorm = (t) => (t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   function spBuild() {
@@ -5319,7 +5370,7 @@ var __spreadValues = (a, b) => {
       const it = e.target.closest(".sp-it");
       if (it) spGo(it);
     });
-    spEl.addEventListener("keydown", (e) => {
+    spKeyFn = (e) => {
       const k = e.keyCode;
       e.stopPropagation();
       const L = [].slice.call(spEl.querySelectorAll(".sp-it"));
@@ -5352,6 +5403,10 @@ var __spreadValues = (a, b) => {
         if (a) return spGo(a);
         if (spSel >= 0 && L[spSel]) return spGo(L[spSel]);
         const q = inp.value.trim();
+        if (!q && document.activeElement === inp) {
+          spSoft();
+          return;
+        }
         if (q) {
           closeSpot(true);
           go("#/search/" + encodeURIComponent(q));
@@ -5361,7 +5416,12 @@ var __spreadValues = (a, b) => {
       if (document.activeElement !== inp && e.key && e.key.length === 1) {
         inp.focus();
       }
-    }, false);
+    };
+    spEl.addEventListener("keydown", spKeyFn, false);
+    {
+      const q0 = spEl.querySelector("#sp-q");
+      q0.addEventListener("click", spSoft);
+    }
   }
   function spHi(L) {
     L.forEach((x, i) => x.classList.toggle("sel", i === spSel));
@@ -5487,19 +5547,53 @@ var __spreadValues = (a, b) => {
     if (q) {
       inp.dispatchEvent(new Event("input"));
     }
-    setTimeout(() => {
-      try {
-        inp.focus({ preventScroll: true });
-      } catch (e) {
-        inp.focus();
+    [30, 200, 600].forEach((ms) => setTimeout(() => {
+      if (!spOpen()) return;
+      if (document.activeElement !== inp) {
+        try {
+          inp.focus({ preventScroll: true });
+        } catch (e) {
+          inp.focus();
+        }
       }
-      try {
-        const nb = window.FEFCNative;
-        if (nb && typeof nb.showSoftInput === "function") nb.showSoftInput();
-      } catch (e) {
-      }
-    }, 30);
+      spSoft();
+    }, ms));
   }
+  function spSoft() {
+    try {
+      const nb = window.FEFCNative;
+      if (nb && typeof nb.showSoftInput === "function") nb.showSoftInput();
+    } catch (e) {
+    }
+  }
+  addEventListener("keydown", (e) => {
+    if (!spOpen() || !spKeyFn) return;
+    const inp = spEl.querySelector("#sp-q");
+    e.stopImmediatePropagation();
+    if (spEl.contains(e.target)) {
+      spKeyFn(e);
+      return;
+    }
+    const k = e.keyCode, back2 = k === 27 || k === 10009 || k === 461 || k === 8 || e.key === "GoBack" || e.key === "BrowserBack";
+    e.preventDefault();
+    if (back2) {
+      closeSpot();
+      return;
+    }
+    try {
+      inp.focus({ preventScroll: true });
+    } catch (_) {
+    }
+    spKeyFn(e);
+  }, true);
+  document.addEventListener("focusin", (e) => {
+    if (!spOpen() || spEl.contains(e.target)) return;
+    const inp = spEl.querySelector("#sp-q");
+    try {
+      inp.focus({ preventScroll: true });
+    } catch (_) {
+    }
+  }, true);
   function closeSpot(nav) {
     if (!spOpen()) return;
     spVVoff();
@@ -5588,7 +5682,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.22";
+  const HOME_VER_FALLBACK = "0.8.23";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -5862,7 +5956,12 @@ var __spreadValues = (a, b) => {
   window.loadGenres = (force) => {
     if (window._genresP && !force) return window._genresP;
     const ms = isTvEnv() ? 6e4 : 2e4;
-    const once = () => tmo("data/genres.json", ms).then((g) => {
+    const once = () => tmo("data/genres.json", ms).then((g) => tmo("data/video-genres.json", ms).catch(() => null).then((v) => {
+      const o = {};
+      if (v && v.sets && v.ids) for (const id in v.ids) o[id] = v.sets[v.ids[id]];
+      VG = o;
+      return g;
+    })).then((g) => {
       GC = g.__collections || {};
       delete g.__collections;
       genreMap = g;

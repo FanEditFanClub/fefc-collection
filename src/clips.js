@@ -9,7 +9,7 @@
 const DWELL=[3000,6000],DWELL_PERF=[7000,12000];
 const STILL_MS=[3200,5000],STILL_MS_PERF=[4000,6500];
 let clips=null,loading=false,timers=[],cells=[],pool=[],free=[],on=false,rot=0;
-let atlasV=null,atlasOn=false,atlasTried=false,atlasGen=0,atlasStarting=null;
+let atlasRetries=0,atlasV=null,atlasOn=false,atlasTried=false,atlasGen=0,atlasStarting=null;
 const home=()=>document.getElementById('home');
 const atHome=()=>{const h=home(),b=document.body.classList;return h&&!h.hidden&&!document.hidden&&!b.contains('cintro')&&!b.contains('native-waiting')};
 const tv=()=>document.body.classList.contains('tv');
@@ -101,7 +101,9 @@ function startAtlas(){
     v.addEventListener('error',()=>finish(false,'error'),{once:true});
     v.addEventListener('playing',()=>finish(true,'playing'),{once:true});
     v.addEventListener('canplay',()=>{if(my!==atlasGen||atlasOn)return;const p=v.play();if(p&&p.catch)p.catch(()=>{})},{once:true});
-    setTimeout(()=>{if(!atlasOn&&my===atlasGen)finish(v.readyState>=2,'timeout-rs'+v.readyState)},9000);
+    /* 0.8.23: the give-up timer restarts at every phase (direct src -> fetch -> blob). A slow TV can stall the main thread for >9s, which used to kill the atlas right as the fetch began. */
+    let gu=null;const arm=ms=>{clearTimeout(gu);gu=setTimeout(()=>{if(!atlasOn&&my===atlasGen)finish(v.readyState>=2,'timeout-rs'+v.readyState)},ms)};
+    arm(14000);
     /* WebView media stack often bypasses shouldInterceptRequest for <video src>.
        Fetch (XHR path) is intercepted → blob URL plays from memory (OnLive-sized atlas ~1–3MB). */
     const boot=()=>{
@@ -112,8 +114,9 @@ function startAtlas(){
         try{if(v._blobUrl)URL.revokeObjectURL(v._blobUrl)}catch(e){}
         v._blobUrl=URL.createObjectURL(b);
         try{const line='FEFC_CLIPS atlas=blob bytes='+b.size;console.log(line);if(window.FEFCNative&&FEFCNative.log)FEFCNative.log(line)}catch(e){}
-        v.src=v._blobUrl;play()};
+        arm(12000);v.src=v._blobUrl;play()};
       const fetchBlob=()=>{
+        arm(16000);
         try{const line='FEFC_CLIPS atlas=fetch-start '+src;console.log(line);if(window.FEFCNative&&FEFCNative.log)FEFCNative.log(line)}catch(e){}
         let ctrl=null,to=null;
         try{ctrl=new AbortController();to=setTimeout(()=>{try{ctrl.abort()}catch(e){}},5500)}catch(e){}
@@ -197,14 +200,16 @@ function schedule(){if(atlasStarting)return;stop();if(!atHome())return;on=true;
  // Web + TV: try atlas first (OnLive Arena). Fallback to stills (+ capped tile videos).
  if(wantAtlas()&&!atlasTried){
    atlasTried=true;
-   startAtlas().then(ok=>{if(!ok){try{const line='FEFC_CLIPS atlas=give-up → stills';console.warn(line);if(window.FEFCNative&&FEFCNative.log)FEFCNative.log(line)}catch(e){}}go()});
+   startAtlas().then(ok=>{if(!ok){try{const line='FEFC_CLIPS atlas=give-up → stills';console.warn(line);if(window.FEFCNative&&FEFCNative.log)FEFCNative.log(line)}catch(e){}
+     /* 0.8.23: one retry per home visit, so a slow first load does not leave the grid on stills for good */
+     if(atlasRetries<1){atlasRetries++;setTimeout(()=>{if(atHome()&&!atlasOn&&!atlasStarting){atlasTried=false;schedule()}},20000)}}go()});
    return}
  /* One atlas attempt per home visit (atlasTried). Failed → stills/capped tiles only. */
  go()}
 
 let deb,arm;function kick(){if(!atHome()){clearTimeout(deb);arm=false;stopAll();atlasTried=false;return}if(arm)return;arm=true;deb=setTimeout(()=>{arm=false;if(atHome()){load();schedule()}else stopAll()},450)}
 let _ic=document.body.classList.contains('cintro');new MutationObserver(()=>{const c=document.body.classList.contains('cintro');if(_ic&&!c)kick();_ic=c}).observe(document.body,{attributes:true,attributeFilter:['class']});
-addEventListener('fefc-home-revealed',()=>{atlasTried=false;kick()});
+addEventListener('fefc-home-revealed',()=>{atlasTried=false;atlasRetries=0;kick()});
 function init(){const h=home(),hub=document.getElementById('hub');if(!h||!hub)return setTimeout(init,500);
  const watch=document.getElementById('mosaic')||document.getElementById('home-plane')||hub;
  new MutationObserver(ms=>{if(ms.some(m=>[].some.call(m.addedNodes,x=>x.classList&&x.classList.contains('mc'))||[].some.call(m.removedNodes,x=>x.classList&&x.classList.contains('mc'))))kick()}).observe(watch,{childList:true});

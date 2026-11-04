@@ -86,6 +86,7 @@ var VIEWS={
  'pair-enter':{html:function(){var d=P.digits||'',slots='';for(var i=0;i<6;i++)slots+='<i class="'+(i<d.length?'f':'')+'">'+(d[i]||'')+'</i>';
    var keys='';['1','2','3','4','5','6','7','8','9','del','0','go'].forEach(function(k){keys+='<button class="mi sp-k'+(k==='go'?' sp-go':'')+'" data-pad="'+k+'"'+(k==='5'?' data-default':'')+'>'+(k==='del'?'\u232B':k==='go'?'OK':k)+'</button>'});
    return frame('Enter your sync code','<div class="sp-slots'+(P.bad?' bad':'')+'">'+slots+'</div>'+(P.bad?'<p class="sp-note bad">'+esc(P.bad)+'</p>':'<p class="sp-sub">Use the number buttons, or type on a keyboard.</p>')+'<div class="sp-pad">'+keys+'</div>',btn('pair','Back'))}},
+ repair:{html:function(){return frame('Re-enter your sync code','<p class="sp-sub">An app update reset this TV\u2019s link to My List. Enter your 6-digit sync code once to bring your stars and history back. Create the code on your phone or another device (My List, Sync My List, 6-digit sync code, Create a code).</p><div class="sp-opts">'+opt('pair-enter','Enter a sync code','Type the code shown on another device.',1)+opt('menu','Other ways to sync','Sign in with Google or scan a QR code.')+'</div>',btn('close','Not now'))}},
  done:{html:function(){var A=agg();return frame('You\u2019re synced',' <p class="sp-sub">'+esc(P.opt.msg||'')+(A.user&&A.user.email?' Signed in as '+esc(A.user.email)+'.':'')+'</p>',btn('close','Done','',' data-default'))}},
  error:{html:function(){return frame('Sync My List','<p class="sp-sub">'+esc(P.opt.msg||'Something went wrong.')+'</p>',(P.opt.retry?btn('retry','Try again'):'')+btn('menu','Back','',' data-default'))}},
  approve:{enter:function(g){P.id=P.opt.id;V&&V.status().then(function(c){cfg=c;if(g!==gen)return;if(!c.configured)return fail('Cloud sync is not switched on yet.');
@@ -142,14 +143,14 @@ window.__fefcModal=function(e){
  if(e.type!=='keydown')return true;
  var digit=k>=48&&k<=57?String(k-48):k>=96&&k<=105?String(k-96):null;
  if(P.view==='pair-enter'){if(digit!==null){enterDigit(digit);return true}if(k===8){enterDigit('del');return true}}
- if(k===27||k===10009||k===461||key==='GoBack'||key==='BrowserBack'||k===8){if(P.view==='menu'||P.view==='done'||P.view==='error'||P.view==='approve')close();else go(P.view==='pair-enter'?'pair':'menu');return true}
+ if(k===27||k===10009||k===461||key==='GoBack'||key==='BrowserBack'||k===8){if(P.view==='menu'||P.view==='done'||P.view==='error'||P.view==='approve'||P.view==='repair')close();else go(P.view==='pair-enter'?'pair':'menu');return true}
  if(k===37||k===38||k===39||k===40){nav({37:'left',38:'up',39:'right',40:'down'}[k]);return true}
  if(k===13||k===23){var a=document.activeElement;if(a&&el().contains(a)&&a.tagName==='BUTTON')a.click();return true}
  return true};
 // ---------- QR link from phone: /?link=<id> ----------
 function checkLink(){try{var id=new URLSearchParams(location.search).get('link');if(!id||!/^[\w-]{20,30}$/.test(id))return;
  history.replaceState(null,'',location.pathname+location.hash);setTimeout(function(){open('approve',{id:id})},400)}catch(e){}}
-window.__fefcPaintSync=paintCard;window.__fefcCloseSync=close;
+window.__fefcSyncRepair=function(){open('repair')};window.__fefcPaintSync=paintCard;window.__fefcCloseSync=close;
 paintChip();paintCard();checkLink();
 })();
 /* 0.8.12 sync key: Select/Enter on focused Sync My List controls */

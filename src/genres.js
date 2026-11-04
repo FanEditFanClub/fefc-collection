@@ -42,12 +42,12 @@ var css=document.createElement('style');css.textContent=
 '@media (orientation:landscape) and (max-height:520px){#gpage{bottom:calc(2vh + 40px)}.gnav{top:calc(50% + 10vh)}}';
 document.head.appendChild(css);
 function pl(n,w){return n+' '+w+(n===1?'':'s')}
-function list(o){if(st.list&&st.key===o.items.size+':'+Object.keys(o.genreMap).length)return st.list;
+function list(o){var vg0=(window.__fefcVG&&window.__fefcVG())||{};if(st.list&&st.key===o.items.size+':'+Object.keys(o.genreMap).length+':'+Object.keys(vg0).length)return st.list;
  var by={},foldG={};Object.keys(o.genreMap||{}).forEach(function(fid){var gens=o.genreMap[fid].genres||[];foldG[fid]=gens;gens.forEach(function(g){(by[g]=by[g]||[]).push(fid)})});
  var gs=Object.keys(by).sort(function(a,b){return (a==='Uncategorized')-(b==='Uncategorized')||a.localeCompare(b)});var cnt={};gs.forEach(function(g){cnt[g]=0});
  /* O(videos × depth × genres-per-folder) — never scan every genre name per parent (was freezing Fire TV). */
- o.items.forEach(function(f){if(!o.isVid(f))return;var p=f.parent,k=0,hit={};while(p&&k++<30){var gens=foldG[p];if(gens){for(var i=0;i<gens.length;i++){var g=gens[i];if(!hit[g]){hit[g]=1;cnt[g]++}}}var x=o.items.get(p);p=x&&x.parent}});
- st.key=o.items.size+':'+Object.keys(o.genreMap).length;st.list=gs.map(function(g){return {g:g,c:by[g].length,m:cnt[g]}});return st.list}
+ var vgm=(window.__fefcVG&&window.__fefcVG())||{};o.items.forEach(function(f){if(!o.isVid(f))return;var p=f.id,k=0,hit={};while(p&&k++<30){var gens=foldG[p]||vgm[p];if(gens){for(var i=0;i<gens.length;i++){var g=gens[i];if(!hit[g]){hit[g]=1;cnt[g]++}}}var x=o.items.get(p);p=x&&x.parent}});
+ st.key=o.items.size+':'+Object.keys(o.genreMap).length+':'+Object.keys(vgm).length;st.list=gs.map(function(g){return {g:g,c:by[g].length,m:cnt[g]}});return st.list}
 function art(g){var a=(window.FEFCGenres&&FEFCGenres._art)||{};return a[g]||a.Uncategorized||{img:'assets/fefc-logo.png',brand:1}}
 function pages(){return Math.max(1,Math.ceil(st.list.length/9))}
 function paint(){var hub=document.getElementById('hub');if(!hub||!st.o)return;var o=st.o,gm=o.genreMap||{},nKeys=Object.keys(gm).length;

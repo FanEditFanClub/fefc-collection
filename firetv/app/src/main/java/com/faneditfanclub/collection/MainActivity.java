@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
     private DeviceTier deviceTier;
 
     private WebView web;
+    private int upgradedFrom = 0;
     private FrameLayout root;
     private View customView;
     private WebChromeClient.CustomViewCallback customCb;
@@ -103,6 +104,7 @@ public class MainActivity extends Activity {
         SyncVault.deviceId(this);
         SharedPreferences prefs = getSharedPreferences("fefc", MODE_PRIVATE);
         int lastCleared = prefs.getInt("clearedForVersion", 0);
+        upgradedFrom = lastCleared;
         if (lastCleared != BuildConfig.VERSION_CODE) {
             try { web.clearCache(true); } catch (Exception ignored) {}
             try { web.clearFormData(); } catch (Exception ignored) {}
@@ -569,6 +571,10 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public int versionCode() { return BuildConfig.VERSION_CODE; }
 
+        /** versionCode this install was upgraded from (0 = fresh install). Lets the web app offer a one-time sync re-pair after an upgrade. */
+        @JavascriptInterface
+        public int upgradedFrom() { return upgradedFrom; }
+
         /** Sync token, My List JSON, and the stable device id. Mirrored into localStorage before sync.js reads it. */
         @JavascriptInterface
         public String syncState() { return SyncVault.stateJson(MainActivity.this); }
@@ -609,9 +615,16 @@ public class MainActivity extends Activity {
             ui.post(() -> {
                 if (web == null) return;
                 web.requestFocus();
-                android.view.inputmethod.InputMethodManager imm =
+                final android.view.inputmethod.InputMethodManager imm =
                         (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
-                if (imm != null) imm.showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_FORCED);
+                if (imm == null) return;
+                imm.showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+                // The WebView builds its input connection a beat after JS focuses the field; retry as FORCED (Fire TV hides it otherwise).
+                ui.postDelayed(() -> {
+                    if (web == null) return;
+                    web.requestFocus();
+                    imm.showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_FORCED);
+                }, 120);
             });
         }
 

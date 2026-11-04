@@ -70,7 +70,8 @@
     return n + " " + w + (n === 1 ? "" : "s");
   }
   function list(o) {
-    if (st.list && st.key === o.items.size + ":" + Object.keys(o.genreMap).length) return st.list;
+    var vg0 = window.__fefcVG && window.__fefcVG() || {};
+    if (st.list && st.key === o.items.size + ":" + Object.keys(o.genreMap).length + ":" + Object.keys(vg0).length) return st.list;
     var by = {}, foldG = {};
     Object.keys(o.genreMap || {}).forEach(function(fid) {
       var gens = o.genreMap[fid].genres || [];
@@ -86,11 +87,12 @@
     gs.forEach(function(g) {
       cnt[g] = 0;
     });
+    var vgm = window.__fefcVG && window.__fefcVG() || {};
     o.items.forEach(function(f) {
       if (!o.isVid(f)) return;
-      var p = f.parent, k = 0, hit = {};
+      var p = f.id, k = 0, hit = {};
       while (p && k++ < 30) {
-        var gens = foldG[p];
+        var gens = foldG[p] || vgm[p];
         if (gens) {
           for (var i = 0; i < gens.length; i++) {
             var g = gens[i];
@@ -104,7 +106,7 @@
         p = x && x.parent;
       }
     });
-    st.key = o.items.size + ":" + Object.keys(o.genreMap).length;
+    st.key = o.items.size + ":" + Object.keys(o.genreMap).length + ":" + Object.keys(vgm).length;
     st.list = gs.map(function(g) {
       return { g, c: by[g].length, m: cnt[g] };
     });

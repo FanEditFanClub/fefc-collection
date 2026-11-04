@@ -61,6 +61,7 @@ public class PlayerActivity extends Activity {
     private ScrollView menuScroll;
     private LinearLayout menuBox;
     private boolean menuOpen;
+    private boolean resumeAfterMenu;
     private int menuIndex;
     private final List<MenuRow> menuRows = new ArrayList<>();
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -448,18 +449,30 @@ public class PlayerActivity extends Activity {
 
     private void openVlc() {
         if (vid == null) return;
+        Uri uri = streamUri();
+        android.content.ComponentName video = new android.content.ComponentName(
+                "org.videolan.vlc", "org.videolan.vlc.gui.video.VideoPlayerActivity");
+        Intent explicit = new Intent(Intent.ACTION_VIEW);
+        explicit.setComponent(video);
+        explicit.setDataAndType(uri, "video/*");
+        explicit.putExtra("title", titleLine());
+        explicit.putExtra("from_start", false);
+        explicit.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         try {
-            Uri uri = streamUri();
-            android.content.ComponentName video = new android.content.ComponentName(
-                    "org.videolan.vlc", "org.videolan.vlc.gui.video.VideoPlayerActivity");
-            Intent explicit = new Intent(Intent.ACTION_VIEW);
-            explicit.setComponent(video);
-            explicit.setDataAndType(uri, "video/*");
-            explicit.putExtra("title", titleLine());
-            explicit.putExtra("from_start", false);
-            explicit.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(explicit);
-        } catch (Exception e) {
+            return;
+        } catch (Exception e) { /* VLC (or its video activity) is not installed */ }
+        /* VLC absent: close the menu so the message is visible, then point at the Amazon Appstore listing. */
+        closeMenu();
+        info.setVisibility(View.VISIBLE);
+        info.setText("VLC is not installed. Opening its Appstore page.");
+        ui.removeCallbacks(hideInfo);
+        ui.postDelayed(hideInfo, 4000);
+        try {
+            Intent store = new Intent(Intent.ACTION_VIEW, Uri.parse("amzn://apps/android?p=org.videolan.vlc"));
+            store.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(store);
+        } catch (Exception e2) {
             info.setText("Install VLC to use Open in VLC.");
         }
     }
@@ -565,7 +578,8 @@ public class PlayerActivity extends Activity {
         menuScroll.setVisibility(View.VISIBLE);
         info.setVisibility(View.GONE);
         bar.setVisibility(View.GONE);
-        try { player.pause(); } catch (Exception ignored) {}
+        resumeAfterMenu = false;
+        try { resumeAfterMenu = player.isPlaying() || player.getPlayWhenReady(); player.pause(); } catch (Exception ignored) {}
     }
 
     private static String audioLabel(Format f, int n) {
@@ -622,8 +636,12 @@ public class PlayerActivity extends Activity {
     }
 
     private void closeMenu() {
+        boolean wasOpen = menuOpen;
         menuOpen = false;
         menuScroll.setVisibility(View.GONE);
+        /* The menu pauses playback; resume on close (track pick, chapter, Close menu, Back) only if it was playing. */
+        if (wasOpen && resumeAfterMenu && player != null) { try { player.play(); } catch (Exception ignored) {} }
+        resumeAfterMenu = false;
         flash();
     }
 
@@ -641,7 +659,6 @@ public class PlayerActivity extends Activity {
                 case KeyEvent.KEYCODE_BACK:
                 case KeyEvent.KEYCODE_ESCAPE:
                     closeMenu();
-                    if (player != null) player.play();
                     return true;
                 case KeyEvent.KEYCODE_DPAD_UP:
                     menuIndex = (menuIndex - 1 + menuRows.size()) % menuRows.size();

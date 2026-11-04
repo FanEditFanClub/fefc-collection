@@ -187,7 +187,10 @@ const SUPPORT=[{name:'Patreon',url:'https://www.patreon.com/cw/FanEditFanClub',s
 let posters={},people={},mosaicList=[],mosaicTimer=null,genreMap={},fthumbs={};
 const GORDER=['Action','Sci-Fi','Horror','Comedy','Animation','Drama','Fantasy','Superhero','Thriller','Crime','Adventure','War','Western','Family','Musical','Documentary','Uncategorized'];
 let _tfC=new Map(),_tfN=-1;function topFolder(f){if(_tfN!==items.size){_tfN=items.size;_tfC=new Map()}if(f&&_tfC.has(f.id))return _tfC.get(f.id);let x=f,guard=0;while(x&&x.parent&&x.parent!==ROOT&&guard++<30)x=items.get(x.parent);const r=x&&x.parent===ROOT?x.id:null;if(f&&f.id)_tfC.set(f.id,r);return r}
-function genresOf(f){const t=topFolder(f),g=t&&genreMap[t];return g?g.genres:['Uncategorized']}
+/* 0.8.23: an item can have several genres. Union of genres.json (folders, any depth) and data/video-genres.json (per file / collection folder) along its ancestor chain. */
+let VG={},_goC=new Map(),_goK='';
+function genresOf(f){if(!f)return['Uncategorized'];const k=Object.keys(genreMap).length+'|'+Object.keys(VG).length;if(_goK!==k){_goK=k;_goC=new Map()}let r=_goC.get(f.id);if(r)return r;const hit=[];let x=f,n=0;while(x&&n++<40){const a=genreMap[x.id],b=VG[x.id];if(a&&a.genres)for(const g of a.genres)if(g!=='Uncategorized'&&hit.indexOf(g)<0)hit.push(g);if(b)for(const g of b)if(hit.indexOf(g)<0)hit.push(g);x=items.get(x.parent)}if(f.targetId&&VG[f.targetId])for(const g of VG[f.targetId])if(hit.indexOf(g)<0)hit.push(g);r=hit.length?hit:['Uncategorized'];_goC.set(f.id,r);return r}
+window.__fefcVG=()=>VG;
 let _glC={},_glK='';function genreList(g){const k=items.size+'|'+Object.keys(genreMap).length;if(_glK!==k){_glK=k;_glC={}}return _glC[g]||(_glC[g]=vids().filter(f=>genresOf(f).indexOf(g)>=0))}
 function genreStrip(){const have={};Object.keys(genreMap).forEach(k=>genreMap[k].genres.forEach(g=>have[g]=1));have.Uncategorized=1;
  $('#genres').innerHTML='<span class="glab">Genres</span>'+GORDER.filter(g=>have[g]).map(g=>`<button class="gt" data-genre="${g}">${g}</button>`).join('')}
@@ -390,6 +393,7 @@ function peopleList(){const box=new Set([...Object.values(FOLD),ROOT]),seen=new 
 function peoplePage(){const L=peopleList();
  pageShell('Actors & Directors',NA.plural(L.length,'Collection'));const g=$('#grid');g.className='sectioned';g.innerHTML=secHTML('folds','ACTORS & DIRECTORS',L);g.querySelectorAll('.ol-tile').forEach(lazyArt);restoreScroll()}
 let mlSort=localStorage.fefcStarSort||'date';
+function fitMlFoot(){const f=document.querySelector('.ml-foot'),h=document.getElementById('hints'),m=document.getElementById('main');if(!f||!m)return;const set=()=>{const hr=h&&h.getBoundingClientRect();const b=hr&&hr.height&&getComputedStyle(h).visibility!=='hidden'?Math.max(0,window.innerHeight-hr.top+8-(parseFloat(getComputedStyle(m).paddingBottom)||0)-(m.getBoundingClientRect().bottom<window.innerHeight?window.innerHeight-m.getBoundingClientRect().bottom:0)):Math.round(window.innerHeight*.05);m.style.setProperty('--ml-foot-b',b+'px')};set();if(!window.__mlFootRs){window.__mlFootRs=1;addEventListener('resize',()=>{document.querySelector('.ml-foot')&&set()})}}
 function myListPage(){const U=window.UD;if(!U)return;const H=U.history(50).map(r=>items.get(r.id)).filter(Boolean);
  let St=U.stars().map(r=>({r,f:items.get(r.id)})).filter(x=>x.f);St.sort(mlSort==='az'?(a,b)=>a.f.name.localeCompare(b.f.name):(a,b)=>b.r.starredAt-a.r.starredAt);St=St.map(x=>x.f);
  pageShell('My List',`${NA.plural(St.length,'Starred')} · ${H.length} in history`.replace('Starreds','Starred'));const g=$('#grid');g.className='sectioned mylist';
@@ -401,7 +405,7 @@ function myListPage(){const U=window.UD;if(!U)return;const H=U.history(50).map(r
  /* 0.8.6: Check for updates at BOTTOM so D-pad Down from menu lands on list items first. */
  g.innerHTML='<div id="ml-sync"></div>'+histHead+histBody
   +`<div class="ol-div"><span>STARRED</span><i></i><button class="mi ml-btn${mlSort==='date'?' on':''}" data-ml="date">Date starred</button><button class="mi ml-btn${mlSort==='az'?' on':''}" data-ml="az">A–Z</button><b>${St.length}</b></div>`
-  +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+updTV+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>';try{(window.__fefcPaintSync||(window.FEFCSync&&FEFCSync.paintCard)||0)()}catch(e){};try{paintMlUpdVer()}catch(e){}
+  +(St.length?(fold_(St).length?`<div class="sgrid folds">${fold_(St).map(f=>tile(f)).join('')}</div>`:'')+(vids_(St).length?`<div class="sgrid vids">${vids_(St).map(f=>tile(f)).join('')}</div>`:''):'<p class="ml-empty">Star fan edits and collections with ★ to keep them here.</p>')+updTV+'<footer class="ml-foot"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></footer>';try{(window.__fefcPaintSync||(window.FEFCSync&&FEFCSync.paintCard)||0)()}catch(e){};try{paintMlUpdVer()}catch(e){};try{fitMlFoot()}catch(e){}
  g.querySelectorAll('.ol-tile').forEach(lazyArt);
  requestAnimationFrame(()=>{if(navBack){try{restoreScroll();return}catch(e){}}
   if(document.body.classList.contains('tv')){const first=g.querySelector('#ml-sync .sync-go,#ml-sync .mi,.ol-tile,.ml-btn,.ml-hist-tog')||$('#ml-update');
@@ -1331,6 +1335,8 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
     let ok=false;if(k===39)ok=dx>8&&Math.abs(dy)<=Math.abs(dx)+40;else if(k===37)ok=dx<-8&&Math.abs(dy)<=Math.abs(dx)+40;else if(k===40)ok=dy>8&&Math.abs(dx)<=Math.abs(dy)+80;else if(k===38)ok=dy<-8&&Math.abs(dx)<=Math.abs(dy)+80;
     if(!ok)return;const d=Math.hypot(dx,dy)+(k===40||k===38?Math.abs(dx)*.35:Math.abs(dy)*.35);if(d<bd){bd=d;best=el}});
    if(k===40&&best){const hop=els.filter(el=>el.classList.contains('tv-scroll')).reduce((pick,el)=>{const y=cx(el).y;if(y<=C.y+8||y>=cx(best).y-4)return pick;if(!pick||y<cx(pick).y)return el;return pick},null);if(hop)best=hop}
+   /* 0.8.23: nothing reachable above (e.g. an off-screen/decorative focusable counted as 'above') -> top menu bar */
+   if(k===38&&!best){toMenu();return}
    if(best){focusEl(best);try{best.scrollIntoView({block:'nearest',inline:'nearest'})}catch(err){}
     const body=$('#details .lc-body');if(body){const br=best.getBoundingClientRect(),bb=body.getBoundingClientRect();if(br.bottom>bb.bottom-8)body.scrollTop+=br.bottom-bb.bottom+24;if(br.top<bb.top+8)body.scrollTop-=bb.top-br.top+24}
     /* 0.8.16: keep focused episode/season chip visible inside its own scroller */
@@ -1357,7 +1363,7 @@ document.addEventListener('focusin',e=>{const t=e.target.closest&&e.target.close
 (function(){const b=document.createElement('button');b.id='tvq';b.type='button';b.className='mi tv-only';b.innerHTML='<span class="tvq-row"><svg class="tvq-ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><path stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M15.2 15.2L20 20"/></svg><span>Search</span></span>';$('#bar').insertBefore(b,$('#q'));b.onclick=()=>{S.click();openSpot('')}})();
 /* ---------- Spotlight search: one box, instant local results + automatic Smart picks (AI) ---------- */
 const OPT_SVG=`<div class="op-ph" aria-hidden="true"><div class="op-scene"><img class="op-watch" src="assets/optimus-watch.webp" alt="" decoding="async"><div class="op-screen"><div class="op-stars"></div><div class="op-ship s1"></div><div class="op-ship s2"></div><div class="op-laser"></div><div class="op-term"><b>&gt; SEARCH:</b><i class="op-cur"></i></div></div><div class="op-kernel"><div class="op-corn-puff"></div></div><div class="op-screen-glow"></div><div class="op-type-hands"></div></div><b class="op-cue"></b></div>`;
-let spEl=null,spSeq=0,spT=null,spAiT=null,spMoodT=null,spIdx=null,spIdxN=-1,spSel=-1,spLastFocus=null;
+let spKeyFn=null,spEl=null,spSeq=0,spT=null,spAiT=null,spMoodT=null,spIdx=null,spIdxN=-1,spSel=-1,spLastFocus=null;
 const spOpen=()=>!!(spEl&&spEl.classList.contains('on'));
 const spNorm=t=>(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 function spBuild(){if(spIdx&&spIdxN===items.size)return spIdx;spIdxN=items.size;const out=[];
@@ -1471,7 +1477,7 @@ function spMk(){spEl=document.createElement('div');spEl.id='spot';spEl.setAttrib
   spT=setTimeout(()=>spRun(q),220);
  });
  spEl.addEventListener('click',e=>{const it=e.target.closest('.sp-it');if(it)spGo(it)});
- spEl.addEventListener('keydown',e=>{
+ spKeyFn=e=>{
   const k=e.keyCode;e.stopPropagation();
   const L=[].slice.call(spEl.querySelectorAll('.sp-it'));
   if(e.key&&e.key.length===1&&!e.ctrlKey&&!e.metaKey){
@@ -1485,6 +1491,7 @@ function spMk(){spEl=document.createElement('div');spEl.id='spot';spEl.setAttrib
    if(a)return spGo(a);
    if(spSel>=0&&L[spSel])return spGo(L[spSel]);
    const q=inp.value.trim();
+   if(!q&&document.activeElement===inp){spSoft();return}
    if(q){
     closeSpot(true);
     go('#/search/'+encodeURIComponent(q));
@@ -1492,7 +1499,8 @@ function spMk(){spEl=document.createElement('div');spEl.id='spot';spEl.setAttrib
    return;
   }
   if(document.activeElement!==inp&&e.key&&e.key.length===1){inp.focus()}
- },false)}
+ };spEl.addEventListener('keydown',spKeyFn,false);
+ {const q0=spEl.querySelector('#sp-q');q0.addEventListener('click',spSoft)}}
 function spHi(L){L.forEach((x,i)=>x.classList.toggle('sel',i===spSel))}
 function spGo(it){S.click();const g=it.dataset.g,f=it.dataset.id&&items.get(it.dataset.id);closeSpot(true);if(g)return go('#/genre/'+encodeURIComponent(g));if(!f)return;if(isFolder(f))go('#/folder/'+target(f));else go('#/edit/'+f.id)}
 function spPaint(groups,smart){const R=spEl.querySelector('.sp-res');let h=groups.map(([t,L])=>`<div class="sp-g"><div class="sp-gh">${t}<i>${L.length}</i></div>${L.map(x=>spRow(x)).join('')}</div>`).join('');
@@ -1515,7 +1523,15 @@ function spVVon(){spFit();if(window.visualViewport&&!spVV){spVV=()=>{spFit();if(
 function spVVoff(){if(window.visualViewport&&spVV){visualViewport.removeEventListener('resize',spVV);visualViewport.removeEventListener('scroll',spVV);spVV=null}}
 function openSpot(q){if(!spEl)spMk();spVVon();spLastFocus=document.activeElement;const inp=spEl.querySelector('#sp-q');spEl.hidden=false;document.body.classList.add('sp-lock');requestAnimationFrame(()=>spEl.classList.add('on'));
  inp.value=q||'';spSeq++;clearTimeout(spAiT);spPaint([]);const o=spEl.querySelector('.sp-opt');o.dataset.lock=0;spMood('idle');spSay('Optimus is watching a fan edit. Type to interrupt him.');if(q){inp.dispatchEvent(new Event('input'))}
- setTimeout(()=>{try{inp.focus({preventScroll:true})}catch(e){inp.focus()}try{const nb=window.FEFCNative;if(nb&&typeof nb.showSoftInput==='function')nb.showSoftInput()}catch(e){}},30)}
+ [30,200,600].forEach(ms=>setTimeout(()=>{if(!spOpen())return;if(document.activeElement!==inp){try{inp.focus({preventScroll:true})}catch(e){inp.focus()}}spSoft()},ms))}
+/* 0.8.23: ask the Fire TV WebView for its on-screen keyboard (retried on open; Select on an empty field reopens it) */
+function spSoft(){try{const nb=window.FEFCNative;if(nb&&typeof nb.showSoftInput==='function')nb.showSoftInput()}catch(e){}}
+/* 0.8.23: focus trap. While the search popup is open every key and every focus change stays inside it; Back closes it. Runs first (window capture) so no page handler behind the popup can move focus. */
+addEventListener('keydown',e=>{if(!spOpen()||!spKeyFn)return;const inp=spEl.querySelector('#sp-q');e.stopImmediatePropagation();
+ if(spEl.contains(e.target)){spKeyFn(e);return}
+ const k=e.keyCode,back=k===27||k===10009||k===461||k===8||e.key==='GoBack'||e.key==='BrowserBack';
+ e.preventDefault();if(back){closeSpot();return}try{inp.focus({preventScroll:true})}catch(_){}spKeyFn(e)},true);
+document.addEventListener('focusin',e=>{if(!spOpen()||spEl.contains(e.target))return;const inp=spEl.querySelector('#sp-q');try{inp.focus({preventScroll:true})}catch(_){}},true);
 function closeSpot(nav){if(!spOpen())return;spVVoff();spSeq++;clearTimeout(spT);clearTimeout(spAiT);spEl.classList.remove('on');document.body.classList.remove('sp-lock');const inp=spEl.querySelector('#sp-q');inp.blur();setTimeout(()=>{if(!spOpen())spEl.hidden=true},260);
  if(nav!==true&&spLastFocus&&document.contains(spLastFocus)&&spLastFocus.id!=='q'&&spLastFocus!==document.body){try{spLastFocus.focus({preventScroll:true})}catch(e){}}}
 window.FEFCSpot={open:openSpot,close:closeSpot};
@@ -1526,7 +1542,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.22';
+const HOME_VER_FALLBACK='0.8.23';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 
 function formatMlUpdVer(name,code){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/^v/i,'').replace(/\s*beta$/i,'').trim();return 'v'+base}
@@ -1603,7 +1619,7 @@ const laterIdle=(fn,ms)=>{const kick=()=>{(window.requestIdleCallback||(f=>setTi
  const wait=()=>{if(document.body.classList.contains('native-waiting'))addEventListener('fefc-home-revealed',()=>setTimeout(kick,ms|0),{once:true});else setTimeout(kick,ms|0)};
  TVB||window.FEFCNative?afterIntro(wait):fn()};
 /* Genres: Fire TV previously raced a 10s timeout vs local/network JSON and .catch(()=>{}) left genreMap={} → FEFCGenres hub stuck on "Loading genres…" forever. Load from bundled/local URL with a long TV timeout, retry once, and surface fail+retry UI. */
-window.loadGenres=(force)=>{if(window._genresP&&!force)return window._genresP;const ms=isTvEnv()?60000:20000;const once=()=>tmo('data/genres.json',ms).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;try{if(window.FEFCGenres&&FEFCGenres.loaded)FEFCGenres.loaded()}catch(e){}softRefresh();return g});window._genresP=once().catch(e=>{console.warn('genres',e);return once()}).then(g=>{window._genresP=Promise.resolve(g);return g},e=>{window._genresP=null;try{if(window.FEFCGenres&&FEFCGenres.fail)FEFCGenres.fail(e&&e.message||e)}catch(err){}throw e});return window._genresP};
+window.loadGenres=(force)=>{if(window._genresP&&!force)return window._genresP;const ms=isTvEnv()?60000:20000;const once=()=>tmo('data/genres.json',ms).then(g=>tmo('data/video-genres.json',ms).catch(()=>null).then(v=>{const o={};if(v&&v.sets&&v.ids)for(const id in v.ids)o[id]=v.sets[v.ids[id]];VG=o;return g})).then(g=>{GC=g.__collections||{};delete g.__collections;genreMap=g;try{if(window.FEFCGenres&&FEFCGenres.loaded)FEFCGenres.loaded()}catch(e){}softRefresh();return g});window._genresP=once().catch(e=>{console.warn('genres',e);return once()}).then(g=>{window._genresP=Promise.resolve(g);return g},e=>{window._genresP=null;try{if(window.FEFCGenres&&FEFCGenres.fail)FEFCGenres.fail(e&&e.message||e)}catch(err){}throw e});return window._genresP};
 /* Genres/softRefresh deferred until a few seconds after Home reveal on Fire TV. */
 laterIdle(()=>window.loadGenres(),isTvEnv()?3500:1500);
 afterIntro(()=>{tmo('data/mosaic.json',10000).then(m=>{mosaicList=m;if(!$('#home').hidden)mosaic();else if(window.FEFCNative)setTimeout(()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady(),1500)}).catch(()=>{if(window.FEFCNative)window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()});});

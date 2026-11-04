@@ -1,7 +1,7 @@
 const DWELL = [3e3, 6e3], DWELL_PERF = [7e3, 12e3];
 const STILL_MS = [3200, 5e3], STILL_MS_PERF = [4e3, 6500];
 let clips = null, loading = false, timers = [], cells = [], pool = [], free = [], on = false, rot = 0;
-let atlasV = null, atlasOn = false, atlasTried = false, atlasGen = 0, atlasStarting = null;
+let atlasRetries = 0, atlasV = null, atlasOn = false, atlasTried = false, atlasGen = 0, atlasStarting = null;
 const home = () => document.getElementById("home");
 const atHome = () => {
   const h = home(), b = document.body.classList;
@@ -182,9 +182,14 @@ function startAtlas() {
       if (p && p.catch) p.catch(() => {
       });
     }, { once: true });
-    setTimeout(() => {
-      if (!atlasOn && my === atlasGen) finish(v.readyState >= 2, "timeout-rs" + v.readyState);
-    }, 9e3);
+    let gu = null;
+    const arm2 = (ms) => {
+      clearTimeout(gu);
+      gu = setTimeout(() => {
+        if (!atlasOn && my === atlasGen) finish(v.readyState >= 2, "timeout-rs" + v.readyState);
+      }, ms);
+    };
+    arm2(14e3);
     const boot = () => {
       const play = () => {
         const p = v.play();
@@ -209,10 +214,12 @@ function startAtlas() {
           if (window.FEFCNative && FEFCNative.log) FEFCNative.log(line);
         } catch (e) {
         }
+        arm2(12e3);
         v.src = v._blobUrl;
         play();
       };
       const fetchBlob = () => {
+        arm2(16e3);
         try {
           const line = "FEFC_CLIPS atlas=fetch-start " + src;
           console.log(line);
@@ -543,6 +550,15 @@ function schedule() {
           if (window.FEFCNative && FEFCNative.log) FEFCNative.log(line);
         } catch (e) {
         }
+        if (atlasRetries < 1) {
+          atlasRetries++;
+          setTimeout(() => {
+            if (atHome() && !atlasOn && !atlasStarting) {
+              atlasTried = false;
+              schedule();
+            }
+          }, 2e4);
+        }
       }
       go();
     });
@@ -577,6 +593,7 @@ new MutationObserver(() => {
 }).observe(document.body, { attributes: true, attributeFilter: ["class"] });
 addEventListener("fefc-home-revealed", () => {
   atlasTried = false;
+  atlasRetries = 0;
   kick();
 });
 function init() {
