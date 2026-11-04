@@ -1,8 +1,8 @@
 {
-    "versionCode": 31,
-    "versionName": "0.8.21",
+    "versionCode": 32,
+    "versionName": "0.8.22",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "0.8.21 \u2014 Open in VLC brings VLC's video activity to the foreground (video and audio). WebView ambience, atlas, and <video> are paused before launch. versionCode 31.\n0.8.20 \u2014 Web player uses /api/stream only (no Drive preview, no sign-in gate). Silk shows Open stream / Open in Drive if playback does not start within 8s.\n0.8.19 \u2014 Version badge, Google Sync restored, authenticated stream proxy.\n- My List: installed version (v0.8.19) shown next to Check for updates.\n- Sync My List: Sign in with Google back on top of the 6-digit sync code (web + Fire TV).\n- Fire TV Google: device code when Worker has TV OAuth; else QR \u2192 phone Google \u2192 Approve.\n- /api/stream: optional faneditfanclub OAuth (drive.readonly) so restricted edits play without viewer sign-in; VLC uses the same proxy. No Drive sharing/content changes.",
-    "size": 106685074,
-    "sha256": "4d15bd89381133d26a891ff3e905e6feb8858cc59457bb64ce3519c2020d8029"
+    "notes": "0.8.22 \u2014 Built-in player uses /api/stream only (no Google account). Full-screen playback is ExoPlayer, including .mkv. VLC-style controls on TV and web. Sync pairing and My List stay across APK updates (native prefs + no WebView storage wipe) and can be restored from the server by device id. versionCode 32. Signed APK not in this commit; firetv/version.json stays at the shipped 0.8.21 vc31 until the box build.\n0.8.21 \u2014 Open in VLC brings VLC's video activity to the foreground (video and audio). WebView ambience, atlas, and <video> are paused before launch. versionCode 31.\n0.8.20 \u2014 Web player uses /api/stream only (no Drive preview, no sign-in gate). Silk shows Open stream / Open in Drive if playback does not start within 8s.\n0.8.19 \u2014 Version badge, Google Sync restored, authenticated stream proxy.\n- My List: installed version (v0.8.19) shown next to Check for updates.\n- Sync My List: Sign in with Google back on top of the 6-digit sync code (web + Fire TV).\n- Fire TV Google: device code when Worker has TV OAuth; else QR \u2192 phone Google \u2192 Approve.\n- /api/stream: optional faneditfanclub OAuth (drive.readonly) so restricted edits play without viewer sign-in; VLC uses the same proxy. No Drive sharing/content changes.",
+    "size": 104829191,
+    "sha256": "04c0e02ed1ee651fa0fd273fd002e94d72797d7d0da5c18e2ecb9dcc41af677a"
 }
