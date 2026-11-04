@@ -63,7 +63,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY' > plan.env
-          import re, urllib.request, hashlib, os, json, subprocess
+          import re, urllib.request, urllib.error, hashlib, os, json, subprocess
           html = urllib.request.urlopen('https://mirrors.kodi.tv/releases/android/arm/', timeout=60).read().decode('utf-8', 'ignore')
           names = set(re.findall(r'kodi-(\d+\.\d+(?:\.\d+)?)-([A-Za-z]+)-armeabi-v7a\.apk', html))
           best = max(names, key=lambda n: tuple(int(x) for x in n[0].split('.')))   # only plain "<ver>-<Codename>" = stable releases
@@ -77,10 +77,14 @@ jobs:
                   h.update(p.encode()); h.update(open(p, 'rb').read())
           src = h.hexdigest()[:12]
           cur = {}
+          req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json?ts=%s' % os.getpid(), headers={'User-Agent': 'FEFC-Kodi-Build'})
           try:
-              cur = json.load(urllib.request.urlopen('https://fefc-collection.pages.dev/kodi-app/version.json?ts=%s' % os.getpid(), timeout=30))
-          except Exception:
-              pass
+              cur = json.load(urllib.request.urlopen(req, timeout=30))
+          except urllib.error.HTTPError as e:
+              if e.code != 404:
+                  raise SystemExit('cannot read the published version.json (HTTP %s): refusing to guess the build number' % e.code)
+          except Exception as e:
+              raise SystemExit('cannot read the published version.json (%s): refusing to guess the build number' % e)
           force = os.environ.get('FORCE') == 'true'
           rebuild = force or cur.get('kodi') != ver or cur.get('src') != src
           print('KODI_VER=%s\nKODI_APK=%s\nSRC_HASH=%s\nREBUILD=%s\nPREV_BUILD=%s' % (ver, apk, src, str(rebuild).lower(), cur.get('build', 0)))
