@@ -42,7 +42,7 @@ jobs:
           set -euo pipefail
           git config user.name "fefc-collection-resync"
           git config user.email "actions@github.com"
-          git add data/index.json data/index.json.gz data/links.json data/dates.json data/added.json || true
+          git add -A data/
           if git diff --cached --quiet; then echo "no catalog changes"; else
             git commit -m "Catalog snapshot ($(date -u +%F))"
             git pull --rebase origin main
