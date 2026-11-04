@@ -24,6 +24,13 @@ s = s.replace('<activity android:configChanges', '<activity android:banner="@dra
 s = re.sub(r'<activity ([^>]*android:name="org\.xbmc\.kodi\.Splash")', r'<activity android:banner="@drawable/banner" android:icon="@mipmap/ic_launcher" \1', s)
 s = re.sub(r'android:authorities="org\.xbmc\.kodi\.', 'android:authorities="%s.' % PKG, s)
 s = s.replace('org.xbmc.kodi.permission', PKG + '.permission')
+if 'REQUEST_INSTALL_PACKAGES' not in s:  # lets the in-app updater hand the downloaded APK to Android's installer
+    s = s.replace('<application', '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>\n    <application', 1)
+# FileProvider (androidx is already in Kodi's dex) so the downloaded update APK can be handed to Android's installer with a read grant
+if 'fefc_update_paths' not in s:
+    s = s.replace('</application>', '<provider android:name="androidx.core.content.FileProvider" android:authorities="%s.fefcupdate" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/fefc_update_paths"/></provider>\n    </application>' % PKG, 1)
+os.makedirs(os.path.join(dec, 'res', 'xml'), exist_ok=True)
+open(os.path.join(dec, 'res', 'xml', 'fefc_update_paths.xml'), 'w').write('<?xml version="1.0" encoding="utf-8"?>\n<paths>\n    <external-files-path name="ext" path="."/>\n    <external-cache-path name="extcache" path="."/>\n    <files-path name="int" path="."/>\n    <cache-path name="cache" path="."/>\n</paths>\n')
 open(mf, 'w', encoding='utf-8').write(s)
 # label "FEFC" in every locale
 for f in glob.glob(os.path.join(dec, 'res', 'values*', 'strings.xml')):

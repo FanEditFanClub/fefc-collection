@@ -59,6 +59,60 @@ def installed_build():
         return None
 
 
+def install_update(new):
+    """Download the new APK (verified against the published sha256) and hand it to Android's package installer."""
+    import hashlib
+    url = new.get('url', '')
+    dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
+    prog = xbmcgui.DialogProgress()
+    prog.create('FEFC update', 'Downloading the new FEFC app...')
+    ok = False
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
+        h = hashlib.sha256()
+        with urllib.request.urlopen(req, timeout=30) as r, open(dst + '.part', 'wb') as f:
+            total = int(r.headers.get('Content-Length') or new.get('size') or 0)
+            done = 0
+            while True:
+                chunk = r.read(256 * 1024)
+                if not chunk:
+                    break
+                f.write(chunk)
+                h.update(chunk)
+                done += len(chunk)
+                if total:
+                    prog.update(min(99, int(done * 100 / total)), 'Downloading the new FEFC app... %d / %d MB' % (done >> 20, total >> 20))
+                if prog.iscanceled():
+                    raise RuntimeError('cancelled')
+        if new.get('sha256') and h.hexdigest() != new['sha256']:
+            raise RuntimeError('checksum mismatch')
+        os.replace(dst + '.part', dst)
+        ok = True
+    except Exception as e:
+        log('update download failed: %s' % e)
+        try:
+            os.remove(dst + '.part')
+        except OSError:
+            pass
+    prog.close()
+    if not ok:
+        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish. Try again later.')
+        return
+    uri = None
+    for marker, name in (('/files/', 'ext'), ('/cache/', 'extcache')):
+        if '/Android/data/' in dst and marker in dst:
+            uri = 'content://org.xbmc.kodi.fefcupdate/%s/%s' % (name, dst.split(marker, 1)[1]); break
+    if uri is None:
+        for marker, name in (('/files/', 'int'), ('/cache/', 'cache')):
+            if '/org.xbmc.kodi/' in dst and marker in dst:
+                uri = 'content://org.xbmc.kodi.fefcupdate/%s/%s' % (name, dst.split(marker, 1)[1]); break
+    if uri is None:  # unknown location: Kodi's own exported file provider
+        uri = 'content://org.xbmc.kodi.file/#' + dst
+    log('launching installer: %s' % uri)
+    # 5th argument 1 = FLAG_GRANT_READ_URI_PERMISSION so the installer can read our FileProvider URI
+    xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)' % uri)
+
+
 def check_update(manual=False):
     """Compare the installed FEFC app build with the latest published one (the GitHub Action publishes version.json)."""
     cur = installed_build()
@@ -75,9 +129,9 @@ def check_update(manual=False):
             xbmcgui.Dialog().ok('FEFC', 'Could not check for updates right now.')
         return
     if int(new.get('build', 0)) > int(cur.get('build', 0)):
-        msg = 'A new FEFC app is available (build %s, you have %s). Download it now?' % (new.get('build'), cur.get('build'))
-        if xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Download'):
-            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % new.get('url', ''))
+        msg = 'A new FEFC app is available (build %s, you have %s). Download and install it now?' % (new.get('build'), cur.get('build'))
+        if xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN):
+            install_update(new)
     elif manual:
         xbmcgui.Dialog().ok('FEFC', 'You have the latest FEFC app (Kodi %s, build %s).' % (cur.get('kodi'), cur.get('build')))
 

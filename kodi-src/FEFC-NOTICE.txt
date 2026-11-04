@@ -6,6 +6,9 @@ supported by the XBMC/Kodi Foundation. "Kodi" is a trademark of the XBMC Foundat
 
 What was changed: package name, app name and artwork (FEFC), the bundled add-ons (plugin.video.fefc, repository.fefc,
 skin.fefc), default settings/userdata. The Kodi program code itself is unmodified.
+skin.fefc is generated from Kodi's Estuary skin (CC BY-SA 4.0 / GPL-2.0-or-later) and bundles the Jura font (SIL Open Font
+License 1.1, see LICENSE-FEFC.txt in the skin).
+The app can download its own updates (from this project's server) and hands them to Android's installer; you confirm each install.
 
 Source code:
   Kodi (upstream, same version as this build): https://github.com/xbmc/xbmc  (tag 21.3-Omega)
