@@ -1,0 +1,59 @@
+name: catalog-snapshot
+
+# Fast catalog refresh (read-only Drive crawl): crawl -> links -> dates -> added, commit data, deploy Pages.
+# Same early "post-crawl snapshot" the nightly does, without the slow metadata steps. Keeps the live firetv/version.json.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: site-deploy
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - name: Install JS deps
+        run: npm ci || npm install
+      - name: Crawl Drive (read-only) and rebuild index data
+        run: |
+          set -euo pipefail
+          python3 tools/crawl.py
+          python3 tools/links.py
+          python3 tools/dates.py
+          python3 tools/added.py
+      - name: Commit + push catalog data
+        run: |
+          set -euo pipefail
+          git config user.name "fefc-collection-resync"
+          git config user.email "actions@github.com"
+          git add data/index.json data/index.json.gz data/links.json data/dates.json data/added.json || true
+          if git diff --cached --quiet; then echo "no catalog changes"; else
+            git commit -m "Catalog snapshot ($(date -u +%F))"
+            git pull --rebase origin main
+            git push origin main
+          fi
+      - name: Deploy Pages (no APK / Android sources; keep live version.json)
+        run: |
+          set -euo pipefail
+          SITE="$RUNNER_TEMP/site"; mkdir -p "$SITE"
+          rsync -a --exclude '.git' --exclude 'node_modules' --exclude '.github' --exclude 'firetv' ./ "$SITE/"
+          mkdir -p "$SITE/firetv"
+          curl -fsS "https://collection.faneditfanclub.com/firetv/version.json?ts=$(date +%s)" -o "$SITE/firetv/version.json"
+          cd "$SITE"
+          "$GITHUB_WORKSPACE/node_modules/.bin/wrangler" pages deploy . --project-name fefc-collection --branch main --commit-dirty=true
