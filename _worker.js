@@ -707,9 +707,95 @@ async function vlcApi(req, env, ctx, url) {
   return res;
 }
 
+// ---- Kodi "HTTP directory" source: /kodi/ (Apache-style autoindex). Tree mirrors the Drive folder structure from the live index.
+// Also /kodi/Genres/<Genre>/ , /kodi/All/<Letter>/ . File links are /kodi/<path>/<name.ext>, served through streamApi (Range-aware, 206).
+const kodiNameCache = new WeakMap();              // model -> Map(folderKey -> {list:[{name,it,dir}], byName:Map})
+const kodiClean = s => String(s || '').replace(/[\/\\\r\n\t]+/g, '-').replace(/\s+/g, ' ').trim() || '_';
+const kodiFileName = it => { const n = kodiClean(it.name); return VLC_VID.test(n) ? n : n + '.mp4'; };
+function kodiEntries(m, key, items) {            // unique, sorted names for one listing
+  let c = kodiNameCache.get(m); if (!c) kodiNameCache.set(m, c = new Map());
+  let e = c.get(key); if (e) return e;
+  const used = new Set(), list = [], byName = new Map();
+  for (const it of items.slice().sort(sortByName)) {
+    let nm = it.dir ? kodiClean(it.name) : kodiFileName(it), n = nm, i = 2;
+    while (used.has(n.toLowerCase())) { n = it.dir ? nm + ' (' + i + ')' : nm.replace(/(\.[A-Za-z0-9]{2,5})$/, ' (' + i + ')$1'); i++; }
+    used.add(n.toLowerCase()); const o = { name: n, it, dir: !!it.dir }; list.push(o); byName.set(n, o);
+  }
+  e = { list, byName }; c.set(key, e); return e;
+}
+const kodiLetter = it => { const c = kodiClean(it.name).charAt(0).toUpperCase(); return /[A-Z]/.test(c) ? c : '0-9'; };
+function kodiKids(m, cur) {                       // cur: {id, items}
+  if (cur.items) return kodiEntries(m, 'f:' + cur.id, cur.items);
+  if (cur.id === m.root) {
+    const all = m.kids.get(m.root) || [], loose = all.filter(k => !k.dir);
+    return kodiEntries(m, 'root', all.filter(k => k.dir && m.cnt.get(k.id)).concat(loose.length ? [{ id: '_loose', name: 'Loose Edits', dir: true, _items: loose }] : []));
+  }
+  return kodiEntries(m, 'f:' + cur.id, (m.kids.get(cur.id) || []).filter(k => !k.dir || m.cnt.get(k.id)));
+}
+function kodiChildren(m, segs) {                 // -> {kind:'dir', entries} | {kind:'file', it} | null
+  if (!segs.length) return { kind: 'dir', entries: ['Genres', 'All'].map(n => ({ name: n, dir: true })).concat(kodiKids(m, { id: m.root }).list) };
+  const head = segs[0];
+  if (head === 'Genres') {
+    if (segs.length === 1) return { kind: 'dir', entries: kodiEntries(m, 'genres', [...m.genres.keys()].map(g => ({ id: 'g:' + g, name: g, dir: true }))).list };
+    const g = segs[1]; const a = m.genres.get(g); if (!a) return null;
+    const e = kodiEntries(m, 'g:' + g, a);
+    if (segs.length === 2) return { kind: 'dir', entries: e.list };
+    if (segs.length === 3) { const f = e.byName.get(segs[2]); return f && !f.dir ? { kind: 'file', it: f.it } : null; }
+    return null;
+  }
+  if (head === 'All') {
+    const all = [...m.byId.values()].filter(i => !i.dir);
+    if (segs.length === 1) { const ls = [...new Set(all.map(kodiLetter))].sort(); return { kind: 'dir', entries: ls.map(n => ({ name: n, dir: true })) }; }
+    const L = segs[1]; const items = all.filter(i => kodiLetter(i) === L); if (!items.length) return null;
+    const e = kodiEntries(m, 'a:' + L, items);
+    if (segs.length === 2) return { kind: 'dir', entries: e.list };
+    if (segs.length === 3) { const f = e.byName.get(segs[2]); return f && !f.dir ? { kind: 'file', it: f.it } : null; }
+    return null;
+  }
+  // Drive tree
+  let cur = { id: m.root, items: null };
+  for (let i = 0; i < segs.length; i++) {
+    const f = kodiKids(m, cur).byName.get(segs[i]); if (!f) return null;
+    if (!f.dir) return i === segs.length - 1 ? { kind: 'file', it: f.it } : null;
+    cur = f.it._items ? { id: f.it.id, items: f.it._items } : { id: f.it.id, items: null };
+  }
+  return { kind: 'dir', entries: kodiKids(m, cur).list };
+}
+function kodiHtml(path, entries) {
+  const T = '/kodi/' + path.map(s => s).join('/') + (path.length ? '/' : '');
+  let o = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">\n<html>\n <head>\n  <title>Index of ' + xe(T) + '</title>\n </head>\n <body>\n<h1>Index of ' + xe(T) + '</h1>\n<pre>';
+  for (const e of entries) o += '<a href="' + encodeURIComponent(e.name).replace(/'/g, '%27') + (e.dir ? '/' : '') + '">' + xe(e.name) + (e.dir ? '/' : '') + '</a>' + (e.dir ? '  -\n' : '  -\n');
+  return o + '</pre>\n</body></html>\n';
+}
+async function kodiApi(req, env, ctx, url) {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
+  let segs;
+  try { segs = url.pathname.slice('/kodi/'.length).split('/').map(decodeURIComponent).filter((s, i, a) => s !== '' || false); } catch (_) { return json({ error: 'bad_path' }, 400); }
+  const dirReq = url.pathname.endsWith('/');
+  const m = await vlcLoad(env, url);
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  const key = new Request(url.origin + url.pathname + '?k=1', { method: 'GET' });
+  if (dirReq && cache) { const hit = await cache.match(key); if (hit) return req.method === 'HEAD' ? new Response(null, hit) : hit; }
+  const r = kodiChildren(m, segs);
+  if (!r) return new Response('Not Found', { status: 404, headers: { 'content-type': 'text/plain' } });
+  if (r.kind === 'file') {
+    const su = new URL(url.origin + '/api/stream/' + r.it.id + '/' + encodeURIComponent(kodiFileName(r.it).replace(/[^\w.\- ()\[\]]+/g, '_')));
+    su.search = url.search;
+    return streamApi(req, env, su);
+  }
+  if (!dirReq) return Response.redirect(url.origin + url.pathname + '/', 301);
+  const res = new Response(req.method === 'HEAD' ? null : kodiHtml(segs, r.entries), { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=' + VLC_TTL } });
+  if (cache) ctx.waitUntil(cache.put(key, new Response(kodiHtml(segs, r.entries), { headers: res.headers })));
+  return res;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    if (url.pathname === '/kodi') return Response.redirect(url.origin + '/kodi/', 301);
+    if (url.pathname.startsWith('/kodi/')) {
+      try { return await kodiApi(req, env, ctx, url); } catch (e) { console.log('kodi error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }
+    }
     if (url.pathname === '/vlc.m3u' || url.pathname.startsWith('/vlc/')) {
       try { return await vlcApi(req, env, ctx, url); } catch (e) { console.log('vlc error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }
     }
