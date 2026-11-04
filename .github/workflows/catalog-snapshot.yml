@@ -4,6 +4,8 @@ name: catalog-snapshot
 # Same early "post-crawl snapshot" the nightly does, without the slow metadata steps. Keeps the live firetv/version.json.
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 12 * * *'   # daily 12:00 UTC (7 AM ET); fully self-contained in GitHub Actions
 
 permissions:
   contents: write
@@ -37,18 +39,32 @@ jobs:
           python3 tools/links.py
           python3 tools/dates.py
           python3 tools/added.py
+      - name: Safety check (never wipe the catalog)
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, subprocess
+          new = len(json.load(open('data/index.json'))['items'])
+          old = len(json.loads(subprocess.check_output(['git','show','HEAD:data/index.json']))['items'])
+          print('items old', old, 'new', new)
+          if new < old * 0.9:
+              raise SystemExit('crawl returned <90% of previous catalog; aborting without commit/deploy')
+          PY
       - name: Commit + push catalog data
+        id: commit
         run: |
           set -euo pipefail
           git config user.name "fefc-collection-resync"
           git config user.email "actions@github.com"
           git add -A data/
-          if git diff --cached --quiet; then echo "no catalog changes"; else
+          if git diff --cached --quiet; then echo "no catalog changes"; echo "changed=false" >> "$GITHUB_OUTPUT"; else
             git commit -m "Catalog snapshot ($(date -u +%F))"
             git pull --rebase origin main
             git push origin main
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Deploy Pages (no APK / Android sources; keep live version.json)
+        if: steps.commit.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           set -euo pipefail
           SITE="$RUNNER_TEMP/site"; mkdir -p "$SITE"

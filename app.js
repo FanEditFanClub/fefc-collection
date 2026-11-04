@@ -5682,7 +5682,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.23";
+  const HOME_VER_FALLBACK = "0.8.24";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

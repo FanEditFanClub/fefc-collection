@@ -597,9 +597,126 @@ async function streamApi(req, env, url) {
   return streamViaUsercontent(tid, req, fileName, CORS);
 }
 
+// ---- VLC playlists: /vlc.m3u (index), /vlc/all.m3u, /vlc/genre/<Genre>.m3u, /vlc/<folderId>.m3u, /vlc.xspf (nested tree).
+// Generated at request time from the live /data/index.json (+ /data/video-genres.json); cached ~10 min in-isolate and at the edge.
+// Entries point at the existing /api/stream/<id>/<name> proxy. Read-only; no Drive changes.
+const VLC_TTL = 600;
+const VLC_VID = /\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$/i;
+let vlcModel = null;                              // { t, root, byId, kids, vids, genres, gset }
+async function vlcLoad(env, url) {
+  if (vlcModel && Date.now() - vlcModel.t < VLC_TTL * 1000) return vlcModel;
+  const get = async p => { const r = await env.ASSETS.fetch(new Request(new URL(p, url).toString())); if (!r.ok) throw new Error(p + ' ' + r.status); return r.json(); };
+  const [idx, vg] = await Promise.all([get('/data/index.json'), get('/data/video-genres.json').catch(() => ({ ids: {}, sets: [] }))]);
+  const byId = new Map(), kids = new Map();
+  for (const it of idx.items || []) {
+    const isDir = /folder$/.test(it.mimeType || '');
+    const isVid = !isDir && (it.kind === 'video' || VLC_VID.test(it.name || ''));
+    if (!isDir && !isVid) continue;
+    it.dir = isDir; byId.set(it.id, it);
+    let a = kids.get(it.parent); if (!a) kids.set(it.parent, a = []); a.push(it);
+  }
+  const cnt = new Map();                          // folder id -> recursive video count
+  const count = (id, seen) => {
+    if (cnt.has(id)) return cnt.get(id);
+    if (seen.has(id)) return 0; seen.add(id);
+    let n = 0; for (const k of kids.get(id) || []) n += k.dir ? count(k.id, seen) : 1;
+    cnt.set(id, n); return n;
+  };
+  const genres = new Map();                       // genre -> [video items]
+  const unsorted = [];
+  for (const it of byId.values()) {
+    if (it.dir) { count(it.id, new Set()); continue; }
+    const si = vg.ids && (vg.ids[it.id] != null ? vg.ids[it.id] : (it.targetId ? vg.ids[it.targetId] : null));
+    const set = si != null && vg.sets ? vg.sets[si] : null;
+    if (set && set.length) for (const g of set) { let a = genres.get(g); if (!a) genres.set(g, a = []); a.push(it); }
+    else unsorted.push(it);
+  }
+  if (unsorted.length) genres.set('Unsorted', unsorted);
+  if (idx.root && !byId.has(idx.root)) byId.set(idx.root, { id: idx.root, name: 'Fan Edit Fan Club (top level)', dir: true, parent: '' });
+  vlcModel = { t: Date.now(), root: idx.root, generated: idx.generated, byId, kids, cnt, genres };
+  return vlcModel;
+}
+function vlcTitle(it) {
+  return String(it.name || '').replace(/\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$/i, '').replace(/\s+-\s+(Movie\s+)?Fan\s*Edit\s*$/i, '').replace(/[\r\n,]+/g, ' ').trim() || it.id;
+}
+function vlcStreamUrl(origin, it) {
+  const nm = String(it.name || 'video.mp4').trim().replace(/[^\w.\- ()\[\]]+/g, '_');
+  return origin + '/api/stream/' + it.id + '/' + encodeURIComponent(nm);
+}
+const sortByName = (a, b) => String(a.name).localeCompare(String(b.name), 'en', { numeric: true, sensitivity: 'base' });
+function m3uEntry(origin, it, grp) {
+  return '#EXTINF:-1' + (grp ? ' group-title="' + grp.replace(/"/g, "'") + '"' : '') + ',' + vlcTitle(it) + '\n' + (grp ? '#EXTGRP:' + grp + '\n' : '') + vlcStreamUrl(origin, it) + '\n';
+}
+function m3uFolderEntry(origin, id, title, n) {
+  return '#EXTINF:-1,' + title.replace(/[\r\n,]+/g, ' ') + (n != null ? ' (' + n + ')' : '') + '\n' + origin + '/vlc/' + id + '.m3u\n';
+}
+const xe = s => String(s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
+function vlcXspf(origin, m) {
+  const tracks = [], tid = new Map();
+  const track = it => { let t = tid.get(it.id); if (t == null) { t = tracks.length; tid.set(it.id, t); tracks.push(it); } return t; };
+  const items = it => '<vlc:item tid="' + track(it) + '"/>';
+  const folderNode = (id, title, depth, seen) => {
+    const ks = (m.kids.get(id) || []).slice().sort(sortByName); let o = '';
+    for (const k of ks) if (k.dir && m.cnt.get(k.id) && depth < 8 && !seen.has(k.id)) { seen.add(k.id); o += folderNode(k.id, k.name, depth + 1, seen); seen.delete(k.id); }
+    for (const k of ks) if (!k.dir) o += items(k);
+    return '<vlc:node title="' + xe(title) + '">' + o + '</vlc:node>';
+  };
+  let tree = '<vlc:node title="By Genre">';
+  for (const g of [...m.genres.keys()].sort()) tree += '<vlc:node title="' + xe(g + ' (' + m.genres.get(g).length + ')') + '">' + m.genres.get(g).slice().sort(sortByName).map(items).join('') + '</vlc:node>';
+  tree += '</vlc:node><vlc:node title="Collections">';
+  for (const k of (m.kids.get(m.root) || []).slice().sort(sortByName)) if (k.dir && m.cnt.get(k.id)) tree += folderNode(k.id, k.name, 0, new Set([k.id]));
+  for (const k of (m.kids.get(m.root) || []).slice().sort(sortByName)) if (!k.dir) tree += items(k);
+  tree += '</vlc:node>';
+  const tl = tracks.map((it, i) => '<track><location>' + xe(vlcStreamUrl(origin, it)) + '</location><title>' + xe(vlcTitle(it)) + '</title><extension application="http://www.videolan.org/vlc/playlist/0"><vlc:id>' + i + '</vlc:id></extension></track>').join('');
+  return '<?xml version="1.0" encoding="UTF-8"?>\n<playlist xmlns="http://xspf.org/ns/0/" xmlns:vlc="http://www.videolan.org/vlc/playlist/ns/0/" version="1"><title>Fan Edit Fan Club Collection</title><trackList>' + tl + '</trackList><extension application="http://www.videolan.org/vlc/playlist/0">' + tree + '</extension></playlist>';
+}
+async function vlcApi(req, env, ctx, url) {
+  const origin = url.origin, p = decodeURIComponent(url.pathname);
+  const text = (body, type) => new Response(req.method === 'HEAD' ? null : body, { headers: { 'content-type': type, 'cache-control': 'public, max-age=' + VLC_TTL, 'access-control-allow-origin': '*', 'content-disposition': 'inline' } });
+  const M3U = 'audio/x-mpegurl; charset=utf-8';
+  if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  const key = new Request(origin + url.pathname + '?v=3', { method: 'GET' });
+  if (cache) { const hit = await cache.match(key); if (hit) return req.method === 'HEAD' ? new Response(null, hit) : hit; }
+  const m = await vlcLoad(env, url);
+  let body, type = M3U, hdr = '#EXTM3U\n#PLAYLIST:';
+  let mm;
+  if (p === '/vlc.m3u' || p === '/vlc/index.m3u') {
+    body = hdr + 'Fan Edit Fan Club Collection\n#EXTINF:-1,All Fan Edits (' + [...m.byId.values()].filter(i => !i.dir).length + ')\n' + origin + '/vlc/all.m3u\n';
+    for (const g of [...m.genres.keys()].sort()) body += '#EXTINF:-1,Genre: ' + g + ' (' + m.genres.get(g).length + ')\n' + origin + '/vlc/genre/' + encodeURIComponent(g) + '.m3u\n';
+    for (const k of (m.kids.get(m.root) || []).slice().sort(sortByName)) if (k.dir && m.cnt.get(k.id)) body += m3uFolderEntry(origin, k.id, k.name, m.cnt.get(k.id));
+    body += m3uFolderEntry(origin, m.root, 'Loose top-level edits', (m.kids.get(m.root) || []).filter(k => !k.dir).length);
+  } else if (p === '/vlc/all.m3u') {
+    body = hdr + 'All Fan Edits\n';
+    for (const it of [...m.byId.values()].filter(i => !i.dir).sort(sortByName)) body += m3uEntry(origin, it, null);
+  } else if ((mm = p.match(/^\/vlc\/genre\/(.+)\.m3u$/))) {
+    const g = mm[1], a = m.genres.get(g); if (!a) return json({ error: 'not_found' }, 404);
+    body = hdr + g + '\n' + a.slice().sort(sortByName).map(it => m3uEntry(origin, it, g)).join('');
+  } else if ((mm = p.match(/^\/vlc\/([\w-]{10,80})(\/all)?\.m3u$/))) {
+    const f = m.byId.get(mm[1]); if (!f || !f.dir) return json({ error: 'not_found' }, 404);
+    body = hdr + f.name + '\n';
+    if (mm[2]) {                                   // flat: every video below this folder, grouped by subfolder path
+      const walk = (id, path, seen) => { for (const k of (m.kids.get(id) || []).slice().sort(sortByName)) { if (k.dir) { if (!seen.has(k.id)) { seen.add(k.id); walk(k.id, path ? path + ' / ' + k.name : k.name, seen); } } else body += m3uEntry(origin, k, path || f.name); } };
+      walk(f.id, '', new Set([f.id]));
+    } else {
+      const ks = (m.kids.get(f.id) || []).slice().sort(sortByName);
+      for (const k of ks) if (k.dir && m.cnt.get(k.id)) body += m3uFolderEntry(origin, k.id, k.name, m.cnt.get(k.id));
+      for (const k of ks) if (!k.dir) body += m3uEntry(origin, k, f.name);
+    }
+  } else if (p === '/vlc.xspf') {
+    body = vlcXspf(origin, m); type = 'application/xspf+xml; charset=utf-8';
+  } else return json({ error: 'not_found' }, 404);
+  const res = text(body, type);
+  if (cache) ctx.waitUntil(cache.put(key, res.clone()));
+  return res;
+}
+
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    if (url.pathname === '/vlc.m3u' || url.pathname === '/vlc.xspf' || url.pathname.startsWith('/vlc/')) {
+      try { return await vlcApi(req, env, ctx, url); } catch (e) { console.log('vlc error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }
+    }
     if (url.pathname === '/api/feed') {
       try { return await feedApi(req, env, ctx, url); } catch (e) { console.log('feed error:', String(e && e.message || e).slice(0, 120)); return json({ updated: new Date().toISOString(), status: {}, items: mergeFeed([], 0) }); }
     }
