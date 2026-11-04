@@ -428,17 +428,55 @@ function streamOutHeaders(CORS, fileName, up, ctFallback) {
   if (fileName) o.set('content-disposition', 'inline; filename="' + fileName.replace(/"/g, '') + '"');
   return o;
 }
+function wantedRange(req) {
+  // Header first. Also accept ?b=START-END — some edges hide Range before the Worker,
+  // and a query value still arrives. Either form is forwarded to Drive as Range.
+  let rg = (req.headers.get('range') || '').split(',')[0].trim();
+  if (!/^bytes=\d*-\d*$/i.test(rg)) {
+    let b = '';
+    try { b = new URL(req.url).searchParams.get('b') || ''; } catch (_) {}
+    b = String(b).trim();
+    if (/^\d*-\d*$/.test(b) && b !== '-') rg = 'bytes=' + b;
+    else rg = '';
+  }
+  return rg;
+}
 function rangeHeaders(req) {
   const h = new Headers();
-  const rg = req.headers.get('range');
+  const rg = wantedRange(req);
   // Always send a Range so Drive usercontent skips the virus-scan / quota HTML interstitial for large files.
   // HEAD probes use a 1-byte range so Drive does not treat the request as a full multi-GB download.
-  if (rg && /^bytes=\d*-\d*(,.*)?$/.test(rg)) h.set('range', rg.split(',')[0]);
+  if (rg) h.set('range', rg);
   else if (req.method === 'HEAD') h.set('range', 'bytes=0-0');
   else h.set('range', 'bytes=0-');
   const ir = req.headers.get('if-range'); if (ir && h.has('range')) h.set('if-range', ir);
-  h.set('user-agent', 'FEFC-Stream-Proxy/0.8.19');
+  h.set('user-agent', 'FEFC-Stream-Proxy/0.8.20');
+  h.set('accept-encoding', 'identity');
   return h;
+}
+function clipStartRange(up, rg) {
+  // Drive sometimes answers a closed Range: bytes=0-N with the whole object (206 + full Content-Length).
+  // Hand back only the requested prefix so a player probe cannot download a multi-GB file.
+  const m = /^bytes=(\d+)-(\d+)$/i.exec(rg || '');
+  if (!m || !up || !up.body || !up.ok) return null;
+  const start = +m[1], end = +m[2];
+  if (start !== 0 || !(end >= start)) return null;
+  const want = end - start + 1;
+  const cl = +(up.headers.get('content-length') || 0);
+  if (!(cl > want + 32)) return null;
+  const total = ((up.headers.get('content-range') || '').match(/\/(\d+)\s*$/) || [])[1] || String(cl);
+  const reader = up.body.getReader();
+  let left = want;
+  const stream = new ReadableStream({
+    async pull(ctrl) {
+      if (left <= 0) { ctrl.close(); try { reader.cancel(); } catch (_) {} return; }
+      const { done, value } = await reader.read();
+      if (done) { ctrl.close(); return; }
+      if (value.byteLength <= left) { left -= value.byteLength; ctrl.enqueue(value); if (left === 0) { ctrl.close(); try { reader.cancel(); } catch (_) {} } }
+      else { ctrl.enqueue(value.subarray(0, left)); left = 0; ctrl.close(); try { reader.cancel(); } catch (_) {} }
+    }
+  });
+  return { stream, want, total, end };
 }
 async function streamViaUsercontent(tid, req, fileName, CORS) {
   const u = 'https://drive.usercontent.google.com/download?id=' + encodeURIComponent(tid) + '&export=download&confirm=t';
@@ -464,10 +502,13 @@ async function streamViaUsercontent(tid, req, fileName, CORS) {
   }
   // If client omitted Range we forced bytes=0- → 206; rewrite to 200 when spanning whole file for picky clients.
   let status = up.status;
-  const cr = up.headers.get('content-range') || '';
   const o = streamOutHeaders(CORS, fileName, up, 'video/mp4');
-  if (!req.headers.get('range') && /^bytes 0-\d+\/\d+$/.test(cr)) {
-    // Keep 206 + Content-Range — VLC and ExoPlayer both accept it for open-ended plays.
+  const clip = clipStartRange(up, wantedRange(req) || (req.method === 'HEAD' ? 'bytes=0-0' : ''));
+  if (clip) {
+    o.set('content-length', String(clip.want));
+    o.set('content-range', 'bytes 0-' + clip.end + '/' + clip.total);
+    status = 206;
+    return new Response(req.method === 'HEAD' ? null : clip.stream, { status, headers: o });
   }
   return new Response(req.method === 'HEAD' ? null : up.body, { status, headers: o });
 }
@@ -482,6 +523,12 @@ async function streamViaDriveApi(tid, req, fileName, CORS, auth) {
   if (up.status === 416) return new Response(null, { status: 416, headers: { ...CORS, 'content-range': up.headers.get('content-range') || '' } });
   if (up.ok) {
     const o = streamOutHeaders(CORS, fileName, up, 'video/mp4');
+    const clip = clipStartRange(up, wantedRange(req) || '');
+    if (clip) {
+      o.set('content-length', String(clip.want));
+      o.set('content-range', 'bytes 0-' + clip.end + '/' + clip.total);
+      return new Response(req.method === 'HEAD' ? null : clip.stream, { status: 206, headers: o });
+    }
     return new Response(req.method === 'HEAD' ? null : up.body, { status: up.status, headers: o });
   }
   const b = await up.text().catch(() => '');

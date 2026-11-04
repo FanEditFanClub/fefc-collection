@@ -53,6 +53,29 @@ test('maps 403 quota -> 429 and 403 private -> 403', async () => {
   });
   r = await call('/api/stream/' + 'D'.repeat(33), { GOOGLE_API_KEY: 'k' }); assert.equal(r.status, 403); assert.equal((await r.json()).error, 'not_shared');
 });
+test('?b= query is forwarded as Range when the Range header is absent', async () => {
+  const seen = [];
+  mock((u, init) => {
+    seen.push((init.headers && init.headers.get && init.headers.get('range')) || '');
+    if (u.searchParams.get('alt') !== 'media') return meta('video/mp4');
+    return new Response('abcdefghij', { status: 206, headers: { 'content-type': 'video/mp4', 'content-range': 'bytes 5-8/100', 'content-length': '4' } });
+  });
+  const r = await call('/api/stream/' + 'F'.repeat(33) + '/clip.mp4?b=5-8', { GOOGLE_API_KEY: 'k' });
+  assert.equal(r.status, 206);
+  assert.ok(seen.some(s => s === 'bytes=5-8'), seen.join(' | '));
+});
+test('closed bytes=0-N is clipped when upstream returns the whole object', async () => {
+  const whole = '0123456789'.repeat(10);
+  mock((u) => {
+    if (u.searchParams.get('alt') !== 'media') return meta('video/mp4');
+    return new Response(whole, { status: 206, headers: { 'content-type': 'video/mp4', 'content-range': 'bytes 0-99/100', 'content-length': '100' } });
+  });
+  const r = await call('/api/stream/' + 'G'.repeat(33) + '/clip.mp4', { GOOGLE_API_KEY: 'k' }, { range: 'bytes=0-3' });
+  assert.equal(r.status, 206);
+  assert.equal(r.headers.get('content-range'), 'bytes 0-3/100');
+  assert.equal(r.headers.get('content-length'), '4');
+  assert.equal(await r.text(), '0123');
+});
 test('rejects HTML interstitial from usercontent', async () => {
   mock((u) => {
     if (u.host === 'drive.google.com') return new Response(null, { status: 200 });

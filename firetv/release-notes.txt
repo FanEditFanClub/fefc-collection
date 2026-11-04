@@ -1,3 +1,5 @@
+0.8.21 — Open in VLC brings VLC's video activity to the foreground (video and audio). WebView ambience, atlas, and <video> are paused before launch. versionCode 31.
+0.8.20 — Web player uses /api/stream only (no Drive preview, no sign-in gate). Silk shows Open stream / Open in Drive if playback does not start within 8s.
 0.8.19 — Version badge, Google Sync restored, authenticated stream proxy.
 - My List: installed version (v0.8.19) shown next to Check for updates.
 - Sync My List: Sign in with Google back on top of the 6-digit sync code (web + Fire TV).

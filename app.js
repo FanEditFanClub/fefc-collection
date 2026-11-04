@@ -277,9 +277,10 @@ var __spreadValues = (a, b) => {
     }
   }
   function parse(n) {
-    const base = n.replace(/\.[a-z0-9]{2,4}$/i, "");
-    const parts = base.split(" - ").map((s) => s.trim()).filter((s) => !/^fan edit$/i.test(s));
-    return { title: parts.length > 1 ? parts.slice(1).join(" \xB7 ") : parts[0], series: parts.length > 1 ? parts[0] : "", raw: base, film: parts[0].replace(/\s*\(\d{4}\)\s*/, ""), year: (base.match(/\((\d{4})\)/) || [])[1] };
+    const base = String(n != null ? n : "").replace(/\.[a-z0-9]{2,4}$/i, "");
+    const parts = base.split(" - ").map((s) => s.trim()).filter((s) => s && !/^fan edit$/i.test(s));
+    const head = parts[0] || base || "Fan edit";
+    return { title: parts.length > 1 ? parts.slice(1).join(" \xB7 ") : head, series: parts.length > 1 ? parts[0] : "", raw: base || head, film: head.replace(/\s*\(\d{4}\)\s*/, ""), year: (base.match(/\((\d{4})\)/) || [])[1] };
   }
   const sz = (b) => b ? (b / 1e9).toFixed(2) + " GB" : "";
   (function() {
@@ -2376,7 +2377,20 @@ var __spreadValues = (a, b) => {
   }
   function softRefreshNow() {
     try {
-      if (!$("#player").hidden) return;
+      if (!$("#player").hidden) {
+        try {
+          restreamIfNamed();
+        } catch (e) {
+        }
+        return;
+      }
+      if (parseH()[0] === "play" && $("#player").hidden) {
+        try {
+          route();
+        } catch (e) {
+        }
+        return;
+      }
       const r = parseH(), k = r[0] || "";
       if (!$("#home").hidden || !k || k === "home") {
         const ae0 = document.activeElement;
@@ -3027,6 +3041,7 @@ var __spreadValues = (a, b) => {
     if (mode === "vlc") {
       S.chirp && S.chirp(1);
       try {
+        quietForExternal();
         if (nb && nb.openInVlc) nb.openInVlc(tid, title, f.name || "video.mp4");
         else status("VLC not available");
       } catch (e) {
@@ -3826,6 +3841,7 @@ var __spreadValues = (a, b) => {
       stopPlayerTimer();
     } catch (e) {
     }
+    clearStreamWait();
     const pl = $("#player");
     if (pl) {
       pl.hidden = true;
@@ -3835,6 +3851,8 @@ var __spreadValues = (a, b) => {
       killFrame();
     } catch (e) {
     }
+    const fb = $("#pstream-fallback");
+    if (fb) fb.hidden = true;
     document.body.classList.remove("shuf-player");
     window.__shufPlay = 0;
   }
@@ -3842,14 +3860,35 @@ var __spreadValues = (a, b) => {
     killVideo();
     const o = $("#pframe");
     if (o) {
-      const n = o.cloneNode(false);
-      n.removeAttribute("src");
-      o.replaceWith(n);
+      o.removeAttribute("src");
+      o.hidden = true;
     }
   }
   let streamTok = 0;
+  function clearStreamWait() {
+    if (startStream._t) {
+      clearTimeout(startStream._t);
+      startStream._t = 0;
+    }
+  }
+  function quietForExternal() {
+    try {
+      if (window.SFX && SFX.suspendAll) SFX.suspendAll();
+    } catch (e) {
+    }
+    try {
+      document.querySelectorAll("video,audio").forEach((m) => {
+        try {
+          m.pause();
+        } catch (err) {
+        }
+      });
+    } catch (e) {
+    }
+  }
   function killVideo() {
     streamTok++;
+    clearStreamWait();
     const v = $("#pvideo");
     if (v) {
       try {
@@ -3866,11 +3905,54 @@ var __spreadValues = (a, b) => {
     const w = $("#player .pwrap");
     if (w) w.classList.remove("vid");
   }
-  function previewFallback(id) {
-    killVideo();
+  const STREAM_EXT = /^(mp4|m4v|mkv|webm|mov|avi|mpg|mpeg|m2ts|ts)$/i;
+  function streamUrlFor(id, name) {
+    let ext = (String(name || "").match(/\.([a-z0-9]{2,5})$/i) || [])[1] || "";
+    ext = ext.toLowerCase();
+    if (!STREAM_EXT.test(ext)) ext = "mp4";
+    const base = String(name || "video").replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 72) || "video";
+    return "/api/stream/" + encodeURIComponent(id) + "/" + encodeURIComponent(base + "." + ext);
+  }
+  function hideDriveFrame() {
+    const o = $("#pframe");
+    if (!o) return;
+    o.removeAttribute("src");
+    o.hidden = true;
+  }
+  function showStreamFallback(id, url, name, why) {
+    clearStreamWait();
+    const v = $("#pvideo");
+    if (v) {
+      try {
+        v.pause();
+      } catch (e) {
+      }
+      v.hidden = true;
+    }
+    hideDriveFrame();
     const w = $("#player .pwrap");
-    if (w) w.classList.remove("vid");
-    newFrame("https://drive.google.com/file/d/".concat(id, "/preview"));
+    if (!w) return;
+    w.classList.remove("vid");
+    let box = $("#pstream-fallback");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "pstream-fallback";
+      w.appendChild(box);
+    }
+    const abs = new URL(url, location.origin).href;
+    const mkv = /\.mkv$/i.test(name || "") || /\.mkv$/i.test(url);
+    const msg = why || (mkv ? "This .mkv can\u2019t play in the Fire TV browser." : "The video didn\u2019t start.");
+    box.hidden = false;
+    box.innerHTML = '<p class="psf-why">'.concat(esc(msg), '</p><p class="psf-sub">The stream does not need a Google sign-in. Open it directly, or open the file in Drive.</p><div class="psf-row"><a class="pill p2" href="').concat(esc(abs), '" target="_blank" rel="noopener">Open stream</a><a class="pill p3" href="').concat("https://drive.google.com/file/d/" + encodeURIComponent(id) + "/view", '" target="_blank" rel="noopener">Open in Drive</a><button type="button" class="pill p5" id="psf-retry">Try again</button></div>');
+    const b = box.querySelector("#psf-retry");
+    if (b) b.onclick = () => {
+      box.hidden = true;
+      startStream(id, name);
+    };
+    try {
+      b && b.focus({ preventScroll: true });
+    } catch (e) {
+    }
   }
   const SUB_LANG_SUF = [".en", ".eng", ".en-us", ".en-gb", ".es", ".fr", ".de", ".it", ".pt", ".ja", ".ko", ".zh", ".forced", ".sdh", ".cc", ".hi", ".nl", ".ru"];
   function stemBase(name) {
@@ -4014,70 +4096,79 @@ var __spreadValues = (a, b) => {
     };
     setPlayerScale(playerScaleMode());
   }
-  function startStream(id) {
+  function restreamIfNamed() {
+    const pl = $("#player");
+    if (!pl || pl.hidden) return;
+    const fb = $("#pstream-fallback");
+    if (fb && !fb.hidden) return;
+    const f = items.get(pl.dataset.pid);
+    if (!f || !f.name || f.name === "Fan edit") return;
+    const url = streamUrlFor(target(f), f.name);
+    const v = $("#pvideo");
+    if (v && v.dataset.stream === url) return;
+    if (v && v.readyState >= 3) return;
+    startStream(target(f), f.name);
+  }
+  function startStream(id, name) {
     killVideo();
-    const tok = streamTok, fo = $("#pframe");
-    if (fo) {
-      const n = fo.cloneNode(false);
-      n.removeAttribute("src");
-      fo.replaceWith(n);
-    }
-    const w = $("#player .pwrap"), url = "/api/stream/" + encodeURIComponent(id);
-    if (!w || !window.fetch || location.protocol === "file:") {
-      previewFallback(id);
-      return;
-    }
-    const ac = window.AbortController ? new AbortController() : null, to = setTimeout(() => {
-      try {
-        ac && ac.abort();
-      } catch (e) {
-      }
-    }, 7e3);
-    fetch(url, { headers: { Range: "bytes=0-0" }, signal: ac ? ac.signal : void 0 }).then((r) => {
-      clearTimeout(to);
-      if (tok !== streamTok) return;
-      try {
-        r.body && r.body.cancel && r.body.cancel();
-      } catch (e) {
-      }
-      if (!(r.status === 206 || r.status === 200) || !/video|octet/i.test(r.headers.get("content-type") || "")) {
-        previewFallback(id);
+    const tok = streamTok;
+    const w = $("#player .pwrap");
+    if (!w) return;
+    hideDriveFrame();
+    const fb = $("#pstream-fallback");
+    if (fb) fb.hidden = true;
+    const url = streamUrlFor(id, name || "");
+    const ext = (url.match(/\.([a-z0-9]+)$/i) || [])[1] || "";
+    const v = document.createElement("video");
+    v.id = "pvideo";
+    v.controls = true;
+    v.autoplay = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.setAttribute("playsinline", "");
+    v.tabIndex = -1;
+    v.style.objectFit = playerScaleMode();
+    v.dataset.stream = url;
+    let live2 = true;
+    const giveUp = (why) => {
+      if (!live2 || tok !== streamTok) return;
+      live2 = false;
+      showStreamFallback(id, url, name, why);
+    };
+    startStream._t = setTimeout(() => {
+      if (!live2 || tok !== streamTok) return;
+      if (v.readyState >= 3 || v.currentTime > 0) {
+        live2 = false;
         return;
       }
-      const v = document.createElement("video");
-      v.id = "pvideo";
-      v.controls = true;
-      v.autoplay = true;
-      v.playsInline = true;
-      v.preload = "auto";
-      v.setAttribute("playsinline", "");
-      v.tabIndex = -1;
-      v.style.objectFit = playerScaleMode();
-      v.addEventListener("error", () => {
-        if (tok === streamTok) previewFallback(id);
-      });
-      v.src = url;
-      w.classList.add("vid");
-      w.appendChild(v);
-      try {
-        const f = items.get($("#player").dataset.pid);
-        attachSidecarTrack(v, findSidecarSub(f));
-      } catch (e) {
-      }
-      ensurePlayerExtras();
-      setPlayerScale(playerScaleMode());
-      const pp = v.play && v.play();
-      if (pp && pp.catch) pp.catch(() => {
-      });
-    }).catch(() => {
-      clearTimeout(to);
-      if (tok === streamTok) previewFallback(id);
+      giveUp(ext === "mkv" ? "This .mkv can\u2019t play in Silk on Fire TV. Open the stream (no sign-in) or Open in Drive." : "The video didn\u2019t start in this browser. Open the stream, or Open in Drive.");
+    }, 8e3);
+    v.addEventListener("canplay", () => {
+      if (tok !== streamTok) return;
+      live2 = false;
+      clearStreamWait();
+      const box = $("#pstream-fallback");
+      if (box) box.hidden = true;
+      v.hidden = false;
     });
-  }
-  function newFrame(u) {
-    const o = $("#pframe"), n = o.cloneNode(false);
-    n.src = u;
-    o.replaceWith(n);
+    v.addEventListener("error", () => {
+      if (tok !== streamTok) return;
+      clearStreamWait();
+      giveUp(ext === "mkv" ? "This .mkv can\u2019t play in the browser. Open the stream link or Open in Drive." : "Playback stopped. Open the stream link or Open in Drive.");
+    });
+    v.src = url;
+    w.classList.add("vid");
+    w.appendChild(v);
+    try {
+      const f = items.get($("#player").dataset.pid);
+      attachSidecarTrack(v, findSidecarSub(f));
+    } catch (e) {
+    }
+    ensurePlayerExtras();
+    setPlayerScale(playerScaleMode());
+    const pp = v.play && v.play();
+    if (pp && pp.catch) pp.catch(() => {
+    });
   }
   function started() {
     return !!window._u && document.body.classList.contains("intro-done");
@@ -4128,7 +4219,7 @@ var __spreadValues = (a, b) => {
       delete $("#player").dataset.sub;
       delete $("#player").dataset.submime;
     }
-    startStream(id);
+    startStream(id, f && f.name);
     $("#popen").href = "https://drive.google.com/file/d/".concat(id, "/view");
     $("#player").hidden = false;
     ensurePlayerExtras();
@@ -4166,6 +4257,7 @@ var __spreadValues = (a, b) => {
       if (act.dataset.act === "vlc") {
         S.chirp(1);
         try {
+          quietForExternal();
           const nb = window.FEFCNative;
           if (nb && nb.openInVlc && f) nb.openInVlc(target(f), parse(f.name).raw, f.name || "video.mp4");
         } catch (err) {
@@ -5439,7 +5531,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.19";
+  const HOME_VER_FALLBACK = "0.8.21";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
