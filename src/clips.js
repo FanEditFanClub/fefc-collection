@@ -65,8 +65,12 @@ function stopAtlas(){
 
 function wantAtlas(){
   /* OnLive Arena model on web + TV: one pre-composited stream.
-     Skip reduced-motion on desktop web only — Fire TV / ATV emulators often report reduce and would disable the atlas entirely. */
-  try{if(window.FEFCNative||document.body.classList.contains('firetv')||document.body.classList.contains('tv'))return true}catch(e){}
+     TV is detected from the UA as well as body class, because this file runs before app.js adds .tv.
+     Skip reduced-motion on desktop web only — Fire TV often reports reduce and must still play the atlas. */
+  try{
+    const ua=navigator.userAgent||'';
+    if(window.FEFCNative||document.body.classList.contains('firetv')||document.body.classList.contains('tv')||/Silk|AFT\w|Fire TV|Android TV|GoogleTV|FEFCFireTV/i.test(ua))return true;
+  }catch(e){}
   try{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return false}catch(e){}
   return true}
 function startAtlas(){
@@ -81,9 +85,10 @@ function startAtlas(){
   v.id='mosaic-atlas';v.muted=true;v.defaultMuted=true;v.loop=true;v.playsInline=true;
   v.setAttribute('muted','');v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');
   v.preload='auto';v.setAttribute('aria-hidden','true');
-  v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s ease;background:#050a14';
+  v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s ease;background:#05070b';
+  const plane=document.getElementById('home-plane')||h;
   const hub=document.getElementById('hub');
-  if(hub&&hub.parentNode===h)h.insertBefore(v,hub);else h.insertBefore(v,h.firstChild);
+  if(hub&&hub.parentNode===plane)plane.insertBefore(v,hub);else plane.insertBefore(v,plane.firstChild);
   atlasV=v;
   atlasStarting=new Promise(res=>{
     let done=0;const finish=(ok,why)=>{if(done||my!==atlasGen)return;done=1;atlasStarting=null;if(!ok){
@@ -100,7 +105,8 @@ function startAtlas(){
     /* WebView media stack often bypasses shouldInterceptRequest for <video src>.
        Fetch (XHR path) is intercepted → blob URL plays from memory (OnLive-sized atlas ~1–3MB). */
     const boot=()=>{
-      const play=()=>{const p=v.play();if(p&&p.catch)p.catch(e=>{if(e&&e.name==='AbortError')return;finish(false,'play:'+(e&&e.name||e))})};
+      const play=()=>{const p=v.play();if(p&&p.catch)p.catch(e=>{if(!e||e.name==='AbortError'||e.name==='NotAllowedError')return;finish(false,'play:'+(e&&e.name||e))})};
+      v.addEventListener('loadeddata',()=>{if(my===atlasGen&&!atlasOn)finish(true,'frame')},{once:true});
       const useBlob=b=>{
         if(!b||my!==atlasGen)return;
         try{if(v._blobUrl)URL.revokeObjectURL(v._blobUrl)}catch(e){}
@@ -169,10 +175,8 @@ function stop(){on=false;timers.forEach(clearTimeout);timers=[];pool.forEach(v=>
 function stopAll(){stop();stopAtlas()}
 
 function scheduleStillsAndTiles(){
- cells=[].slice.call(document.querySelectorAll('#hub .mc')).filter(visible);
- if(atlasOn){
-   try{const line='FEFC_CLIPS atlas=active cells='+cells.length+' cap=0 stats='+JSON.stringify(__clipStats());console.log(line);if(window.FEFCNative&&FEFCNative.log)FEFCNative.log(line)}catch(e){}
-   return}
+ cells=[].slice.call(document.querySelectorAll('#home-plane .mc, #hub .mc')).filter(visible);
+ if(atlasOn)return;
  const ring1=cells.filter(c=>ringOf(c)===1).sort((a,b)=>(a._ring||0)-(b._ring||0));
  const outer=cells.filter(c=>ringOf(c)>1);
  const n=Math.min(decoders(),Math.max(0,ring1.length));
@@ -188,7 +192,7 @@ function scheduleStillsAndTiles(){
  if(ring1.length>n&&n>0){timers.push(setTimeout(function hop(){if(!on||!atHome()||atlasOn)return;rot=(rot+n)%ring1.length;schedule();},40000+Math.random()*15000))}
  try{const ti=tierInfo()||{};const line='FEFC_CLIPS atlas=0 tier='+(ti.tier||'?')+' ring1='+ring1.length+' video='+videoTiles.length+' outerStill='+stillTiles.length+' cap='+n+' stats='+JSON.stringify(__clipStats());console.log(line);try{if(window.FEFCNative&&FEFCNative.log)FEFCNative.log(line)}catch(e2){}}catch(e){}}
 
-function schedule(){stop();if(!atHome())return;on=true;
+function schedule(){if(atlasStarting)return;stop();if(!atHome())return;on=true;
  const go=()=>{if(!on||!atHome())return;if(!clips)clips=[];scheduleStillsAndTiles()};
  // Web + TV: try atlas first (OnLive Arena). Fallback to stills (+ capped tile videos).
  if(wantAtlas()&&!atlasTried){
@@ -198,14 +202,16 @@ function schedule(){stop();if(!atHome())return;on=true;
  /* One atlas attempt per home visit (atlasTried). Failed → stills/capped tiles only. */
  go()}
 
-let deb;function kick(){clearTimeout(deb);if(!atHome()){stopAll();atlasTried=false;return}deb=setTimeout(()=>{if(atHome()){load();schedule()}else stopAll()},400)}
+let deb,arm;function kick(){if(!atHome()){clearTimeout(deb);arm=false;stopAll();atlasTried=false;return}if(arm)return;arm=true;deb=setTimeout(()=>{arm=false;if(atHome()){load();schedule()}else stopAll()},450)}
 let _ic=document.body.classList.contains('cintro');new MutationObserver(()=>{const c=document.body.classList.contains('cintro');if(_ic&&!c)kick();_ic=c}).observe(document.body,{attributes:true,attributeFilter:['class']});
 addEventListener('fefc-home-revealed',()=>{atlasTried=false;kick()});
 function init(){const h=home(),hub=document.getElementById('hub');if(!h||!hub)return setTimeout(init,500);
- new MutationObserver(ms=>{if(ms.some(m=>[].some.call(m.addedNodes,x=>x.classList&&x.classList.contains('mc'))||[].some.call(m.removedNodes,x=>x.classList&&x.classList.contains('mc'))))kick()}).observe(hub,{childList:true});
+ const watch=document.getElementById('mosaic')||document.getElementById('home-plane')||hub;
+ new MutationObserver(ms=>{if(ms.some(m=>[].some.call(m.addedNodes,x=>x.classList&&x.classList.contains('mc'))||[].some.call(m.removedNodes,x=>x.classList&&x.classList.contains('mc'))))kick()}).observe(watch,{childList:true});
  new MutationObserver(kick).observe(h,{attributes:true,attributeFilter:['hidden']});
  document.addEventListener('visibilitychange',kick);addEventListener('fefc-background',()=>stopAll());addEventListener('fefc-foreground',()=>{atlasTried=false;kick()});addEventListener('pagehide',()=>stopAll());addEventListener('hashchange',kick);addEventListener('resize',kick);addEventListener('scroll',kick,{passive:true,capture:true});
  addEventListener('fefc-perf',kick);addEventListener('fefc-tier',()=>{atlasTried=false;stopAtlas();kick()});
  const start=()=>{if(document.body.classList.contains('native-waiting'))return;kick()};
- window.requestIdleCallback?requestIdleCallback(start,{timeout:1500}):setTimeout(start,1500)}
+  window.requestIdleCallback?requestIdleCallback(start,{timeout:1500}):setTimeout(start,1500);
+  setTimeout(start,400);setTimeout(start,1600)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();

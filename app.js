@@ -1171,6 +1171,71 @@ var __spreadValues = (a, b) => {
   function syncTag() {
     placeHeader();
   }
+  const HOME_COLS = 5, HOME_ROWS = 5, HOME_HUB = 3, HOME_GUTTER = 0.1;
+  function homePlane() {
+    let p = document.getElementById("home-plane");
+    const h = $("#home");
+    if (!h) return null;
+    if (!p) {
+      p = document.createElement("div");
+      p.id = "home-plane";
+      const mos = $("#mosaic"), hub2 = $("#hub");
+      if (mos) p.appendChild(mos);
+      if (hub2) p.appendChild(hub2);
+      h.appendChild(p);
+    }
+    return p;
+  }
+  function layoutHomeGrid() {
+    const H = $("#home"), plane = homePlane(), hub2 = $("#hub"), tg = $("#tagline");
+    if (!H || !plane || !hub2) return null;
+    const HR = H.getBoundingClientRect();
+    const W = H.clientWidth || innerWidth, Ht = H.clientHeight || innerHeight;
+    if (W < 80 || Ht < 80) return null;
+    const tv = document.body.classList.contains("tv") || document.body.classList.contains("firetv");
+    document.body.classList.add("home-grid");
+    const side = Math.round(W * (tv ? 0.05 : 0.025));
+    let top = Math.round(Ht * (tv ? 0.05 : 0.012));
+    if (tg) {
+      tg.style.top = Math.round(top * 0.35) + "px";
+      tg.style.left = "0";
+      tg.style.right = "0";
+      const tr = tg.getBoundingClientRect();
+      if (tr.height > 4 && tr.bottom > HR.top) top = Math.max(top, Math.round(tr.bottom - HR.top + Math.max(6, Ht * 8e-3)));
+    }
+    const hi = $("#hints"), tk = $("#ticker");
+    let bot = Math.round(Ht * (tv ? 0.05 : 0.02));
+    if (hi && hi.offsetHeight) {
+      const ir = hi.getBoundingClientRect();
+      if (ir.top > HR.top + Ht * 0.4) bot = Math.max(bot, Math.round(HR.bottom - ir.top + Math.max(6, Ht * 8e-3)));
+    }
+    if (document.body.classList.contains("tk-on") && tk && tk.classList.contains("on")) {
+      const kr = tk.getBoundingClientRect();
+      if (kr.top > HR.top + Ht * 0.4) bot = Math.max(bot, Math.round(HR.bottom - kr.top));
+    }
+    const pw = Math.max(120, W - side * 2), ph = Math.max(120, Ht - top - bot);
+    const cellW = pw / HOME_COLS, cellH = ph / HOME_ROWS;
+    const hubCol = (HOME_COLS - HOME_HUB) / 2, hubRow = (HOME_ROWS - HOME_HUB) / 2;
+    plane.style.cssText = "position:absolute;left:" + side + "px;top:" + top + "px;width:" + Math.round(pw) + "px;height:" + Math.round(ph) + "px;z-index:1";
+    const gx = cellW * HOME_GUTTER, gy = cellH * HOME_GUTTER;
+    const hx = (hubCol + HOME_GUTTER / 2) / HOME_COLS * 100 + "%", hy = (hubRow + HOME_GUTTER / 2) / HOME_ROWS * 100 + "%";
+    const hw = (HOME_HUB - HOME_GUTTER) / HOME_COLS * 100 + "%", hh = (HOME_HUB - HOME_GUTTER) / HOME_ROWS * 100 + "%";
+    const st = document.documentElement.style;
+    st.setProperty("--hub-x", hx);
+    st.setProperty("--hub-y", hy);
+    st.setProperty("--hub-w", hw);
+    st.setProperty("--hub-h", hh);
+    st.setProperty("--hub-gx", gx + "px");
+    st.setProperty("--hub-gy", gy + "px");
+    hub2.style.left = hx;
+    hub2.style.top = hy;
+    hub2.style.width = hw;
+    hub2.style.height = hh;
+    hub2.style.columnGap = gx + "px";
+    hub2.style.rowGap = gy + "px";
+    plane._grid = { side, top, pw, ph, cellW, cellH, gx, gy };
+    return plane._grid;
+  }
   let _placeHdrRaf = 0, _placeHdrNeed = 0;
   function placeHeader() {
     _placeHdrNeed = 1;
@@ -1183,213 +1248,39 @@ var __spreadValues = (a, b) => {
     });
   }
   function placeHeaderNow() {
-    const tg = $("#tagline"), hb = $("#hub"), sp = $("#tagline span"), wm = $("#wordmark");
-    if (!tg || !hb || !sp) return;
-    const W = innerWidth, H = innerHeight;
-    tg.style.fontSize = "";
-    if (wm) wm.style.height = "";
-    hb.style.width = "";
-    hb.style.top = "";
-    hb.style.left = "";
-    let natW = hb.offsetWidth || W * 0.6;
-    const cs = getComputedStyle(tg), base = parseFloat(cs.fontSize) || 20, wmH = wm ? wm.offsetHeight : 0;
-    const g = parseFloat(getComputedStyle(hb).columnGap) || Math.min(W, H) * 0.014, s = Math.max(6, Math.min(14, H * 0.014)), top0 = Math.max(4, H * 0.012);
-    const hi = $("#hints"), hr = hi && hi.offsetHeight && !hi.hidden && getComputedStyle(hi).display !== "none" ? hi.getBoundingClientRect() : null;
-    const tk = $("#ticker"), tkOn = document.body.classList.contains("tk-on") && tk && tk.classList.contains("on");
-    const tkH = tkOn ? tk.offsetHeight || Math.round(H * 0.037) : 0;
-    let bot = H * 0.08 + H * 0.035;
-    if (hr && hr.top > H * 0.4) bot = H - hr.top + Math.max(6, H * 0.01);
-    else if (tkH) bot = tkH + Math.max(36, H * 0.045) + H * 0.02;
-    const SW = (w) => Math.round(H < 520 ? Math.min(W * 0.9, Math.max(w, w * 1.9)) : w) + "px";
-    let k = 1, hw, h;
-    for (let i = 0; i < 6; i++) {
-      sp.style.width = SW(hw || natW);
-      sp.style.maxWidth = "none";
-      h = tg.offsetHeight;
-      const hh2 = (H - top0 - bot - 2 * s - h + 2 * g / 3) * 3 / 4;
-      hw = Math.min(natW, hh2 * 1.55, W * 0.94);
-      sp.style.width = SW(hw);
-      h = tg.offsetHeight;
-      const hh22 = (H - top0 - bot - 2 * s - h + 2 * g / 3) * 3 / 4;
-      hw = Math.min(natW, hh22 * 1.55, W * 0.94);
-      if (hw >= natW * 0.86 || k <= 0.62) break;
-      k -= 0.08;
-      tg.style.fontSize = (base * k).toFixed(1) + "px";
-      if (wm && wmH) wm.style.height = (wmH * k).toFixed(1) + "px";
-    }
-    sp.style.width = SW(hw);
-    h = tg.offsetHeight;
-    const hh = hw / 1.55, th = (hh - 2 * g) / 3, HR = $("#home").hidden ? { top: 0 } : $("#home").getBoundingClientRect();
-    const D = 2 * s + h;
-    if (document.body.classList.contains("tv")) {
-      bot = Math.max(bot, Math.round(H * 0.13) + (tkH || 0));
-      hw = Math.min(hw, H * 0.42 * 1.55, W * 0.5);
-    }
-    const hhUse = hw / 1.55, block = th + D + hhUse, avail = Math.max(block, H - top0 - bot), y0 = top0 + Math.max(0, (avail - block) / 2);
-    hb.style.width = Math.round(hw) + "px";
-    hb.style.left = "50%";
-    hb.style.top = Math.round(y0 + th + D + hhUse / 2 - HR.top) + "px";
-    hb._hdr = { D, s, h, top0: y0 };
-    tg.style.top = Math.round(y0 + th + s) + "px";
-    fitHeader();
-    requestAnimationFrame(() => {
-      const hi2 = $("#hints"), hb2 = $("#hub"), tg2 = $("#tagline");
-      if (!hi2 || !hb2 || $("#home").hidden) return;
-      const gap = Math.max(10, innerHeight * 0.012), br = hb2.getBoundingClientRect(), ir = hi2.getBoundingClientRect();
-      const floor = (ir.top > innerHeight * 0.4 ? ir.top : innerHeight * 0.88) - gap, over = br.bottom - floor;
-      if (over > 1) {
-        const t = parseFloat(hb2.style.top) || 0;
-        hb2.style.top = Math.round(t - over) + "px";
-        if (tg2) {
-          const tt = parseFloat(tg2.style.top) || 0;
-          tg2.style.top = Math.round(tt - over) + "px";
-        }
-        fitHeader();
-      }
-    });
-  }
-  function fitHeader() {
-    const tg = $("#tagline"), hb = $("#hub");
-    if (!tg || !hb || !hb._hdr) return;
-    const row = [].slice.call(hb.querySelectorAll(".mc.toprow")), b = hb.querySelector(".hb");
-    if (!row.length || !b || $("#home").hidden) return;
-    const H = hb._hdr;
-    let rb = Math.max(...row.map((c) => c.getBoundingClientRect().bottom)), gt = b.getBoundingClientRect().top, h = tg.offsetHeight;
-    const need = h + 2 * Math.max(6, H.s * 0.7) - (gt - rb);
-    if (need > 1) {
-      H.D += need * 1.15;
-      [].forEach.call(hb.querySelectorAll(".mc.above"), (c) => c.style.top = c._top(H.D));
-      [].forEach.call(hb.querySelectorAll(".mc.band"), (c) => bandFit(c, H.D, hb._g || 8));
-      rb = Math.max(...row.map((c) => c.getBoundingClientRect().bottom));
-    }
-    tg.style.top = Math.round((rb + gt) / 2 - h / 2) + "px";
-    const sp = $("#tagline span"), wm = $("#wordmark"), tr = [];
-    if (wm && wm.offsetWidth) tr.push(wm.getBoundingClientRect());
-    const gt2 = document.querySelector("#tagline .gtitle");
-    if (gt2 && gt2.offsetWidth) tr.push(gt2.getBoundingClientRect());
-    if (sp) {
-      const rg = document.createRange();
-      rg.selectNodeContents(sp);
-      [].forEach.call(rg.getClientRects(), (r) => r.width && tr.push(r));
-    }
-    [].forEach.call(hb.querySelectorAll(".mc:not(.toprow)"), (c) => {
-      const r = c.getBoundingClientRect();
-      c.style.visibility = tr.some((t) => r.left < t.right + 8 && r.right > t.left - 8 && r.top < t.bottom + 4 && r.bottom > t.top - 4) ? "hidden" : "";
-    });
+    layoutHomeGrid();
   }
   addEventListener("resize", () => requestAnimationFrame(placeHeader));
-  function bandFit(el, D, g) {
-    const sh = Math.max(0, D - 2 * g), tw = el._tw || 0;
-    let w = tw, h = tw * 9 / 16;
-    if (h > sh) {
-      h = sh;
-      w = h * 16 / 9;
-    }
-    el.style.width = w + "px";
-    el.style.height = h + "px";
-    el.style.marginLeft = (tw - w) / 2 + "px";
-    el.style.top = -(D - g) + (sh - h) / 2 + "px";
-  }
   function mosaic() {
-    syncTag();
     const M = $("#mosaic");
     const tv = document.body.classList.contains("tv");
     const fire = tv && (document.body.classList.contains("firetv") || window.FEFCNative);
     const perf = document.body.classList.contains("perf");
-    const n = fire ? 14 : tv ? 14 : Math.max(10, Math.min(22, Math.round(innerWidth * innerHeight / 6e4)));
     let pool = mosaicList.length ? mosaicList.slice() : vids().slice(0, 40).map((f) => ({ id: f.id, target: target(f), name: f.name }));
-    M.innerHTML = "";
-    [].slice.call(document.querySelectorAll("#hub .mc")).forEach((x) => x.remove());
+    const grid = layoutHomeGrid();
+    const gkey = grid ? Math.round(grid.pw) + "x" + Math.round(grid.ph) : "0";
+    if (M && M._gridKey === gkey && M.childElementCount >= HOME_COLS * HOME_ROWS - HOME_HUB * HOME_HUB) return;
+    if (M) M._gridKey = gkey;
+    if (M) M.innerHTML = "";
+    [].slice.call(document.querySelectorAll("#home-plane .mc,#hub .mc")).forEach((x) => x.remove());
     const cells = [];
-    const H = $("#home"), hb = $("#hub");
-    const _tf = hb.style.transform;
-    hb.style.transform = "translate(-50%,-50%)";
-    const W = H.clientWidth || innerWidth || document.documentElement.clientWidth || 960, Ht = H.clientHeight || innerHeight || document.documentElement.clientHeight || 540, HR = H.getBoundingClientRect(), BR = hb.getBoundingClientRect(), hw = BR.width, hh = BR.height;
-    const hx = BR.left - HR.left, hy = BR.top - HR.top, g = parseFloat(getComputedStyle(hb).columnGap) || 8;
-    const tw = (hw - 2 * g) / 3, th = (hh - 2 * g) / 3;
-    const hr = H.getBoundingClientRect(), tr = (() => {
-      const sp = $("#tagline span"), wm = $("#wordmark"), a = [];
-      if (wm) a.push(wm.getBoundingClientRect());
-      if (sp && document.createRange) {
-        const rg = document.createRange();
-        rg.selectNodeContents(sp);
-        [].forEach.call(rg.getClientRects(), (r) => a.push(r));
-      } else if (sp) a.push(sp.getBoundingClientRect());
-      a.splice(0, a.length, ...a.filter((r) => r.width));
-      if (!a.length) return null;
-      const px = Math.max(16, innerWidth * 0.02);
-      return { left: Math.min(...a.map((r) => r.left)) - px, right: Math.max(...a.map((r) => r.right)) + px, top: -1e9, bottom: Math.max(...a.map((r) => r.bottom)) + 6, height: 1 };
-    })();
-    const tb = tr ? { l: tr.left - hr.left, t: -1e9, r: tr.right - hr.left, b: tr.bottom - hr.top } : null;
-    hb.style.transform = _tf;
-    const ov = (a, b) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t, hub2 = { l: hx - g / 2, t: hy - g / 2, r: hx + hw + g / 2, b: hy + hh + g / 2 };
-    const cols = Math.ceil(hx / (tw + g)) + 1, rows = Math.ceil(hy / (th + g)) + 2;
-    const lowTier = document.body.classList.contains("tier-low") || document.body.classList.contains("tier-lite");
-    let budget = fire ? lowTier || perf ? 8 : 14 : lowTier ? 12 : perf ? tv ? 22 : 60 : tv ? 48 : 90;
-    const cands = [];
-    for (let r = -rows; r < 3 + rows; r++) for (let c = -cols; c < 3 + cols; c++) {
-      const x = hx + c * (tw + g) + (c < 0 ? -g : c > 2 ? g : 0), y = hy + r * (th + g) + (r < 0 ? -g : r > 2 ? g : 0), box = { l: x, t: y, r: x + tw, b: y + th };
-      const toprow = r === -1 && c >= 0 && c <= 2, above = r < 0, sh = above && hb._hdr ? Math.max(0, hb._hdr.D - 2 * g) : 0;
-      if (above) {
-        box.t -= sh;
-        box.b -= sh;
-      }
-      if (box.r < -tw * 0.6 || box.b < -th * 0.4 || box.l > W + tw * 0.6 || box.t > Ht + th * 0.6 || ov(box, hub2) || !above && tb && ov(box, tb)) continue;
-      cands.push({ r, c, toprow, above, ex: c < 0 ? -g : c > 2 ? g : 0, ey: r < 0 ? -g : r > 2 ? g : 0 });
-    }
-    const ring = (o) => {
-      const dr = o.r < 0 ? -o.r : Math.max(0, o.r - 2), dc = o.c < 0 ? -o.c : Math.max(0, o.c - 2);
-      return Math.max(dr, dc) * 3 + Math.min(dr, dc);
-    };
-    cands.sort((a, b) => {
-      const ra = ring(a), rb = ring(b);
-      if (ra !== rb) return ra - rb;
-      const qa = (a.r + 99) * 10 + (a.c + 99), qb = (b.r + 99) * 10 + (b.c + 99);
-      return qa % 7 - qb % 7 || qa - qb;
-    });
-    for (const o of cands) {
-      if (budget <= 0) break;
-      const { r, c, toprow, above, ex, ey } = o;
-      const el = document.createElement("div");
-      el.className = "mc";
-      const _dr = r < 0 ? -r : Math.max(0, r - 2), _dc2 = c < 0 ? -c : Math.max(0, c - 2);
-      el._ring = Math.max(_dr, _dc2) || 1;
-      el.dataset.ring = String(el._ring);
-      el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);top:calc(").concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px);width:calc((100% - ").concat(2 * g, "px) / 3);height:calc((100% - ").concat(2 * g, "px) / 3)");
-      if (above) {
-        if (toprow) el.classList.add("toprow");
-        el.classList.add("above");
-        el._top = (D) => "calc(".concat(r, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ey, "px - ").concat(Math.max(0, D - 2 * g), "px)");
-        el.style.top = el._top(hb._hdr && hb._hdr.D || 2 * g);
-      }
-      const tileH = Math.max(1, Math.round(tw * 9 / 16));
-      el.style.height = tileH + "px";
-      el.style.aspectRatio = "auto";
-      el.style.marginTop = Math.max(0, Math.round((th - tileH) / 2)) + "px";
-      el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
-      hb.appendChild(el);
-      cells.push(el);
-      budget--;
-    }
-    if (hb._hdr) {
-      hb._g = g;
-      const D = hb._hdr.D;
-      let bb = perf ? 4 : 12;
-      for (let c = -cols; c < 3 + cols && bb > 0; c++) {
-        if (c >= 0 && c <= 2) continue;
-        const ex = c < 0 ? -g : c > 2 ? g : 0, x = hx + c * (tw + g) + ex;
-        if (x + tw < -tw * 0.6 || x > W + tw * 0.6) continue;
+    const hub0 = (HOME_COLS - HOME_HUB) / 2, hub1 = hub0 + HOME_HUB - 1;
+    if (grid && M) {
+      for (let r = 0; r < HOME_ROWS; r++) for (let c = 0; c < HOME_COLS; c++) {
+        if (c >= hub0 && c <= hub1 && r >= hub0 && r <= hub1) continue;
         const el = document.createElement("div");
-        el.className = "mc band";
-        el._ring = 2;
-        el.dataset.ring = "2";
-        el.style.cssText = "left:calc(".concat(c, " * ((100% - ").concat(2 * g, "px) / 3 + ").concat(g, "px) + ").concat(ex, "px);width:calc((100% - ").concat(2 * g, "px) / 3);top:").concat(-(D - g), "px;height:").concat(Math.max(0, D - 2 * g), "px");
-        el._tw = tw;
-        bandFit(el, D, g);
+        el.className = "mc";
+        el._ring = 1;
+        el.dataset.ring = "1";
+        el.dataset.cell = c + "," + r;
+        const pct = (v) => v * 100 + "%";
+        el.style.left = pct((c + HOME_GUTTER / 2) / HOME_COLS);
+        el.style.top = pct((r + HOME_GUTTER / 2) / HOME_ROWS);
+        el.style.width = pct((1 - HOME_GUTTER) / HOME_COLS);
+        el.style.height = pct((1 - HOME_GUTTER) / HOME_ROWS);
         el.innerHTML = '<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
-        hb.appendChild(el);
+        M.appendChild(el);
         cells.push(el);
-        bb--;
       }
     }
     const pick = () => pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
@@ -1436,7 +1327,7 @@ var __spreadValues = (a, b) => {
       layers[1 - on].style.opacity = 0;
     };
     const paintReady = () => {
-      const imgs = [].slice.call(document.querySelectorAll("#hub .mc img")).filter((i) => i.src).slice(0, 8);
+      const imgs = [].slice.call(document.querySelectorAll("#mosaic .mc img, #hub .mc img")).filter((i) => i.src).slice(0, 8);
       const waits = imgs.map((i) => i.decode ? i.decode().catch(() => {
       }) : Promise.resolve());
       Promise.all(waits).then(() => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady(), () => window.__fefcMarkHomeReady && window.__fefcMarkHomeReady());
@@ -1452,7 +1343,6 @@ var __spreadValues = (a, b) => {
       cells.forEach((c) => set(c, true));
       if (window.FEFCNative) paintReady();
     }
-    requestAnimationFrame(fitHeader);
     clearInterval(mosaicTimer);
     mosaicTimer = setInterval(() => {
       if ($("#home").hidden || document.hidden) return;
@@ -1496,6 +1386,8 @@ var __spreadValues = (a, b) => {
     });
   }
   function showHome(gm) {
+    const hk = typeof parseH === "function" ? parseH()[0] : "";
+    if (hk === "edit" || hk === "play" || hk === "readfirst") return;
     clearTimeout(homeHideTimer);
     closeRF();
     if (!$("#details").hidden) {
@@ -2124,6 +2016,8 @@ var __spreadValues = (a, b) => {
   let FSFX = {};
   _afterHomeIdle(() => tmo("data/folder-sfx.json", 1e4).then((m) => {
     FSFX = m;
+    _sfxGen++;
+    _gpool = {};
     const pre = () => {
       Object.keys(m._genres || {}).forEach((g) => {
         const L = m._genres[g];
@@ -2142,26 +2036,95 @@ var __spreadValues = (a, b) => {
   }), 4e3);
   let _lastSfxId = null, _lastSfxAt = 0, _sandlerLast = -1, _cruiseLast = -1;
   const DIR_IDS = { "1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP": 1, "1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4": 1, "13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v": 1, "1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2": 1, "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg": 1, "1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o": 1, "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF": 1, "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el": 1, "1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t": 1, "1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC": 1 };
-  let _gsfx = { k: "", t: 0 };
+  let _sfxGen = 0, _gpool = {};
+  function pushClip(out, seen, L) {
+    if (!L) return;
+    if (Array.isArray(L) && L.length && Array.isArray(L[0])) {
+      L.forEach((x) => pushClip(out, seen, x));
+      return;
+    }
+    const files = (Array.isArray(L) ? L : [L]).filter(Boolean);
+    if (!files.length) return;
+    const k = files.join("|");
+    if (seen[k]) return;
+    seen[k] = 1;
+    out.push(files);
+  }
+  function clipsForFolder(id) {
+    const f = items.get(id), out = [], seen = {};
+    const direct = FSFX[id] || f && FSFX[f.name];
+    if (direct) pushClip(out, seen, direct);
+    if (f && Array.isArray(FSFX._rules)) {
+      const nm = f.name || "";
+      FSFX._rules.forEach((r) => {
+        let hit = false;
+        if (r.ids && r.ids.some((x) => x === id || x === (f.targetId || ""))) hit = true;
+        if (!hit && r.regex) {
+          try {
+            if (new RegExp(r.regex, "i").test(nm)) hit = true;
+          } catch (e) {
+          }
+        }
+        if (!hit && r.match && nm.toLowerCase().includes(String(r.match).toLowerCase())) hit = true;
+        if (hit) pushClip(out, seen, r.file || r.files);
+      });
+    }
+    return out;
+  }
+  function genreClipPool(G) {
+    const ck = items.size + ":" + _sfxGen;
+    if (_gpool[G] && _gpool[G].k === ck) return _gpool[G].pool;
+    const seen = {}, pool = [], ids = {};
+    Object.keys(genreMap || {}).forEach((fid) => {
+      const g = genreMap[fid];
+      if (g && (g.genres || []).indexOf(G) >= 0) ids[fid] = 1;
+    });
+    (typeof genreColls === "function" ? genreColls(G) : []).forEach((c) => (c.folders || []).forEach((fid) => {
+      ids[fid] = 1;
+    }));
+    Object.keys(ids).forEach((id) => clipsForFolder(id).forEach((L) => pushClip(pool, seen, L)));
+    pushClip(pool, seen, (FSFX._genres || {})[G]);
+    return (_gpool[G] = { k: ck, pool }).pool;
+  }
+  let _gsfx = { k: "", t: 0, i: -1, n: 0, order: null };
   function genreSfx(G) {
     if (navBack || !G) return;
-    const raw = (FSFX._genres || {})[G];
-    if (!raw) return;
+    const pool = genreClipPool(G);
+    if (!pool.length) return;
     const now = Date.now();
     if (_gsfx.k === G && now - _gsfx.t < 1500) return;
-    let L = raw, i = _gsfx.i;
-    if (Array.isArray(raw) && raw.length && Array.isArray(raw[0])) {
-      i = Math.random() * raw.length | 0;
-      if (raw.length > 1 && i === _gsfx.i) i = (i + 1 + (Math.random() * (raw.length - 1) | 0)) % raw.length;
-      L = raw[i];
+    if (_gsfx.k !== G || !_gsfx.order || _gsfx.order.length !== pool.length) {
+      const o = pool.map((_, i2) => i2);
+      for (let i2 = o.length - 1; i2 > 0; i2--) {
+        const j = Math.random() * (i2 + 1) | 0;
+        const t = o[i2];
+        o[i2] = o[j];
+        o[j] = t;
+      }
+      if (o.length > 1 && o[0] === _gsfx.i) {
+        const t = o[0];
+        o[0] = o[1];
+        o[1] = t;
+      }
+      _gsfx.order = o;
+      _gsfx.n = 0;
     }
-    _gsfx = { k: G, t: now, i };
+    const i = _gsfx.order[_gsfx.n % _gsfx.order.length];
+    _gsfx.n++;
+    if (_gsfx.n >= _gsfx.order.length) _gsfx.order = null;
+    _gsfx.k = G;
+    _gsfx.t = now;
+    _gsfx.i = i;
+    const L = pool[i];
     if (window.S && S.unlock) try {
       S.unlock();
     } catch (e) {
     }
-    ;
     if (S.fx) S.fx(L);
+    try {
+      S.loadFx && S.loadFx(L);
+    } catch (e) {
+    }
   }
   let _bcT = 0;
   function clearBack() {
@@ -2192,10 +2155,10 @@ var __spreadValues = (a, b) => {
     const G = FSFX._genres || {};
     const gm = typeof genreMap === "object" && genreMap && (genreMap[id] || f && genreMap[f.id]) || null;
     if (gm && gm.genres) {
-      const g = gm.genres.find((x) => G[x]);
+      const g = gm.genres.find((x) => genreClipPool(x).length);
       if (g) {
-        const L = G[g];
-        return Array.isArray(L) && L.length && Array.isArray(L[0]) ? L[Math.random() * L.length | 0] : L;
+        const pool = genreClipPool(g);
+        return pool[Math.random() * pool.length | 0];
       }
     }
     const names = [];
@@ -2500,8 +2463,7 @@ var __spreadValues = (a, b) => {
         if (nf && nb && nb.playVideo && (!window.__shufPlay || window.__shufFullscreen)) {
           let ok = false;
           try {
-            nb.playVideo(target(nf), parse(nf.name).raw);
-            ok = true;
+            ok = nativePlay(nf);
           } catch (e) {
           }
           if (ok) {
@@ -3063,8 +3025,7 @@ var __spreadValues = (a, b) => {
     if (nb && nb.playVideo) {
       let ok = false;
       try {
-        nb.playVideo(tid, title);
-        ok = true;
+        ok = nativePlay(f);
       } catch (e) {
       }
       if (ok) {
@@ -3887,6 +3848,10 @@ var __spreadValues = (a, b) => {
     }
   }
   function killVideo() {
+    try {
+      window.__fefcPlayerSave && window.__fefcPlayerSave();
+    } catch (e) {
+    }
     streamTok++;
     clearStreamWait();
     const v = $("#pvideo");
@@ -4032,22 +3997,32 @@ var __spreadValues = (a, b) => {
     }
   }
   function setPlayerScale(mode) {
-    const order = ["contain", "cover", "fill"];
+    window.setPlayerScale = setPlayerScale;
+    const order = ["contain", "cover", "ratio", "fill"], lab = { contain: "Fit", cover: "Fill", ratio: "16:9", fill: "Stretch" };
     let m = mode;
-    if (!m) {
-      const i = order.indexOf(playerScaleMode());
-      m = order[(i + 1) % 3];
+    if (!m || order.indexOf(m) < 0) {
+      const i = Math.max(0, order.indexOf(playerScaleMode()));
+      m = order[(i + 1) % order.length];
     }
     try {
       localStorage.fefcScale = m;
     } catch (e) {
     }
     const v = $("#pvideo");
-    if (v) v.style.objectFit = m;
+    if (v) {
+      v.classList.remove("ar-fit", "ar-fill", "ar-16", "ar-stretch");
+      v.classList.add(m === "contain" ? "ar-fit" : m === "cover" ? "ar-fill" : m === "ratio" ? "ar-16" : "ar-stretch");
+      v.style.objectFit = m === "ratio" ? "fill" : m;
+    }
     const b = $("#pscale");
-    if (b) b.textContent = "Scale: " + (m === "contain" ? "Fit" : m === "cover" ? "Fill" : "Stretch");
+    if (b) b.textContent = "Scale: " + lab[m];
+    try {
+      window.dispatchEvent(new CustomEvent("fefc-scale", { detail: m }));
+    } catch (e) {
+    }
     return m;
   }
+  window.setPlayerScale = setPlayerScale;
   function ensurePlayerExtras() {
     const top = $("#player .ptop");
     if (!top || top.dataset.extras) return;
@@ -4062,7 +4037,7 @@ var __spreadValues = (a, b) => {
       top.insertBefore(b, $("#popen"));
       return b;
     };
-    const sc = mk("pscale", "Scale: Fit", "Cycle Fit \u2192 Fill \u2192 Stretch");
+    const sc = mk("pscale", "Scale: Fit", "Cycle Fit, Fill, 16:9, Stretch");
     sc.onclick = () => {
       S.chirp(1);
       setPlayerScale();
@@ -4121,7 +4096,7 @@ var __spreadValues = (a, b) => {
     const ext = (url.match(/\.([a-z0-9]+)$/i) || [])[1] || "";
     const v = document.createElement("video");
     v.id = "pvideo";
-    v.controls = true;
+    v.controls = false;
     v.autoplay = true;
     v.playsInline = true;
     v.preload = "auto";
@@ -4143,6 +4118,34 @@ var __spreadValues = (a, b) => {
       }
       giveUp(ext === "mkv" ? "This .mkv can\u2019t play in Silk on Fire TV. Open the stream (no sign-in) or Open in Drive." : "The video didn\u2019t start in this browser. Open the stream, or Open in Drive.");
     }, 8e3);
+    v.addEventListener("loadedmetadata", () => {
+      if (tok !== streamTok) return;
+      let p = 0;
+      try {
+        p = +localStorage.getItem("fefcPos:" + id) || 0;
+      } catch (e) {
+      }
+      if (p > 8 && (!v.duration || p < v.duration - 15)) {
+        try {
+          v.currentTime = p;
+        } catch (e) {
+        }
+      }
+    });
+    const savePos = () => {
+      if (tok !== streamTok || !v.duration) return;
+      const p = v.currentTime;
+      try {
+        if (p < 8 || p > v.duration - 15) localStorage.removeItem("fefcPos:" + id);
+        else localStorage.setItem("fefcPos:" + id, String(p));
+      } catch (e) {
+      }
+    };
+    v.addEventListener("pause", savePos);
+    v.addEventListener("timeupdate", () => {
+      if (v.currentTime % 2 < 0.3) savePos();
+    });
+    window.__fefcPlayerSave = savePos;
     v.addEventListener("canplay", () => {
       if (tok !== streamTok) return;
       live2 = false;
@@ -4188,6 +4191,42 @@ var __spreadValues = (a, b) => {
     } catch (e) {
     }
   }
+  function nativeMime(name) {
+    const n = String(name || "").toLowerCase();
+    if (n.endsWith(".mkv")) return "video/x-matroska";
+    if (n.endsWith(".webm")) return "video/webm";
+    if (n.endsWith(".mov")) return "video/quicktime";
+    if (n.endsWith(".avi")) return "video/x-msvideo";
+    return "video/mp4";
+  }
+  function nativePlay(f) {
+    const nb = window.FEFCNative;
+    if (!f || !nb) return false;
+    const id = target(f), title = parse(f.name).raw || f.name || "Fan edit", file = f.name || "video.mp4";
+    let sub = "";
+    try {
+      const s = findSidecarSub(f);
+      if (s) sub = "/api/stream/" + encodeURIComponent(s.id);
+    } catch (e) {
+    }
+    quietForExternal();
+    try {
+      if (typeof nb.playVideoWithFile === "function") {
+        nb.playVideoWithFile(id, title, file, sub);
+        return true;
+      }
+      if (typeof nb.playVideoWithOptions === "function") {
+        nb.playVideoWithOptions(id, title, nativeMime(file), sub);
+        return true;
+      }
+      if (typeof nb.playVideo === "function") {
+        nb.playVideo(id, title);
+        return true;
+      }
+    } catch (e) {
+    }
+    return false;
+  }
   function play(f) {
     const E = episodes(f), pn = $("#pprev"), nx = $("#pnext");
     if (pn && nx) {
@@ -4210,6 +4249,7 @@ var __spreadValues = (a, b) => {
     if (window.__shufFullscreen) window.__shufFullscreen = 0;
     const sub = findSidecarSub(f);
     $("#player").dataset.pid = f.id;
+    $("#player").dataset.file = f.name || "";
     $("#ptitle").textContent = parse(f.name).raw;
     $("#player").dataset.did = id;
     if (sub) {
@@ -4549,8 +4589,7 @@ var __spreadValues = (a, b) => {
       }
     }
     if (!e.scrollIntoView) return;
-    const tv = document.body.classList.contains("tv") || document.body.classList.contains("firetv");
-    const m = tv && e.closest && e.closest("#main");
+    const m = e.closest && e.closest("#main");
     if (m && m.scrollHeight > m.clientHeight) {
       tvReveal(m, e);
       try {
@@ -4708,8 +4747,9 @@ var __spreadValues = (a, b) => {
   });
   let tvGoalX = null;
   function tvRows() {
-    const c = [$("#arena"), $("#grid")].find((x) => x && !x.hidden && x.getClientRects().length);
-    if (!c) return null;
+    const boxes = ["#grid", "#arena"].map((s) => $(s)).filter((x) => x && !x.hidden && x.querySelector(".ol-tile,.sortpill,.ml-btn"));
+    if (!boxes.length) return null;
+    const c = boxes[0];
     const els = [].slice.call(c.querySelectorAll(".sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog,#ml-sync .mi,.sync-go")).filter((e) => !e.hidden && !e.closest("[hidden]") && getComputedStyle(e).display !== "none"), groups = /* @__PURE__ */ new Map();
     els.forEach((e) => {
       const g = e.closest(".sgrid") || e.parentElement;
@@ -4724,8 +4764,8 @@ var __spreadValues = (a, b) => {
         n = Math.max(1, n || 1);
         if (n > a.length) n = a.length || 1;
         if (a.length > 1) {
-          const y0 = a[0].offsetTop, first = a.filter((e) => Math.abs(e.offsetTop - y0) < Math.max(24, a[0].offsetHeight * 0.35));
-          if (first.length >= 2 && first.length !== n) n = first.length;
+          const y0 = a[0].offsetTop, first = a.filter((e) => Math.abs(e.offsetTop - y0) < Math.max(8, a[0].offsetHeight * 0.2));
+          if (first.length >= 2 && first.length < n) n = first.length;
         }
         for (let i = 0; i < a.length; i += n) rows.push(a.slice(i, i + n));
       } else {
@@ -4801,9 +4841,12 @@ var __spreadValues = (a, b) => {
       return true;
     }
     if (ri >= rows.length - 1 && typeof drainOne === "function") {
-      let n = 0;
+      let n = 0, grew = true;
       try {
-        while (n++ < 3 && drainOne()) ;
+        while (grew && n++ < 40) {
+          const before = document.querySelectorAll("#grid .ol-tile,#arena .ol-tile").length;
+          grew = !!drainOne() && document.querySelectorAll("#grid .ol-tile,#arena .ol-tile").length > before;
+        }
       } catch (er) {
       }
       rows = tvRows() || rows;
@@ -4966,6 +5009,15 @@ var __spreadValues = (a, b) => {
             best = el;
           }
         });
+        if (k === 40 && best) {
+          const hop = els.filter((el) => el.classList.contains("tv-scroll")).reduce((pick, el) => {
+            const y = cx(el).y;
+            if (y <= C2.y + 8 || y >= cx(best).y - 4) return pick;
+            if (!pick || y < cx(pick).y) return el;
+            return pick;
+          }, null);
+          if (hop) best = hop;
+        }
         if (best) {
           focusEl(best);
           try {
@@ -5441,6 +5493,11 @@ var __spreadValues = (a, b) => {
       } catch (e) {
         inp.focus();
       }
+      try {
+        const nb = window.FEFCNative;
+        if (nb && typeof nb.showSoftInput === "function") nb.showSoftInput();
+      } catch (e) {
+      }
     }, 30);
   }
   function closeSpot(nav) {
@@ -5531,7 +5588,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.21";
+  const HOME_VER_FALLBACK = "0.8.22";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
@@ -5682,7 +5739,7 @@ var __spreadValues = (a, b) => {
     el.hidden = false;
     el.setAttribute("aria-hidden", "false");
     document.body.classList.add("tvmenu-open");
-    const first = el.querySelector(".tvm-i");
+    const first = el.querySelector('[data-tm="search"]') || el.querySelector(".tvm-i");
     if (first) try {
       first.focus({ preventScroll: true });
     } catch (e) {

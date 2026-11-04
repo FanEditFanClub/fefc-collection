@@ -15,8 +15,9 @@ const isFolder=f=>!!f&&(f.mimeType===FOLDER||f.kind==='folder'||f.targetMime===F
 const target=f=>f.targetId||f.id;
 const genreMap=(()=>{const g=JSON.parse(fs.readFileSync(R('data/genres.json'),'utf8'));delete g.__collections;return g})();
 const ctx={items,people,FSFX,DIR_IDS,FOLD,ROOT:idx.root,_sandlerLast:-1,_cruiseLast:-1};
+const poolFns=app.slice(app.indexOf('function pushClip'),app.indexOf('let _gsfx'));
 const resolve=new Function('items','people','FSFX','DIR_IDS','FOLD','ROOT','genreMap','state',
- 'let _sandlerLast=state._sandlerLast,_cruiseLast=state._cruiseLast;'+blk+';return sfxResolve;')(items,people,FSFX,DIR_IDS,FOLD,idx.root,genreMap,ctx);
+ 'let _sandlerLast=state._sandlerLast,_cruiseLast=state._cruiseLast,_sfxGen=0,_gpool={};'+poolFns+blk+';return sfxResolve;')(items,people,FSFX,DIR_IDS,FOLD,idx.root,genreMap,ctx);
 const folders=[...items.values()].filter(isFolder);
 const routeIds=[...new Set(folders.map(target))];
 const genres=Object.keys(FSFX._genres||{});

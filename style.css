@@ -1460,7 +1460,7 @@ html body.tv #app,html body.firetv #app{
 html body.tv #home,html body.firetv #home{
   padding:0 0.5vw!important;box-sizing:border-box;
 }
-html body.tv #hub,html body.firetv #hub{
+html body.tv:not(.home-grid) #hub,html body.firetv:not(.home-grid) #hub{
   width:min(48vw,calc(40vh*1.55))!important;
 }
 html body.tv #main,html body.firetv #main{
@@ -1667,3 +1667,94 @@ body.tier-mid #home,body.tier-mid .mc,body.tier-mid .hb{filter:none!important;ba
   animation-play-state:running}
 #ticker.tk-css.tk-hold .tk-track,#ticker.tk-css:not(.on) .tk-track{animation-play-state:paused}
 body.tv #ticker,body.firetv #ticker{-webkit-mask-image:none!important;mask-image:none!important}
+
+/* 0.8.22 home: one lattice. Center 3×3 = hub buttons. The other cells are clip tiles
+   of the same size. Gutter (baked into the atlas and into --hub-*) keeps focus scale
+   and the glow inside the gap so a clip never covers a selectable tile. */
+body.home-grid #home{overflow:hidden;perspective:none}
+body.home-grid #home-plane{transform:none}
+html body.home-grid #hub,
+html body.tv.home-grid #hub,
+html body.firetv.home-grid #hub,
+html body.touch.home-grid #hub{
+ position:absolute!important;
+ left:var(--hub-x,20%)!important;top:var(--hub-y,20%)!important;
+ width:var(--hub-w,60%)!important;height:var(--hub-h,60%)!important;
+ right:auto!important;bottom:auto!important;margin:0!important;
+ transform:none!important;aspect-ratio:auto!important;
+ padding:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;
+ display:grid!important;grid-template-columns:repeat(3,1fr)!important;grid-template-rows:repeat(3,1fr)!important;
+ column-gap:var(--hub-gx,8px)!important;row-gap:var(--hub-gy,8px)!important;
+ z-index:2!important;overflow:visible!important;min-width:0!important;min-height:0!important}
+body.home-grid #home-plane #mosaic{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+body.home-grid #mosaic .mc{position:absolute;overflow:hidden;border-radius:3px;pointer-events:none;z-index:0;margin:0}
+body.home-grid #hub .hb{
+ position:relative;z-index:1;width:auto;height:auto;min-width:0;min-height:0;margin:0;box-sizing:border-box;
+ background:linear-gradient(160deg,#3b4452 0,#1d232d 38%,#0d1117 62%,#1a212b 100%)!important}
+body.home-grid #hub .hb:focus,body.home-grid #hub .hb:focus-visible{
+ z-index:4;transform:scale(1.03);outline:2px solid #ff9c00;outline-offset:0}
+/* 0.8.22 details: less empty chrome, one scroll surface, TV-safe side margins. */
+html body.fit #details{
+ grid-template-columns:max-content minmax(0,1fr)!important;
+ grid-template-rows:minmax(0,1fr)!important;
+ gap:.4vh .7vw!important;
+ padding:.3vh 1vw .4vh!important;
+ bottom:calc(var(--tkh, 36px) + 9vh)!important;
+ overflow:hidden!important;
+}
+html body.tv.fit #details,html body.firetv.fit #details{
+ padding:.35vh 5vw .4vh 5vw!important;
+ bottom:calc(5vh + var(--tkh, 36px) + 8vh)!important;
+}
+html body.fit #details .lc-side{width:max-content;max-width:18vw;gap:.35vh;overflow:visible;padding:0}
+html body.fit #details .lc-side .grow{display:none!important}
+html body.fit #details .lc-side .pill{min-height:4vh;font-size:max(13px,1.6vh);padding:0 .6vh}
+html body.fit #details .lc-top{display:none}
+html body.fit #details .lc-body{
+ overflow:auto!important;min-height:0;max-height:100%;
+ padding:0 0 2vh .4vw!important;scroll-padding-bottom:8vh!important;
+ gap:.6vh 1vw!important;
+ grid-template-columns:minmax(0,18vh) minmax(0,1.2fr) minmax(0,.9fr)!important;
+}
+html body.fit #details .lc-body>div{min-width:0}
+html body.fit #details .lc-poster{width:18vh!important}
+html body.fit #details .lc-head .lc-title{font-size:max(22px,3.2vh)!important}
+html body.fit #details .lc-body>div:nth-of-type(2),
+html body.fit #details .lc-body>div:nth-of-type(3){overflow:hidden!important;max-height:none!important;min-width:0!important}
+html body.tv #details .seas,html body.firetv #details .seas,html body.fit #details .seas{
+ display:flex!important;flex-wrap:nowrap!important;width:100%!important;max-width:100%!important;
+ overflow-x:auto!important;overflow-y:hidden!important;box-sizing:border-box!important}
+html body.fit #details .tv-scroll,html body.tv #details .tv-scroll{max-height:none;overflow:visible}
+html body.tv #details #lc-eps,html body.firetv #details #lc-eps,
+html body.fit #details #lc-eps{max-height:none!important;overflow:visible!important;contain:none}
+html body.tv #details .eps.all,html body.firetv #details .eps.all{max-height:none!important;overflow:visible!important}
+html body.fit #details .seas,html body.tv #details .seas{max-width:100%;min-width:0;width:100%;overflow-x:auto!important;overflow-y:hidden}
+html body.fit #details .cast{max-height:none}
+/* Player chrome (web + TV WebView). Native ExoPlayer has the same controls. */
+#pchrome{position:absolute;left:4%;right:4%;bottom:3%;z-index:6;display:flex;flex-direction:column;gap:.6vh;padding:1.2vh 1.4vw 1.4vh;background:#000c;color:#fff;border-radius:10px;opacity:0;pointer-events:none;transition:opacity .25s;font:600 1.7vh 'Source Sans 3',sans-serif}
+#pchrome.on{opacity:1;pointer-events:auto}
+body.tv #pchrome{left:5vw;right:5vw;bottom:4vh;font-size:2vh}
+#pchrome .pc-title{font:700 2vh Antonio,sans-serif;color:#ffb02e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#pchrome .pc-seek{height:1.4vh;background:#223;border-radius:99px;position:relative;cursor:pointer}
+#pchrome .pc-bar{position:absolute;inset:0;border-radius:inherit;overflow:hidden}
+#pchrome .pc-bar i{display:block;height:100%;width:0;background:#ff9c00}
+#pchrome .pc-row{display:flex;align-items:center;justify-content:space-between;gap:1vw}
+#pchrome .pc-pp{min-width:6vh;min-height:4.5vh;border:0;border-radius:8px;background:#ff9c00;color:#000;font-size:2.2vh}
+#pchrome .pc-acts{display:flex;flex-wrap:wrap;gap:.6vh}
+#pchrome .pc-acts button{min-height:4.2vh;padding:0 1vw;border-radius:8px;border:2px solid #9fb6cf;background:#141820;color:#fff;font:700 1.6vh Antonio,sans-serif}
+#pchrome .pc-acts button:focus,#pbig:focus,#pmenu button:focus{outline:3px solid #fff;outline-offset:2px;background:#ff9c00;color:#000}
+#pbig{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:5;width:12vh;height:12vh;border-radius:50%;border:3px solid #fff;background:#000a;color:#fff;font-size:5vh;opacity:0;pointer-events:none}
+#pbig.on{opacity:1;pointer-events:auto}
+#pmenu{position:absolute;right:4%;top:8%;bottom:18%;z-index:7;width:min(42vw,420px);overflow:auto;background:#0c1016f2;border:2px solid #ff9c00;border-radius:12px;padding:1.2vh 1vw;color:#fff}
+#pmenu[hidden]{display:none!important}
+#pmenu p{margin:0 0 1vh;font:700 2.2vh Antonio,sans-serif;color:#ff9c00}
+#pmenu .pcm-h{margin:1vh 0 .4vh;font-size:1.4vh;letter-spacing:.08em;text-transform:uppercase;color:#9fb6cf}
+#pmenu button{display:block;width:100%;text-align:left;margin:.3vh 0;min-height:4.4vh;padding:.4vh .8vw;border-radius:8px;border:0;background:#1a2230;color:#fff;font:600 1.7vh 'Source Sans 3',sans-serif}
+#pvideo.ar-fit{object-fit:contain;width:100%;height:100%;position:absolute;inset:0}
+#pvideo.ar-fill{object-fit:cover;width:100%;height:100%;position:absolute;inset:0}
+#pvideo.ar-stretch{object-fit:fill;width:100%;height:100%;position:absolute;inset:0}
+#pvideo.ar-16{object-fit:fill;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100%,calc(100vh * 16 / 9));height:min(100%,calc(100vw * 9 / 16))}
+body.home-grid #mosaic-atlas,body.mosaic-atlas #mosaic-atlas{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ object-fit:fill!important;z-index:0;pointer-events:none;background:#05070b}
+body.mosaic-atlas.home-grid #mosaic .mc{opacity:0!important}

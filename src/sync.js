@@ -58,18 +58,27 @@ function srvClient(){
  function api(path,body,auth){var h={'content-type':'application/json'};if(auth!==false&&tok())h.Authorization='Bearer '+tok();
   return fetch('/api/sync/'+path,{method:body===undefined?'GET':'POST',headers:h,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'}).then(function(r){return r.json().catch(function(){return {}}).then(function(j){if(!r.ok){var e=new Error(j.error||('http '+r.status));e.status=r.status;throw e}return j})})}
  function load(){var t=tok();if(!t){S.state='out';S.kind=null;S.user=null;return}S.state='in';S.kind=localStorage.getItem(KK)||'code';try{S.user=JSON.parse(localStorage.getItem(KU)||'null')}catch(e){S.user=null}}
+ function persistNative(){try{if(window.FEFCSyncKeep&&window.FEFCNative&&window.FEFCNative.persistSync)window.FEFCNative.persistSync(JSON.stringify(window.FEFCSyncKeep.snapshot(localStorage)))}catch(e){}}
+ function devId(){try{var id=localStorage.getItem('fefcDeviceId')||'';if(id.length>=20)return id}catch(e){}return ''}
+ function registerDevice(){var id=devId();if(!id||!tok())return Promise.resolve();return api('device/register',{deviceId:id}).catch(function(){})}
+ function refillUd(){try{if(!window.UD)return;var raw=localStorage.getItem('fefcUserData.v1');if(!raw)return;var cur=JSON.parse(window.UD.exportJSON()),inc=JSON.parse(raw);
+  var empty=!Object.keys(cur.stars||{}).length&&!Object.keys(cur.history||{}).length&&!Object.keys(cur.playback||{}).length;
+  var has=Object.keys(inc.stars||{}).length||Object.keys(inc.history||{}).length||Object.keys(inc.playback||{}).length;
+  if(empty&&has)window.UD.importJSON(inc,true)}catch(e){}}
  function run(){if(!tok()||!window.UD)return Promise.resolve();if(busy){again=true;return Promise.resolve()}busy=true;S.state='syncing';emit();
-  return api('list',{data:JSON.parse(window.UD.exportJSON())}).then(function(r){S.error='';if(r&&r.data&&r.data.v===1)window.UD.importJSON(r.data,false);S.state='in'},function(e){
+  return api('list',{data:JSON.parse(window.UD.exportJSON())}).then(function(r){S.error='';if(r&&r.data&&r.data.v===1)window.UD.importJSON(r.data,false);S.state='in';persistNative();registerDevice()},function(e){
     if(e.status===401||e.status===503&&0){clear();return}S.state='in';S.error=e&&e.message||'sync failed'}).then(function(){busy=false;emit();if(again){again=false;return run()}})}
  function soon(){clearTimeout(deb);deb=setTimeout(run,2500)}
- function wire(){if(S._wired||!window.UD)return;S._wired=1;window.UD.subscribe(function(){if(tok()&&!busy)soon()});addEventListener('focus',function(){if(tok())run()});document.addEventListener('visibilitychange',function(){if(!document.hidden&&tok())run()});timer=setInterval(function(){if(tok())run()},4*60*1000)}
- function adopt(r){if(!r||!r.token)throw new Error('no token');localStorage.setItem(KT,r.token);localStorage.setItem(KK,r.kind||'code');localStorage.setItem(KU,JSON.stringify(r.user||null));load();wire();emit();return run().then(function(){return S})}
- function clear(){localStorage.removeItem(KT);localStorage.removeItem(KK);localStorage.removeItem(KU);load();emit()}
+ function wire(){if(S._wired||!window.UD)return;S._wired=1;window.UD.subscribe(function(){persistNative();if(tok()&&!busy)soon()});addEventListener('focus',function(){if(tok())run()});document.addEventListener('visibilitychange',function(){if(!document.hidden&&tok())run()});timer=setInterval(function(){if(tok())run()},4*60*1000)}
+ function adopt(r){if(!r||!r.token)throw new Error('no token');localStorage.setItem(KT,r.token);localStorage.setItem(KK,r.kind||'code');localStorage.setItem(KU,JSON.stringify(r.user||null));load();persistNative();wire();emit();return run().then(function(){return S})}
+ function clear(){localStorage.removeItem(KT);localStorage.removeItem(KK);localStorage.removeItem(KU);persistNative();load();emit()}
+ function tryRestore(){if(tok())return Promise.resolve(false);var id=devId();if(!id)return Promise.resolve(false);
+  return api('restore',{deviceId:id},false).then(function(r){if(r&&r.token){adopt(r);return true}return false}).catch(function(){return false})}
  var A={
   get state(){return S},subscribe:function(f){subs.push(f);f(S)},
   status:function(){return cfg||(cfg=api('status',undefined,false).catch(function(){return {configured:false,tv:false}}))},
   adopt:adopt,syncNow:run,connected:function(){return !!tok()},
-  signOut:function(){var t=tok();if(t)try{fetch('/api/sync/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(function(){})}catch(e){}clear()},
+  signOut:function(){var t=tok(),id=devId();if(t&&id)try{fetch('/api/sync/device/forget',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({deviceId:id})}).catch(function(){})}catch(e){}if(t)try{fetch('/api/sync/logout',{method:'POST',headers:{Authorization:'Bearer '+t}}).catch(function(){})}catch(e){}clear()},
   // Google web sign-in -> same server list as the TV code flow
   googleSession:function(accessToken,user){if(S.kind==='google'&&tok()&&S.user&&user&&S.user.email===user.email)return Promise.resolve(S);
    return A.status().then(function(c){if(!c.configured)return S;return api('google/session',{access_token:accessToken,name:user&&user.name,picture:user&&user.picture},false).then(adopt)}).catch(function(){return S})},
@@ -81,7 +90,7 @@ function srvClient(){
   qrApprove:function(id){return api('qr/approve',{id:id})},
   pairCreate:function(){return api('pair/create',{})},
   pairRedeem:function(code){return api('pair/redeem',{code:code},false)}};
- load();if(tok()){wire();setTimeout(run,1500)}
+ refillUd();load();persistNative();if(tok()){wire();setTimeout(function(){registerDevice();run()},1500)}else setTimeout(tryRestore,400)
  return A}
 if(typeof window!=='undefined'&&window.addEventListener)window.addEventListener('keydown',function(e){if(window.__fefcModal&&window.__fefcModal(e)){e.preventDefault();e.stopImmediatePropagation()}},true);
 root.FEFCSyncCore=core;

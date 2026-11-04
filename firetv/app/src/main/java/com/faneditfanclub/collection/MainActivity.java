@@ -36,7 +36,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import android.webkit.WebStorage;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -98,13 +97,15 @@ public class MainActivity extends Activity {
         web.setFocusable(true);
         web.setFocusableInTouchMode(true);
         configure(web);
-        /* Bust stale WebView HTTP / SW cache when the APK versionCode changes (Fire TV often keeps old JS/CSS). */
+        /* HTTP cache only. localStorage / IndexedDB hold the sync token and My List.
+           deleteAllData() on a versionCode bump is what unpaired TVs after 0.8.19 → 0.8.21. */
+        SyncVault.migrateLegacy(this);
+        SyncVault.deviceId(this);
         SharedPreferences prefs = getSharedPreferences("fefc", MODE_PRIVATE);
         int lastCleared = prefs.getInt("clearedForVersion", 0);
         if (lastCleared != BuildConfig.VERSION_CODE) {
             try { web.clearCache(true); } catch (Exception ignored) {}
             try { web.clearFormData(); } catch (Exception ignored) {}
-            try { WebStorage.getInstance().deleteAllData(); } catch (Exception ignored) {}
             prefs.edit().putInt("clearedForVersion", BuildConfig.VERSION_CODE).apply();
         }
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
@@ -565,7 +566,16 @@ public class MainActivity extends Activity {
         public String version() { return BuildConfig.VERSION_NAME; }
 
         /** App versionCode for the web UI (Check for updates row). */
+        @JavascriptInterface
         public int versionCode() { return BuildConfig.VERSION_CODE; }
+
+        /** Sync token, My List JSON, and the stable device id. Mirrored into localStorage before sync.js reads it. */
+        @JavascriptInterface
+        public String syncState() { return SyncVault.stateJson(MainActivity.this); }
+
+        /** Write the WebView snapshot back. A blank tok clears the pairing and leaves deviceId in place. */
+        @JavascriptInterface
+        public void persistSync(String json) { SyncVault.persist(MainActivity.this, json); }
 
         /** Device tier JSON: {tier,videoTiles,ramMb,...}. Used by mosaic decoder caps. */
         @JavascriptInterface
@@ -593,6 +603,18 @@ public class MainActivity extends Activity {
             Log.i("FEFC", msg == null ? "" : msg);
         }
 
+        /** Show the soft keyboard for the WebView search field. SHOW_FORCED — Fire TV hides it otherwise. */
+        @JavascriptInterface
+        public void showSoftInput() {
+            ui.post(() -> {
+                if (web == null) return;
+                web.requestFocus();
+                android.view.inputmethod.InputMethodManager imm =
+                        (android.view.inputmethod.InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm != null) imm.showSoftInput(web, android.view.inputmethod.InputMethodManager.SHOW_FORCED);
+            });
+        }
+
         /** Lets the web app offer a manual "Check for app update" action. */
         @JavascriptInterface
         public void checkUpdate() { ui.post(() -> { if (updater != null) updater.check(true); }); }
@@ -615,11 +637,22 @@ public class MainActivity extends Activity {
         /** Native player with optional mime + sidecar subtitle URL (same-origin /api/stream/... .srt/.vtt). */
         @JavascriptInterface
         public void playVideoWithOptions(final String driveId, final String title, final String mime, final String subtitleUrl) {
+            launchPlayer(driveId, title, null, mime, subtitleUrl);
+        }
+
+        /** Full-screen ExoPlayer. fileName supplies the extension so /api/stream serves video/x-matroska for .mkv. No user Google token. */
+        @JavascriptInterface
+        public void playVideoWithFile(final String driveId, final String title, final String fileName, final String subtitleUrl) {
+            launchPlayer(driveId, title, fileName, mimeForName(fileName != null && !fileName.isEmpty() ? fileName : title), subtitleUrl);
+        }
+
+        private void launchPlayer(final String driveId, final String title, final String fileName, final String mime, final String subtitleUrl) {
             if (driveId == null || !driveId.matches("[A-Za-z0-9_-]{10,100}")) return;
             ui.post(() -> {
                 Intent i = new Intent(MainActivity.this, PlayerActivity.class);
                 i.putExtra("id", driveId);
                 i.putExtra("title", title == null ? "" : title);
+                if (fileName != null && !fileName.isEmpty()) i.putExtra("fileName", fileName);
                 if (mime != null && !mime.isEmpty()) i.putExtra("mime", mime);
                 if (subtitleUrl != null && !subtitleUrl.isEmpty()) {
                     i.putExtra("subtitleUrl", subtitleUrl);
@@ -628,6 +661,17 @@ public class MainActivity extends Activity {
                 }
                 startActivity(i);
             });
+        }
+
+        private static String mimeForName(String name) {
+            String n = name == null ? "" : name.toLowerCase();
+            if (n.endsWith(".mkv")) return "video/x-matroska";
+            if (n.endsWith(".webm")) return "video/webm";
+            if (n.endsWith(".mov")) return "video/quicktime";
+            if (n.endsWith(".avi")) return "video/x-msvideo";
+            if (n.endsWith(".mpg") || n.endsWith(".mpeg")) return "video/mpeg";
+            if (n.endsWith(".m2ts") || n.endsWith(".ts")) return "video/mp2t";
+            return "video/mp4";
         }
 
         /**
