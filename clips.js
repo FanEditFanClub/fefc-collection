@@ -106,7 +106,8 @@ function stopAtlas() {
 }
 function wantAtlas() {
   try {
-    if (window.FEFCNative || document.body.classList.contains("firetv") || document.body.classList.contains("tv")) return true;
+    const ua = navigator.userAgent || "";
+    if (window.FEFCNative || document.body.classList.contains("firetv") || document.body.classList.contains("tv") || /Silk|AFT\w|Fire TV|Android TV|GoogleTV|FEFCFireTV/i.test(ua)) return true;
   } catch (e) {
   }
   try {
@@ -135,10 +136,11 @@ function startAtlas() {
   v.setAttribute("webkit-playsinline", "");
   v.preload = "auto";
   v.setAttribute("aria-hidden", "true");
-  v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s ease;background:#050a14";
+  v.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:fill;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s ease;background:#05070b";
+  const plane = document.getElementById("home-plane") || h;
   const hub = document.getElementById("hub");
-  if (hub && hub.parentNode === h) h.insertBefore(v, hub);
-  else h.insertBefore(v, h.firstChild);
+  if (hub && hub.parentNode === plane) plane.insertBefore(v, hub);
+  else plane.insertBefore(v, plane.firstChild);
   atlasV = v;
   atlasStarting = new Promise((res) => {
     let done = 0;
@@ -187,10 +189,13 @@ function startAtlas() {
       const play = () => {
         const p = v.play();
         if (p && p.catch) p.catch((e) => {
-          if (e && e.name === "AbortError") return;
+          if (!e || e.name === "AbortError" || e.name === "NotAllowedError") return;
           finish(false, "play:" + (e && e.name || e));
         });
       };
+      v.addEventListener("loadeddata", () => {
+        if (my === atlasGen && !atlasOn) finish(true, "frame");
+      }, { once: true });
       const useBlob = (b) => {
         if (!b || my !== atlasGen) return;
         try {
@@ -476,16 +481,8 @@ function stopAll() {
   stopAtlas();
 }
 function scheduleStillsAndTiles() {
-  cells = [].slice.call(document.querySelectorAll("#hub .mc")).filter(visible);
-  if (atlasOn) {
-    try {
-      const line = "FEFC_CLIPS atlas=active cells=" + cells.length + " cap=0 stats=" + JSON.stringify(__clipStats());
-      console.log(line);
-      if (window.FEFCNative && FEFCNative.log) FEFCNative.log(line);
-    } catch (e) {
-    }
-    return;
-  }
+  cells = [].slice.call(document.querySelectorAll("#home-plane .mc, #hub .mc")).filter(visible);
+  if (atlasOn) return;
   const ring1 = cells.filter((c) => ringOf(c) === 1).sort((a, b) => (a._ring || 0) - (b._ring || 0));
   const outer = cells.filter((c) => ringOf(c) > 1);
   const n = Math.min(decoders(), Math.max(0, ring1.length));
@@ -527,6 +524,7 @@ function scheduleStillsAndTiles() {
   }
 }
 function schedule() {
+  if (atlasStarting) return;
   stop();
   if (!atHome()) return;
   on = true;
@@ -552,20 +550,24 @@ function schedule() {
   }
   go();
 }
-let deb;
+let deb, arm;
 function kick() {
-  clearTimeout(deb);
   if (!atHome()) {
+    clearTimeout(deb);
+    arm = false;
     stopAll();
     atlasTried = false;
     return;
   }
+  if (arm) return;
+  arm = true;
   deb = setTimeout(() => {
+    arm = false;
     if (atHome()) {
       load();
       schedule();
     } else stopAll();
-  }, 400);
+  }, 450);
 }
 let _ic = document.body.classList.contains("cintro");
 new MutationObserver(() => {
@@ -580,9 +582,10 @@ addEventListener("fefc-home-revealed", () => {
 function init() {
   const h = home(), hub = document.getElementById("hub");
   if (!h || !hub) return setTimeout(init, 500);
+  const watch = document.getElementById("mosaic") || document.getElementById("home-plane") || hub;
   new MutationObserver((ms) => {
     if (ms.some((m) => [].some.call(m.addedNodes, (x) => x.classList && x.classList.contains("mc")) || [].some.call(m.removedNodes, (x) => x.classList && x.classList.contains("mc")))) kick();
-  }).observe(hub, { childList: true });
+  }).observe(watch, { childList: true });
   new MutationObserver(kick).observe(h, { attributes: true, attributeFilter: ["hidden"] });
   document.addEventListener("visibilitychange", kick);
   addEventListener("fefc-background", () => stopAll());
@@ -605,6 +608,8 @@ function init() {
     kick();
   };
   window.requestIdleCallback ? requestIdleCallback(start, { timeout: 1500 }) : setTimeout(start, 1500);
+  setTimeout(start, 400);
+  setTimeout(start, 1600);
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
 else init();

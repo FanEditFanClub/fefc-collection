@@ -1,9 +1,11 @@
 {
   "cols": 5,
-  "rows": 3,
-  "duration": 12,
+  "rows": 5,
+  "gutter": 0.1,
+  "hub": 3,
+  "duration": 8,
   "fps": 24,
-  "insight": "OnLive Arena: one precomposited media stream; client decodes 1 video",
+  "insight": "OnLive Arena: one precomposited stream whose cells match the home hub grid. Center 3x3 is the hub; the ring around it is live clips of the same cell size.",
   "files": {
     "LOW": "assets/clips/mosaic-atlas-720.mp4",
     "MID": "assets/clips/mosaic-atlas-720.mp4",

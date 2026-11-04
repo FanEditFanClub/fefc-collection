@@ -249,83 +249,67 @@ function hub(){try{
 }catch(e){console.warn('hub',e);try{const box=$('#hub');if(box&&!box.querySelector('.hb')){box.innerHTML='<button class="hb" data-hub="readfirst"><span>Read First</span></button><button class="hb" data-hub="arena"><span>New Arrivals</span></button><button class="hb" data-hub="support"><span>Support Us</span></button><button class="hb" data-hub="folder:'+FOLD.collections+'"><span>Fan Edit Collections</span></button><button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button><button class="hb" data-hub="folder:'+FOLD.tbc+'"><span>To Be Catalogued</span></button><button class="hb" data-hub="people"><span>Actors<br><i class="amp">&amp;</i><br>Directors</span></button><button class="hb" data-hub="mylist"><i class="hb-star" aria-hidden="true">★</i><span>My List</span></button><button class="hb" data-hub="genres"><span>Genres</span></button>';window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()}}catch(e2){}}}
 
 function syncTag(){placeHeader()}
-/* Home/Genres header: one full row of 3 clip tiles above the text, text between that row and the 3x3 grid */
+/* Home grid: one uniform COLS×ROWS lattice. Center 3×3 is the selectable hub.
+   Every other cell is a clip tile of the same size. Gutter absorbs focus scale + glow
+   so a clip never overlaps a hub button. Must match tools/build-mosaic-atlas.py. */
+const HOME_COLS=5,HOME_ROWS=5,HOME_HUB=3,HOME_GUTTER=0.10;
+function homePlane(){let p=document.getElementById('home-plane');const h=$('#home');if(!h)return null;if(!p){p=document.createElement('div');p.id='home-plane';const mos=$('#mosaic'),hub=$('#hub');if(mos)p.appendChild(mos);if(hub)p.appendChild(hub);h.appendChild(p)}return p}
+function layoutHomeGrid(){
+ const H=$('#home'),plane=homePlane(),hub=$('#hub'),tg=$('#tagline');if(!H||!plane||!hub)return null;
+ const HR=H.getBoundingClientRect();
+ const W=H.clientWidth||innerWidth,Ht=H.clientHeight||innerHeight;
+ if(W<80||Ht<80)return null;
+ const tv=document.body.classList.contains('tv')||document.body.classList.contains('firetv');
+ document.body.classList.add('home-grid');
+ const side=Math.round(W*(tv?0.05:0.025));
+ let top=Math.round(Ht*(tv?0.05:0.012));
+ if(tg){tg.style.top=Math.round(top*0.35)+'px';tg.style.left='0';tg.style.right='0';
+  const tr=tg.getBoundingClientRect();if(tr.height>4&&tr.bottom>HR.top)top=Math.max(top,Math.round(tr.bottom-HR.top+Math.max(6,Ht*0.008)))}
+ const hi=$('#hints'),tk=$('#ticker');
+ let bot=Math.round(Ht*(tv?0.05:0.02));
+ if(hi&&hi.offsetHeight){const ir=hi.getBoundingClientRect();if(ir.top>HR.top+Ht*0.4)bot=Math.max(bot,Math.round(HR.bottom-ir.top+Math.max(6,Ht*0.008)))}
+ if(document.body.classList.contains('tk-on')&&tk&&tk.classList.contains('on')){const kr=tk.getBoundingClientRect();if(kr.top>HR.top+Ht*0.4)bot=Math.max(bot,Math.round(HR.bottom-kr.top))}
+ const pw=Math.max(120,W-side*2),ph=Math.max(120,Ht-top-bot);
+ const cellW=pw/HOME_COLS,cellH=ph/HOME_ROWS;
+ const hubCol=(HOME_COLS-HOME_HUB)/2,hubRow=(HOME_ROWS-HOME_HUB)/2;
+ plane.style.cssText='position:absolute;left:'+side+'px;top:'+top+'px;width:'+Math.round(pw)+'px;height:'+Math.round(ph)+'px;z-index:1';
+ const gx=cellW*HOME_GUTTER,gy=cellH*HOME_GUTTER;
+ const hx=((hubCol+HOME_GUTTER/2)/HOME_COLS*100)+'%',hy=((hubRow+HOME_GUTTER/2)/HOME_ROWS*100)+'%';
+ const hw=((HOME_HUB-HOME_GUTTER)/HOME_COLS*100)+'%',hh=((HOME_HUB-HOME_GUTTER)/HOME_ROWS*100)+'%';
+ const st=document.documentElement.style;
+ st.setProperty('--hub-x',hx);st.setProperty('--hub-y',hy);st.setProperty('--hub-w',hw);st.setProperty('--hub-h',hh);
+ st.setProperty('--hub-gx',gx+'px');st.setProperty('--hub-gy',gy+'px');
+ hub.style.left=hx;hub.style.top=hy;hub.style.width=hw;hub.style.height=hh;
+ hub.style.columnGap=gx+'px';hub.style.rowGap=gy+'px';
+ plane._grid={side,top,pw,ph,cellW,cellH,gx,gy};
+ return plane._grid}
 let _placeHdrRaf=0,_placeHdrNeed=0;
 function placeHeader(){_placeHdrNeed=1;if(_placeHdrRaf)return;_placeHdrRaf=requestAnimationFrame(()=>{_placeHdrRaf=0;if(!_placeHdrNeed)return;_placeHdrNeed=0;placeHeaderNow()})}
-function placeHeaderNow(){const tg=$('#tagline'),hb=$('#hub'),sp=$('#tagline span'),wm=$('#wordmark');if(!tg||!hb||!sp)return;
- const W=innerWidth,H=innerHeight;tg.style.fontSize='';if(wm)wm.style.height='';hb.style.width='';hb.style.top='';hb.style.left='';
- let natW=hb.offsetWidth||W*.6;const cs=getComputedStyle(tg),base=parseFloat(cs.fontSize)||20,wmH=wm?wm.offsetHeight:0;
- const g=parseFloat(getComputedStyle(hb).columnGap)||Math.min(W,H)*.014,s=Math.max(6,Math.min(14,H*.014)),top0=Math.max(4,H*.012);
- const hi=$('#hints'),hr=hi&&hi.offsetHeight&&!hi.hidden&&getComputedStyle(hi).display!=='none'?hi.getBoundingClientRect():null;
- const tk=$('#ticker'),tkOn=document.body.classList.contains('tk-on')&&tk&&tk.classList.contains('on');
- const tkH=tkOn?(tk.offsetHeight||Math.round(H*0.037)):0;
- /* Bottom reserve = controls bar (+ ticker). Prefer live hints top; else estimate. */
- let bot=H*.08+H*.035;if(hr&&hr.top>H*.4)bot=H-hr.top+Math.max(6,H*.01);else if(tkH)bot=tkH+Math.max(36,H*.045)+H*.02;
- const SW=w=>Math.round(H<520?Math.min(W*.9,Math.max(w,w*1.9)):w)+'px';let k=1,hw,h;for(let i=0;i<6;i++){sp.style.width=SW(hw||natW);sp.style.maxWidth='none';h=tg.offsetHeight;
-  const hh=(H-top0-bot-2*s-h+2*g/3)*3/4;hw=Math.min(natW,hh*1.55,W*.94);sp.style.width=SW(hw);h=tg.offsetHeight;
-  const hh2=(H-top0-bot-2*s-h+2*g/3)*3/4;hw=Math.min(natW,hh2*1.55,W*.94);if(hw>=natW*.86||k<=.62)break;
-  k-=.08;tg.style.fontSize=(base*k).toFixed(1)+'px';if(wm&&wmH)wm.style.height=(wmH*k).toFixed(1)+'px'}
- sp.style.width=SW(hw);h=tg.offsetHeight;const hh=hw/1.55,th=(hh-2*g)/3,HR=$('#home').hidden?{top:0}:$('#home').getBoundingClientRect();
- const D=2*s+h;/* TV: leave a clear gap above the remote bar (+ ticker); 3D tilt expands painted bounds. */
- if(document.body.classList.contains('tv')){bot=Math.max(bot,Math.round(H*0.13)+(tkH||0));hw=Math.min(hw,H*0.42*1.55,W*0.50)}
- const hhUse=hw/1.55,block=th+D+hhUse,avail=Math.max(block,H-top0-bot),y0=top0+Math.max(0,(avail-block)/2);
- hb.style.width=Math.round(hw)+'px';hb.style.left='50%';hb.style.top=Math.round(y0+th+D+hhUse/2-HR.top)+'px';hb._hdr={D,s,h,top0:y0};
- tg.style.top=Math.round(y0+th+s)+'px';fitHeader();
- requestAnimationFrame(()=>{const hi2=$('#hints'),hb2=$('#hub'),tg2=$('#tagline');if(!hi2||!hb2||$('#home').hidden)return;
-  const gap=Math.max(10,innerHeight*0.012),br=hb2.getBoundingClientRect(),ir=hi2.getBoundingClientRect();
-  const floor=(ir.top>innerHeight*0.4?ir.top:innerHeight*0.88)-gap,over=br.bottom-floor;
-  if(over>1){const t=parseFloat(hb2.style.top)||0;hb2.style.top=Math.round(t-over)+'px';if(tg2){const tt=parseFloat(tg2.style.top)||0;tg2.style.top=Math.round(tt-over)+'px'}fitHeader()}})}
-/* correct for the 3D tilt: measure the real top-row bottom and grid top, keep the text centred between them */
-function fitHeader(){const tg=$('#tagline'),hb=$('#hub');if(!tg||!hb||!hb._hdr)return;const row=[].slice.call(hb.querySelectorAll('.mc.toprow')),b=hb.querySelector('.hb');
- if(!row.length||!b||$('#home').hidden)return;const H=hb._hdr;let rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom)),gt=b.getBoundingClientRect().top,h=tg.offsetHeight;
- const need=h+2*Math.max(6,H.s*.7)-(gt-rb);if(need>1){H.D+=need*1.15;[].forEach.call(hb.querySelectorAll('.mc.above'),c=>c.style.top=c._top(H.D));[].forEach.call(hb.querySelectorAll('.mc.band'),c=>bandFit(c,H.D,hb._g||8));rb=Math.max(...row.map(c=>c.getBoundingClientRect().bottom))}
- tg.style.top=Math.round((rb+gt)/2-h/2)+'px';
- const sp=$('#tagline span'),wm=$('#wordmark'),tr=[];if(wm&&wm.offsetWidth)tr.push(wm.getBoundingClientRect());const gt2=document.querySelector('#tagline .gtitle');if(gt2&&gt2.offsetWidth)tr.push(gt2.getBoundingClientRect());if(sp){const rg=document.createRange();rg.selectNodeContents(sp);[].forEach.call(rg.getClientRects(),r=>r.width&&tr.push(r))}
- [].forEach.call(hb.querySelectorAll('.mc:not(.toprow)'),c=>{const r=c.getBoundingClientRect();c.style.visibility=tr.some(t=>r.left<t.right+8&&r.right>t.left-8&&r.top<t.bottom+4&&r.bottom>t.top-4)?'hidden':''})}
+function placeHeaderNow(){layoutHomeGrid()}
 addEventListener('resize',()=>requestAnimationFrame(placeHeader));
-/* band tiles stay 16:9: fit inside the band slot (column width x band height), centred */
-function bandFit(el,D,g){const sh=Math.max(0,D-2*g),tw=el._tw||0;let w=tw,h=tw*9/16;if(h>sh){h=sh;w=h*16/9}el.style.width=w+'px';el.style.height=h+'px';el.style.marginLeft=((tw-w)/2)+'px';el.style.top=(-(D-g)+(sh-h)/2)+'px'}
-function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classList.contains('tv');
+
+function mosaic(){const M=$('#mosaic');const tv=document.body.classList.contains('tv');
  /* 0.8.6: Fire TV keeps a lighter mosaic (fewer tiles, low-res thumbs, slower stagger) — do not skip. */
  const fire=tv&&(document.body.classList.contains('firetv')||window.FEFCNative);
  const perf=document.body.classList.contains('perf');
- const n=fire?14:tv?14:Math.max(10,Math.min(22,Math.round(innerWidth*innerHeight/60000)));
  let pool=mosaicList.length?mosaicList.slice():vids().slice(0,40).map(f=>({id:f.id,target:target(f),name:f.name}));
- M.innerHTML='';[].slice.call(document.querySelectorAll('#hub .mc')).forEach(x=>x.remove());const cells=[];
- // geometry: tiles sized like hub tiles, aligned to hub edges, only OUTSIDE the hub box and below the tagline
- const H=$('#home'),hb=$('#hub');const _tf=hb.style.transform;hb.style.transform='translate(-50%,-50%)';/* Old Fire TV WebView: #app height:100dvh collapses → #home clientHeight 0; fall back to viewport. */
- const W=H.clientWidth||innerWidth||document.documentElement.clientWidth||960,Ht=H.clientHeight||innerHeight||document.documentElement.clientHeight||540,HR=H.getBoundingClientRect(),BR=hb.getBoundingClientRect(),hw=BR.width,hh=BR.height;
- const hx=BR.left-HR.left,hy=BR.top-HR.top,g=parseFloat(getComputedStyle(hb).columnGap)||8;
- const tw=(hw-2*g)/3,th=(hh-2*g)/3;const hr=H.getBoundingClientRect(),tr=(()=>{const sp=$('#tagline span'),wm=$('#wordmark'),a=[];if(wm)a.push(wm.getBoundingClientRect());if(sp&&document.createRange){const rg=document.createRange();rg.selectNodeContents(sp);[].forEach.call(rg.getClientRects(),r=>a.push(r))}else if(sp)a.push(sp.getBoundingClientRect());a.splice(0,a.length,...a.filter(r=>r.width));if(!a.length)return null;const px=Math.max(16,innerWidth*.02);return {left:Math.min(...a.map(r=>r.left))-px,right:Math.max(...a.map(r=>r.right))+px,top:-1e9,bottom:Math.max(...a.map(r=>r.bottom))+6,height:1}})();
- const tb=tr?{l:tr.left-hr.left,t:-1e9,r:tr.right-hr.left,b:tr.bottom-hr.top}:null;
- hb.style.transform=_tf;const ov=(a,b)=>a.l<b.r&&a.r>b.l&&a.t<b.b&&a.b>b.t,hub={l:hx-g/2,t:hy-g/2,r:hx+hw+g/2,b:hy+hh+g/2};
- /* 0.8.13 perf: fewer mosaic cells (stills + Ken Burns were a major Cube cost). */
- const cols=Math.ceil(hx/(tw+g))+1,rows=Math.ceil(hy/(th+g))+2;const lowTier=document.body.classList.contains('tier-low')||document.body.classList.contains('tier-lite');/* 0.8.18: Fire TV prefers OnLive-style atlas video — keep a light still underpaint only. */let budget=fire?(lowTier||perf?8:14):(lowTier?12:(perf?(tv?22:60):(tv?48:90)));
- /* Collect candidates first, then take a ring around the hub. Old top-row-first fill + fire budget 12
-    left only the TOP mosaic live — sides/bottom never got tiles (owner report). */
- const cands=[];
- for(let r=-rows;r<3+rows;r++)for(let c=-cols;c<3+cols;c++){
-  const x=hx+c*(tw+g)+(c<0?-g:c>2?g:0),y=hy+r*(th+g)+(r<0?-g:r>2?g:0),box={l:x,t:y,r:x+tw,b:y+th};
-  const toprow=r===-1&&c>=0&&c<=2,above=r<0,sh=above&&hb._hdr?Math.max(0,hb._hdr.D-2*g):0;if(above){box.t-=sh;box.b-=sh}if(box.r<-tw*.6||box.b<-th*.4||box.l>W+tw*.6||box.t>Ht+th*.6||ov(box,hub)||(!above&&tb&&ov(box,tb)))continue;
-  cands.push({r,c,toprow,above,ex:(c<0?-g:c>2?g:0),ey:(r<0?-g:r>2?g:0)});
- }
- const ring=o=>{const dr=o.r<0?-o.r:Math.max(0,o.r-2),dc=o.c<0?-o.c:Math.max(0,o.c-2);return Math.max(dr,dc)*3+Math.min(dr,dc)};
- /* Prefer a full ring (top/sides/bottom) before farther cells; within a ring rotate sides so fire budget is not top-heavy. */
- cands.sort((a,b)=>{const ra=ring(a),rb=ring(b);if(ra!==rb)return ra-rb;const qa=(a.r+99)*10+(a.c+99),qb=(b.r+99)*10+(b.c+99);return (qa%7)-(qb%7)||qa-qb});
- for(const o of cands){if(budget<=0)break;const {r,c,toprow,above,ex,ey}=o;
-  const el=document.createElement('div');el.className='mc';
-  /* Chebyshev ring from hub: 1 = immediately surrounding hub tiles (live video); >=2 = outer still slideshow. */
-  const _dr=r<0?-r:Math.max(0,r-2),_dc=c<0?-c:Math.max(0,c-2);el._ring=Math.max(_dr,_dc)||1;el.dataset.ring=String(el._ring);
-  el.style.cssText=`left:calc(${c} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ex}px);top:calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px);width:calc((100% - ${2*g}px) / 3);height:calc((100% - ${2*g}px) / 3)`;
-  if(above){if(toprow)el.classList.add('toprow');el.classList.add('above');el._top=D=>`calc(${r} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ey}px - ${Math.max(0,D-2*g)}px)`;el.style.top=el._top((hb._hdr&&hb._hdr.D)||2*g)}
-  /* Chrome/Fire TV WebView ≤66: aspect-ratio unsupported → height:auto collapses to 0. Use explicit px. */
-  const tileH=Math.max(1,Math.round(tw*9/16));
-  el.style.height=tileH+'px';el.style.aspectRatio='auto';el.style.marginTop=Math.max(0,Math.round((th-tileH)/2))+'px';
-  el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);budget--}
- // band beside the headline: fill its left/right sides with tiles (text area itself stays clear)
- if(hb._hdr){hb._g=g;const D=hb._hdr.D;let bb=perf?4:12;for(let c=-cols;c<3+cols&&bb>0;c++){if(c>=0&&c<=2)continue;const ex=(c<0?-g:c>2?g:0),x=hx+c*(tw+g)+ex;if(x+tw<-tw*.6||x>W+tw*.6)continue;
-  const el=document.createElement('div');el.className='mc band';el._ring=2;el.dataset.ring='2';el.style.cssText=`left:calc(${c} * ((100% - ${2*g}px) / 3 + ${g}px) + ${ex}px);width:calc((100% - ${2*g}px) / 3);top:${-(D-g)}px;height:${Math.max(0,D-2*g)}px`;el._tw=tw;bandFit(el,D,g);
-  el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';hb.appendChild(el);cells.push(el);bb--}}
+ const grid=layoutHomeGrid();
+ const gkey=grid?Math.round(grid.pw)+'x'+Math.round(grid.ph):'0';
+ if(M&&M._gridKey===gkey&&M.childElementCount>=(HOME_COLS*HOME_ROWS-HOME_HUB*HOME_HUB))return;
+ if(M)M._gridKey=gkey;
+ if(M)M.innerHTML='';[].slice.call(document.querySelectorAll('#home-plane .mc,#hub .mc')).forEach(x=>x.remove());const cells=[];
+ /* Surrounding cells only. Same content box as each hub button (slot minus the shared gutter). */
+ const hub0=(HOME_COLS-HOME_HUB)/2,hub1=hub0+HOME_HUB-1;
+ if(grid&&M){for(let r=0;r<HOME_ROWS;r++)for(let c=0;c<HOME_COLS;c++){
+  if(c>=hub0&&c<=hub1&&r>=hub0&&r<=hub1)continue;
+  const el=document.createElement('div');el.className='mc';el._ring=1;el.dataset.ring='1';el.dataset.cell=c+','+r;
+  const pct=v=>(v*100)+'%';
+  el.style.left=pct((c+HOME_GUTTER/2)/HOME_COLS);
+  el.style.top=pct((r+HOME_GUTTER/2)/HOME_ROWS);
+  el.style.width=pct((1-HOME_GUTTER)/HOME_COLS);
+  el.style.height=pct((1-HOME_GUTTER)/HOME_ROWS);
+  el.innerHTML='<img class="mi1" alt="" referrerpolicy="no-referrer"><img class="mi2" alt="" referrerpolicy="no-referrer">';
+  M.appendChild(el);cells.push(el)}}
  const pick=()=>pool.length?pool[Math.floor(Math.random()*pool.length)]:null;
  const set=(c,first)=>{const v=pick(),layers=c.children,on=c._on?0:1;c._on=!c._on;const L=layers[on];
   if(v){const ps=posters[v.id]||posters[v.target];
@@ -345,13 +329,13 @@ function mosaic(){syncTag();const M=$('#mosaic');const tv=document.body.classLis
   }
   layers[on].style.opacity=1;layers[1-on].style.opacity=0};
  /* Fire TV: stagger first still assignment so decode+layout aren't one main-thread spike; mark paint-ready after first tiles decode. */
- const paintReady=()=>{const imgs=[].slice.call(document.querySelectorAll('#hub .mc img')).filter(i=>i.src).slice(0,8);
+ const paintReady=()=>{const imgs=[].slice.call(document.querySelectorAll('#mosaic .mc img, #hub .mc img')).filter(i=>i.src).slice(0,8);
   const waits=imgs.map(i=>i.decode?i.decode().catch(()=>{}):Promise.resolve());
   Promise.all(waits).then(()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady(),()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady());
   setTimeout(()=>window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady(),2500)};
  if(fire){cells.forEach((c,i)=>setTimeout(()=>{set(c,true);if(i===Math.min(5,cells.length-1))paintReady()},i*45));if(!cells.length)paintReady()}
  else{cells.forEach(c=>set(c,true));if(window.FEFCNative)paintReady()}
- requestAnimationFrame(fitHeader);clearInterval(mosaicTimer);
+ clearInterval(mosaicTimer);
  mosaicTimer=setInterval(()=>{if($('#home').hidden||document.hidden)return;if(tv&&document.body.classList.contains('genres-mode'))return;if(document.body.classList.contains('shufpick-open')||document.body.classList.contains('tvmenu-open'))return;const k=fire||perf||document.body.classList.contains('tier-low')||document.body.classList.contains('tier-lite')?1:(tv?1:2);for(let j=0;j<k;j++){const c=cells[Math.random()*cells.length|0];if(c)set(c)}},perf?(fire?16000:tv?12000:5000):(fire?10000:tv?7000:2200))}
 let mosT;const mosDeb=()=>{const tvish=document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative;clearTimeout(mosT);mosT=setTimeout(()=>{if(!$('#home').hidden)mosaic()},tvish?450:250)};if(window.ResizeObserver)new ResizeObserver(mosDeb).observe(document.getElementById('hub'));addEventListener('resize',mosDeb);
 let homeHideTimer=null;

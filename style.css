@@ -1460,7 +1460,7 @@ html body.tv #app,html body.firetv #app{
 html body.tv #home,html body.firetv #home{
   padding:0 0.5vw!important;box-sizing:border-box;
 }
-html body.tv #hub,html body.firetv #hub{
+html body.tv:not(.home-grid) #hub,html body.firetv:not(.home-grid) #hub{
   width:min(48vw,calc(40vh*1.55))!important;
 }
 html body.tv #main,html body.firetv #main{
@@ -1667,3 +1667,33 @@ body.tier-mid #home,body.tier-mid .mc,body.tier-mid .hb{filter:none!important;ba
   animation-play-state:running}
 #ticker.tk-css.tk-hold .tk-track,#ticker.tk-css:not(.on) .tk-track{animation-play-state:paused}
 body.tv #ticker,body.firetv #ticker{-webkit-mask-image:none!important;mask-image:none!important}
+
+/* 0.8.22 home: one lattice. Center 3×3 = hub buttons. The other cells are clip tiles
+   of the same size. Gutter (baked into the atlas and into --hub-*) keeps focus scale
+   and the glow inside the gap so a clip never covers a selectable tile. */
+body.home-grid #home{overflow:hidden;perspective:none}
+body.home-grid #home-plane{transform:none}
+html body.home-grid #hub,
+html body.tv.home-grid #hub,
+html body.firetv.home-grid #hub,
+html body.touch.home-grid #hub{
+ position:absolute!important;
+ left:var(--hub-x,20%)!important;top:var(--hub-y,20%)!important;
+ width:var(--hub-w,60%)!important;height:var(--hub-h,60%)!important;
+ right:auto!important;bottom:auto!important;margin:0!important;
+ transform:none!important;aspect-ratio:auto!important;
+ padding:0!important;background:none!important;box-shadow:none!important;border-radius:0!important;
+ display:grid!important;grid-template-columns:repeat(3,1fr)!important;grid-template-rows:repeat(3,1fr)!important;
+ column-gap:var(--hub-gx,8px)!important;row-gap:var(--hub-gy,8px)!important;
+ z-index:2!important;overflow:visible!important;min-width:0!important;min-height:0!important}
+body.home-grid #home-plane #mosaic{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+body.home-grid #mosaic .mc{position:absolute;overflow:hidden;border-radius:3px;pointer-events:none;z-index:0;margin:0}
+body.home-grid #hub .hb{
+ position:relative;z-index:1;width:auto;height:auto;min-width:0;min-height:0;margin:0;box-sizing:border-box;
+ background:linear-gradient(160deg,#3b4452 0,#1d232d 38%,#0d1117 62%,#1a212b 100%)!important}
+body.home-grid #hub .hb:focus,body.home-grid #hub .hb:focus-visible{
+ z-index:4;transform:scale(1.03);outline:2px solid #ff9c00;outline-offset:0}
+body.home-grid #mosaic-atlas,body.mosaic-atlas #mosaic-atlas{
+ position:absolute!important;inset:0!important;width:100%!important;height:100%!important;
+ object-fit:fill!important;z-index:0;pointer-events:none;background:#05070b}
+body.mosaic-atlas.home-grid #mosaic .mc{opacity:0!important}
