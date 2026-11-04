@@ -597,9 +597,8 @@ async function streamApi(req, env, url) {
   return streamViaUsercontent(tid, req, fileName, CORS);
 }
 
-// ---- VLC playlists: /vlc.m3u (index), /vlc/all.m3u, /vlc/genre/<Genre>.m3u, /vlc/<folderId>.m3u[/all], /vlc/<folderId>.xspf (nested subtree).
-// Generated at request time from the live /data/index.json (+ /data/video-genres.json); cached ~10 min in-isolate and at the edge.
-// Entries point at the existing /api/stream/<id>/<name> proxy. Read-only; no Drive changes.
+// ---- Shared catalogue model (live /data/index.json + /data/video-genres.json), cached ~10 min in-isolate. Used by /kodi/.
+// (The /vlc* playlist experiment was removed on request; those paths now return 410.)
 const VLC_TTL = 600;
 const VLC_VID = /\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$/i;
 let vlcModel = null;                              // { t, root, byId, kids, vids, genres, gset }
@@ -637,75 +636,8 @@ async function vlcLoad(env, url) {
   vlcModel = { t: Date.now(), root: idx.root, generated: idx.generated, byId, kids, cnt, genres };
   return vlcModel;
 }
-function vlcTitle(it) {
-  return String(it.name || '').replace(/\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$/i, '').replace(/\s+-\s+(Movie\s+)?Fan\s*Edit\s*$/i, '').replace(/[\r\n,]+/g, ' ').trim() || it.id;
-}
-function vlcStreamUrl(origin, it) {
-  const nm = String(it.name || 'video.mp4').trim().replace(/[^\w.\- ()\[\]]+/g, '_');
-  return origin + '/api/stream/' + it.id + '/' + encodeURIComponent(nm);
-}
 const sortByName = (a, b) => String(a.name).localeCompare(String(b.name), 'en', { numeric: true, sensitivity: 'base' });
-function m3uEntry(origin, it, grp) {
-  return '#EXTINF:-1' + (grp ? ' group-title="' + grp.replace(/"/g, "'") + '"' : '') + ',' + vlcTitle(it) + '\n' + (grp ? '#EXTGRP:' + grp + '\n' : '') + vlcStreamUrl(origin, it) + '\n';
-}
-function m3uFolderEntry(origin, id, title, n) {
-  return '#EXTINF:-1,' + title.replace(/[\r\n,]+/g, ' ') + (n != null ? ' (' + n + ')' : '') + '\n' + origin + '/vlc/' + id + '.m3u\n';
-}
 const xe = s => String(s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
-function vlcXspf(origin, m, f) {
-  const tracks = [], tid = new Map();
-  const track = it => { let t = tid.get(it.id); if (t == null) { t = tracks.length; tid.set(it.id, t); tracks.push(it); } return t; };
-  const folderNode = (id, title, depth, seen) => {
-    const ks = (m.kids.get(id) || []).slice().sort(sortByName); let o = '';
-    for (const k of ks) if (k.dir && m.cnt.get(k.id) && depth < 8 && !seen.has(k.id)) { seen.add(k.id); o += folderNode(k.id, k.name, depth + 1, seen); seen.delete(k.id); }
-    for (const k of ks) if (!k.dir) o += '<vlc:item tid="' + track(k) + '"/>';
-    return '<vlc:node title="' + xe(title) + '">' + o + '</vlc:node>';
-  };
-  const tree = folderNode(f.id, f.name, 0, new Set([f.id]));
-  const tl = tracks.map((it, i) => '<track><location>' + xe(vlcStreamUrl(origin, it)) + '</location><title>' + xe(vlcTitle(it)) + '</title><extension application="http://www.videolan.org/vlc/playlist/0"><vlc:id>' + i + '</vlc:id></extension></track>').join('');
-  return '<?xml version="1.0" encoding="UTF-8"?>\n<playlist xmlns="http://xspf.org/ns/0/" xmlns:vlc="http://www.videolan.org/vlc/playlist/ns/0/" version="1"><title>' + xe(f.name) + '</title><trackList>' + tl + '</trackList><extension application="http://www.videolan.org/vlc/playlist/0">' + tree + '</extension></playlist>';
-}
-async function vlcApi(req, env, ctx, url) {
-  const origin = url.origin, p = decodeURIComponent(url.pathname);
-  const text = (body, type) => new Response(req.method === 'HEAD' ? null : body, { headers: { 'content-type': type, 'cache-control': 'public, max-age=' + VLC_TTL, 'access-control-allow-origin': '*', 'content-disposition': 'inline' } });
-  const M3U = 'audio/x-mpegurl; charset=utf-8';
-  if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
-  const cache = typeof caches !== 'undefined' ? caches.default : null;
-  const key = new Request(origin + url.pathname + '?v=4', { method: 'GET' });
-  if (cache) { const hit = await cache.match(key); if (hit) return req.method === 'HEAD' ? new Response(null, hit) : hit; }
-  const m = await vlcLoad(env, url);
-  let body, type = M3U, hdr = '#EXTM3U\n#PLAYLIST:';
-  let mm;
-  if (p === '/vlc.m3u' || p === '/vlc/index.m3u') {
-    body = hdr + 'Fan Edit Fan Club Collection\n#EXTINF:-1,All Fan Edits (' + [...m.byId.values()].filter(i => !i.dir).length + ')\n' + origin + '/vlc/all.m3u\n';
-    for (const g of [...m.genres.keys()].sort()) body += '#EXTINF:-1,Genre: ' + g + ' (' + m.genres.get(g).length + ')\n' + origin + '/vlc/genre/' + encodeURIComponent(g) + '.m3u\n';
-    for (const k of (m.kids.get(m.root) || []).slice().sort(sortByName)) if (k.dir && m.cnt.get(k.id)) body += m3uFolderEntry(origin, k.id, k.name, m.cnt.get(k.id));
-    body += m3uFolderEntry(origin, m.root, 'Loose top-level edits', (m.kids.get(m.root) || []).filter(k => !k.dir).length);
-  } else if (p === '/vlc/all.m3u') {
-    body = hdr + 'All Fan Edits\n';
-    for (const it of [...m.byId.values()].filter(i => !i.dir).sort(sortByName)) body += m3uEntry(origin, it, null);
-  } else if ((mm = p.match(/^\/vlc\/genre\/(.+)\.m3u$/))) {
-    const g = mm[1], a = m.genres.get(g); if (!a) return json({ error: 'not_found' }, 404);
-    body = hdr + g + '\n' + a.slice().sort(sortByName).map(it => m3uEntry(origin, it, g)).join('');
-  } else if ((mm = p.match(/^\/vlc\/([\w-]{10,80})(\/all)?\.m3u$/))) {
-    const f = m.byId.get(mm[1]); if (!f || !f.dir) return json({ error: 'not_found' }, 404);
-    body = hdr + f.name + '\n';
-    if (mm[2]) {                                   // flat: every video below this folder, grouped by subfolder path
-      const walk = (id, path, seen) => { for (const k of (m.kids.get(id) || []).slice().sort(sortByName)) { if (k.dir) { if (!seen.has(k.id)) { seen.add(k.id); walk(k.id, path ? path + ' / ' + k.name : k.name, seen); } } else body += m3uEntry(origin, k, path || f.name); } };
-      walk(f.id, '', new Set([f.id]));
-    } else {
-      const ks = (m.kids.get(f.id) || []).slice().sort(sortByName);
-      for (const k of ks) if (k.dir && m.cnt.get(k.id)) body += m3uFolderEntry(origin, k.id, k.name, m.cnt.get(k.id));
-      for (const k of ks) if (!k.dir) body += m3uEntry(origin, k, f.name);
-    }
-  } else if ((mm = p.match(/^\/vlc\/([\w-]{10,80})\.xspf$/))) {
-    const f = m.byId.get(mm[1]); if (!f || !f.dir || f.id === m.root) return json({ error: 'not_found' }, 404);
-    body = vlcXspf(origin, m, f); type = 'application/xspf+xml; charset=utf-8';
-  } else return json({ error: 'not_found' }, 404);
-  const res = text(body, type);
-  if (cache) ctx.waitUntil(cache.put(key, res.clone()));
-  return res;
-}
 
 // ---- Kodi "HTTP directory" source: /kodi/ (Apache-style autoindex). Tree mirrors the Drive folder structure from the live index.
 // Also /kodi/Genres/<Genre>/ , /kodi/All/<Letter>/ . File links are /kodi/<path>/<name.ext>, served through streamApi (Range-aware, 206).
@@ -733,7 +665,12 @@ function kodiKids(m, cur) {                       // cur: {id, items}
   return kodiEntries(m, 'f:' + cur.id, (m.kids.get(cur.id) || []).filter(k => !k.dir || m.cnt.get(k.id)));
 }
 function kodiChildren(m, segs) {                 // -> {kind:'dir', entries} | {kind:'file', it} | null
-  if (!segs.length) return { kind: 'dir', entries: ['Genres', 'All'].map(n => ({ name: n, dir: true })).concat(kodiKids(m, { id: m.root }).list) };
+  if (!segs.length) return { kind: 'dir', entries: ['Genres', 'All', 'Kodi Add-on'].map(n => ({ name: n, dir: true })).concat(kodiKids(m, { id: m.root }).list) };
+  if (segs[0] === 'Kodi Add-on') {
+    if (segs.length === 1) return { kind: 'dir', entries: [{ name: 'repository.fefc.zip', dir: false }, { name: 'plugin.video.fefc.zip', dir: false }] };
+    if (segs.length === 2 && /^(repository\.fefc|plugin\.video\.fefc)\.zip$/.test(segs[1])) return { kind: 'addon', file: segs[1] };
+    return null;
+  }
   const head = segs[0];
   if (head === 'Genres') {
     if (segs.length === 1) return { kind: 'dir', entries: kodiEntries(m, 'genres', [...m.genres.keys()].map(g => ({ id: 'g:' + g, name: g, dir: true }))).list };
@@ -778,6 +715,12 @@ async function kodiApi(req, env, ctx, url) {
   if (dirReq && cache) { const hit = await cache.match(key); if (hit) return req.method === 'HEAD' ? new Response(null, hit) : hit; }
   const r = kodiChildren(m, segs);
   if (!r) return new Response('Not Found', { status: 404, headers: { 'content-type': 'text/plain' } });
+  if (r.kind === 'addon') {                       // Install-from-zip: serve the static repo zips (latest names)
+    const p = r.file === 'repository.fefc.zip' ? '/kodi-repo/repository.fefc.zip' : '/kodi-repo/plugin.video.fefc.zip';
+    const a = await env.ASSETS.fetch(new Request(url.origin + p, { method: req.method }));
+    const h = new Headers(a.headers); h.set('content-type', 'application/zip'); h.set('content-disposition', 'attachment; filename="' + r.file + '"');
+    return new Response(a.body, { status: a.status, headers: h });
+  }
   if (r.kind === 'file') {
     const su = new URL(url.origin + '/api/stream/' + r.it.id + '/' + encodeURIComponent(kodiFileName(r.it).replace(/[^\w.\- ()\[\]]+/g, '_')));
     su.search = url.search;
@@ -796,8 +739,8 @@ export default {
     if (url.pathname.startsWith('/kodi/')) {
       try { return await kodiApi(req, env, ctx, url); } catch (e) { console.log('kodi error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }
     }
-    if (url.pathname === '/vlc.m3u' || url.pathname.startsWith('/vlc/')) {
-      try { return await vlcApi(req, env, ctx, url); } catch (e) { console.log('vlc error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }
+    if (url.pathname === '/vlc.m3u' || url.pathname === '/vlc.xspf' || url.pathname.startsWith('/vlc/')) {
+      return new Response('Gone: the VLC playlist endpoints were removed. Use the Kodi source https://fefc-collection.pages.dev/kodi/ or the Kodi add-on.', { status: 410, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
     }
     if (url.pathname === '/api/feed') {
       try { return await feedApi(req, env, ctx, url); } catch (e) { console.log('feed error:', String(e && e.message || e).slice(0, 120)); return json({ updated: new Date().toISOString(), status: {}, items: mergeFeed([], 0) }); }

@@ -1,0 +1,21 @@
+# Kodi Media Center language file
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en_GB\n"
+
+msgctxt "#30000"
+msgid "General"
+msgstr ""
+
+msgctxt "#30001"
+msgid "Catalogue server"
+msgstr ""
+
+msgctxt "#30002"
+msgid "Play folder sound clips when a folder opens"
+msgstr ""
+
+msgctxt "#30003"
+msgid "Check for catalogue updates every (minutes)"
+msgstr ""
