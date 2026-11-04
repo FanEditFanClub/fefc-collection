@@ -344,6 +344,8 @@ function viewFade(main){if(!main||VIEW_MS<=1)return;main.classList.remove('view-
 function viewEnter(main){if(!main)return;if(VIEW_MS<=1){main.classList.remove('view-fade','view-enter');return}requestAnimationFrame(()=>{main.classList.remove('view-fade');main.classList.add('view-enter');clearTimeout(viewEnter._t);viewEnter._t=setTimeout(()=>main.classList.remove('view-enter'),VIEW_MS+40);});}
 
 function showHome(gm){
+ const hk=typeof parseH==='function'?parseH()[0]:'';
+ if(hk==='edit'||hk==='play'||hk==='readfirst')return;
  clearTimeout(homeHideTimer);
  closeRF();
  if(!$('#details').hidden){const d=$('#details');d.classList.remove('leaving');d.hidden=true;document.body.classList.remove('details-open')}
@@ -478,11 +480,25 @@ function openDocTile(f){const k=rfKind(f);if(k==='support'){S.click();go('#/supp
 const _afterHomeIdle=(fn,delay)=>{const run=()=>setTimeout(()=>{(window.requestIdleCallback||(f=>setTimeout(f,0)))(fn,{timeout:6000})},delay|0);
  if(document.body.classList.contains('native-waiting'))addEventListener('fefc-home-revealed',()=>run(),{once:true});else run()};
 let FER={};_afterHomeIdle(()=>tmo('data/fanedit-ratings.json',10000).then(j=>{FER=(j&&j.items)||{}}).catch(()=>{}),3000);
-let FSFX={};_afterHomeIdle(()=>tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;const pre=()=>{Object.keys(m._genres||{}).forEach(g=>{const L=m._genres[g];const V=Array.isArray(L)&&L.length&&Array.isArray(L[0])?L:[L];V.forEach(x=>S.loadFx&&S.loadFx(x))});Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{}),4000);
+let FSFX={};_afterHomeIdle(()=>tmo('data/folder-sfx.json',10000).then(m=>{FSFX=m;_sfxGen++;_gpool={};const pre=()=>{Object.keys(m._genres||{}).forEach(g=>{const L=m._genres[g];const V=Array.isArray(L)&&L.length&&Array.isArray(L[0])?L:[L];V.forEach(x=>S.loadFx&&S.loadFx(x))});Object.keys(m).forEach(k=>Array.isArray(m[k])&&S.loadFx&&S.loadFx(m[k]));(m._rules||[]).forEach(r=>{if(!S.loadFx)return;const V=Array.isArray(r.file)&&Array.isArray(r.file[0])?r.file:[r.files||(Array.isArray(r.file)?r.file:[r.file])];V.forEach(x=>S.loadFx(x))})};(window.requestIdleCallback||setTimeout)(pre,{timeout:4000})}).catch(()=>{}),4000);
 let _lastSfxId=null,_lastSfxAt=0,_sandlerLast=-1,_cruiseLast=-1;
 const DIR_IDS={'1eQuWxYXhHhE1j_as84WDDZDb-4BfvAPP':1,'1wUX7MQ6lUdz0xNvjUMpuB7VDia1cb1p4':1,'13ANvT9oxL6Voklf1qtJxwJZcFlUXzP-v':1,'1Pv0xjKKHMDrP7U_djiEDynT4Nmhn6fR2':1,'1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg':1,'1ZRwXWitDCwFVRQu3cgKvuisZItGH9R5o':1,'1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF':1,'1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el':1,'1XamnD6tgeL17vW3ecYEBez7iPOSFIY0t':1,'1yUwoHrLOcwR7CDE9Fx2Usu7V72zQSfNC':1};
-let _gsfx={k:'',t:0};
-function genreSfx(G){if(navBack||!G)return;const raw=(FSFX._genres||{})[G];if(!raw)return;const now=Date.now();if(_gsfx.k===G&&now-_gsfx.t<1500)return;let L=raw,i=_gsfx.i;if(Array.isArray(raw)&&raw.length&&Array.isArray(raw[0])){i=Math.random()*raw.length|0;if(raw.length>1&&i===_gsfx.i)i=(i+1+(Math.random()*(raw.length-1)|0))%raw.length;L=raw[i]}_gsfx={k:G,t:now,i:i};if(window.S&&S.unlock)try{S.unlock()}catch(e){};if(S.fx)S.fx(L)}
+let _sfxGen=0,_gpool={};
+function pushClip(out,seen,L){if(!L)return;if(Array.isArray(L)&&L.length&&Array.isArray(L[0])){L.forEach(x=>pushClip(out,seen,x));return}const files=(Array.isArray(L)?L:[L]).filter(Boolean);if(!files.length)return;const k=files.join('|');if(seen[k])return;seen[k]=1;out.push(files)}
+function clipsForFolder(id){const f=items.get(id),out=[],seen={};const direct=FSFX[id]||(f&&FSFX[f.name]);if(direct)pushClip(out,seen,direct);
+ if(f&&Array.isArray(FSFX._rules)){const nm=(f.name||'');FSFX._rules.forEach(r=>{let hit=false;if(r.ids&&r.ids.some(x=>x===id||x===(f.targetId||'')))hit=true;if(!hit&&r.regex){try{if(new RegExp(r.regex,'i').test(nm))hit=true}catch(e){}}if(!hit&&r.match&&nm.toLowerCase().includes(String(r.match).toLowerCase()))hit=true;if(hit)pushClip(out,seen,r.file||r.files)})}
+ return out}
+function genreClipPool(G){const ck=items.size+':'+_sfxGen;if(_gpool[G]&&_gpool[G].k===ck)return _gpool[G].pool;const seen={},pool=[],ids={};
+ Object.keys(genreMap||{}).forEach(fid=>{const g=genreMap[fid];if(g&&(g.genres||[]).indexOf(G)>=0)ids[fid]=1});
+ (typeof genreColls==='function'?genreColls(G):[]).forEach(c=>(c.folders||[]).forEach(fid=>{ids[fid]=1}));
+ Object.keys(ids).forEach(id=>clipsForFolder(id).forEach(L=>pushClip(pool,seen,L)));
+ pushClip(pool,seen,(FSFX._genres||{})[G]);
+ return (_gpool[G]={k:ck,pool}).pool}
+let _gsfx={k:'',t:0,i:-1,n:0,order:null};
+function genreSfx(G){if(navBack||!G)return;const pool=genreClipPool(G);if(!pool.length)return;const now=Date.now();if(_gsfx.k===G&&now-_gsfx.t<1500)return;
+ if(_gsfx.k!==G||!_gsfx.order||_gsfx.order.length!==pool.length){const o=pool.map((_,i)=>i);for(let i=o.length-1;i>0;i--){const j=Math.random()*(i+1)|0;const t=o[i];o[i]=o[j];o[j]=t}if(o.length>1&&o[0]===_gsfx.i){const t=o[0];o[0]=o[1];o[1]=t}_gsfx.order=o;_gsfx.n=0}
+ const i=_gsfx.order[_gsfx.n%_gsfx.order.length];_gsfx.n++;if(_gsfx.n>=_gsfx.order.length)_gsfx.order=null;_gsfx.k=G;_gsfx.t=now;_gsfx.i=i;const L=pool[i];
+ if(window.S&&S.unlock)try{S.unlock()}catch(e){}if(S.fx)S.fx(L);try{S.loadFx&&S.loadFx(L)}catch(e){}}
 /* navBack marks a Back/popstate navigation (suppresses sounds, restores scroll). It was only cleared by restoreScroll(), so after Back to a page without it (home, details) every later folder open stayed silent. Always expire it, and clear it on explicit forward navigation (go()). */
 let _bcT=0;function clearBack(){clearTimeout(_bcT);_bcT=setTimeout(()=>{navBack=false},2500)}
 function folderSfx(id){
@@ -499,7 +515,7 @@ const SFX_GENRE_RX=[['Horror',/horror|slasher|nasties|schlock|monster|creepshow|
 /* Last-resort layers so EVERY collection has a clip: (1) the collection's catalogued genre, (2) a genre inferred from its own and its ancestors' names, (3) a deterministic generic projector/clapper/chime sound. */
 function sfxFallback(id,f){const G=FSFX._genres||{};
  const gm=(typeof genreMap==='object'&&genreMap&&(genreMap[id]||(f&&genreMap[f.id])))||null;
- if(gm&&gm.genres){const g=gm.genres.find(x=>G[x]);if(g){const L=G[g];return Array.isArray(L)&&L.length&&Array.isArray(L[0])?L[Math.random()*L.length|0]:L}}
+ if(gm&&gm.genres){const g=gm.genres.find(x=>genreClipPool(x).length);if(g){const pool=genreClipPool(g);return pool[Math.random()*pool.length|0]}}
  const names=[];let c=f,n=0;while(c&&n++<12){names.push(c.name||'');c=items.get(c.parent)}
  const txt=names.join(' | ');
  for(const [g,rx] of SFX_GENRE_RX){if(G[g]&&rx.test(txt)){const L=G[g];return Array.isArray(L)&&L.length&&Array.isArray(L[0])?L[Math.random()*L.length|0]:L}}
@@ -617,7 +633,7 @@ function route(){const r=parseH(),k=r[0]||'';
   /* same video already showing: a stray route() (index/links/sync refresh) must not rebuild the frame */
   if(!$('#player').hidden&&$('#player').dataset.pid===r[1])return;
   /* Fire TV app (FEFCNative bridge): Play launches the native full-screen TV PLAYER directly (the WebView popup can show audio with a black picture); web/phone keep the popup */
-  {const nf=itemOr(r[1]),nb=window.FEFCNative;if(nf&&nb&&nb.playVideo&&(!window.__shufPlay||window.__shufFullscreen)){let ok=false;try{nb.playVideo(target(nf),parse(nf.name).raw);ok=true}catch(e){}
+  {const nf=itemOr(r[1]),nb=window.FEFCNative;if(nf&&nb&&nb.playVideo&&(!window.__shufPlay||window.__shufFullscreen)){let ok=false;try{ok=nativePlay(nf)}catch(e){}
    if(ok){try{window.UD&&UD.opened(nf.id,nf.name)}catch(e){}S.ambience(false);if(!window.__editFrom){const _h=location.hash||'#/';window.__editFrom=/^#\/(edit|play)\//.test(_h)?'#/':_h;try{sessionStorage.fefcEditFrom=window.__editFrom}catch(e){}}history.replaceState({fefc:1},'','#/edit/'+encodeURIComponent(nf.id));return route()}}}
   play(itemOr(r[1]));return}
  if(k==='readfirst'){if(baseKey===null||baseKey!=='')renderBase('');readFirst();return}
@@ -771,7 +787,7 @@ function shufRun(mode,scope){const f=shufPick(scope);if(!f){status('Nothing to s
  if(mode==='drive'){S.chirp&&S.chirp(1);try{if(nb&&typeof nb.openInDrive==='function')nb.openInDrive(tid,title);else window.open('https://drive.google.com/file/d/'+tid+'/view','_blank')}catch(e){}return}
  /* Full Screen (default): NEVER windowed shuffle. Native fullscreen when bridge exists; else #/play without floating shuf-player. */
  window.__shufPlay=0;window.__shufFullscreen=1;
- if(nb&&nb.playVideo){let ok=false;try{nb.playVideo(tid,title);ok=true}catch(e){}
+ if(nb&&nb.playVideo){let ok=false;try{ok=nativePlay(f)}catch(e){}
   if(ok){try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);if(!window.__editFrom){const _h=location.hash||'#/';window.__editFrom=/^#\/(edit|play)\//.test(_h)?'#/':_h;try{sessionStorage.fefcEditFrom=window.__editFrom}catch(e){}}
    history.replaceState({fefc:1},'','#/edit/'+encodeURIComponent(f.id));route();return}}
  const targetHash='#/play/'+encodeURIComponent(f.id);if(parseH()[0]==='play'){history.replaceState({fefc:1},'',targetHash);route()}else{go(targetHash)}}
@@ -986,7 +1002,7 @@ function killFrame(){killVideo();const o=$('#pframe');if(o){o.removeAttribute('s
 let streamTok=0;
 function clearStreamWait(){if(startStream._t){clearTimeout(startStream._t);startStream._t=0}}
 function quietForExternal(){try{if(window.SFX&&SFX.suspendAll)SFX.suspendAll()}catch(e){}try{document.querySelectorAll('video,audio').forEach(m=>{try{m.pause()}catch(err){}})}catch(e){}}
-function killVideo(){streamTok++;clearStreamWait();const v=$('#pvideo');if(v){try{v.pause()}catch(e){}v.removeAttribute('src');try{v.load()}catch(e){}v.remove()}const w=$('#player .pwrap');if(w)w.classList.remove('vid')}
+function killVideo(){try{window.__fefcPlayerSave&&window.__fefcPlayerSave()}catch(e){}streamTok++;clearStreamWait();const v=$('#pvideo');if(v){try{v.pause()}catch(e){}v.removeAttribute('src');try{v.load()}catch(e){}v.remove()}const w=$('#player .pwrap');if(w)w.classList.remove('vid')}
 const STREAM_EXT=/^(mp4|m4v|mkv|webm|mov|avi|mpg|mpeg|m2ts|ts)$/i;
 function streamUrlFor(id,name){
  let ext=(String(name||'').match(/\.([a-z0-9]{2,5})$/i)||[])[1]||'';
@@ -1050,11 +1066,12 @@ function attachSidecarTrack(v,sub){
   }).catch(()=>{/* sidecar optional */});
 }
 function playerScaleMode(){try{return localStorage.fefcScale||'contain'}catch(e){return 'contain'}}
-function setPlayerScale(mode){const order=['contain','cover','fill'];let m=mode;if(!m){const i=order.indexOf(playerScaleMode());m=order[(i+1)%3]}try{localStorage.fefcScale=m}catch(e){}const v=$('#pvideo');if(v)v.style.objectFit=m;const b=$('#pscale');if(b)b.textContent='Scale: '+(m==='contain'?'Fit':m==='cover'?'Fill':'Stretch');return m}
+function setPlayerScale(mode){window.setPlayerScale=setPlayerScale;const order=['contain','cover','ratio','fill'],lab={contain:'Fit',cover:'Fill',ratio:'16:9',fill:'Stretch'};let m=mode;if(!m||order.indexOf(m)<0){const i=Math.max(0,order.indexOf(playerScaleMode()));m=order[(i+1)%order.length]}try{localStorage.fefcScale=m}catch(e){}const v=$('#pvideo');if(v){v.classList.remove('ar-fit','ar-fill','ar-16','ar-stretch');v.classList.add(m==='contain'?'ar-fit':m==='cover'?'ar-fill':m==='ratio'?'ar-16':'ar-stretch');v.style.objectFit=m==='ratio'?'fill':m}const b=$('#pscale');if(b)b.textContent='Scale: '+lab[m];try{window.dispatchEvent(new CustomEvent('fefc-scale',{detail:m}))}catch(e){}return m}
+window.setPlayerScale=setPlayerScale;
 function ensurePlayerExtras(){
   const top=$('#player .ptop');if(!top||top.dataset.extras)return;top.dataset.extras=1;
   const mk=(id,label,title)=>{const b=document.createElement('button');b.id=id;b.type='button';b.className='pill p5';b.textContent=label;b.title=title;top.insertBefore(b,$('#popen'));return b};
-  const sc=mk('pscale','Scale: Fit','Cycle Fit → Fill → Stretch');sc.onclick=()=>{S.chirp(1);setPlayerScale()};
+  const sc=mk('pscale','Scale: Fit','Cycle Fit, Fill, 16:9, Stretch');sc.onclick=()=>{S.chirp(1);setPlayerScale()};
   const cc=mk('pcc','CC','Toggle captions');cc.onclick=()=>{S.chirp(1);const v=$('#pvideo');if(!v||!v.textTracks||!v.textTracks.length){cc.textContent='CC n/a';return}const t=v.textTracks[0];t.mode=t.mode==='showing'?'hidden':'showing';cc.textContent=t.mode==='showing'?'CC on':'CC off'};
   const au=mk('paudio','Audio','Audio track');au.onclick=()=>{S.chirp(1);const v=$('#pvideo');const list=v&&v.audioTracks;if(!list||!list.length){au.textContent='Audio n/a';return}let i=0;for(let x=0;x<list.length;x++)if(list[x].enabled)i=x;const n=(i+1)%list.length;for(let x=0;x<list.length;x++)list[x].enabled=x===n;au.textContent='Audio '+(n+1)+'/'+list.length};
   setPlayerScale(playerScaleMode());
@@ -1077,7 +1094,7 @@ function startStream(id,name){
  const url=streamUrlFor(id,name||'');
  const ext=(url.match(/\.([a-z0-9]+)$/i)||[])[1]||'';
  const v=document.createElement('video');
- v.id='pvideo';v.controls=true;v.autoplay=true;v.playsInline=true;v.preload='auto';
+ v.id='pvideo';v.controls=false;v.autoplay=true;v.playsInline=true;v.preload='auto';
  v.setAttribute('playsinline','');v.tabIndex=-1;v.style.objectFit=playerScaleMode();
  v.dataset.stream=url;
  let live=true;
@@ -1088,6 +1105,10 @@ function startStream(id,name){
   if(v.readyState>=3||v.currentTime>0){live=false;return}
   giveUp(ext==='mkv'?'This .mkv can’t play in Silk on Fire TV. Open the stream (no sign-in) or Open in Drive.':'The video didn’t start in this browser. Open the stream, or Open in Drive.');
  },8000);
+ v.addEventListener('loadedmetadata',()=>{if(tok!==streamTok)return;let p=0;try{p=+localStorage.getItem('fefcPos:'+id)||0}catch(e){}if(p>8&&(!v.duration||p<v.duration-15)){try{v.currentTime=p}catch(e){}}});
+ const savePos=()=>{if(tok!==streamTok||!v.duration)return;const p=v.currentTime;try{if(p<8||p>v.duration-15)localStorage.removeItem('fefcPos:'+id);else localStorage.setItem('fefcPos:'+id,String(p))}catch(e){}};
+ v.addEventListener('pause',savePos);v.addEventListener('timeupdate',()=>{if(v.currentTime%2<0.3)savePos()});
+ window.__fefcPlayerSave=savePos;
  v.addEventListener('canplay',()=>{if(tok!==streamTok)return;live=false;clearStreamWait();const box=$('#pstream-fallback');if(box)box.hidden=true;v.hidden=false});
  v.addEventListener('error',()=>{
   if(tok!==streamTok)return;clearStreamWait();
@@ -1101,11 +1122,14 @@ function startStream(id,name){
 function started(){return !!window._u&&document.body.classList.contains('intro-done')}
 /* Fire TV: when a details page opens, warm the streaming proxy (shortcut resolve cache + TLS) so the native player starts faster */
 const _warm={};function warmStream(f){const nb=window.FEFCNative;if(!f||!nb||!nb.playVideo||isFolder(f)||!isVid(f))return;const id=target(f);if(_warm[id])return;_warm[id]=1;try{const ac=new AbortController();fetch('/api/stream/'+id,{headers:{Range:'bytes=0-0'},signal:ac.signal,cache:'no-store'}).then(()=>ac.abort(),()=>{}).catch(()=>{})}catch(e){}}
+function nativeMime(name){const n=String(name||'').toLowerCase();if(n.endsWith('.mkv'))return 'video/x-matroska';if(n.endsWith('.webm'))return 'video/webm';if(n.endsWith('.mov'))return 'video/quicktime';if(n.endsWith('.avi'))return 'video/x-msvideo';return 'video/mp4'}
+function nativePlay(f){const nb=window.FEFCNative;if(!f||!nb)return false;const id=target(f),title=parse(f.name).raw||f.name||'Fan edit',file=f.name||'video.mp4';let sub='';try{const s=findSidecarSub(f);if(s)sub='/api/stream/'+encodeURIComponent(s.id)}catch(e){}
+ quietForExternal();try{if(typeof nb.playVideoWithFile==='function'){nb.playVideoWithFile(id,title,file,sub);return true}if(typeof nb.playVideoWithOptions==='function'){nb.playVideoWithOptions(id,title,nativeMime(file),sub);return true}if(typeof nb.playVideo==='function'){nb.playVideo(id,title);return true}}catch(e){}return false}
 function play(f){
  const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}
  const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();
  const isShuf=!!(window.__shufPlay||((!window.__shufFullscreen)&&sessionStorage.fefcShufScope));document.body.classList.toggle('shuf-player',isShuf);$('#player').classList.toggle('floating',isShuf);if(window.__shufFullscreen)window.__shufFullscreen=0;
- const sub=findSidecarSub(f);$('#player').dataset.pid=f.id;$('#ptitle').textContent=parse(f.name).raw;$('#player').dataset.did=id;if(sub){$('#player').dataset.sub=sub.id;$('#player').dataset.submime=sub.mime||''}else{delete $('#player').dataset.sub;delete $('#player').dataset.submime}
+ const sub=findSidecarSub(f);$('#player').dataset.pid=f.id;$('#player').dataset.file=f.name||'';$('#ptitle').textContent=parse(f.name).raw;$('#player').dataset.did=id;if(sub){$('#player').dataset.sub=sub.id;$('#player').dataset.submime=sub.mime||''}else{delete $('#player').dataset.sub;delete $('#player').dataset.submime}
  startStream(id,f&&f.name);$('#popen').href=`https://drive.google.com/file/d/${id}/view`;$('#player').hidden=false;ensurePlayerExtras();
 }
 /* ---------- EVENTS ---------- */
@@ -1228,7 +1252,7 @@ let mvRetry=0;
 function tvReveal(m,e){const R=x=>x&&x.getClientRects().length?x.getBoundingClientRect():null,r=e.getBoundingClientRect(),bar=R($('#bar')),hn=R($('#hints')),tk=R($('#ticker')),pad=Math.round(innerHeight*.025);
  let top=Math.max(m.getBoundingClientRect().top,bar?bar.bottom:0)+pad,bot=innerHeight-pad;if(hn)bot=Math.min(bot,hn.top-pad);if(tk)bot=Math.min(bot,tk.top-pad);
  if(r.height>bot-top||r.top<top)m.scrollTop+=r.top-top;else if(r.bottom>bot)m.scrollTop+=r.bottom-bot}
-function focusEl(e){if(!e)return;try{e.focus({preventScroll:true})}catch(err){try{e.focus()}catch(_){}}if(!e.scrollIntoView)return;const tv=document.body.classList.contains('tv')||document.body.classList.contains('firetv');const m=tv&&e.closest&&e.closest('#main');if(m&&m.scrollHeight>m.clientHeight){tvReveal(m,e);try{e.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'})}catch(_){}return}try{e.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'})}catch(_){}}
+function focusEl(e){if(!e)return;try{e.focus({preventScroll:true})}catch(err){try{e.focus()}catch(_){}}if(!e.scrollIntoView)return;const m=e.closest&&e.closest('#main');if(m&&m.scrollHeight>m.clientHeight){tvReveal(m,e);try{e.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'})}catch(_){}return}try{e.scrollIntoView({block:'nearest',inline:'nearest',behavior:'auto'})}catch(_){}}
 let gbT=0;
 function pulseHint(which){/* Fire TV: remote Back must light the Back control, never Home/#brand */
  const map={back:['#hints .hb-back','#menu .mi[data-nav="up"]'],home:['#hints .hb-home','#brand'],select:['#hints .hb-sel'],menu:['#hints .hb-search','#hints .hb-menu']};
@@ -1250,10 +1274,10 @@ document.addEventListener('keydown',e=>{const k=e.keyCode,inInput=e.target===$('
    on scroll position, or on whether the WebView skipped layout/paint of offscreen rows. Up from row N always goes to row N-1 (scrolled into view);
    the menu bar is reached only from the FIRST row of the page. Arrow keys are always preventDefault'ed on TV so the WebView's native focus search never runs. */
 let tvGoalX=null;
-function tvRows(){const c=[$('#arena'),$('#grid')].find(x=>x&&!x.hidden&&x.getClientRects().length);if(!c)return null;
+function tvRows(){const boxes=['#grid','#arena'].map(s=>$(s)).filter(x=>x&&!x.hidden&&x.querySelector('.ol-tile,.sortpill,.ml-btn'));if(!boxes.length)return null;const c=boxes[0];
  const els=[].slice.call(c.querySelectorAll('.sortpill,.ol-tile,#na-more,#ml-update,.ml-btn,.ml-hist-tog,#ml-sync .mi,.sync-go')).filter(e=>!e.hidden&&!e.closest('[hidden]')&&getComputedStyle(e).display!=='none'),groups=new Map();
  els.forEach(e=>{const g=e.closest('.sgrid')||e.parentElement;if(!groups.has(g))groups.set(g,[]);groups.get(g).push(e)});
- const rows=[];groups.forEach((a,g)=>{const cs=getComputedStyle(g);if(cs.display==='grid'){let n=cs.gridTemplateColumns.split(/\s+/).filter(x=>x&&x!=='none'&&x!=='subgrid').length;n=Math.max(1,n||1);/* Guard: if track count looks absurd vs tile count, derive from first-row geometry. */if(n>a.length)n=a.length||1;if(a.length>1){const y0=a[0].offsetTop,first=a.filter(e=>Math.abs(e.offsetTop-y0)<Math.max(24,a[0].offsetHeight*.35));if(first.length>=2&&first.length!==n)n=first.length}for(let i=0;i<a.length;i+=n)rows.push(a.slice(i,i+n))}
+ const rows=[];groups.forEach((a,g)=>{const cs=getComputedStyle(g);if(cs.display==='grid'){let n=cs.gridTemplateColumns.split(/\s+/).filter(x=>x&&x!=='none'&&x!=='subgrid').length;n=Math.max(1,n||1);/* Guard: if track count looks absurd vs tile count, derive from first-row geometry. */if(n>a.length)n=a.length||1;if(a.length>1){const y0=a[0].offsetTop,first=a.filter(e=>Math.abs(e.offsetTop-y0)<Math.max(8,a[0].offsetHeight*.2));if(first.length>=2&&first.length<n)n=first.length}for(let i=0;i<a.length;i+=n)rows.push(a.slice(i,i+n))}
   else{/* geometry buckets large enough that uneven title heights stay one visual row */const by=[];a.forEach(e=>{const y=e.offsetTop||0;let row=by.find(r=>Math.abs(r.y-y)<Math.max(28,(e.offsetHeight||80)*.4));if(!row){row={y,els:[]};by.push(row)}row.els.push(e)});by.sort((p,q)=>p.y-q.y).forEach(r=>rows.push(r.els))}});
  return rows}
 function tvGridNav(k,a){if(!a||!a.closest)return false;const cur=(a.matches&&a.matches('#ml-sync .mi,.sync-go')?a:null)||a.closest('.ol-tile,.sortpill,#na-more,#ml-update,.ml-btn,.ml-hist-tog,.sync-go');if(!cur)return false;let rows=tvRows();if(!rows||!rows.length)return false;
@@ -1266,7 +1290,7 @@ function tvGridNav(k,a){if(!a||!a.closest)return false;const cur=(a.matches&&a.m
  let p=find();if(!p)return false;let[ri]=p;
  if(tvGoalX==null)tvGoalX=cx(cur);
  if(k===38){if(ri===0){tvGoalX=null;toMenu();return true}const t=nearest(rows[ri-1],tvGoalX);focusEl(t);tvEnsure(t);return true}
- if(ri>=rows.length-1&&typeof drainOne==='function'){let n=0;try{while(n++<3&&drainOne());}catch(er){}rows=tvRows()||rows;p=find();if(p)ri=p[0]}
+ if(ri>=rows.length-1&&typeof drainOne==='function'){let n=0,grew=true;try{while(grew&&n++<40){const before=document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').length;grew=!!drainOne()&&document.querySelectorAll('#grid .ol-tile,#arena .ol-tile').length>before}}catch(er){}rows=tvRows()||rows;p=find();if(p)ri=p[0]}
  if(ri<rows.length-1){const t=nearest(rows[ri+1],tvGoalX);focusEl(t);tvEnsure(t);return true}return false}
 /* belt and braces: after a vertical jump make sure the target really is inside the visible band of #main */
 function tvEnsure(t){requestAnimationFrame(()=>{const m=$('#main');if(!m||!t.isConnected)return;const r=t.getBoundingClientRect(),bar=$('#bar').getBoundingClientRect();if(r.bottom<bar.bottom||r.top>innerHeight-10){m.scrollTop+=r.top-(bar.bottom+Math.round(innerHeight*.1))}})}
@@ -1306,6 +1330,7 @@ addEventListener('keydown',e=>{if(!pageVisible())return;const k=e.keyCode,a=docu
    els.forEach(el=>{if(el===cur)return;const P=cx(el);const dx=P.x-C.x,dy=P.y-C.y;
     let ok=false;if(k===39)ok=dx>8&&Math.abs(dy)<=Math.abs(dx)+40;else if(k===37)ok=dx<-8&&Math.abs(dy)<=Math.abs(dx)+40;else if(k===40)ok=dy>8&&Math.abs(dx)<=Math.abs(dy)+80;else if(k===38)ok=dy<-8&&Math.abs(dx)<=Math.abs(dy)+80;
     if(!ok)return;const d=Math.hypot(dx,dy)+(k===40||k===38?Math.abs(dx)*.35:Math.abs(dy)*.35);if(d<bd){bd=d;best=el}});
+   if(k===40&&best){const hop=els.filter(el=>el.classList.contains('tv-scroll')).reduce((pick,el)=>{const y=cx(el).y;if(y<=C.y+8||y>=cx(best).y-4)return pick;if(!pick||y<cx(pick).y)return el;return pick},null);if(hop)best=hop}
    if(best){focusEl(best);try{best.scrollIntoView({block:'nearest',inline:'nearest'})}catch(err){}
     const body=$('#details .lc-body');if(body){const br=best.getBoundingClientRect(),bb=body.getBoundingClientRect();if(br.bottom>bb.bottom-8)body.scrollTop+=br.bottom-bb.bottom+24;if(br.top<bb.top+8)body.scrollTop-=bb.top-br.top+24}
     /* 0.8.16: keep focused episode/season chip visible inside its own scroller */
@@ -1490,7 +1515,7 @@ function spVVon(){spFit();if(window.visualViewport&&!spVV){spVV=()=>{spFit();if(
 function spVVoff(){if(window.visualViewport&&spVV){visualViewport.removeEventListener('resize',spVV);visualViewport.removeEventListener('scroll',spVV);spVV=null}}
 function openSpot(q){if(!spEl)spMk();spVVon();spLastFocus=document.activeElement;const inp=spEl.querySelector('#sp-q');spEl.hidden=false;document.body.classList.add('sp-lock');requestAnimationFrame(()=>spEl.classList.add('on'));
  inp.value=q||'';spSeq++;clearTimeout(spAiT);spPaint([]);const o=spEl.querySelector('.sp-opt');o.dataset.lock=0;spMood('idle');spSay('Optimus is watching a fan edit. Type to interrupt him.');if(q){inp.dispatchEvent(new Event('input'))}
- setTimeout(()=>{try{inp.focus({preventScroll:true})}catch(e){inp.focus()}},30)}
+ setTimeout(()=>{try{inp.focus({preventScroll:true})}catch(e){inp.focus()}try{const nb=window.FEFCNative;if(nb&&typeof nb.showSoftInput==='function')nb.showSoftInput()}catch(e){}},30)}
 function closeSpot(nav){if(!spOpen())return;spVVoff();spSeq++;clearTimeout(spT);clearTimeout(spAiT);spEl.classList.remove('on');document.body.classList.remove('sp-lock');const inp=spEl.querySelector('#sp-q');inp.blur();setTimeout(()=>{if(!spOpen())spEl.hidden=true},260);
  if(nav!==true&&spLastFocus&&document.contains(spLastFocus)&&spLastFocus.id!=='q'&&spLastFocus!==document.body){try{spLastFocus.focus({preventScroll:true})}catch(e){}}}
 window.FEFCSpot={open:openSpot,close:closeSpot};
@@ -1501,7 +1526,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.8.21';
+const HOME_VER_FALLBACK='0.8.22';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 
 function formatMlUpdVer(name,code){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/^v/i,'').replace(/\s*beta$/i,'').trim();return 'v'+base}
@@ -1539,7 +1564,7 @@ function openTvMenu(){if(!document.body.classList.contains('tv')&&!document.body
   _tvMenuPrev=document.activeElement;
   paintTvMenu();
   el.hidden=false;el.setAttribute('aria-hidden','false');document.body.classList.add('tvmenu-open');
-  const first=el.querySelector('.tvm-i');if(first)try{first.focus({preventScroll:true})}catch(e){first.focus()}
+  const first=el.querySelector('[data-tm="search"]')||el.querySelector('.tvm-i');if(first)try{first.focus({preventScroll:true})}catch(e){first.focus()}
 }
 function paintTvMenu(){const el=$('#tvmenu');if(!el)return;const id=focusedMediaId()||(_tvMenuPrev&&_tvMenuPrev.closest&&_tvMenuPrev.closest('.ol-tile')&&_tvMenuPrev.closest('.ol-tile').dataset.id)||($('#details').hidden?null:$('#details').dataset.id);
   const star=el.querySelector('[data-tm="star"]'),mute=el.querySelector('[data-tm="mute"]'),search=el.querySelector('[data-tm="search"]');

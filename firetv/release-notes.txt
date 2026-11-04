@@ -1,3 +1,4 @@
+0.8.22 — Built-in player uses /api/stream only (no Google account). Full-screen playback is ExoPlayer, including .mkv. VLC-style controls on TV and web. Sync pairing and My List stay across APK updates (native prefs + no WebView storage wipe) and can be restored from the server by device id. versionCode 32. Signed APK not in this commit; firetv/version.json stays at the shipped 0.8.21 vc31 until the box build.
 0.8.21 — Open in VLC brings VLC's video activity to the foreground (video and audio). WebView ambience, atlas, and <video> are paused before launch. versionCode 31.
 0.8.20 — Web player uses /api/stream only (no Drive preview, no sign-in gate). Silk shows Open stream / Open in Drive if playback does not start within 8s.
 0.8.19 — Version badge, Google Sync restored, authenticated stream proxy.

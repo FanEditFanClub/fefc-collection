@@ -47,7 +47,7 @@ import java.util.Locale;
 
 /**
  * Full-screen native player (Media3 / ExoPlayer) for Drive files.
- * Prefer /api/stream/ (Range-aware proxy); fall back to drive.usercontent confirm=t.
+ * Plays only /api/stream/{id}/{file} (server OAuth). Never Drive usercontent or a viewer Google token.
  * Menu / Info / Down: Scale (Fit→Fill→Stretch), CC, Audio tracks, Chapters.
  */
 public class PlayerActivity extends Activity {
@@ -64,19 +64,21 @@ public class PlayerActivity extends Activity {
     private int menuIndex;
     private final List<MenuRow> menuRows = new ArrayList<>();
     private final Handler ui = new Handler(Looper.getMainLooper());
-    private boolean prepared, triedDirect, fatal;
-    private String vid, title, mimeHint, subtitleUrl, subtitleMime;
-    private int scaleMode; // 0 Fit, 1 Fill(ZOOM), 2 Stretch(FILL)
+    private boolean prepared, fatal, resumed;
+    private String vid, title, fileName, mimeHint, subtitleUrl, subtitleMime;
+    private int scaleMode; // 0 Fit, 1 Fill, 2 16:9, 3 Stretch
+    private int speedIndex = 2;
     private boolean ccOn = true;
     private final List<Chapter> chapters = new ArrayList<>();
     private static final String PROXY = "https://collection.faneditfanclub.com/api/stream/";
-    private static final String DIRECT_PREFIX = "https://drive.usercontent.google.com/download?id=";
-    private static final String[] SCALE_LABELS = { "Fit", "Fill", "Stretch" };
+    private static final String[] SCALE_LABELS = { "Fit", "Fill", "16:9", "Stretch" };
     private static final int[] SCALE_MODES = {
             AspectRatioFrameLayout.RESIZE_MODE_FIT,
             AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+            AspectRatioFrameLayout.RESIZE_MODE_FIXED_WIDTH,
             AspectRatioFrameLayout.RESIZE_MODE_FILL
     };
+    private static final float[] SPEEDS = { 0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f };
 
     private static final class Chapter {
         final long startMs;
@@ -92,10 +94,17 @@ public class PlayerActivity extends Activity {
     private final Runnable tick = new Runnable() {
         @Override public void run() {
             if (player != null && prepared && player.getDuration() > 0 && !menuOpen) {
-                bar.setText((player.isPlaying() ? "\u25B6  " : "\u23F8  ")
-                        + fmt((int) player.getCurrentPosition()) + " / " + fmt((int) player.getDuration())
-                        + "   ·  " + SCALE_LABELS[scaleMode]
-                        + (ccOn ? "  ·  CC" : ""));
+                long pos = player.getCurrentPosition();
+                long dur = player.getDuration();
+                long left = Math.max(0, dur - pos);
+                int pct = dur > 0 ? (int) Math.min(100, pos * 100 / dur) : 0;
+                StringBuilder ticks = new StringBuilder();
+                for (int i = 0; i < 20; i++) ticks.append(i * 5 < pct ? '\u2588' : '\u2591');
+                bar.setText(titleLine()
+                        + "\n" + (player.isPlaying() ? "\u25B6" : "\u23F8") + "  " + ticks
+                        + "\n" + fmt((int) pos) + "   ·   -" + fmt((int) left)
+                        + "   ·  " + SCALE_LABELS[scaleMode] + "  " + speedLabel()
+                        + (ccOn ? "  CC" : ""));
             }
             ui.postDelayed(this, 500);
         }
@@ -199,12 +208,14 @@ public class PlayerActivity extends Activity {
 
         vid = getIntent().getStringExtra("id");
         title = getIntent().getStringExtra("title");
+        fileName = getIntent().getStringExtra("fileName");
         mimeHint = getIntent().getStringExtra("mime");
         subtitleUrl = getIntent().getStringExtra("subtitleUrl");
         subtitleMime = getIntent().getStringExtra("subtitleMime");
 
         SharedPreferences sp = getSharedPreferences("player", MODE_PRIVATE);
-        scaleMode = Math.max(0, Math.min(2, sp.getInt("scaleMode", 0)));
+        scaleMode = Math.max(0, Math.min(SCALE_LABELS.length - 1, sp.getInt("scaleMode", 0)));
+        speedIndex = Math.max(0, Math.min(SPEEDS.length - 1, sp.getInt("speed", 2)));
         ccOn = sp.getBoolean("ccOn", true);
         applyScale();
 
@@ -235,23 +246,16 @@ public class PlayerActivity extends Activity {
                     prepared = true;
                     spin.setVisibility(View.GONE);
                     if (!menuOpen) bar.setVisibility(View.GONE);
-                    if (!triedDirect) {
-                        getSharedPreferences("player", MODE_PRIVATE).edit().remove("proxyBad").apply();
-                    }
+                    if (!resumed) { resumed = true; maybeResume(); }
+                    if (player != null) player.setPlaybackSpeed(SPEEDS[speedIndex]);
                     applyCcPreference();
                     maybeLoadChapters();
-                } else if (state == Player.STATE_ENDED) finish();
+                } else if (state == Player.STATE_ENDED) { clearPos(); finish(); }
             }
             @Override public void onPlayerError(PlaybackException error) {
-                if (!triedDirect && !prepared) {
-                    triedDirect = true;
-                    getSharedPreferences("player", MODE_PRIVATE).edit()
-                            .putLong("proxyBad", System.currentTimeMillis()).apply();
-                    playUri(directUri());
-                    return;
-                }
-                showFatal("This file can't be streamed directly (share/quota, or a codec this TV can't decode).\n"
-                        + "Press Back for the web player, or Open in Drive.");
+                Log.e(TAG, "stream error " + error.getErrorCodeName());
+                showFatal("This file didn't start from /api/stream (codec, or the stream was interrupted).\n"
+                        + "No Google sign-in is used. Press Back, or Open in Drive.");
             }
             @Override public void onIsPlayingChanged(boolean isPlaying) { flash(); }
             @Override public void onTracksChanged(Tracks tracks) {
@@ -262,16 +266,55 @@ public class PlayerActivity extends Activity {
             }
         });
 
-        boolean proxyBad = System.currentTimeMillis() - sp.getLong("proxyBad", 0) < 30 * 60 * 1000L;
-        bar.setText("Loading\u2026");
+        bar.setText(titleLine() + "\nLoading\u2026");
         bar.setVisibility(View.VISIBLE);
-        if (proxyBad) {
-            triedDirect = true;
-            playUri(directUri());
-        } else {
-            playUri(Uri.parse(PROXY + vid));
-        }
+        playUri(streamUri());
         ui.post(tick);
+    }
+
+    private String titleLine() {
+        return title == null || title.isEmpty() ? "FEFC Collection" : title;
+    }
+
+    private Uri streamUri() {
+        String raw = fileName != null && !fileName.isEmpty() ? fileName : (title != null ? title : "video.mp4");
+        raw = raw.replaceAll("[\\\\/]+", "_").trim();
+        if (!raw.matches("(?i).+\\.(mp4|m4v|mkv|webm|mov|avi|mpg|mpeg|m2ts|ts)$")) {
+            String hint = mimeHint == null ? "" : mimeHint.toLowerCase();
+            String ext = hint.contains("matroska") ? ".mkv" : hint.contains("webm") ? ".webm" : ".mp4";
+            raw = raw.replaceAll("\\.[^.]+$", "");
+            if (raw.isEmpty()) raw = "video";
+            raw = raw + ext;
+        }
+        raw = raw.replaceAll("[^A-Za-z0-9._\\-]+", "_");
+        if (raw.length() > 120) {
+            int dot = raw.lastIndexOf('.');
+            String ext = dot > 0 ? raw.substring(dot) : ".mp4";
+            raw = raw.substring(0, Math.min(100, raw.length())) + ext;
+        }
+        return Uri.parse(PROXY + vid + "/" + Uri.encode(raw, "._-"));
+    }
+
+    private void maybeResume() {
+        if (player == null || vid == null) return;
+        long p = getSharedPreferences("player", MODE_PRIVATE).getLong("pos_" + vid, 0);
+        long d = player.getDuration();
+        if (p > 8000 && (d <= 0 || p < d - 15000)) player.seekTo(p);
+    }
+
+    private void savePos() {
+        if (player == null || vid == null || !prepared) return;
+        long p = player.getCurrentPosition();
+        long d = player.getDuration();
+        SharedPreferences.Editor ed = getSharedPreferences("player", MODE_PRIVATE).edit();
+        if (p < 8000 || (d > 0 && p > d - 15000)) ed.remove("pos_" + vid);
+        else ed.putLong("pos_" + vid, p);
+        ed.apply();
+    }
+
+    private void clearPos() {
+        if (vid == null) return;
+        getSharedPreferences("player", MODE_PRIVATE).edit().remove("pos_" + vid).apply();
     }
 
     private void applyScale() {
@@ -279,13 +322,29 @@ public class PlayerActivity extends Activity {
         getSharedPreferences("player", MODE_PRIVATE).edit().putInt("scaleMode", scaleMode).apply();
     }
 
+    private String speedLabel() {
+        float s = SPEEDS[speedIndex];
+        return (s == (int) s ? String.valueOf((int) s) : String.valueOf(s)) + "\u00d7";
+    }
+
+    private void cycleSpeed() {
+        speedIndex = (speedIndex + 1) % SPEEDS.length;
+        getSharedPreferences("player", MODE_PRIVATE).edit().putInt("speed", speedIndex).apply();
+        if (player != null) player.setPlaybackSpeed(SPEEDS[speedIndex]);
+        flash();
+        info.setVisibility(View.VISIBLE);
+        info.setText("Speed: " + speedLabel());
+        ui.removeCallbacks(hideInfo);
+        ui.postDelayed(hideInfo, 2500);
+    }
+
     private void cycleScale() {
-        scaleMode = (scaleMode + 1) % 3;
+        scaleMode = (scaleMode + 1) % SCALE_LABELS.length;
         applyScale();
         flash();
         info.setVisibility(View.VISIBLE);
         info.setText("Scale: " + SCALE_LABELS[scaleMode]
-                + (scaleMode == 0 ? " (letterbox)" : scaleMode == 1 ? " (zoom/crop)" : " (stretch)"));
+                + (scaleMode == 0 ? " (letterbox)" : scaleMode == 1 ? " (zoom)" : scaleMode == 2 ? " (16:9 width)" : " (stretch)"));
         ui.removeCallbacks(hideInfo);
         ui.postDelayed(hideInfo, 2500);
         Log.i(TAG, "scale=" + SCALE_LABELS[scaleMode]);
@@ -318,12 +377,8 @@ public class PlayerActivity extends Activity {
         ui.postDelayed(hideInfo, 2500);
     }
 
-    private Uri directUri() {
-        return Uri.parse(DIRECT_PREFIX + vid + "&export=download&confirm=t");
-    }
-
     private void playUri(Uri uri) {
-        String mime = mimeOf(mimeHint, title);
+        String mime = mimeOf(mimeHint, fileName != null && !fileName.isEmpty() ? fileName : title);
         MediaItem.Builder b = new MediaItem.Builder().setUri(uri).setMimeType(mime);
         if (subtitleUrl != null && !subtitleUrl.isEmpty()) {
             b.setSubtitleConfigurations(java.util.Collections.singletonList(
@@ -391,6 +446,24 @@ public class PlayerActivity extends Activity {
         try { if (player != null) player.stop(); } catch (Exception ignored) {}
     }
 
+    private void openVlc() {
+        if (vid == null) return;
+        try {
+            Uri uri = streamUri();
+            android.content.ComponentName video = new android.content.ComponentName(
+                    "org.videolan.vlc", "org.videolan.vlc.gui.video.VideoPlayerActivity");
+            Intent explicit = new Intent(Intent.ACTION_VIEW);
+            explicit.setComponent(video);
+            explicit.setDataAndType(uri, "video/*");
+            explicit.putExtra("title", titleLine());
+            explicit.putExtra("from_start", false);
+            explicit.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(explicit);
+        } catch (Exception e) {
+            info.setText("Install VLC to use Open in VLC.");
+        }
+    }
+
     private void openDrive() {
         if (vid == null) return;
         try {
@@ -413,7 +486,8 @@ public class PlayerActivity extends Activity {
     private void openMenu() {
         if (fatal || player == null) return;
         menuRows.clear();
-        menuRows.add(new MenuRow("Scale: " + SCALE_LABELS[scaleMode] + "  (cycle)", this::cycleScale));
+        menuRows.add(new MenuRow("Aspect: " + SCALE_LABELS[scaleMode] + "  (cycle)", this::cycleScale));
+        menuRows.add(new MenuRow("Speed: " + speedLabel() + "  (cycle)", this::cycleSpeed));
         menuRows.add(new MenuRow("Closed captions: " + (ccOn ? "ON" : "OFF"), this::toggleCc));
 
         Tracks tracks = player.getCurrentTracks();
@@ -465,6 +539,8 @@ public class PlayerActivity extends Activity {
                 }));
             }
         }
+        menuRows.add(new MenuRow("Open in VLC", this::openVlc));
+        menuRows.add(new MenuRow("Open in Drive", this::openDrive));
         menuRows.add(new MenuRow("Close menu", this::closeMenu));
 
         menuBox.removeAllViews();
@@ -616,9 +692,19 @@ public class PlayerActivity extends Activity {
                 player.seekTo(Math.max(0, player.getCurrentPosition() - step));
                 flash(); return true;
             }
+            case KeyEvent.KEYCODE_BACK:
+            case KeyEvent.KEYCODE_ESCAPE:
+                if (bar.getVisibility() == View.VISIBLE || info.getVisibility() == View.VISIBLE) {
+                    bar.setVisibility(View.GONE);
+                    info.setVisibility(View.GONE);
+                    return true;
+                }
+                savePos();
+                finish();
+                return true;
             case KeyEvent.KEYCODE_DPAD_UP:
             case KeyEvent.KEYCODE_ZOOM_IN:
-                if (e.getRepeatCount() == 0) cycleScale();
+                if (e.getRepeatCount() == 0) flash();
                 return true;
             case KeyEvent.KEYCODE_DPAD_DOWN:
             case KeyEvent.KEYCODE_MENU:
@@ -653,6 +739,7 @@ public class PlayerActivity extends Activity {
 
     @Override
     protected void onPause() {
+        savePos();
         if (player != null) player.pause();
         super.onPause();
     }

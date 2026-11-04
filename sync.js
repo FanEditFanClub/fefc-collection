@@ -287,6 +287,38 @@
         S.user = null;
       }
     }
+    function persistNative() {
+      try {
+        if (window.FEFCSyncKeep && window.FEFCNative && window.FEFCNative.persistSync) window.FEFCNative.persistSync(JSON.stringify(window.FEFCSyncKeep.snapshot(localStorage)));
+      } catch (e) {
+      }
+    }
+    function devId() {
+      try {
+        var id = localStorage.getItem("fefcDeviceId") || "";
+        if (id.length >= 20) return id;
+      } catch (e) {
+      }
+      return "";
+    }
+    function registerDevice() {
+      var id = devId();
+      if (!id || !tok()) return Promise.resolve();
+      return api("device/register", { deviceId: id }).catch(function() {
+      });
+    }
+    function refillUd() {
+      try {
+        if (!window.UD) return;
+        var raw = localStorage.getItem("fefcUserData.v1");
+        if (!raw) return;
+        var cur = JSON.parse(window.UD.exportJSON()), inc = JSON.parse(raw);
+        var empty = !Object.keys(cur.stars || {}).length && !Object.keys(cur.history || {}).length && !Object.keys(cur.playback || {}).length;
+        var has = Object.keys(inc.stars || {}).length || Object.keys(inc.history || {}).length || Object.keys(inc.playback || {}).length;
+        if (empty && has) window.UD.importJSON(inc, true);
+      } catch (e) {
+      }
+    }
     function run() {
       if (!tok() || !window.UD) return Promise.resolve();
       if (busy) {
@@ -300,6 +332,8 @@
         S.error = "";
         if (r && r.data && r.data.v === 1) window.UD.importJSON(r.data, false);
         S.state = "in";
+        persistNative();
+        registerDevice();
       }, function(e) {
         if (e.status === 401 || e.status === 503 && 0) {
           clear();
@@ -324,6 +358,7 @@
       if (S._wired || !window.UD) return;
       S._wired = 1;
       window.UD.subscribe(function() {
+        persistNative();
         if (tok() && !busy) soon();
       });
       addEventListener("focus", function() {
@@ -342,6 +377,7 @@
       localStorage.setItem(KK, r.kind || "code");
       localStorage.setItem(KU, JSON.stringify(r.user || null));
       load();
+      persistNative();
       wire();
       emit();
       return run().then(function() {
@@ -352,8 +388,23 @@
       localStorage.removeItem(KT);
       localStorage.removeItem(KK);
       localStorage.removeItem(KU);
+      persistNative();
       load();
       emit();
+    }
+    function tryRestore() {
+      if (tok()) return Promise.resolve(false);
+      var id = devId();
+      if (!id) return Promise.resolve(false);
+      return api("restore", { deviceId: id }, false).then(function(r) {
+        if (r && r.token) {
+          adopt(r);
+          return true;
+        }
+        return false;
+      }).catch(function() {
+        return false;
+      });
     }
     var A = {
       get state() {
@@ -374,7 +425,12 @@
         return !!tok();
       },
       signOut: function() {
-        var t = tok();
+        var t = tok(), id = devId();
+        if (t && id) try {
+          fetch("/api/sync/device/forget", { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + t }, body: JSON.stringify({ deviceId: id }) }).catch(function() {
+          });
+        } catch (e) {
+        }
         if (t) try {
           fetch("/api/sync/logout", { method: "POST", headers: { Authorization: "Bearer " + t } }).catch(function() {
           });
@@ -417,11 +473,16 @@
         return api("pair/redeem", { code }, false);
       }
     };
+    refillUd();
     load();
+    persistNative();
     if (tok()) {
       wire();
-      setTimeout(run, 1500);
-    }
+      setTimeout(function() {
+        registerDevice();
+        run();
+      }, 1500);
+    } else setTimeout(tryRestore, 400);
     return A;
   }
   if (typeof window !== "undefined" && window.addEventListener) window.addEventListener("keydown", function(e) {

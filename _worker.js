@@ -251,6 +251,31 @@ async function syncApi(req, env, url) {
     rec.uses++; await kput(env, 'code:' + code, rec, PAIR_TTL);
     return json({ token: await newSession(env, rec.key, rec.kind, rec.user), kind: rec.kind, user: publicUser(rec.user) });
   }
+
+  /* Stable device → list mapping. No TTL: an APK update must still be able to mint a fresh session for the same My List. */
+  if (p === 'device/register') {
+    const s = await authed(req, env); if (!s) return json({ error: 'unauthorized' }, 401);
+    const id = String(body.deviceId || '');
+    if (!/^[\w-]{20,80}$/.test(id)) return json({ error: 'bad_request' }, 400);
+    await env.SYNC.put('device:' + id, JSON.stringify({ key: s.key, kind: s.kind, user: s.user || null, at: Date.now() }));
+    return json({ ok: true });
+  }
+  if (p === 'device/forget') {
+    const s = await authed(req, env); if (!s) return json({ error: 'unauthorized' }, 401);
+    const id = String(body.deviceId || '');
+    if (!/^[\w-]{20,80}$/.test(id)) return json({ error: 'bad_request' }, 400);
+    const rec = await kget(env, 'device:' + id);
+    if (rec && rec.key === s.key) await env.SYNC.delete('device:' + id);
+    return json({ ok: true });
+  }
+  if (p === 'restore') {
+    if (limited(req, 'rs', 30)) return json({ error: 'rate_limited' }, 429);
+    const id = String(body.deviceId || '');
+    if (!/^[\w-]{20,80}$/.test(id)) return json({ error: 'bad_request' }, 400);
+    const rec = await kget(env, 'device:' + id);
+    if (!rec || !rec.key) return json({ error: 'not_found' }, 404);
+    return json({ token: await newSession(env, rec.key, rec.kind || 'code', rec.user), kind: rec.kind || 'code', user: publicUser(rec.user) });
+  }
   return json({ error: 'not_found' }, 404);
 }
 

@@ -23,6 +23,19 @@
   "_rules": [
     {
       "path": true,
+      "match": "man in the high castle",
+      "regex": "man in the high castle",
+      "ids": ["1f61yaGwkNj7URPjYe6LcvAbIrvg55RnB"],
+      "source": "Jeanette Olsson, The Man in the High Castle opening theme, the Edelweiss vocal. 5.5s, about -16 LUFS, true peak under -1.5 dBTP.",
+      "file": [
+        [
+          "assets/sfx/highcastle-edelweiss.m4a",
+          "assets/sfx/highcastle-edelweiss.mp3"
+        ]
+      ]
+    },
+    {
+      "path": true,
       "match": "for all mankind",
       "regex": "for all mankind",
       "ids": [
