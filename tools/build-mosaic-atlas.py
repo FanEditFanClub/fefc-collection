@@ -52,7 +52,7 @@ def build(out, W, H, dur=8, crf=28):
         cmd = ['ffmpeg', '-y', '-hide_banner', '-loglevel', 'error'] + inputs + [
             '-filter_complex', ';'.join(fc), '-map', '[out]', '-an',
             '-c:v', 'libx264', '-preset', 'veryfast', '-crf', str(crf),
-            '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-t', str(dur), out]
+            '-pix_fmt', 'yuv420p', '-map_chapters', '-1', '-map_metadata', '-1', '-movflags', '+faststart', '-t', str(dur), out]
         print('stacking', out)
         subprocess.check_call(cmd)
         print('wrote', out, os.path.getsize(out))

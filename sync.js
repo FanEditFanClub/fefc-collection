@@ -402,9 +402,27 @@
           return true;
         }
         return false;
-      }).catch(function() {
+      }).catch(function(e) {
+        if (e && e.status === 404) offerRepair();
         return false;
       });
+    }
+    function offerRepair() {
+      try {
+        var N = window.FEFCNative;
+        if (!N || !N.upgradedFrom || !(N.upgradedFrom() > 0) || tok()) return;
+        if (localStorage.getItem("fefcRepairShown")) return;
+        var n = 0;
+        (function t() {
+          if (typeof window.__fefcSyncRepair === "function" && document.body && document.body.classList.contains("intro-done")) {
+            localStorage.setItem("fefcRepairShown", "1");
+            window.__fefcSyncRepair();
+            return;
+          }
+          if (++n < 240) setTimeout(t, 500);
+        })();
+      } catch (e) {
+      }
     }
     var A = {
       get state() {

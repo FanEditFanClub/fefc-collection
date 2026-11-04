@@ -1001,5 +1001,1142 @@
    "match": "^stargate\\b",
    "folders": "(no Stargate folder yet - collect the loose Stargate edits from anywhere in the library)"
   }
+ ],
+ "titleRules": [
+  {
+   "match": "star trek|\\bstar ?trek\\b|next generation|deep space nine|voyager|enterprise.*trek",
+   "genres": [
+    "Sci-Fi",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "star wars|mandalorian|clone wars|rogue one|andor\\b|jedi|skywalker",
+   "genres": [
+    "Sci-Fi",
+    "Fantasy",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "stargate",
+   "genres": [
+    "Sci-Fi",
+    "Action",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "back to the future",
+   "genres": [
+    "Sci-Fi",
+    "Comedy",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "back to the future.*(part )?(iii|3)\\b|^bttf.*(iii|3)\\b",
+   "genres": [
+    "Sci-Fi",
+    "Western",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\b(dcau|dceu|batman|superman|justice league|teen titans|young justice)\\b",
+   "genres": [
+    "Superhero",
+    "Action"
+   ]
+  },
+  {
+   "match": "dragon ?ball",
+   "genres": [
+    "Animation",
+    "Action",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "breaking bad|better call saul",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "parks and rec|the office\\b|community\\b|brooklyn nine",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "monstervision|monster vision",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "and not to yield",
+   "genres": [
+    "Drama",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "kill bill",
+   "genres": [
+    "Action",
+    "Crime",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "twisted metal",
+   "genres": [
+    "Action",
+    "Comedy",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "simpsons",
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Family"
+   ]
+  },
+  {
+   "match": "^it(\\s*[-:(]|$|\\s+(chapter|part|20|19))",
+   "genres": [
+    "Horror",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "agents of s\\.?h\\.?i\\.?e\\.?l\\.?d",
+   "genres": [
+    "Action",
+    "Sci-Fi",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "l\\.?a\\.? noire",
+   "genres": [
+    "Crime",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "^monsters(\\s|$|\\()",
+   "genres": [
+    "Sci-Fi",
+    "Drama",
+    "Horror"
+   ]
+  },
+  {
+   "match": "rick (&|and) morty",
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "blood (and|&) donuts",
+   "genres": [
+    "Horror",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "night springs|alan wake|mr\\.? scratch",
+   "genres": [
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "\\bjaws\\b",
+   "genres": [
+    "Horror",
+    "Thriller",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "spider.?man",
+   "genres": [
+    "Superhero",
+    "Action"
+   ]
+  },
+  {
+   "match": "hitchhiker",
+   "genres": [
+    "Sci-Fi",
+    "Comedy",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "atmosfear",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "^abigail",
+   "genres": [
+    "Horror",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "armageddon|deep impact",
+   "genres": [
+    "Sci-Fi",
+    "Action",
+    "Drama"
+   ]
+  },
+  {
+   "match": "barbie|oppenheimer",
+   "genres": [
+    "Comedy",
+    "Drama"
+   ]
+  },
+  {
+   "match": "dunkirk|finest hour",
+   "genres": [
+    "War",
+    "Drama"
+   ]
+  },
+  {
+   "match": "indiana jones",
+   "genres": [
+    "Adventure",
+    "Action"
+   ]
+  },
+  {
+   "match": "lanterns?",
+   "genres": [
+    "Superhero",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "rambo|predator",
+   "genres": [
+    "Action",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "sherlock",
+   "genres": [
+    "Crime",
+    "Drama"
+   ]
+  },
+  {
+   "match": "sin city",
+   "genres": [
+    "Crime",
+    "Thriller",
+    "Action"
+   ]
+  },
+  {
+   "match": "tetsuo",
+   "genres": [
+    "Sci-Fi",
+    "Horror"
+   ]
+  },
+  {
+   "match": "v\\.?h\\.?s\\.?( series|\\b)",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "return of the living dead|evil dead",
+   "genres": [
+    "Horror",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "targaryen|game of thrones|house of the dragon",
+   "genres": [
+    "Fantasy",
+    "Drama"
+   ]
+  },
+  {
+   "match": "austin powers",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "blade runner",
+   "genres": [
+    "Sci-Fi",
+    "Thriller",
+    "Drama"
+   ]
+  },
+  {
+   "match": "grindhouse",
+   "genres": [
+    "Action",
+    "Horror"
+   ]
+  },
+  {
+   "match": "pearl harbor|midway",
+   "genres": [
+    "War",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^the hire\\b",
+   "genres": [
+    "Action",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "roller ?blade",
+   "genres": [
+    "Sci-Fi",
+    "Action"
+   ]
+  },
+  {
+   "match": "gumby",
+   "genres": [
+    "Animation",
+    "Family"
+   ]
+  },
+  {
+   "match": "late late show|craig ferguson",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "wile e\\. coyote|road runner",
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Family"
+   ]
+  },
+  {
+   "match": "35mm theatrical movie trailers",
+   "genres": [
+    "Documentary"
+   ]
+  },
+  {
+   "match": "tom terrific",
+   "genres": [
+    "Animation",
+    "Family",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "gremlins: secrets of the mogwai",
+   "genres": [
+    "Animation",
+    "Fantasy",
+    "Comedy",
+    "Horror",
+    "Family"
+   ]
+  },
+  {
+   "match": "\\breaper\\b",
+   "genres": [
+    "Comedy",
+    "Fantasy",
+    "Horror",
+    "Drama"
+   ]
+  },
+  {
+   "match": "headless horseman",
+   "genres": [
+    "Horror",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "masters of the air",
+   "genres": [
+    "War",
+    "Drama"
+   ]
+  },
+  {
+   "match": "the psychopath \\(1975\\)",
+   "genres": [
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "giger",
+   "genres": [
+    "Horror",
+    "Sci-Fi",
+    "Documentary"
+   ]
+  },
+  {
+   "match": "the pogles",
+   "genres": [
+    "Animation",
+    "Family",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "kiyoshi kurosawa",
+   "genres": [
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "freedom force \\(1978\\)",
+   "genres": [
+    "Animation",
+    "Superhero",
+    "Action"
+   ]
+  },
+  {
+   "match": "pumping iron",
+   "genres": [
+    "Documentary"
+   ]
+  },
+  {
+   "match": "the dark half",
+   "genres": [
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "bananaman",
+   "genres": [
+    "Animation",
+    "Comedy",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "kiss meets the phantom",
+   "genres": [
+    "Action",
+    "Horror",
+    "Comedy",
+    "Musical"
+   ]
+  },
+  {
+   "match": "rings of power",
+   "genres": [
+    "Fantasy",
+    "Adventure",
+    "Drama"
+   ]
+  },
+  {
+   "match": "ichabod crane",
+   "genres": [
+    "Animation",
+    "Fantasy",
+    "Horror"
+   ]
+  },
+  {
+   "match": "oz movies collection",
+   "genres": [
+    "Fantasy",
+    "Family",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "dark crystal",
+   "genres": [
+    "Fantasy",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "11\\.23\\.63",
+   "genres": [
+    "Sci-Fi",
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "\\b1917\\b",
+   "genres": [
+    "War",
+    "Drama"
+   ]
+  },
+  {
+   "match": "^24 - season 7|renee walker",
+   "genres": [
+    "Action",
+    "Thriller",
+    "Drama"
+   ]
+  },
+  {
+   "match": "57 seconds",
+   "genres": [
+    "Sci-Fi",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "panico",
+   "genres": [
+    "Thriller",
+    "Crime"
+   ]
+  },
+  {
+   "match": "v/h/s|v h s",
+   "genres": [
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "jfk",
+   "genres": [
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "1984 \\(color\\)",
+   "genres": [
+    "Sci-Fi",
+    "Drama"
+   ]
+  },
+  {
+   "match": "3:10 to yuma",
+   "genres": [
+    "Western",
+    "Action",
+    "Drama"
+   ]
+  },
+  {
+   "match": "all the kind of strangers|falling fire|heavens burning|friends, lovers|the comic|the humiliated|dystany|outsider/gangster|poe: project|midnight \\(1989|frenchmans farm|girly|the crush|the game",
+   "genres": [
+    "Drama",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "death car on the freeway|madman|pranks|popcorn|resolution|xx \\(2017|witchboard|where evil lives|re-?animator|william peter blatty|dr\\. jekyll|cut! \\(2014|\\blo \\(2005|hell house|frankenhooker|brain damage|leatherface|stir of echoes|the prophecy|angel dust|bewitched a\\.k\\.a\\. gu|enfeiti|30 days of night|paranormal activity|murder house|freddy vs jason|lights out|sinners|the man with fire on his face|angel dust",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "angel dust|stir of echoes|the prophecy|30 days of night|sinners|leatherface|lights out|ronin|turing test|the murder house|the man with fire|hand of the king|frank tj mackey|self help",
+   "genres": [
+    "Thriller"
+   ]
+  },
+  {
+   "match": "hamlet|rose of kentucky|the goonies|ronin|national treasure|ben-hur|300 \\(2007\\)",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "goonies|national treasure",
+   "genres": [
+    "Adventure",
+    "Family",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "ronin|300 \\(2007\\)|ben-hur|national treasure|game of death|mask of zorro|marvel one-shot|marve one-shot|man out of time",
+   "genres": [
+    "Action"
+   ]
+  },
+  {
+   "match": "300 \\(2007\\)|ben-hur|mask of zorro|hamlet",
+   "genres": [
+    "Adventure",
+    "War",
+    "Drama"
+   ]
+  },
+  {
+   "match": "the mask\\b|the mask extended|scooby-doo|purrassic park|wall-?e|wall•e|he-man|netherlands collection",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "scooby-doo|wall-?e|wall•e|he-man",
+   "genres": [
+    "Animation",
+    "Family"
+   ]
+  },
+  {
+   "match": "the mask extended|mask extended cut",
+   "genres": [
+    "Fantasy",
+    "Comedy",
+    "Action"
+   ]
+  },
+  {
+   "match": "starfleet academy|\\bst - ds9|ds9|fallout 222|the wheel of time|wheel of time|dune|kenobi|wheel of time|terminal list|memento|otnemem|back to the past",
+   "genres": [
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "wheel of time|harry potter|the boys|kenobi|fallout|hand of the king",
+   "genres": [
+    "Fantasy",
+    "Adventure",
+    "Drama"
+   ]
+  },
+  {
+   "match": "harry potter",
+   "genres": [
+    "Fantasy",
+    "Family",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "the boys|fallout 222|dark knight rises|marvel one-shot|marve one-shot",
+   "genres": [
+    "Superhero",
+    "Action"
+   ]
+  },
+  {
+   "match": "dark knight rises",
+   "genres": [
+    "Crime",
+    "Thriller",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "fallout 222",
+   "genres": [
+    "Sci-Fi",
+    "Drama"
+   ]
+  },
+  {
+   "match": "terminal list",
+   "genres": [
+    "Thriller",
+    "Action",
+    "Drama"
+   ]
+  },
+  {
+   "match": "memento|otnemem",
+   "genres": [
+    "Thriller",
+    "Mystery"
+   ]
+  },
+  {
+   "match": "starfleet academy|ds9",
+   "genres": [
+    "Adventure",
+    "Drama"
+   ]
+  },
+  {
+   "match": "purrassic park",
+   "genres": [
+    "Sci-Fi",
+    "Adventure",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "back to the past",
+   "genres": [
+    "Sci-Fi",
+    "Adventure",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "superhero movie",
+   "genres": [
+    "Comedy",
+    "Superhero"
+   ]
+  },
+  {
+   "match": "maculate conception",
+   "genres": [
+    "Comedy",
+    "Drama"
+   ]
+  },
+  {
+   "match": "behind the mask|leslie vernon",
+   "genres": [
+    "Horror",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "tc 2000",
+   "genres": [
+    "Action",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "mojcv3",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "netherlands collection",
+   "genres": [
+    "Musical"
+   ]
+  },
+  {
+   "match": "christine \\(1983\\)",
+   "genres": [
+    "Horror",
+    "Thriller"
+   ]
+  },
+  {
+   "match": "jackass",
+   "genres": [
+    "Comedy",
+    "Documentary"
+   ]
+  },
+  {
+   "match": "resident evil",
+   "genres": [
+    "Horror",
+    "Action",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "the evil dead",
+   "genres": [
+    "Horror",
+    "Comedy",
+    "Fantasy"
+   ]
+  }
+ ],
+ "fallbackRules": [
+  {
+   "match": "\\b(horror|slasher|zombie|vampire|haunt|ghost|exorcis)",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "\\b(anime|cartoon|animated|pixar|disney)\\b",
+   "genres": [
+    "Animation"
+   ]
+  },
+  {
+   "match": "\\b(doc|documentary|making of|behind the scenes)\\b",
+   "genres": [
+    "Documentary"
+   ]
+  },
+  {
+   "match": "\\b(war|battle|soldier)\\b",
+   "genres": [
+    "War"
+   ]
+  },
+  {
+   "match": "\\b(comedy|parody|spoof)\\b",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\bschlocksploitation\\b|\\bsensical cut\\b|\\bck edit\\b|\\bck cut\\b|\\bbaliscon.*(freddy\\b|\\bwolfman)\\b|\\bdont go (in\\b|\\bnear)\\b|\\bliving dead\\b|\\bcannibal\\b|\\bghoul\\b|\\bghastly\\b|\\bnightmare\\b|\\bhowling\\b|\\bslasher\\b|\\bmacabre\\b|\\bchiller\\b|\\btomb of\\b|\\bgore\\b|\\bmessiah of evil\\b|\\bjust before dawn\\b|\\bhell of\\b|\\bzombie\\b|\\btorso\\b|\\bdracula\\b|\\bfrankenstein\\b|\\bwolfman\\b|\\bboogeyman\\b|\\bboogedy\\b|\\bre animator\\b|\\bphantom of the mall\\b|\\binvasion of the mindbenders\\b|\\bkiss of the tarantula\\b|\\bkingdom of the spiders\\b|\\bhumanoids from\\b|\\bit conquered the world\\b|\\bnot of this earth\\b|\\bincredible melting\\b|\\bchildren of the corn\\b|\\bchildren of the night\\b|\\bhellraiser\\b|\\bhalloween\\b|\\belm street\\b|\\bfriday the 13th\\b|\\btexas chainsaw\\b|\\btrick 'r treat\\b|\\btrick r treat\\b|\\bcabin fever\\b|\\btigersharks\\b|\\bnight shadow\\b|\\blate night with the devil\\b|\\bscre4m\\b|\\bthe stuff\\b|\\bcurse of the stuff\\b|\\bsaw vii\\b|\\bbad moon\\b|\\bbeast in heat\\b|\\bbloody\\b|\\bmegladon\\b|\\balligator\\b|\\bpiranha\\b|\\bcrocodile\\b",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "\\bgodzilla\\b|\\bmonster zero\\b|\\bking ghidorah\\b|\\bmothra\\b|\\bkong\\b",
+   "genres": [
+    "Sci-Fi",
+    "Action",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "\\bc pia de (the )?(terminator\\b|\\baliens\\b|\\boutland\\b|\\bescape from\\b|\\bsoylent green\\b|\\bthe thing\\b|\\bvideodrome\\b|\\brunning man\\b|\\bjudge dredd\\b|\\balien resurrection\\b|\\bchristine)\\b",
+   "genres": [
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "\\bc pia de (the )?(thing\\b|\\btexas chainsaw\\b|\\bdawn of the dead\\b|\\bcarrie\\b|\\bpoltergeist\\b|\\bthe fog\\b|\\bthe shining\\b|\\bpsycho\\b|\\bdead zone\\b|\\bchildren of the corn\\b|\\blegend of hell house\\b|\\bchristine\\b|\\bvideodrome)\\b",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "\\bc pia de (the )?(poseidon\\b|\\btowering\\b|\\bchina syndrome\\b|\\bparallax\\b|\\btaxi driver\\b|\\bgoodfellas\\b|\\bheat\\b|\\buntouchables\\b|\\bfrench connection\\b|\\bstraw dogs\\b|\\bbreakdown\\b|\\bmanhunter\\b|\\bcapricorn\\b|\\bgreat train)\\b",
+   "genres": [
+    "Thriller",
+    "Drama"
+   ]
+  },
+  {
+   "match": "\\bc pia de (the )?(french connection\\b|\\bgoodfellas\\b|\\bheat\\b|\\buntouchables\\b|\\bmanhunter)\\b",
+   "genres": [
+    "Crime"
+   ]
+  },
+  {
+   "match": "\\bc pia de (the )?(48hrs\\b|\\blethal weapon\\b|\\bdie hard\\b|\\bcommando\\b|\\braiders\\b|\\bconan\\b|\\bbig trouble\\b|\\bshogun\\b|\\bsorcerer\\b|\\brunning man\\b|\\bjudge dredd\\b|\\bescape from\\b|\\bbreakdown)\\b",
+   "genres": [
+    "Action",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "\\bc pia de (the )?(48hrs\\b|\\blethal weapon\\b|\\bbig trouble)\\b",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\bconan\\b|\\bsavage sword\\b",
+   "genres": [
+    "Fantasy",
+    "Action",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "\\bparks and rec\\b|\\bpawnee\\b|\\bleslie knope\\b|\\bs[1-4]e\\d+.*fan edit\\b|\\bron and tammy\\b",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\bcolonel bleep\\b|\\bdexters lab\\b|\\bfox kids\\b|\\bhe man\\b|\\btigersharks\\b|\\bwall e\\b|\\ba bug's life\\b|\\barthur and the invisibles\\b|\\btreasure planet\\b|\\blion king\\b|\\bice age\\b|\\bdick spanner\\b|\\bdeath note\\b|\\benfeiti\\b|\\bdelinquent girl\\b|\\bsonic rescored\\b|\\bmuppets\\b",
+   "genres": [
+    "Animation",
+    "Family"
+   ]
+  },
+  {
+   "match": "\\bdeath note\\b",
+   "genres": [
+    "Thriller",
+    "Crime",
+    "Fantasy"
+   ]
+  },
+  {
+   "match": "\\bdelinquent girl boss\\b",
+   "genres": [
+    "Action",
+    "Crime",
+    "Drama"
+   ]
+  },
+  {
+   "match": "\\bmuppet\\b|\\blion king\\b|\\bbug's life\\b|\\bice age\\b|\\barthur and the invisibles\\b|\\btreasure planet\\b|\\bwall e\\b",
+   "genres": [
+    "Family",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\bagent carter\\b|\\bcarter and supreme\\b|\\bmarvel one shot\\b|\\bmarve one shot\\b|\\bdeadpool\\b|\\bmartian manhunter\\b|\\bman of tomorrow\\b|\\barrow & peacemaker\\b|\\barrowverse\\b|\\bgoldeneye\\b|\\bbond film\\b",
+   "genres": [
+    "Action"
+   ]
+  },
+  {
+   "match": "\\bagent carter\\b|\\bmarvel one shot\\b|\\bmarve one shot\\b|\\bcaptain carter\\b|\\bdeadpool\\b|\\bmartian manhunter\\b|\\bman of tomorrow\\b|\\barrow & peacemaker\\b|\\barrowverse\\b",
+   "genres": [
+    "Superhero"
+   ]
+  },
+  {
+   "match": "\\bgoldeneye\\b|\\bno good deed the rock\\b|\\bbond film\\b",
+   "genres": [
+    "Action",
+    "Thriller",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "\\bstranger things\\b|\\bsilo\\b|\\blooper\\b|\\b12 monkeys\\b|\\bfifth element\\b|\\boblivion\\b|\\bsnowpiercer\\b|\\brobowar\\b|\\bterminator\\b|\\bzone troopers\\b|\\bmoon 44\\b|\\bhyper sapien\\b|\\balien origins\\b|\\balien space\\b|\\balienator\\b|\\balien zone\\b|\\bdimension 5\\b|\\bspace odyssey\\b|\\b2001: a space\\b|\\b2019: after the fall\\b|\\b1990: the bronx\\b|\\bescape from colorado\\b|\\bkung fury\\b|\\bprisoners of the lost\\b|\\bmorons from outer\\b|\\bmy uncle the alien\\b|\\brewind failed\\b|\\bjourney to the center\\b|\\brace saga\\b|\\blost city\\b|\\bomega cop\\b|\\bfuture shock\\b|\\btimesweep\\b|\\bman who fell to earth\\b|\\bmatrix\\b|\\bplanet of the apes\\b|\\bcapricorn one\\b|\\bmissle to the moon\\b|\\bindependance day\\b|\\bindependence day\\b|\\bhumanoids\\b|\\bterminal force\\b|\\bx files\\b|\\bredrum\\b|\\bprometheus\\b|\\binterstellar\\b|\\bsam max\\b|\\bsam and max\\b|\\bsteve jobs\\b",
+   "genres": [
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "\\b1990: the bronx\\b|\\b2019: after the fall\\b|\\btexas gladiators\\b|\\bl a wars\\b|\\bescape from colorado\\b",
+   "genres": [
+    "Action",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "\\bstranger things\\b|\\bsilo\\b|\\bx files\\b",
+   "genres": [
+    "Drama",
+    "Thriller",
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "\\bgodfather\\b|\\brocky\\b|\\bcreed\\b|\\bgladiator\\b|\\b13 hours\\b|\\bamerican gangster\\b|\\ba gun for jennifer\\b|\\ba day of violence\\b|\\bthe outsider gangster\\b|\\bone armed executioner\\b|\\btop cop\\b|\\blethal force\\b|\\bhard target\\b|\\bextraction\\b|\\bjohn wick\\b|\\bsabotage\\b|\\bbad boys\\b|\\bben hur\\b|\\bkingdom of heaven\\b|\\bsaboteur\\b|\\bgreyhound\\b|\\bministry of ungentlemanly\\b|\\bcrime 101\\b|\\bse7en\\b|\\birishman\\b|\\bcasino royale\\b|\\bhands of steel\\b|\\bamerican commando\\b|\\bamerican hunter\\b|\\bhitchcock\\b|\\bpsycho\\b|\\bdeja vu\\b|\\bocean's 13\\b|\\bmad max\\b|\\bfuriosa\\b|\\bfury road\\b|\\bhighlander\\b|\\bel mariachi\\b|\\bdesperado\\b|\\bonce upon a time in\\b|\\binherent vice\\b|\\bthe nice guys\\b|\\bla confidential\\b|\\bl a confidential\\b|\\bgangster squad\\b|\\bkinds of kindness\\b|\\bnaked gun\\b|\\bloaded weapon\\b|\\bcheech\\b|\\bup in smoke\\b",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "\\bgodfather\\b|\\bamerican gangster\\b|\\ba gun for jennifer\\b|\\bday of violence\\b|\\boutsider gangster\\b|\\btop cop\\b|\\bcrime 101\\b|\\birishman\\b|\\bcasino royale\\b|\\bl a confidential\\b|\\bgangster squad\\b|\\bthe nice guys\\b|\\binherent vice\\b|\\bel mariachi\\b|\\bdesperado\\b|\\bse7en\\b|\\bsaboteur\\b|\\bkinds of kindness\\b|\\bonce upon a time in hollywood\\b",
+   "genres": [
+    "Crime"
+   ]
+  },
+  {
+   "match": "\\bhard target\\b|\\bextraction\\b|\\bjohn wick\\b|\\bsabotage\\b|\\bbad boys\\b|\\b13 hours\\b|\\bministry of ungentlemanly\\b|\\bgreyhound\\b|\\bben hur\\b|\\bkingdom of heaven\\b|\\bhands of steel\\b|\\bamerican commando\\b|\\bamerican hunter\\b|\\bmad max\\b|\\bfuriosa\\b|\\bfury road\\b|\\bhighlander\\b|\\bel mariachi\\b|\\bdesperado\\b|\\bgladiator\\b|\\bcasino royale\\b|\\bdeja vu\\b|\\btop cop\\b|\\blethal force\\b|\\ba gun for jennifer\\b|\\bday of violence\\b",
+   "genres": [
+    "Action"
+   ]
+  },
+  {
+   "match": "\\bministry of ungentlemanly\\b|\\bgreyhound\\b|\\bben hur\\b|\\bkingdom of heaven\\b|\\b13 hours\\b|\\bsaboteur\\b|\\bgladiator\\b",
+   "genres": [
+    "War",
+    "Drama",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "\\bnaked gun\\b|\\bloaded weapon\\b|\\bcheech\\b|\\bup in smoke\\b|\\bbad boys\\b|\\bnice guys\\b|\\bairplane\\b|\\bnational lampoon\\b|\\bchristmas vacation\\b|\\bhome alone\\b|\\bamerican pie\\b|\\bdue date\\b|\\bclick\\b|\\bdynamite\\b|\\bnapoleon dynamite\\b|\\bsteven wright\\b|\\bfriends lovers\\b|\\bhome for the holidays\\b|\\brocky horror\\b|\\bgrowing pains\\b|\\bveronica mars\\b|\\bgarth marenghi\\b|\\bsctv\\b|\\bwendys\\b|\\blost city\\b|\\blate fee\\b|\\bmother lode\\b|\\bcomputer beach party\\b|\\bcheck and double\\b|\\bapocalypse bop\\b|\\bmagic kid\\b|\\bpocket ninjas\\b|\\bmy demon lover\\b|\\bmoron\\b|\\bdrivers\\b",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\bmad max\\b|\\bhighlander\\b|\\brocky\\b|\\bcreed\\b|\\bstranger\\b|\\bsnowpiercer\\b|\\blooper\\b",
+   "genres": [
+    "Action"
+   ]
+  },
+  {
+   "match": "\\brocky\\b|\\bcreed\\b|\\bhome alone\\b|\\bgrand theft\\b|\\bred dead\\b|\\bclick\\b|\\ba quiet place\\b|\\bextraction\\b|\\bamerican pie\\b|\\bsleepaway camp\\b|\\btexas gladiators\\b",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "\\ba quiet place\\b|\\bsleepaway camp\\b|\\bblair witch\\b|\\bpurge\\b|\\bdagon\\b|\\bsilo\\b|\\bhouse by the cemetery\\b|\\bcity of the living\\b|\\bevilspeak\\b|\\bnew york ripper\\b|\\bmountain of the cannibal\\b|\\bpieces\\b|\\bdeja vu\\b|\\bbloody\\b|\\bhollow gate\\b",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "\\ba quiet place\\b|\\bpurge\\b|\\bstranger things\\b|\\bfrankenstein\\b|\\bblair witch\\b|\\bdagon\\b",
+   "genres": [
+    "Thriller"
+   ]
+  },
+  {
+   "match": "\\bred dead\\b|\\bgrand theft\\b|\\bred dead revolver\\b|\\bthe x files game\\b|\\bgame of survival\\b|\\bhouse of the dead alien zone\\b",
+   "genres": [
+    "Action",
+    "Crime"
+   ]
+  },
+  {
+   "match": "\\b3 10 to yuma\\b|\\brevenge of billy the kid\\b|\\blorca and the outlaws\\b|\\bgood the bad and the ugly\\b|\\bfistful of d\\b|\\bfor a few dollars\\b|\\bwestern\\b|\\boutlaw\\b|\\blorca\\b",
+   "genres": [
+    "Western"
+   ]
+  },
+  {
+   "match": "\\bgood the bad and the ugly\\b|\\bfistful of d\\b|\\bfor a few dollars\\b|\\b3 10 to yuma\\b|\\blorca and the outlaws\\b|\\brevenge of billy\\b",
+   "genres": [
+    "Action",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "\\bhobbit\\b|\\blord of the rings\\b|\\bfellowship\\b|\\brotk\\b|\\bfotr\\b|\\bred book\\b|\\bwestmarch\\b|\\bbakshi\\b|\\bsharkey\\b|\\blotr\\b|\\bsword and sorcery\\b|\\bmilo and the phantom\\b|\\bcharlie bucket\\b|\\bwilly wonka\\b|\\bsavage sword\\b",
+   "genres": [
+    "Fantasy",
+    "Adventure"
+   ]
+  },
+  {
+   "match": "\\bhobbit\\b|\\blord of the rings\\b|\\blotr\\b|\\bbakshi\\b",
+   "genres": [
+    "Fantasy",
+    "Adventure",
+    "Animation"
+   ]
+  },
+  {
+   "match": "\\blittle rascals\\b|\\bgrowing pains\\b|\\bdexters\\b|\\bfox kids\\b|\\baddams family\\b|\\bmr boogedy\\b|\\bfriend without a face\\b|\\bbabybrown\\b|\\bbaby brown\\b|\\bpotsworth\\b|\\bmidnight patrol\\b|\\bmagic kid\\b|\\bcharlie bucket\\b|\\bwilly wonka\\b|\\bphantom tollbooth\\b|\\bhome movies\\b|\\bmuppets\\b|\\bsteven wright\\b|\\bdr jekyll and ms\\b|\\bhayley atwell\\b|\\bvisual effects of\\b|\\bgo undercover\\b",
+   "genres": [
+    "Family"
+   ]
+  },
+  {
+   "match": "\\baddams family\\b|\\bmr boogedy\\b|\\bfriend without a face\\b|\\bpotsworth\\b|\\bmidnight patrol\\b",
+   "genres": [
+    "Comedy",
+    "Horror"
+   ]
+  },
+  {
+   "match": "\\bhayley atwell\\b|\\bvisual effects of marvel\\b|\\bgo undercover\\b|\\buncover agent carter\\b|\\bmaking contact\\b",
+   "genres": [
+    "Documentary"
+   ]
+  },
+  {
+   "match": "\\bseptember 11\\b|\\bcinemax free preview\\b|\\bwendys\\b|\\bcanadas wonderland\\b|\\bjoe bob briggs\\b|\\bcount floyd\\b|\\blate night with the devil\\b|\\bcinemassacre\\b|\\bmonster madness\\b|\\bchristmas movies full length\\b|\\bbest shots\\b|\\bchaos in hollywood\\b|\\bisn't it shocking\\b",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\bmodern times\\b|\\btruman show\\b|\\bstaurday night fever\\b|\\bnapoleon dynamite\\b|\\bgatsby\\b|\\bnew york new york\\b|\\bkiss of the spider woman\\b|\\bsteve jobs\\b|\\bimaginaerum\\b|\\bcompany of wolves\\b|\\blove letter\\b|\\bjudith\\b|\\bpaper man\\b|\\bremote control\\b|\\bsteven wright\\b|\\bblue blood\\b|\\bschalcken\\b|\\bbig driver\\b|\\bintensity\\b|\\bgrowing pains\\b|\\bscared straight\\b|\\bsam and max\\b|\\bten little indians\\b|\\bfather brown\\b|\\bthe saboteur\\b|\\bfriends lovers\\b|\\bwes craven\\b|\\bveronica mars\\b|\\bbrainstorm\\b|\\bcapricorn one\\b|\\blower level\\b|\\bcrosstalk\\b|\\bdarkroom\\b|\\bmikey\\b|\\bmindfield\\b|\\bmemory run\\b|\\blate fee\\b|\\bhome for the holidays\\b|\\bdream no evil\\b|\\bdream stalker\\b|\\bshadow dancing\\b|\\bsomeone is watching\\b|\\brelative fear\\b|\\bplayroom\\b|\\bparadise\\b|\\bspinnolio\\b|\\bmark of the witch\\b|\\bmessiah\\b",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "\\bfather brown\\b|\\bten little indians\\b|\\bintensity\\b|\\bveronica mars\\b|\\bbig driver\\b|\\bthe tattoo chase\\b|\\bthe hunt for the hidden relic\\b|\\bwade & knuckles\\b|\\bsabotage\\b|\\bbabycast\\b|\\bsomeone is watching\\b|\\bthe only way out\\b|\\bcrosstalk\\b|\\bno place to hide\\b|\\bkill crazy\\b|\\ba34k\\b",
+   "genres": [
+    "Thriller",
+    "Crime"
+   ]
+  },
+  {
+   "match": "\\bmodern times\\b|\\btruman show\\b|\\bnew york new york\\b|\\bsaturday night fever\\b|\\bstaurday night fever\\b|\\bgatsby\\b",
+   "genres": [
+    "Drama",
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\bsaturday night fever\\b|\\bstaurday night fever\\b|\\bmodern times\\b|\\bnew york new york\\b|\\bimaginaerum\\b|\\brock show\\b|\\brocky horror\\b|\\bmusical\\b",
+   "genres": [
+    "Musical"
+   ]
+  },
+  {
+   "match": "\\bstar wars\\b|\\bandor\\b|\\bmandalorian\\b",
+   "genres": [
+    "Sci-Fi"
+   ]
+  },
+  {
+   "match": "\\bhitchcock\\b|\\bpsycho\\b|\\bsteve jobs\\b|\\birishman\\b|\\btruman\\b|\\ba day of violence\\b",
+   "genres": [
+    "Drama"
+   ]
+  },
+  {
+   "match": "\\bpsycho\\b|\\bhitchcock\\b",
+   "genres": [
+    "Thriller",
+    "Horror"
+   ]
+  },
+  {
+   "match": "\\b(blood|terror|scare|scream|demon|devil|creep|ghoul|haunt|maniac|mutant|fright|shock chamber|monster|necromanc|nightmare|night (cries|slaves|tales|visitors|of terrors|of the (headless|scarecrow))|nightscare|netherworld|tales (from|of) the|taste of (evil|phobia)|dead|killer|graveyard|grimm|doomwatch|strangeland|crowhaven|manhattan baby|deadman|head hunter|midnight scary|twisted tales|all hallows|dr jekyll|crowhaven|dagon|hound of hell|biohazard|beyond the black|re animator|v h s|amusement park|bad seed|mortuary|house of the long|from the dead|warning to the curious|black mamba|robot monsters|the thing|punisher|infection|wrath of becky|berzerker|cerfew|chillers|cheerleader camp|mystics in bali|don't open|substance)",
+   "genres": [
+    "Horror"
+   ]
+  },
+  {
+   "match": "\\b(punisher|logan|marvel one shot|marve one shot|spectre|alexander|3 10 to yuma|robo warriors|die spy kill kill|prayer of the rollerboys|rewind|lords of the deep|outsider gangster|the game \\d|seoul station|sam max|sam and max)",
+   "genres": [
+    "Action"
+   ]
+  },
+  {
+   "match": "\\b(wall e|he man|fun times at jurassic|friends lovers)",
+   "genres": [
+    "Comedy"
+   ]
+  },
+  {
+   "match": "\\b(wall e|he man)",
+   "genres": [
+    "Animation",
+    "Family"
+   ]
+  },
+  {
+   "match": "\\b(sam max|sam and max|rewind|nemesis|robo warriors|lords of the deep|year after infection|seoul station|robot monsters|tales of the third dimension|rewind failed|parallel|in time)",
+   "genres": [
+    "Sci-Fi"
+   ]
+  }
  ]
 }
