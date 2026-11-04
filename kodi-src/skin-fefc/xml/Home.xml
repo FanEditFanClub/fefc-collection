@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FEFC home: 3x3 tile menu, same layout as the Fan Edit Fan Club web app home. -->
+<window>
+	<defaultcontrol>9005</defaultcontrol>
+	<backgroundcolor>background</backgroundcolor>
+	<controls>
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<texture>fefc-bg.jpg</texture>
+			<aspectratio>scale</aspectratio>
+		</control>
+		<!-- Wordmark + tagline, always fully inside the screen -->
+		<control type="image">
+			<left>560</left><top>16</top><width>800</width><height>104</height>
+			<texture>fefc-wordmark.png</texture>
+			<aspectratio>keep</aspectratio>
+		</control>
+		<control type="label">
+			<left>160</left><top>124</top><width>1600</width><height>40</height>
+			<align>center</align><aligny>center</aligny>
+			<font>font13_title</font>
+			<textcolor>FF99CCFF</textcolor>
+			<label>A Community for Creators, Editors &amp; Fans dedicated to the art of The Fan Edit.</label>
+		</control>
+		<control type="label">
+			<right>40</right><top>24</top><width>300</width><height>40</height>
+			<align>right</align><aligny>center</aligny>
+			<font>font13</font>
+			<textcolor>FFFF9C00</textcolor>
+			<label>$INFO[System.Time]</label>
+		</control>
+
+		<!-- 3 x 3 tiles: each 520 x 230, gap 28 -->
+		<control type="group" id="9000">
+			<left>150</left><top>196</top>
+			<!-- row 1 -->
+			<control type="button" id="9001">
+				<left>0</left><top>0</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>COLLECTIONS</label>
+				<onleft>9003</onleft><onright>9002</onright><onup>9007</onup><ondown>9004</ondown>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder,return)</onclick>
+			</control>
+			<control type="button" id="9002">
+				<left>548</left><top>0</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>NEW ARRIVALS</label>
+				<onleft>9001</onleft><onright>9003</onright><onup>9008</onup><ondown>9005</ondown>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent,return)</onclick>
+			</control>
+			<control type="button" id="9003">
+				<left>1096</left><top>0</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>GENRES</label>
+				<onleft>9002</onleft><onright>9001</onright><onup>9009</onup><ondown>9006</ondown>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=genres,return)</onclick>
+			</control>
+			<!-- row 2 -->
+			<control type="button" id="9004">
+				<left>0</left><top>258</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>SEARCH</label>
+				<onleft>9006</onleft><onright>9005</onright><onup>9001</onup><ondown>9007</ondown>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)</onclick>
+			</control>
+			<control type="button" id="9005">
+				<left>548</left><top>258</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label></label>
+				<onleft>9004</onleft><onright>9006</onright><onup>9002</onup><ondown>9008</ondown>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/,return)</onclick>
+			</control>
+			<control type="image">
+				<left>548</left><top>268</top><width>520</width><height>170</height>
+				<texture>fefc-logo.png</texture>
+				<aspectratio>keep</aspectratio>
+			</control>
+			<control type="label">
+				<left>548</left><top>438</top><width>520</width><height>40</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font13_title</font>
+				<textcolor>FFFF9C00</textcolor>
+				<label>MAIN COLLECTION</label>
+			</control>
+			<control type="button" id="9006">
+				<left>1096</left><top>258</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>MY LIST</label>
+				<onleft>9005</onleft><onright>9004</onright><onup>9003</onup><ondown>9009</ondown>
+				<onclick>ActivateWindow(Favourites)</onclick>
+			</control>
+			<!-- row 3 -->
+			<control type="button" id="9007">
+				<left>0</left><top>516</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>SETTINGS</label>
+				<onleft>9009</onleft><onright>9008</onright><onup>9004</onup><ondown>9001</ondown>
+				<onclick>ActivateWindow(Settings)</onclick>
+			</control>
+			<control type="button" id="9008">
+				<left>548</left><top>516</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>APP UPDATE</label>
+				<onleft>9007</onleft><onright>9009</onright><onup>9005</onup><ondown>9002</ondown>
+				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
+			</control>
+			<control type="button" id="9009">
+				<left>1096</left><top>516</top><width>520</width><height>230</height>
+				<include>FefcTile</include>
+				<label>EXIT</label>
+				<onleft>9008</onleft><onright>9007</onright><onup>9006</onup><ondown>9003</ondown>
+				<onclick>Quit</onclick>
+			</control>
+		</control>
+		<!-- sublabels -->
+		<control type="label">
+			<left>150</left><top>1000</top><width>1620</width><height>30</height>
+			<align>center</align><aligny>center</aligny>
+			<font>font12</font>
+			<textcolor>FF7F8FA6</textcolor>
+			<label>FEFC is an unofficial community app built on Kodi (GPL-2.0-or-later). Not affiliated with the Kodi Foundation.</label>
+		</control>
+		<control type="label">
+			<left>150</left><top>1034</top><width>1620</width><height>30</height>
+			<align>center</align><aligny>center</aligny>
+			<font>font12</font>
+			<textcolor>FF99CCFF</textcolor>
+			<label>OK to open  -  Back to return  -  Menu for options</label>
+		</control>
+	</controls>
+</window>

@@ -19,6 +19,7 @@ on:
       - 'kodi-src/**'
       - 'tools/build_kodi_apk.py'
       - 'tools/kodi_brand.py'
+      - 'tools/build_kodi_skin.py'
       - 'assets/intro-tv.mp4'
       - '.github/workflows/kodi-apk.yml'
 
@@ -70,7 +71,7 @@ jobs:
           apk = 'kodi-%s-%s-armeabi-v7a.apk' % (ver, code)
           # hash of everything that goes into the app besides stock Kodi
           h = hashlib.sha256()
-          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png'):
+          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'tools/build_kodi_skin.py', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png'):
               paths = [base] if os.path.isfile(base) else [os.path.join(d, f) for d, _, fs in os.walk(base) for f in fs]
               for p in sorted(paths):
                   h.update(p.encode()); h.update(open(p, 'rb').read())
@@ -116,6 +117,8 @@ jobs:
           grep -q "banner='res/drawable" badging.txt
           unzip -l FEFC-Kodi.apk | grep -q "assets/addons/plugin.video.fefc/addon.xml"
           unzip -l FEFC-Kodi.apk | grep -q "assets/addons/repository.fefc/addon.xml"
+          unzip -l FEFC-Kodi.apk | grep -q "assets/addons/skin.fefc/addon.xml"
+          unzip -l FEFC-Kodi.apk | grep -q "assets/addons/skin.fefc/fonts/Jura-Regular.ttf"
           unzip -l FEFC-Kodi.apk | grep -q "lib/armeabi-v7a/libkodi.so"
           ls -l FEFC-Kodi.apk
       - name: Publish to R2 (kodi/FEFC-Kodi.apk + version.json)

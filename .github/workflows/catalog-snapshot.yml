@@ -125,6 +125,7 @@ jobs:
           set -euo pipefail
           SITE="$RUNNER_TEMP/site"; mkdir -p "$SITE"
           rsync -a --exclude '.git' --exclude 'node_modules' --exclude '.github' --exclude 'firetv' --exclude 'kodi-src' --exclude 'tools/cache' ./ "$SITE/"
+          python3 tools/kodi_sfx.py assets/sfx "$SITE/kodi-sfx"
           mkdir -p "$SITE/firetv"
           curl -fsS "https://collection.faneditfanclub.com/firetv/version.json?ts=$(date +%s)" -o "$SITE/firetv/version.json"
           cd "$SITE"

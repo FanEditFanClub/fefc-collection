@@ -106,7 +106,23 @@ class Router:
         li.setProperty('IsPlayable', 'true')
         xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='play', id=vid), li, False)
 
+    def _title(self):
+        a = self.params.get('action') or 'root'
+        try:
+            if a == 'folder':
+                m = _model()
+                fid = self.params.get('id') or m['root']
+                return 'Collections' if fid == m['root'] else m['items'][fid][0]
+            return {'root': 'Fan Edit Fan Club', 'genres': 'Genres', 'recent': 'New Arrivals'}.get(a) or {
+                'genre': self.params.get('genre', 'Genre'),
+                'genre_collections': 'Collections in %s' % self.params.get('genre', ''),
+                'genre_letter': '%s: %s' % (self.params.get('genre', ''), self.params.get('letter', '')),
+                'search': 'Search: %s' % self.params.get('q', '')}.get(a, 'Fan Edit Fan Club')
+        except Exception:
+            return 'Fan Edit Fan Club'
+
     def end(self, content='files', cache=True):
+        xbmcplugin.setPluginCategory(self.handle, self._title())
         xbmcplugin.setContent(self.handle, content)
         xbmcplugin.addSortMethod(self.handle, xbmcplugin.SORT_METHOD_UNSORTED)
         xbmcplugin.endOfDirectory(self.handle, cacheToDisc=cache)
@@ -125,7 +141,8 @@ class Router:
     def update(self):
         import service
         service.check_update(manual=True)
-        xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def folder(self):
         m = _model()
@@ -147,16 +164,37 @@ class Router:
             self.add_folder('Next page (%d more) >>' % (len(ks) - (page + 1) * PAGE), '', action='folder', id=fid, page=page + 1)
         self.end('movies' if any_video else 'files')
 
+    def _sfx_local(self, url):
+        """Download the wav once into the add-on's data folder and return its local path ('' if unavailable).
+        playSFX must never be pointed at a remote/missing URL: on Android a failed open can crash Kodi."""
+        import urllib.request
+        d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/sfx/')
+        os.makedirs(d, exist_ok=True)
+        dst = os.path.join(d, os.path.basename(url.split('?')[0]))
+        if not os.path.exists(dst) or os.path.getsize(dst) < 1000:
+            req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
+            with urllib.request.urlopen(req, timeout=8) as r:
+                data = r.read(8 * 1024 * 1024)
+            if len(data) < 1000 or data[:4] != b'RIFF':
+                return ''
+            with open(dst + '.tmp', 'wb') as f:
+                f.write(data)
+            os.replace(dst + '.tmp', dst)
+        return dst
+
     def _maybe_sfx(self, m, fid, page):
         if page or ADDON.getSetting('play_sfx') != 'true':
             return
         rel = catalog.sfx_for(m, fid)
         if rel:
             files = rel if isinstance(rel, list) else [rel]
-            # prefer wav (Kodi plays UI sounds natively); other formats are tried too
-            files = sorted(files, key=lambda f: 0 if str(f).lower().endswith('.wav') else 1)
+            # Kodi plays wav natively: the site serves a wav copy of every clip under kodi-sfx/ (same 6 s / -16 LUFS clip)
+            f = str(files[0])
+            wav = 'kodi-sfx/' + os.path.splitext(os.path.basename(f))[0] + '.wav'
             try:
-                xbmc.playSFX(catalog.abs_url(_base(), files[0]), False)
+                path = self._sfx_local(catalog.abs_url(_base(), wav))
+                if path:
+                    xbmc.playSFX(path, False)
             except Exception as e:
                 _log('sfx failed: %s' % e)
 

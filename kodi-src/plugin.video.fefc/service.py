@@ -75,8 +75,7 @@ def check_update(manual=False):
             xbmcgui.Dialog().ok('FEFC', 'Could not check for updates right now.')
         return
     if int(new.get('build', 0)) > int(cur.get('build', 0)):
-        msg = 'A new FEFC app is available (Kodi %s, build %s; you have %s / %s).\n\nDownload: %s' % (
-            new.get('kodi'), new.get('build'), cur.get('kodi'), cur.get('build'), new.get('url', ''))
+        msg = 'A new FEFC app is available (build %s, you have %s). Download it now?' % (new.get('build'), cur.get('build'))
         if xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Download'):
             xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % new.get('url', ''))
     elif manual:
@@ -104,7 +103,7 @@ def main():
                     return
                 if not xbmc.Player().isPlaying():
                     break
-        if ADDON.getSettingBool('open_on_start'):
+        if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')
     # app update notice (at most once a day)
     try:

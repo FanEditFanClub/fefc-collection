@@ -37,6 +37,14 @@ for aid in ('plugin.video.fefc', 'repository.fefc', 'skin.fefc'):
     src = os.path.join(root, 'kodi-src', aid)
     if os.path.isdir(src):
         shutil.copytree(src, os.path.join(A, 'addons', aid), ignore=shutil.ignore_patterns('__pycache__'))
+# skin.fefc: derived at build time from the stock APK's Estuary skin + kodi-src/skin-fefc overlay
+import build_kodi_skin
+est = os.path.join(A, 'addons', 'skin.estuary')
+build_kodi_skin.build(est, os.path.join(A, 'addons', 'skin.fefc'))
+# make skin.fefc the default skin (platform override of the lookandfeel.skin default)
+ap = os.path.join(A, 'system', 'settings', 'android.xml'); t = open(ap, encoding='utf-8').read()
+t = t.replace('  <section id="interface">\n', '  <section id="interface">\n    <category id="skin">\n      <group id="1">\n        <setting id="lookandfeel.skin">\n          <default>skin.fefc</default>\n        </setting>\n      </group>\n    </category>\n', 1)
+assert 'skin.fefc' in t; open(ap, 'w', encoding='utf-8').write(t)
 # enable the bundled add-ons by default (Kodi enables whatever addon-manifest.xml lists)
 am = os.path.join(A, 'system', 'addon-manifest.xml'); t = open(am, encoding='utf-8').read()
 extra = ''.join('  <addon>%s</addon>\n' % a for a in ('plugin.video.fefc', 'repository.fefc', 'skin.fefc') if os.path.isdir(os.path.join(A, 'addons', a)))

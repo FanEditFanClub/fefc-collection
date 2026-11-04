@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FEFC details page: everything is laid out inside the 1920x1080 screen, long text scrolls instead of being cut off. -->
+<window>
+	<defaultcontrol always="true">8</defaultcontrol>
+	<controls>
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<texture colordiffuse="E6000000">colors/white.png</texture>
+		</control>
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<texture colordiffuse="55FFFFFF">$INFO[ListItem.Art(fanart)]</texture>
+			<aspectratio>scale</aspectratio>
+		</control>
+		<control type="image">
+			<left>60</left><top>50</top><width>1800</width><height>980</height>
+			<texture border="26">fefc-tile.png</texture>
+		</control>
+		<!-- poster -->
+		<control type="image">
+			<left>110</left><top>100</top><width>520</width><height>780</height>
+			<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
+			<aspectratio aligny="top">keep</aspectratio>
+		</control>
+		<!-- title: wraps over up to 2 lines instead of being cut off -->
+		<control type="textbox">
+			<left>690</left><top>84</top><width>1100</width><height>112</height>
+			<font>font14_title</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<aligny>center</aligny>
+			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
+			<label>$INFO[ListItem.Title]</label>
+		</control>
+		<control type="label">
+			<left>690</left><top>200</top><width>1100</width><height>40</height>
+			<aligny>center</aligny>
+			<font>font13_title</font>
+			<textcolor>FFFF9C00</textcolor>
+			<label>$INFO[ListItem.Year]$INFO[ListItem.Duration,   ,]$INFO[ListItem.Rating,   Rating: ]$INFO[ListItem.Genre,   ,]</label>
+		</control>
+		<control type="label">
+			<left>690</left><top>242</top><width>1100</width><height>36</height>
+			<aligny>center</aligny>
+			<font>font12</font>
+			<textcolor>FF99CCFF</textcolor>
+			<label>$INFO[ListItem.Director,Directed by: ]$INFO[ListItem.Studio,   Edited by: ]</label>
+		</control>
+		<!-- plot: fixed box, scrolls automatically and with up/down when longer -->
+		<control type="textbox">
+			<left>690</left><top>290</top><width>1090</width><height>370</height>
+			<font>font13</font>
+			<textcolor>FFE8EEF6</textcolor>
+			<pagecontrol>61</pagecontrol>
+			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
+			<label>$INFO[ListItem.Plot]</label>
+		</control>
+		<control type="scrollbar" id="61">
+			<left>1790</left><top>290</top><width>8</width><height>370</height>
+			<onleft>8</onleft><onright>8</onright>
+			<showonepage>false</showonepage>
+			<orientation>vertical</orientation>
+		</control>
+		<!-- cast -->
+		<control type="label">
+			<left>690</left><top>668</top><width>600</width><height>30</height>
+			<aligny>center</aligny>
+			<font>font12_title</font>
+			<textcolor>FFFF9C00</textcolor>
+			<label>CAST</label>
+			<visible>!String.IsEmpty(ListItem.Cast)</visible>
+		</control>
+		<control type="textbox">
+			<left>690</left><top>702</top><width>1090</width><height>140</height>
+			<font>font12</font>
+			<textcolor>FF99CCFF</textcolor>
+			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
+			<label>$INFO[ListItem.Cast]</label>
+		</control>
+		<!-- buttons -->
+		<control type="grouplist" id="5000">
+			<left>690</left><top>880</top><width>1100</width><height>100</height>
+			<orientation>horizontal</orientation>
+			<itemgap>24</itemgap>
+			<onleft>5000</onleft><onright>5000</onright>
+			<control type="button" id="8">
+				<width>256</width><height>84</height>
+				<label>$LOCALIZE[208]</label>
+				<include>FefcDialogButton</include>
+			</control>
+			<control type="button" id="9">
+				<width>256</width><height>84</height>
+				<label>$LOCALIZE[13404]</label>
+				<include>FefcDialogButton</include>
+			</control>
+			<control type="button" id="11">
+				<width>256</width><height>84</height>
+				<label>$LOCALIZE[20410]</label>
+				<include>FefcDialogButton</include>
+			</control>
+			<control type="button" id="7">
+				<width>256</width><height>84</height>
+				<label>$LOCALIZE[15067]</label>
+				<include>FefcDialogButton</include>
+			</control>
+		</control>
+		<control type="image">
+			<left>110</left><top>906</top><width>520</width><height>90</height>
+			<texture>fefc-wordmark.png</texture>
+			<aspectratio>keep</aspectratio>
+		</control>
+	</controls>
+</window>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- FEFC library / add-on view: always a 5 x 5 tile grid (25 per page). -->
+<window id="25">
+	<defaultcontrol always="true">500</defaultcontrol>
+	<backgroundcolor>background</backgroundcolor>
+	<views>500</views>
+	<controls>
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<texture>fefc-bg.jpg</texture>
+			<aspectratio>scale</aspectratio>
+		</control>
+		<control type="image">
+			<left>40</left><top>10</top><width>240</width><height>64</height>
+			<texture>fefc-wordmark.png</texture>
+			<aspectratio>keep</aspectratio>
+			<aligny>center</aligny>
+		</control>
+		<control type="label">
+			<left>300</left><top>14</top><width>1180</width><height>56</height>
+			<aligny>center</aligny>
+			<font>font14_title</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<label>$VAR[FefcHeader]</label>
+		</control>
+		<control type="label">
+			<right>40</right><top>14</top><width>420</width><height>56</height>
+			<align>right</align><aligny>center</aligny>
+			<font>font13</font>
+			<textcolor>FFFF9C00</textcolor>
+			<label>$INFO[Container.NumItems] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</label>
+		</control>
+		<control type="panel" id="500">
+			<left>30</left><top>84</top><width>1830</width><height>990</height>
+			<onleft>500</onleft><onright>60</onright><onup>500</onup><ondown>500</ondown>
+			<viewtype label="31102">icon</viewtype>
+			<pagecontrol>60</pagecontrol>
+			<scrolltime tween="cubic" easing="out">300</scrolltime>
+			<preloaditems>2</preloaditems>
+			<orientation>vertical</orientation>
+			<itemlayout width="366" height="198">
+				<control type="group">
+					<left>10</left><top>9</top>
+					<include content="FefcGridTile"></include>
+				</control>
+			</itemlayout>
+			<focusedlayout width="366" height="198">
+				<control type="group">
+					<left>10</left><top>9</top>
+					<depth>DepthContentPopout</depth>
+					<animation effect="zoom" start="100" end="106" time="180" tween="sine" easing="inout" center="173,90" reversible="true">Focus</animation>
+					<include content="FefcGridTile">
+						<param name="focused" value="true" />
+					</include>
+				</control>
+			</focusedlayout>
+		</control>
+		<control type="scrollbar" id="60">
+			<left>1872</left><top>96</top><width>10</width><height>960</height>
+			<orientation>vertical</orientation>
+			<showonepage>false</showonepage>
+			<onleft>500</onleft>
+		</control>
+	</controls>
+</window>
