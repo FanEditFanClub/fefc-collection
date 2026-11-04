@@ -1,0 +1,156 @@
+name: ship
+
+# Manual release of the Fire TV APK + site (workflow_dispatch).
+# Builds the site and the APK, signs with the FEFC keystore from secrets, verifies the signing cert,
+# uploads the APK + version.json to R2 (fan-edit-media, firetv/), then deploys Pages.
+# Secrets are only passed through env / files and are never echoed.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ship
+  cancel-in-progress: false
+
+env:
+  REQUIRED_CERT_PREFIX: dd4220c6
+  REQUIRED_CERT_SUFFIX: 0de77
+
+jobs:
+  ship:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check secrets are present (never printed)
+        env:
+          S1: ${{ secrets.FEFC_KEYSTORE_B64 }}
+          S2: ${{ secrets.FEFC_KEYSTORE_PASSWORD }}
+          S3: ${{ secrets.FEFC_KEY_ALIAS }}
+          S4: ${{ secrets.FEFC_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for n in S1 S2 S3 S4 CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID; do
+            if [ -z "${!n:-}" ]; then echo "required secret missing ($n)" >&2; exit 1; fi
+          done
+          echo "all required secrets present"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install JS + Python deps
+        run: |
+          npm ci || npm install
+          pip install pillow
+
+      - name: Build site
+        run: npm run build
+
+      - name: Android SDK packages
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          "$SDK/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" >/dev/null
+
+      - name: Write signing config from secrets
+        env:
+          FEFC_KEYSTORE_B64: ${{ secrets.FEFC_KEYSTORE_B64 }}
+          FEFC_KEYSTORE_PASSWORD: ${{ secrets.FEFC_KEYSTORE_PASSWORD }}
+          FEFC_KEY_ALIAS: ${{ secrets.FEFC_KEY_ALIAS }}
+          FEFC_KEY_PASSWORD: ${{ secrets.FEFC_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          echo "$FEFC_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/fefc-release.jks"
+          {
+            echo "storeFile=$RUNNER_TEMP/fefc-release.jks"
+            echo "storePassword=$FEFC_KEYSTORE_PASSWORD"
+            echo "keyAlias=$FEFC_KEY_ALIAS"
+            echo "keyPassword=$FEFC_KEY_PASSWORD"
+          } > firetv/signing.properties
+          echo "signing config written"
+
+      - name: Build + sign APK
+        working-directory: firetv
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --console=plain
+          ls -l FEFC-Collection.apk version.json
+
+      - name: Verify signing certificate (must start dd4220c6)
+        run: |
+          set -euo pipefail
+          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          "$APKSIGNER" verify --print-certs firetv/FEFC-Collection.apk > "$RUNNER_TEMP/certs.txt"
+          CERT="$(grep -i 'certificate SHA-256 digest' "$RUNNER_TEMP/certs.txt" | head -1 | awk '{print $NF}' | tr 'A-F' 'a-f')"
+          echo "APK signer certificate SHA-256: $CERT"
+          case "$CERT" in
+            "$REQUIRED_CERT_PREFIX"*"$REQUIRED_CERT_SUFFIX") echo "certificate OK" ;;
+            *) echo "WRONG SIGNING CERTIFICATE (expected ${REQUIRED_CERT_PREFIX}...${REQUIRED_CERT_SUFFIX})" >&2; exit 1 ;;
+          esac
+          shred -u firetv/signing.properties "$RUNNER_TEMP/fefc-release.jks" 2>/dev/null || true
+
+      - name: Check version.json matches the APK
+        run: |
+          set -euo pipefail
+          SHA="$(sha256sum firetv/FEFC-Collection.apk | cut -d' ' -f1)"
+          VJ="$(python3 -c "import json;print(json.load(open('firetv/version.json'))['sha256'])")"
+          VN="$(python3 -c "import json;print(json.load(open('firetv/version.json'))['versionName'])")"
+          echo "apk sha256: $SHA"; echo "version.json: $VN sha256 $VJ"
+          [ "$SHA" = "$VJ" ] || { echo "sha mismatch" >&2; exit 1; }
+          [ "$VN" = "$(python3 -c "import json;print(json.load(open('VERSION'))['versionName'])")" ] || { echo "version mismatch" >&2; exit 1; }
+
+      - name: Upload APK + version.json to R2 (fan-edit-media/firetv/)
+        run: |
+          set -euo pipefail
+          npx wrangler r2 object put fan-edit-media/firetv/FEFC-Collection.apk --file=firetv/FEFC-Collection.apk --content-type=application/vnd.android.package-archive --remote
+          npx wrangler r2 object put fan-edit-media/firetv/version.json --file=firetv/version.json --content-type=application/json --remote
+
+      - name: Deploy Pages (copy without APK / Android sources)
+        run: |
+          set -euo pipefail
+          SITE="$RUNNER_TEMP/site"
+          mkdir -p "$SITE"
+          rsync -a --exclude '.git' --exclude 'node_modules' --exclude '.github' --exclude 'firetv' ./ "$SITE/"
+          mkdir -p "$SITE/firetv"
+          cp firetv/version.json "$SITE/firetv/version.json"
+          find "$SITE" -name '*.apk' -o -name '*.jks' -o -name 'signing.properties' | head
+          test -z "$(find "$SITE" \( -name '*.apk' -o -name '*.jks' -o -name 'signing.properties' \) -print -quit)"
+          cd "$SITE"
+          "$GITHUB_WORKSPACE/node_modules/.bin/wrangler" pages deploy . --project-name fefc-collection --branch main --commit-dirty=true
+
+      - name: Save release artifacts (version.json only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: version-json
+          path: firetv/version.json
+
+      - name: Verify live site
+        run: |
+          set -euo pipefail
+          sleep 20
+          curl -fsS "https://collection.faneditfanclub.com/firetv/version.json?ts=$(date +%s)" -o live-version.json
+          python3 -c "import json;print('live version.json:',json.load(open('live-version.json'))['versionName'])"
+          SHA="$(sha256sum firetv/FEFC-Collection.apk | cut -d' ' -f1)"
+          curl -fsSL "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk" -o live.apk
+          [ "$(sha256sum live.apk | cut -d' ' -f1)" = "$SHA" ] && echo "live APK sha matches" || { echo "live APK sha mismatch" >&2; exit 1; }
