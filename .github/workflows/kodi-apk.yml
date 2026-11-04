@@ -55,6 +55,7 @@ jobs:
           node-version: "20"
       - name: Tools
         run: |
+          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
           pip install pillow numpy scipy
           curl -fsSL -o "$RUNNER_TEMP/apktool.jar" https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1); echo "BUILD_TOOLS=$BT" >> "$GITHUB_ENV"
