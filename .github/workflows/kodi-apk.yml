@@ -125,7 +125,7 @@ jobs:
           SHA=$(sha256sum FEFC-Kodi.apk | cut -d' ' -f1); SIZE=$(stat -c%s FEFC-Kodi.apk)
           printf '{"kodi":"%s","build":%s,"src":"%s","sha256":"%s","size":%s,"url":"https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk","built":"%s","notes":"FEFC app on Kodi %s"}\n' \
             "$KODI_VER" "$NEXT_BUILD" "$SRC_HASH" "$SHA" "$SIZE" "$(date -u +%FT%TZ)" "$KODI_VER" > version.json
-          npm i --no-save wrangler@3 >/dev/null 2>&1
+          npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
           npx wrangler r2 object put fan-edit-media/kodi/FEFC-Kodi.apk --file=FEFC-Kodi.apk --content-type=application/vnd.android.package-archive --remote
           npx wrangler r2 object put fan-edit-media/kodi/version.json --file=version.json --content-type=application/json --remote
           cat version.json
