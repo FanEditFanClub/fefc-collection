@@ -144,6 +144,20 @@ def install_update(new):
     xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)' % uri)
 
 
+def set_select_action():
+    """Selecting a video opens its details page (Play is a button there) instead of starting playback: Kodi's
+    'Select action' for videos = Show information (3). Also set as the build default; this covers updated installs."""
+    try:
+        r = json.loads(xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Settings.GetSettingValue',
+                                                       'params': {'setting': 'myvideos.selectaction'}})))
+        if (r.get('result') or {}).get('value') != 3:
+            xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 2, 'method': 'Settings.SetSettingValue',
+                                            'params': {'setting': 'myvideos.selectaction', 'value': 3}}))
+            log('select action set to details page')
+    except Exception as e:
+        log('select action: %s' % e)
+
+
 def set_update_state(cur, new=None, avail=False):
     """Home Update tile: always shows the installed version; when an update is waiting, the new version and a NEW badge."""
     home = xbmcgui.Window(10000)
@@ -392,6 +406,7 @@ def main():
         return  # plain Kodi: nothing to do
     monitor = xbmc.Monitor()
     ensure_source()
+    set_select_action()
     cb = installed_build()
     if cb:
         xbmcgui.Window(10000).setProperty('FEFC.Version', 'FEFC app ' + version_label(cb))

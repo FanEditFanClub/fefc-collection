@@ -425,6 +425,17 @@ class Router:
             xbmcgui.Dialog().notification('FEFC', 'No results for "%s"' % q, xbmcgui.NOTIFICATION_INFO, 3000)
         self.end('movies' if nv > nf else 'files', cache=False)
 
+    def searchbox(self):
+        """Home Search tile (RunPlugin, no directory handle): ask for the text first, then open the results list directly.
+        Nothing is returned from a failed directory, so the keyboard cannot reappear over the results."""
+        kb = xbmc.Keyboard('', 'Search the FEFC collection')
+        kb.doModal()
+        if kb.isConfirmed() and kb.getText().strip():
+            q = kb.getText().strip()
+            xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(self.url, action='search', q=q))
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     # -- My List (same data + sync backend as the FEFC web / Fire TV app) ---------------------------------
     def _resolve(self, m, sid):
         """A saved id -> an item in the model (the id itself, else a shortcut that points at it)."""
@@ -446,6 +457,7 @@ class Router:
         li = xbmcgui.ListItem('Sync My List with the FEFC web app' + ('  (%s)' % who if ml.linked else '  (not linked)'), offscreen=True)
         li.setArt({'thumb': 'DefaultAddonService.png', 'icon': 'DefaultAddonService.png'})
         li.getVideoInfoTag().setPlot('Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.')
+        li.setProperty('IsPlayable', 'false')
         xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='mylist_sync'), li, False)
         nf = nv = 0
         shown = set()
@@ -847,7 +859,7 @@ class LinkWindow(xbmcgui.WindowDialog):
 
 
 ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'genre': 'genre', 'recent': 'recent',
-          'search': 'search', 'play': 'play', 'update': 'update', 'mylist': 'mylist', 'mylist_toggle': 'mylist_toggle',
+          'search': 'search', 'searchbox': 'searchbox', 'play': 'play', 'update': 'update', 'mylist': 'mylist', 'mylist_toggle': 'mylist_toggle',
           'mylist_sync': 'mylist_sync', 'open_vlc': 'open_vlc', 'open_drive': 'open_drive', 'readme': 'readme', 'support': 'support',
           'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about'}

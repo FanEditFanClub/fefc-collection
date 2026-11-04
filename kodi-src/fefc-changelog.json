@@ -1,6 +1,15 @@
 {
  "versions": [
   {
+   "version": "0.3.1 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Selecting a movie or episode now opens its details page first; Play is a button there.",
+    "Search: pressing Enter opens the results directly and the keyboard no longer pops up over them.",
+    "My List sync entry is now a proper menu action."
+   ]
+  },
+  {
    "version": "0.3 Beta",
    "date": "2026-11-04",
    "notes": [

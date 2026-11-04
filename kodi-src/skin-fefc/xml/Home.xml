@@ -131,7 +131,7 @@
 				<label>SEARCH</label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9009</onleft><onright>9011</onright><onup>9006</onup><ondown>9023</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)</onclick>
+				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
 			</control>
 			<control type="button" id="9011">
 				<left>816</left><top>412</top><width>392</width><height>190</height>
