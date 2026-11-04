@@ -755,6 +755,24 @@ export default {
     if (url.pathname.startsWith('/api/sync/')) {
       try { return await syncApi(req, env, url); } catch (e) { const st = e && e.status || 500; if (st >= 500) console.log('sync error:', String(e && e.message || e).slice(0, 120)); return json({ error: st === 500 ? 'server' : e.message }, st); }
     }
+    // Branded FEFC (Kodi-based) app: APK + version.json live in R2 (kodi/), published by .github/workflows/kodi-apk.yml.
+    if (url.pathname === '/kodi-app/FEFC-Kodi.apk' || url.pathname === '/kodi-app/version.json') {
+      const isApk = url.pathname.endsWith('.apk');
+      if (!env.MEDIA) return new Response('unavailable', { status: 503 });
+      const obj = await env.MEDIA.get(isApk ? 'kodi/FEFC-Kodi.apk' : 'kodi/version.json', { range: req.headers });
+      if (!obj) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
+      const h = new Headers({ 'content-type': isApk ? 'application/vnd.android.package-archive' : 'application/json', 'accept-ranges': 'bytes',
+        'cache-control': isApk ? 'public, max-age=300, must-revalidate' : 'no-cache', 'access-control-allow-origin': '*' });
+      if (isApk) h.set('content-disposition', 'attachment; filename="FEFC-Kodi.apk"');
+      if (obj.httpEtag) h.set('etag', obj.httpEtag);
+      let status = 200;
+      if (obj.range && obj.size != null) {
+        const r = obj.range; const off = r.offset != null ? r.offset : (r.suffix != null ? obj.size - r.suffix : 0);
+        const len = r.length != null ? r.length : (obj.size - off);
+        h.set('content-range', 'bytes ' + off + '-' + (off + len - 1) + '/' + obj.size); h.set('content-length', String(len)); status = 206;
+      } else if (obj.size != null) h.set('content-length', String(obj.size));
+      return new Response(req.method === 'HEAD' ? null : obj.body, { status, headers: h });
+    }
     // Fire TV APK: tolerate typed aliases; body may live in R2 (MEDIA) or GitHub Releases when >25MiB Pages limit.
     {
       const lp = url.pathname.toLowerCase().replace(/\/+$/, '');

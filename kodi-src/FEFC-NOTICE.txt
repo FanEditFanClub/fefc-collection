@@ -1,0 +1,14 @@
+FEFC (Fan Edit Fan Club) for Android TV / Fire TV
+=================================================
+This app is an UNOFFICIAL, community build of Kodi(TM) (https://kodi.tv), which is free software licensed under the
+GNU General Public License v2.0 or later. It is NOT the official Kodi app and is NOT affiliated with, endorsed by or
+supported by the XBMC/Kodi Foundation. "Kodi" is a trademark of the XBMC Foundation.
+
+What was changed: package name, app name and artwork (FEFC), the bundled add-ons (plugin.video.fefc, repository.fefc,
+skin.fefc), default settings/userdata. The Kodi program code itself is unmodified.
+
+Source code:
+  Kodi (upstream, same version as this build): https://github.com/xbmc/xbmc  (tag 21.3-Omega)
+  FEFC add-ons, skin and the build scripts that produce this app: https://github.com/FanEditFanClub/fefc-collection
+    (kodi-src/ and tools/build_kodi_apk.py)
+The full GPL text is available at https://www.gnu.org/licenses/old-licenses/gpl-2.0.html

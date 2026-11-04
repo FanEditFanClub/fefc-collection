@@ -19,3 +19,11 @@ msgstr ""
 msgctxt "#30003"
 msgid "Check for catalogue updates every (minutes)"
 msgstr ""
+
+msgctxt "#30004"
+msgid "Open Fan Edit Fan Club when the FEFC app starts"
+msgstr ""
+
+msgctxt "#30005"
+msgid "Play the FEFC intro when the app starts"
+msgstr ""

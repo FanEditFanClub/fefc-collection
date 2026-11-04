@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.video.fefc" name="Fan Edit Fan Club Collection" version="1.0.0" provider-name="Fan Edit Fan Club">
+<addon id="plugin.video.fefc" name="Fan Edit Fan Club Collection" version="1.1.0" provider-name="Fan Edit Fan Club">
   <requires>
     <import addon="xbmc.python" version="3.0.1"/>
   </requires>
   <extension point="xbmc.python.pluginsource" library="default.py">
     <provides>video</provides>
   </extension>
+  <extension point="xbmc.service" library="service.py" start="startup"/>
   <extension point="xbmc.addon.metadata">
     <summary lang="en_GB">Browse and play the Fan Edit Fan Club collection</summary>
     <description lang="en_GB">Browse the whole Fan Edit Fan Club collection by collection folder or genre, search it, and play edits with artwork, descriptions and ratings. It reads the same live catalogue as the FEFC web app and Fire TV app (fefc-collection.pages.dev), so all three always match.</description>
@@ -13,7 +14,7 @@
     <platform>all</platform>
     <license>Fan project</license>
     <website>https://collection.faneditfanclub.com</website>
-    <news>1.0.0: first release.</news>
+    <news>1.1.0: startup service for the branded FEFC app (opens FEFC on launch, adds the FEFC file source). 1.0.0: first release.</news>
     <assets>
       <icon>resources/icon.png</icon>
       <fanart>resources/fanart.jpg</fanart>

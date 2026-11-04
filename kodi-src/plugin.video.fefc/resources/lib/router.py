@@ -118,7 +118,14 @@ class Router:
         self.add_folder('Genres', '', 'Browse by genre (a title can be in several genres).', action='genres')
         self.add_folder('Recently Added', '', 'Newest files in the collection.', action='recent')
         self.add_folder('Search', '', 'Search every collection and edit.', action='search')
+        if xbmcvfs.exists('special://xbmc/fefc-build.json'):
+            self.add_folder('Check for FEFC app update', '', 'See if a newer FEFC app is available.', action='update')
         self.end()
+
+    def update(self):
+        import service
+        service.check_update(manual=True)
+        xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def folder(self):
         m = _model()
@@ -246,7 +253,7 @@ class Router:
 
 ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'genre': 'genre',
           'genre_collections': 'genre_collections', 'genre_letter': 'genre_letter', 'recent': 'recent',
-          'search': 'search', 'play': 'play'}
+          'search': 'search', 'play': 'play', 'update': 'update'}
 
 
 def run(argv):
