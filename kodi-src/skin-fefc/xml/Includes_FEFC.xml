@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <includes>
 	<variable name="FefcTileArt">
+		<value condition="!String.IsEmpty(ListItem.Art(landscape))">$INFO[ListItem.Art(landscape)]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(poster))">$INFO[ListItem.Art(poster)]</value>
 		<value>$INFO[ListItem.Icon]</value>
@@ -14,11 +15,15 @@
 		<value condition="!String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
 		<value>$INFO[ListItem.Icon]</value>
 	</variable>
+	<variable name="FefcMyLabel">
+		<value condition="String.IsEqual(Window(Home).Property(FEFC.MyId),ListItem.Property(fefc_id))">$INFO[Window(Home).Property(FEFC.MyLabel)]</value>
+		<value>$INFO[ListItem.Property(fefc_mylabel)]</value>
+	</variable>
 	<!-- Home tile button look -->
 	<include name="FefcTile">
 		<texturenofocus border="26">fefc-tile.png</texturenofocus>
 		<texturefocus border="26">fefc-tile-focus.png</texturefocus>
-		<font>font_tile</font>
+		<font>font11_tile</font>
 		<textcolor>FFFFFFFF</textcolor>
 		<focusedcolor>FFFFFFFF</focusedcolor>
 		<align>center</align>
@@ -26,58 +31,93 @@
 		<animation effect="zoom" start="100" end="104" time="160" tween="sine" easing="inout" center="auto">Focus</animation>
 		<animation effect="zoom" start="104" end="100" time="160" tween="sine" easing="inout" center="auto">UnFocus</animation>
 	</include>
-	<!-- One grid tile (366x198 slot; 346x180 visible) -->
+	<!-- Landscape tile for collections / genres (slot 425x217; visible 405x201). Art is scaled to fill a dimmed backdrop and shown whole on top. -->
 	<include name="FefcGridTile">
 		<definition>
 			<control type="image">
-				<width>346</width><height>180</height>
+				<width>405</width><height>201</height>
 				<texture border="26">fefc-tile.png</texture>
 			</control>
 			<control type="image">
-				<left>6</left><top>6</top><width>334</width><height>168</height>
+				<left>6</left><top>6</top><width>393</width><height>189</height>
 				<texture fallback="DefaultFolder.png">$VAR[FefcTileArt]</texture>
 				<aspectratio scalediffuse="false">scale</aspectratio>
+				<colordiffuse>66FFFFFF</colordiffuse>
 			</control>
 			<control type="image">
-				<left>6</left><top>84</top><width>334</width><height>90</height>
+				<left>6</left><top>6</top><width>393</width><height>189</height>
+				<texture fallback="DefaultFolder.png">$VAR[FefcTileArt]</texture>
+				<aspectratio scalediffuse="false">keep</aspectratio>
+			</control>
+			<control type="image">
+				<left>6</left><top>84</top><width>393</width><height>111</height>
 				<texture>fefc-shade.png</texture>
 			</control>
 			<control type="label">
-				<left>16</left><top>130</top><width>314</width><height>40</height>
-				<aligny>center</aligny>
-				<font>font12_title</font>
+				<left>16</left><top>110</top><width>373</width><height>82</height>
+				<aligny>bottom</aligny>
+				<font>font9_title</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
-				<scroll>true</scroll>
-				<visible>$PARAM[focused]</visible>
-			</control>
-			<control type="label">
-				<left>16</left><top>130</top><width>314</width><height>40</height>
-				<aligny>center</aligny>
-				<font>font12_title</font>
-				<textcolor>FFFFFFFF</textcolor>
-				<label>$INFO[ListItem.Label]</label>
-				<visible>!$PARAM[focused]</visible>
-			</control>
-			<control type="label">
-				<right>18</right><top>12</top><width>200</width><height>30</height>
-				<align>right</align><aligny>center</aligny>
-				<font>font10</font>
-				<textcolor>FFFF9C00</textcolor>
-				<label>$INFO[ListItem.Year]</label>
+				<wrapmultiline>true</wrapmultiline>
 			</control>
 			<control type="image">
-				<width>346</width><height>180</height>
+				<width>405</width><height>201</height>
 				<texture border="26">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
 		</definition>
 		<param name="focused" default="false" />
 	</include>
+	<!-- Portrait poster tile for video files (slot 242x425): poster 222x333, two-line title below -->
+	<include name="FefcPosterTile">
+		<definition>
+			<control type="image">
+				<left>0</left><top>0</top><width>222</width><height>333</height>
+				<texture border="20">fefc-tile.png</texture>
+			</control>
+			<control type="image">
+				<left>4</left><top>4</top><width>214</width><height>325</height>
+				<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
+				<aspectratio scalediffuse="false">scale</aspectratio>
+			</control>
+			<control type="image">
+				<left>0</left><top>0</top><width>222</width><height>333</height>
+				<texture border="20">fefc-tile-ring.png</texture>
+				<visible>$PARAM[focused]</visible>
+			</control>
+			<control type="label">
+				<right>10</right><top>10</top><width>130</width><height>30</height>
+				<align>right</align><aligny>center</aligny>
+				<font>font10_title</font>
+				<textcolor>FFFF9C00</textcolor>
+				<label>$INFO[ListItem.Year]</label>
+				<shadowcolor>FF000000</shadowcolor>
+			</control>
+			<control type="label">
+				<left>0</left><top>339</top><width>222</width><height>66</height>
+				<aligny>top</aligny><align>center</align>
+				<font>font10_title</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<label>$INFO[ListItem.Label]</label>
+				<wrapmultiline>true</wrapmultiline>
+			</control>
+		</definition>
+		<param name="focused" default="false" />
+	</include>
+	<include name="FefcSmallButton">
+		<texturenofocus border="26">fefc-tile.png</texturenofocus>
+		<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+		<font>font12_title</font>
+		<textcolor>FFFFFFFF</textcolor>
+		<focusedcolor>FFFFFFFF</focusedcolor>
+		<align>center</align>
+		<aligny>center</aligny>
+	</include>
 	<include name="FefcDialogButton">
 		<texturenofocus border="26">fefc-tile.png</texturenofocus>
 		<texturefocus border="26">fefc-tile-focus.png</texturefocus>
-		<font>font13_title</font>
+		<font>font12_title</font>
 		<textcolor>FFFFFFFF</textcolor>
 		<focusedcolor>FFFFFFFF</focusedcolor>
 		<align>center</align>

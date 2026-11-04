@@ -13,10 +13,10 @@ import urllib.request
 import urllib.error
 
 SOURCES = ['index', 'video-genres', 'genres', 'posters', 'editinfo', 'metadata', 'fanedit-ratings',
-           'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart']
+           'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart', 'fileinfo']
 VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 3
+MODEL_VERSION = 4
 UA = 'plugin.video.fefc/1.0 (Kodi)'
 
 
@@ -183,7 +183,9 @@ def build_model(raw):
             'posters': posters, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
             'ratings': ratings, 'fthumbs': raw.get('folderthumbs') or {},
             'sfx': raw.get('folder-sfx') or {}, 'added': added,
-            'genreart': raw.get('genreart') or {}}
+            'genreart': raw.get('genreart') or {},
+            'fileinfo': raw.get('fileinfo') or {},
+            'people_meta': {k: (v.get('name') or '', v.get('role') or '') for k, v in (raw.get('people') or {}).items() if isinstance(v, dict)}}
 
 
 def load_model(base, cache_dir, refresh_minutes=180, log=None):
@@ -346,6 +348,67 @@ def display_title(name):
     return t.strip() or name
 
 
+def _pick(v):
+    import random
+    if isinstance(v, dict):
+        files = v.get('file') or v.get('files')
+        rnd = v.get('random')
+    else:
+        files, rnd = v, False
+    if not files:
+        return ''
+    if files and isinstance(files[0], list):
+        files = random.choice(files) if rnd or len(files) > 1 else files[0]
+    return files
+
+
+def sfx_genre(m, genre):
+    """Genre sound clip (data/folder-sfx.json -> _genres), like the web app. -> list of relative paths or ''."""
+    g = (m['sfx'].get('_genres') or {})
+    v = g.get(genre)
+    if v is None:
+        for k, x in g.items():
+            if k.lower() == (genre or '').lower():
+                v = x
+                break
+    return _pick(v) if v else ''
+
+
+def _depth(m, i):
+    c = m.setdefault('_depth', {})
+    if i in c:
+        return c[i]
+    d = 0
+    p = m['items'][i][1]
+    while p and d < 40:
+        d += 1
+        p = m['items'].get(p, [None, ''])[1]
+    c[i] = d
+    return d
+
+
+def dedupe(m, ids):
+    """One entry per underlying file. A Drive shortcut (named as shown in the FEFC collection) wins over its original
+    file (which carries the uploader's own file name); among shortcuts the one nearest the top of the tree wins."""
+    best = {}
+    for i in ids:
+        v = m['items'].get(i)
+        if not v:
+            continue
+        key = v[3] or i
+        sc = (0 if v[3] else 1, _depth(m, i))
+        if key not in best or sc < best[key][0]:
+            best[key] = (sc, i)
+    keep = set(b[1] for b in best.values())
+    seen = set()
+    out = []
+    for i in ids:
+        if i in keep and i not in seen:
+            seen.add(i)
+            out.append(i)
+    return out
+
+
 def sfx_for(m, fid):
     """Resolve a folder's sound clip per data/folder-sfx.json (id / exact name / rules). -> relative asset path or ''."""
     import random
@@ -408,5 +471,6 @@ def search(m, query, limit=300):
             if v[2] and not m['cnt'].get(i):
                 continue
             out.append(i)
+    out = dedupe(m, out)
     out.sort(key=lambda i: (0 if m['items'][i][2] else 1, natkey(m['items'][i][0])))
     return out[:limit]

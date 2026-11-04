@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- FEFC details page: everything is laid out inside the 1920x1080 screen, long text scrolls instead of being cut off. -->
+<!-- FEFC details page: everything is inside the 5% TV-safe margin (96..1824 x 54..1026); long text scrolls instead of being cut off. -->
 <window>
 	<defaultcontrol always="true">8</defaultcontrol>
 	<controls>
@@ -13,18 +13,18 @@
 			<aspectratio>scale</aspectratio>
 		</control>
 		<control type="image">
-			<left>60</left><top>50</top><width>1800</width><height>980</height>
+			<left>96</left><top>54</top><width>1728</width><height>972</height>
 			<texture border="26">fefc-tile.png</texture>
 		</control>
 		<!-- poster -->
 		<control type="image">
-			<left>110</left><top>100</top><width>520</width><height>780</height>
+			<left>140</left><top>100</top><width>480</width><height>720</height>
 			<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
 			<aspectratio aligny="top">keep</aspectratio>
 		</control>
 		<!-- title: wraps over up to 2 lines instead of being cut off -->
 		<control type="textbox">
-			<left>690</left><top>84</top><width>1100</width><height>112</height>
+			<left>660</left><top>84</top><width>1120</width><height>112</height>
 			<font>font14_title</font>
 			<textcolor>FFFFFFFF</textcolor>
 			<aligny>center</aligny>
@@ -32,14 +32,14 @@
 			<label>$INFO[ListItem.Title]</label>
 		</control>
 		<control type="label">
-			<left>690</left><top>200</top><width>1100</width><height>40</height>
+			<left>660</left><top>200</top><width>1120</width><height>40</height>
 			<aligny>center</aligny>
 			<font>font13_title</font>
 			<textcolor>FFFF9C00</textcolor>
 			<label>$INFO[ListItem.Year]$INFO[ListItem.Duration,   ,]$INFO[ListItem.Rating,   Rating: ]$INFO[ListItem.Genre,   ,]</label>
 		</control>
 		<control type="label">
-			<left>690</left><top>242</top><width>1100</width><height>36</height>
+			<left>660</left><top>242</top><width>1120</width><height>36</height>
 			<aligny>center</aligny>
 			<font>font12</font>
 			<textcolor>FF99CCFF</textcolor>
@@ -47,7 +47,7 @@
 		</control>
 		<!-- plot: fixed box, scrolls automatically and with up/down when longer -->
 		<control type="textbox">
-			<left>690</left><top>290</top><width>1090</width><height>370</height>
+			<left>660</left><top>290</top><width>1100</width><height>370</height>
 			<font>font13</font>
 			<textcolor>FFE8EEF6</textcolor>
 			<pagecontrol>61</pagecontrol>
@@ -55,14 +55,14 @@
 			<label>$INFO[ListItem.Plot]</label>
 		</control>
 		<control type="scrollbar" id="61">
-			<left>1790</left><top>290</top><width>8</width><height>370</height>
+			<left>1770</left><top>290</top><width>8</width><height>370</height>
 			<onleft>8</onleft><onright>8</onright>
 			<showonepage>false</showonepage>
 			<orientation>vertical</orientation>
 		</control>
 		<!-- cast -->
 		<control type="label">
-			<left>690</left><top>668</top><width>600</width><height>30</height>
+			<left>660</left><top>668</top><width>600</width><height>30</height>
 			<aligny>center</aligny>
 			<font>font12_title</font>
 			<textcolor>FFFF9C00</textcolor>
@@ -70,41 +70,68 @@
 			<visible>!String.IsEmpty(ListItem.Cast)</visible>
 		</control>
 		<control type="textbox">
-			<left>690</left><top>702</top><width>1090</width><height>140</height>
+			<left>660</left><top>702</top><width>1120</width><height>100</height>
 			<font>font12</font>
 			<textcolor>FF99CCFF</textcolor>
 			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
 			<label>$INFO[ListItem.Cast]</label>
 		</control>
-		<!-- buttons -->
+		<!-- buttons: row 1 (Play / Resume / My List / Trailer), row 2 (Open in VLC / Open in Drive / Close) -->
 		<control type="grouplist" id="5000">
-			<left>690</left><top>880</top><width>1100</width><height>100</height>
+			<left>660</left><top>818</top><width>1120</width><height>76</height>
 			<orientation>horizontal</orientation>
-			<itemgap>24</itemgap>
-			<onleft>5000</onleft><onright>5000</onright>
+			<itemgap>16</itemgap>
+			<onleft>5000</onleft><onright>5000</onright><onup>5000</onup><ondown>5001</ondown>
 			<control type="button" id="8">
-				<width>256</width><height>84</height>
+				<width>190</width><height>76</height>
 				<label>$LOCALIZE[208]</label>
 				<include>FefcDialogButton</include>
 			</control>
 			<control type="button" id="9">
-				<width>256</width><height>84</height>
+				<width>190</width><height>76</height>
 				<label>$LOCALIZE[13404]</label>
 				<include>FefcDialogButton</include>
 			</control>
+			<control type="button" id="12">
+				<width>300</width><height>76</height>
+				<label>$VAR[FefcMyLabel]</label>
+				<include>FefcDialogButton</include>
+				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=mylist_toggle&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
+				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
+			</control>
 			<control type="button" id="11">
-				<width>256</width><height>84</height>
+				<width>190</width><height>76</height>
 				<label>$LOCALIZE[20410]</label>
 				<include>FefcDialogButton</include>
 			</control>
+		</control>
+		<control type="grouplist" id="5001">
+			<left>660</left><top>906</top><width>1120</width><height>76</height>
+			<orientation>horizontal</orientation>
+			<itemgap>16</itemgap>
+			<onleft>5001</onleft><onright>5001</onright><onup>5000</onup><ondown>5001</ondown>
+			<control type="button" id="13">
+				<width>300</width><height>76</height>
+				<label>OPEN IN VLC</label>
+				<include>FefcDialogButton</include>
+				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=open_vlc&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
+				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
+			</control>
+			<control type="button" id="14">
+				<width>300</width><height>76</height>
+				<label>OPEN IN DRIVE</label>
+				<include>FefcDialogButton</include>
+				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=open_drive&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
+				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
+			</control>
 			<control type="button" id="7">
-				<width>256</width><height>84</height>
+				<width>190</width><height>76</height>
 				<label>$LOCALIZE[15067]</label>
 				<include>FefcDialogButton</include>
 			</control>
 		</control>
 		<control type="image">
-			<left>110</left><top>906</top><width>520</width><height>90</height>
+			<left>140</left><top>850</top><width>480</width><height>110</height>
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
 		</control>

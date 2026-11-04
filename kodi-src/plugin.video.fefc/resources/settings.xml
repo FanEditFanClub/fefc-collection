@@ -29,6 +29,11 @@
           <default>true</default>
           <control type="toggle"/>
         </setting>
+        <setting id="pause_on_back" type="boolean" label="30006">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
       </group>
     </category>
   </section>

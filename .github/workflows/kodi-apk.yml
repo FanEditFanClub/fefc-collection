@@ -19,6 +19,7 @@ on:
       - 'kodi-src/**'
       - 'tools/build_kodi_apk.py'
       - 'tools/kodi_brand.py'
+      - 'tools/kodi_navsfx.py'
       - 'tools/build_kodi_skin.py'
       - 'assets/intro-tv.mp4'
       - '.github/workflows/kodi-apk.yml'
@@ -54,7 +55,7 @@ jobs:
           node-version: "20"
       - name: Tools
         run: |
-          pip install pillow
+          pip install pillow numpy scipy
           curl -fsSL -o "$RUNNER_TEMP/apktool.jar" https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar
           BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1); echo "BUILD_TOOLS=$BT" >> "$GITHUB_ENV"
           echo "APKTOOL=$RUNNER_TEMP/apktool.jar" >> "$GITHUB_ENV"
@@ -71,7 +72,7 @@ jobs:
           apk = 'kodi-%s-%s-armeabi-v7a.apk' % (ver, code)
           # hash of everything that goes into the app besides stock Kodi
           h = hashlib.sha256()
-          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'tools/build_kodi_skin.py', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png'):
+          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'tools/build_kodi_skin.py', 'tools/kodi_navsfx.py', 'assets/sfx/ui-back.wav', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png'):
               paths = [base] if os.path.isfile(base) else [os.path.join(d, f) for d, _, fs in os.walk(base) for f in fs]
               for p in sorted(paths):
                   h.update(p.encode()); h.update(open(p, 'rb').read())
@@ -107,7 +108,9 @@ jobs:
           echo "FEFC_KODI_KEYSTORE=$RUNNER_TEMP/kodi.jks" >> "$GITHUB_ENV"
           export FEFC_KODI_KEYSTORE="$RUNNER_TEMP/kodi.jks"
           NEXT=$(( PREV_BUILD + 1 ))
-          printf '{"kodi":"%s","build":%s,"src":"%s"}\n' "$KODI_VER" "$NEXT" "$SRC_HASH" > kodi-src/fefc-build.json
+          APPV=$(tr -d '\r\n' < kodi-src/fefc-version.txt)
+          echo "APP_VERSION=$APPV" >> "$GITHUB_ENV"
+          printf '{"kodi":"%s","build":%s,"src":"%s","version":"%s"}\n' "$KODI_VER" "$NEXT" "$SRC_HASH" "$APPV" > kodi-src/fefc-build.json
           python3 tools/build_kodi_apk.py stock.apk FEFC-Kodi.apk
           echo "NEXT_BUILD=$NEXT" >> "$GITHUB_ENV"
       - name: Verify (signature, cert, manifest, banner, add-ons)
@@ -130,8 +133,8 @@ jobs:
         run: |
           set -euo pipefail
           SHA=$(sha256sum FEFC-Kodi.apk | cut -d' ' -f1); SIZE=$(stat -c%s FEFC-Kodi.apk)
-          printf '{"kodi":"%s","build":%s,"src":"%s","sha256":"%s","size":%s,"url":"https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk","built":"%s","notes":"FEFC app on Kodi %s"}\n' \
-            "$KODI_VER" "$NEXT_BUILD" "$SRC_HASH" "$SHA" "$SIZE" "$(date -u +%FT%TZ)" "$KODI_VER" > version.json
+          printf '{"kodi":"%s","build":%s,"version":"%s","src":"%s","sha256":"%s","size":%s,"url":"https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk","built":"%s","notes":"FEFC app %s on Kodi %s"}\n' \
+            "$KODI_VER" "$NEXT_BUILD" "$APP_VERSION" "$SRC_HASH" "$SHA" "$SIZE" "$(date -u +%FT%TZ)" "$APP_VERSION" "$KODI_VER" > version.json
           npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
           npx wrangler r2 object put fan-edit-media/kodi/FEFC-Kodi.apk --file=FEFC-Kodi.apk --content-type=application/vnd.android.package-archive --remote
           npx wrangler r2 object put fan-edit-media/kodi/version.json --file=version.json --content-type=application/json --remote

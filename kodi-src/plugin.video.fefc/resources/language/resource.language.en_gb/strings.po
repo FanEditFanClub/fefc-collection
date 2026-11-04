@@ -27,3 +27,7 @@ msgstr ""
 msgctxt "#30005"
 msgid "Play the FEFC intro when the app starts"
 msgstr ""
+
+msgctxt "#30006"
+msgid "Pause the video when I press Back to the menu"
+msgstr ""

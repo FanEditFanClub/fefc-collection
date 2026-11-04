@@ -119,8 +119,8 @@ def patch_fonts(xml_dir):
     s = p.read_text(encoding='utf-8')
     s = s.replace('NotoSans-Regular.ttf', 'Jura-Regular.ttf').replace('Roboto-Thin.ttf', 'Jura-Regular.ttf')
     extra = ''
-    for name, size in (('font10_title', 22), ('font12_title', 27), ('font13_title', 30), ('font14_title', 42),
-                       ('font_tile', 44), ('font_title_big', 56)):
+    for name, size in (('font9_title', 20), ('font10_title', 22), ('font12_title', 27), ('font13_title', 30), ('font14_title', 42),
+                       ('font_tile', 44), ('font11_tile', 34), ('font_title_big', 56)):
         extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>Jura-Bold.ttf</filename>\n'
                   '\t\t\t<size>%d</size>\n\t\t</font>\n') % (name, size)
     # add to every fontset
@@ -155,6 +155,20 @@ def build(est, out):
     patch_fonts(xml)
     for f in (OVER / 'xml').glob('*.xml'):
         shutil.copy(f, xml / f.name)
+    # TV overscan margin: every stock window the overlay does not replace is shrunk to 90 % around the screen centre
+    # (the overlay's own windows are laid out inside the safe area themselves). Video playback is left alone.
+    own = {f.name for f in (OVER / 'xml').glob('*.xml')} | {'VideoFullScreen.xml', 'Includes.xml', 'Variables.xml', 'Font.xml',
+                                                            'Defaults.xml', 'Startup.xml', 'Includes_FEFC.xml'}
+    zoom = ('\n\t<animation effect="zoom" start="100" end="90" center="960,540" time="0" condition="true" type="conditional">Conditional</animation>')
+    nz = 0
+    for f in xml.glob('*.xml'):
+        if f.name in own:
+            continue
+        t = f.read_text(encoding='utf-8')
+        t2 = re.sub(r'(<window\b[^>]*>)', lambda m: m.group(1) + zoom, t, count=1)
+        if t2 != t:
+            f.write_text(t2, encoding='utf-8'); nz += 1
+    print('overscan zoom added to', nz, 'windows')
     inc = xml / 'Includes.xml'
     s = inc.read_text(encoding='utf-8')
     s = s.replace('<include file="Variables.xml" />', '<include file="Variables.xml" />\n\t<include file="Includes_FEFC.xml" />', 1)
