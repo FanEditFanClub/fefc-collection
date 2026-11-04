@@ -585,15 +585,26 @@ class Router:
                 'This is the Kodi version of the FEFC app. The collection is free; support us from the Support Us tile.'
                 % (label, xbmc.getInfoLabel('System.BuildVersion').split(' ')[0], ADDON.getAddonInfo('version'), _base()))
         while True:
-            k = dlg.select('About FEFC', ['Version and info', 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Close'])
-            if k < 0 or k == 4:
+            k = dlg.select('About FEFC', ['Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Close'])
+            if k < 0 or k == 5:
                 break
             try:
                 if k == 0:
                     dlg.textviewer('About FEFC', info)
                 elif k == 1:
-                    dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
+                    import json
+                    import urllib.request
+                    req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json?t=%d' % time.time(), headers={'User-Agent': 'FEFC-Kodi'})
+                    j = json.loads(urllib.request.urlopen(req, timeout=15).read().decode('utf-8'))
+                    out = []
+                    for v in j.get('changelog') or []:
+                        out.append("What's new in %s  (%s)" % (v.get('version'), v.get('date', '')))
+                        out.extend(u'\u2022 ' + str(n) for n in v.get('notes') or [])
+                        out.append('')
+                    dlg.textviewer("What's new", '\n'.join(out).strip() or 'No release notes published yet.')
                 elif k == 2:
+                    dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
+                elif k == 3:
                     dlg.textviewer('Terms of Use', self._page_text('/terms.html'))
                 else:
                     with xbmcvfs.File('special://xbmc/FEFC-NOTICE.txt') as f:

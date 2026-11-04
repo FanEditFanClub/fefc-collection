@@ -173,10 +173,19 @@
 				<onleft>9021</onleft><onright>9023</onright><onup>9010</onup><ondown>9002</ondown>
 				<onclick>PlayerControl(Stop)</onclick>
 			</control>
+			<control type="label">
+				<width>110</width><height>60</height>
+				<label>NEW</label>
+				<font>font12_title</font>
+				<textcolor>FFFF9900</textcolor>
+				<align>right</align><aligny>center</aligny>
+				<visible>!String.IsEmpty(Window(Home).Property(FEFC.UpdateAvail))</visible>
+			</control>
 			<control type="button" id="9023">
-				<width>300</width><height>60</height>
+				<width>760</width><height>60</height>
 				<include>FefcSmallButton</include>
-				<label>APP UPDATE</label>
+				<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
+				<textcolor>FFFFFFFF</textcolor>
 				<onleft>9022</onleft><onright>9024</onright><onup>9011</onup><ondown>9003</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
 			</control>

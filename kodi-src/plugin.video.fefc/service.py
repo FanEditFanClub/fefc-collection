@@ -69,13 +69,34 @@ def version_label(b):
     return ('%s (build %s)' % (v, b.get('build'))) if v else 'build %s' % b.get('build')
 
 
+def whats_new(new, cur=None, limit=14):
+    """'What's new' text for the versions between the installed one (exclusive) and the new one, from version.json's changelog."""
+    cl = [v for v in (new.get('changelog') or []) if isinstance(v, dict) and v.get('notes')]
+    if not cl:
+        return ''
+    have = str((cur or {}).get('version') or '').strip()
+    names = [str(v.get('version') or '') for v in cl]
+    upto = names.index(have) if have in names else 1   # unknown/older install: show the newest version
+    if upto == 0:
+        upto = 1                                       # same version, newer build: show its notes again
+    out = []
+    for v in cl[:upto]:
+        out.append("What's new in %s:" % v.get('version'))
+        out.extend(u'\u2022 ' + str(n) for n in v['notes'])
+        out.append('')
+    lines = out[:limit * 3]
+    return '\n'.join(lines).strip()
+
+
 def install_update(new):
     """Download the new APK (verified against the published sha256) and hand it to Android's package installer."""
     import hashlib
     url = new.get('url', '')
     dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
     prog = xbmcgui.DialogProgress()
-    prog.create('FEFC update', 'Downloading the new FEFC app...')
+    wn = whats_new(new, installed_build(), limit=2)
+    extra = ('\n\n' + '\n'.join(l[:60] for l in wn.split('\n')[:4])) if wn else ''
+    prog.create('FEFC update', 'Downloading the new FEFC app...' + extra)
     ok = False
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
@@ -91,7 +112,7 @@ def install_update(new):
                 h.update(chunk)
                 done += len(chunk)
                 if total:
-                    prog.update(min(99, int(done * 100 / total)), 'Downloading the new FEFC app... %d / %d MB' % (done >> 20, total >> 20))
+                    prog.update(min(99, int(done * 100 / total)), 'Downloading the new FEFC app... %d / %d MB' % (done >> 20, total >> 20) + extra)
                 if prog.iscanceled():
                     raise RuntimeError('cancelled')
         if new.get('sha256') and h.hexdigest() != new['sha256']:
@@ -123,8 +144,24 @@ def install_update(new):
     xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)' % uri)
 
 
-def check_update(manual=False):
-    """Compare the installed FEFC app build with the latest published one (the GitHub Action publishes version.json)."""
+def set_update_state(cur, new=None, avail=False):
+    """Home Update tile: always shows the installed version; when an update is waiting, the new version and a NEW badge."""
+    home = xbmcgui.Window(10000)
+    cv = (str((cur or {}).get('version') or '').strip() or ('build %s' % (cur or {}).get('build', '?')))
+    if avail and new:
+        nv = (str(new.get('version') or '').strip() or ('build %s' % new.get('build')))
+        if nv == cv:   # same version name, newer build: say which build
+            nv, cv = 'build %s' % new.get('build'), 'build %s' % (cur or {}).get('build', '?')
+        home.setProperty('FEFC.UpdateAvail', '1')
+        home.setProperty('FEFC.UpdateLabel', 'UPDATE AVAILABLE: %s   (now %s)' % (nv, cv))
+    else:
+        home.clearProperty('FEFC.UpdateAvail')
+        home.setProperty('FEFC.UpdateLabel', 'APP UPDATE  -  you have %s' % cv)
+
+
+def check_update(manual=False, prompt=True):
+    """Compare the installed FEFC app build with the latest published one (the GitHub Action publishes version.json).
+    Always refreshes the home Update tile; shows the what's-new + Install / Later popup when prompt is true."""
     cur = installed_build()
     if not cur:
         if manual:
@@ -138,12 +175,23 @@ def check_update(manual=False):
         if manual:
             xbmcgui.Dialog().ok('FEFC', 'Could not check for updates right now.')
         return
-    if int(new.get('build', 0)) > int(cur.get('build', 0)):
-        msg = 'A new FEFC app is available: %s. You have %s. Download and install it now?' % (version_label(new), version_label(cur))
+    avail = int(new.get('build', 0)) > int(cur.get('build', 0))
+    set_update_state(cur, new, avail)
+    if avail:
+        if not prompt:
+            return
+        msg = 'A new FEFC app is available: %s. You have %s.' % (version_label(new), version_label(cur))
+        wn = whats_new(new, cur)
+        if wn:   # full-size scrollable notes first, then the short Install / Later question
+            xbmcgui.Dialog().textviewer('FEFC app update: %s' % version_label(new), msg + '\n\n' + wn)
+        msg += ' Download and install it now?'
         if xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN):
             install_update(new)
     elif manual:
         xbmcgui.Dialog().ok('FEFC', 'You have the latest FEFC app: %s (on Kodi %s).' % (version_label(cur), cur.get('kodi')))
+        wn = whats_new(new, None)
+        if wn:
+            xbmcgui.Dialog().textviewer('FEFC app %s' % version_label(cur), wn)
 
 
 BASE = 'https://fefc-collection.pages.dev'
@@ -347,6 +395,7 @@ def main():
     cb = installed_build()
     if cb:
         xbmcgui.Window(10000).setProperty('FEFC.Version', 'FEFC app ' + version_label(cb))
+        set_update_state(cb)
     if ADDON.getSettingBool('open_on_start') or ADDON.getSettingBool('play_intro'):
         # wait for the home screen to be up
         for _ in range(60):
@@ -371,12 +420,9 @@ def main():
     watcher = Watcher()
     tracker = Tracker()
     next_feed = 0.0
-    try:
-        last = float(ADDON.getSetting('last_update_check') or 0)
-    except ValueError:
-        last = 0
     t_start = time.time()
-    checked = time.time() - last <= 86400
+    checked = False
+    last_check = 0.0
     while not monitor.abortRequested():
         now = time.time()
         if now >= next_feed:
@@ -395,10 +441,15 @@ def main():
             tracker.tick()
         except Exception as e:
             log('tracker: %s' % e)
-        if not checked and now - t_start > 25:
+        # update check right after the intro (every launch), popup once; re-checked every 6 h to keep the tile badge current
+        if not checked and now - t_start > 4:
             checked = True
+            last_check = now
             ADDON.setSetting('last_update_check', str(now))
-            check_update()
+            check_update(prompt=not xbmc.Player().isPlaying())
+        elif checked and now - last_check > 21600:
+            last_check = now
+            check_update(prompt=False)
         if monitor.waitForAbort(0.5):
             break
 

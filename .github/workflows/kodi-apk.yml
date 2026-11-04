@@ -133,8 +133,17 @@ jobs:
         run: |
           set -euo pipefail
           SHA=$(sha256sum FEFC-Kodi.apk | cut -d' ' -f1); SIZE=$(stat -c%s FEFC-Kodi.apk)
-          printf '{"kodi":"%s","build":%s,"version":"%s","src":"%s","sha256":"%s","size":%s,"url":"https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk","built":"%s","notes":"FEFC app %s on Kodi %s"}\n' \
-            "$KODI_VER" "$NEXT_BUILD" "$APP_VERSION" "$SRC_HASH" "$SHA" "$SIZE" "$(date -u +%FT%TZ)" "$APP_VERSION" "$KODI_VER" > version.json
+          SHA="$SHA" SIZE="$SIZE" python3 - <<'PY'
+          import json, os, datetime
+          cl = json.load(open('kodi-src/fefc-changelog.json', encoding='utf-8')).get('versions', [])
+          v = {"kodi": os.environ['KODI_VER'], "build": int(os.environ['NEXT_BUILD']), "version": os.environ['APP_VERSION'],
+               "src": os.environ['SRC_HASH'], "sha256": os.environ['SHA'], "size": int(os.environ['SIZE']),
+               "url": "https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk",
+               "built": datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+               "notes": "FEFC app %s on Kodi %s" % (os.environ['APP_VERSION'], os.environ['KODI_VER']),
+               "changelog": cl}
+          json.dump(v, open('version.json', 'w'), ensure_ascii=False)
+          PY
           npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
           npx wrangler r2 object put fan-edit-media/kodi/FEFC-Kodi.apk --file=FEFC-Kodi.apk --content-type=application/vnd.android.package-archive --remote
           npx wrangler r2 object put fan-edit-media/kodi/version.json --file=version.json --content-type=application/json --remote
