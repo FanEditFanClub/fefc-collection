@@ -17,7 +17,8 @@ PKG = os.environ.get('FEFC_KODI_PACKAGE', 'org.xbmc.kodi')
 RENAME = PKG != 'org.xbmc.kodi'
 tmp = tempfile.mkdtemp(); dec = os.path.join(tmp, 'dec')
 run = lambda *a, **k: subprocess.run(list(a), check=True, **k)
-run('java', '-jar', apktool, 'd', *([] if RENAME else ['-s']), '-f', '-o', dec, stock, stdout=subprocess.DEVNULL)
+_NEED_SMALI = RENAME or os.path.isdir(os.path.join(root, 'tools', 'fefc_input', 'smali'))  # 0.3.22: OS keyboard on both packages
+run('java', '-jar', apktool, 'd', *([] if _NEED_SMALI else ['-s']), '-f', '-o', dec, stock, stdout=subprocess.DEVNULL)
 if RENAME:
     old_s, new_s = 'org/xbmc/kodi', PKG.replace('.', '/')
     for sd in glob.glob(os.path.join(dec, 'smali*')):
