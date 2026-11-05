@@ -28,7 +28,7 @@ function getAmbBuf(ib){
   return ambBuf=b;
  }catch(e){return null}
 }
-/* 0.8.27: Home ambience = the original recorded intro.mp3 tail, pre-rendered as a seamless loop (assets/home-amb.m4a,
+/* 0.8.28: Home ambience = the OLD Fire TV app ambience (intro tail loop + A pad through the LFO-swept 850 Hz lowpass), rendered sample-exact by tools/render_old_ambience.py into assets/home-amb.m4a; gain .17 = old level. Was 0.8.27: = the original recorded intro.mp3 tail, pre-rendered as a seamless loop (assets/home-amb.m4a,
    ~-20 LUFS / TP -5.9 dBTP, same 75 s length as the Home wall video). No synthetic oscillators. */
 let ambFile=null,ambFileP=null;
 function loadAmbFile(){if(ambFile)return Promise.resolve(ambFile);if(ambFileP)return ambFileP;
@@ -36,7 +36,7 @@ function loadAmbFile(){if(ambFile)return Promise.resolve(ambFile);if(ambFileP)re
 function ambStart(){
  if(!ctx||amb||ctx.state!=='running')return;
  const t=ctx.currentTime,g=ctx.createGain();
- g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+1.5);g.connect(master);
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.17,t+3);g.connect(master);
  amb={g,os:[],hasBuf:false};const me=amb;
  const play=b=>{if(!b||amb!==me||me.hasBuf)return;const src=ctx.createBufferSource();src.buffer=b;src.loop=true;src.connect(g);src.start();me.os.push(src);me.hasBuf=true};
  if(ambFile)play(ambFile);else loadAmbFile().then(b=>{if(b)play(b);else{const ab=S._ib&&getAmbBuf(S._ib);if(ab){g.gain.value=.085;play(ab)}}});

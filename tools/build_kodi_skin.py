@@ -191,9 +191,18 @@ def make_textures(media):
         bb = d.textbbox((0, 0), letter, font=font_b); tw, th = bb[2] - bb[0], bb[3] - bb[1]
         d.text(((256 - tw) / 2, (256 - th) / 2 - 10), letter, fill=W, font=font_b)
         im.resize((128, 128), Image.LANCZOS).save(media / name)
-    brand_icon('P', (255, 66, 77, 255), 'fefc-ic-patreon.png')
-    brand_icon('P', (0, 112, 186, 255), 'fefc-ic-paypal.png')
-    brand_icon('V', (61, 149, 217, 255), 'fefc-ic-venmo.png')
+    # 0.4.0: official brand logos (Wikimedia Commons copies of the PayPal / Patreon / Venmo marks) in kodi-src/skin-fefc/brand
+    def brand_logo(src, name):
+        lg = Image.open(OVER / 'brand' / src).convert('RGBA'); lg = lg.crop(lg.getbbox())
+        im = Image.new('RGBA', (256, 256), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+        d.ellipse((8, 8, 248, 248), fill=(255, 255, 255, 255))
+        lg.thumbnail((170, 150), Image.LANCZOS)
+        im.alpha_composite(lg, ((256 - lg.width) // 2, (256 - lg.height) // 2))
+        im.resize((128, 128), Image.LANCZOS).save(media / name)
+        lg2 = Image.open(OVER / 'brand' / src).convert('RGBA'); lg2.save(media / ('fefc-logo-' + src))
+    brand_logo('patreon.png', 'fefc-ic-patreon.png')
+    brand_logo('paypal.png', 'fefc-ic-paypal.png')
+    brand_logo('venmo.png', 'fefc-ic-venmo.png')
     def land_tile(lines, name):
         w, h, m = 640, 320, 24
         im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
@@ -210,6 +219,12 @@ def make_textures(media):
             d.text(((w - tw) / 2, y), t, fill=col, font=f); y += 60 if i == 0 else 40
         Image.alpha_composite(im, body).save(media / name)
     land_tile(['SUPPORT US', 'Patreon  ·  PayPal  ·  Venmo'], 'fefc-support-tile.png')
+    _st = Image.open(media / 'fefc-support-tile.png').convert('RGBA')
+    _st.alpha_composite(Image.new('RGBA', (640, 200), (0, 0, 0, 0)), (0, 0))
+    for _i, _n in enumerate(('patreon', 'paypal', 'venmo')):
+        _ic = Image.open(media / ('fefc-ic-%s.png' % _n)).convert('RGBA').resize((64, 64), Image.LANCZOS)
+        _st.alpha_composite(_ic, (224 + _i * 72, 222))
+    _st.save(media / 'fefc-support-tile.png')
     land_tile(['SHUFFLE PLAY'], 'fefc-shuffle-tile.png')
     land_tile(['SORT'], 'fefc-sort-tile.png')
     land_tile(['READ FIRST'], 'fefc-readfirst-tile.png')
@@ -242,6 +257,9 @@ def patch_fonts(xml_dir):
     for name, size in (('lcars_title', 64), ('lcars_med', 34), ('lcars_small', 28), ('lcars_btn', 32)):
         extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>Antonio-Bold.ttf</filename>\n'
                   '\t\t\t<size>%d</size>\n\t\t</font>\n') % (name, size)
+    # 0.4.0: ticker keeps Jura (it carries the X/Discord/Facebook/Reddit brand glyphs U+E001-E004 that Noto lacks)
+    extra += '\t\t<font>\n\t\t\t<name>fefc_bar</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n\t\t\t<size>20</size>\n\t\t</font>\n'
+    extra += '\t\t<font>\n\t\t\t<name>fefc_ticker</name>\n\t\t\t<filename>Jura-Bold.ttf</filename>\n\t\t\t<size>27</size>\n\t\t</font>\n'
     s = re.sub(r'(</fontset>)', extra + r'\1', s)
     p.write_text(s, encoding='utf-8')
 

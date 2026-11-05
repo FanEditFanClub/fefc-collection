@@ -14,7 +14,7 @@ from . import catalog
 from . import mylist as mylist_mod
 
 ADDON = xbmcaddon.Addon()
-PAGE = 200
+PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
 
 
 
@@ -686,6 +686,7 @@ class Router:
         label = ('%s (build %s)' % (ver, build.get('build'))) if ver else 'build %s' % build.get('build', '?')
         info = ('Fan Edit Fan Club\nFEFC app %s\nKodi %s\nAdd-on %s\nCollection: %s\n\n'
                 'This is the Kodi version of the FEFC app. The collection is free; support us from the Support Us tile.'
+                '\n\nFEFC is an unofficial community app built on Kodi (GPL-2.0-or-later). Not affiliated with the Kodi Foundation.'
                 % (label, xbmc.getInfoLabel('System.BuildVersion').split(' ')[0], ADDON.getAddonInfo('version'), _base()))
         while True:
             k = dlg.select('About FEFC', ['Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Close'])

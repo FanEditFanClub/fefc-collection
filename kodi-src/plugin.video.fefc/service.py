@@ -383,10 +383,10 @@ def set_update_state(cur, new=None, avail=False):
         if nv == cv:   # same version name, newer build: say which build
             nv, cv = 'build %s' % new.get('build'), 'build %s' % (cur or {}).get('build', '?')
         home.setProperty('FEFC.UpdateAvail', '1')
-        home.setProperty('FEFC.UpdateLabel', 'Update Available · v%s' % re.sub(r'(?i)\s*beta$', '', nv))
+        home.setProperty('FEFC.UpdateLabel', 'Update v%s' % re.sub(r'(?i)\s*beta$', '', nv))
     else:
         home.clearProperty('FEFC.UpdateAvail')
-        home.setProperty('FEFC.UpdateLabel', 'Up To Date · v%s' % re.sub(r'(?i)\s*beta$', '', cv))
+        home.setProperty('FEFC.UpdateLabel', 'Up To Date')
 
 
 def check_update(manual=False, prompt=True):
@@ -421,7 +421,7 @@ def check_update(manual=False, prompt=True):
                 nb = str(new.get('build') or '')
                 if nb and ADDON.getSetting('last_update_notify_build') != nb:
                     nv = (str(new.get('version') or '').strip() or ('build %s' % nb))
-                    label = 'Update Available · v%s' % re.sub(r'(?i)\s*beta$', '', nv)
+                    label = 'Update v%s' % re.sub(r'(?i)\s*beta$', '', nv)
                     android_os_notify('update', label, 'Tap to open the updater', 'update-%s' % nb)
                     ADDON.setSetting('last_update_notify_build', nb)
             return
@@ -536,7 +536,7 @@ def build_ticker():
             parts.append(_cta(CTA[(k // 3 - 1) % len(CTA)]))
     if not parts:
         parts = [_cta(c) for c in CTA]
-    return '        •        '.join(parts) + '        •        '
+    return '   •   '.join(parts) + '   •   '
 
 
 

@@ -1104,7 +1104,10 @@ COVER_MANUAL={
 def covers(force=False):
     os.makedirs(os.path.join(D,'..','assets','covers'),exist_ok=True)
     out=json.load(open(os.path.join(D,'folderthumbs.json')))
+    # 0.4.0: folders with a clean Drive film-still (data/cover-frames.json) no longer use the YouTube trailer thumbnail
+    FR=json.load(open(os.path.join(D,'cover-frames.json')))
     for fid,(vid,name) in COVER_PINS.items():
+        if fid in FR: out[fid]=FR[fid]; continue
         p=os.path.join(D,'..','assets','covers',fid+'.jpg')
         if force or not os.path.exists(p):
             _,b=get(f'https://i.ytimg.com/vi/{vid}/maxresdefault.jpg')

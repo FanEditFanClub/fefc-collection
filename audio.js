@@ -62,7 +62,7 @@ window.SFX = (() => {
     if (!ctx || amb || ctx.state !== "running") return;
     const t = ctx.currentTime, g = ctx.createGain();
     g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(1, t + 1.5);
+    g.gain.linearRampToValueAtTime(0.17, t + 3);
     g.connect(master);
     amb = { g, os: [], hasBuf: false };
     const me = amb;

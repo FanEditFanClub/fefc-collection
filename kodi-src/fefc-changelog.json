@@ -1,6 +1,22 @@
 {
  "versions": [
   {
+   "version": "0.4.0 Beta",
+   "date": "2026-11-05",
+   "notes": [
+    "Home ambience restored exactly as the old Fire TV app (soft pad + filtered loop), seamless, no thumping",
+    "Bottom menu bar: same width as the 3 menu columns, smaller font and fitted buttons so no label is cut off; compact 'Up To Date' box",
+    "Home mosaic: tiles exactly the size/spacing of the menu tiles - 5 down each side, 3 along the bottom; nothing behind the title; top bar no longer covers the corner tiles",
+    "News ticker: tighter spacing; X / Discord / Facebook / Reddit icons show again",
+    "Support Us: official Patreon, PayPal and Venmo logos on the Support Us tile and screen",
+    "About: added the 'FEFC is an unofficial community app built on Kodi' notice",
+    "No more 'Next Page': every list is one scrollable page (art loads lazily, light on Fire Stick)",
+    "Artwork: clean film stills replace 79 trailer-thumbnail folder covers; Batman: Hush and The Backrooms posters swapped for clean art",
+    "New movie sound clips (shuffled, no repeats): Die Hard, Happy Gilmore, Total Recall, Starship Troopers, Spy, Snatch, Tropic Thunder, Independence Day, Austin Powers (full Mustafa scene, Get in my belly)",
+    "Web app and Kodi now share version numbers (0.4.0)"
+   ]
+  },
+  {
    "version": "0.3.22 Beta",
    "date": "2026-11-05",
    "notes": [

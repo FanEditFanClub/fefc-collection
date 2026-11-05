@@ -737,7 +737,7 @@ var __spreadValues = (a, b) => {
       if ((fid === FOLD.tbc || f.id === FOLD.tbc) && cur !== FOLD.tbc) return '<button class="ol-tile fecc fecc-tbc" data-id="'.concat(f.id, '" data-fecc="1" aria-label="To Be Catalogued"><span class="fecc-t">To Be Catalogued</span><small class="fecc-c">').concat(esc(countsLine(FOLD.tbc)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
     }
     if (fold && target(f) === ROOT && f.parent === FOLD.collections) return '<button class="ol-tile mainc" data-id="'.concat(f.id, '" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">').concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
-    if (!fold && !vid && isSupportDoc(f)) return '<button class="ol-tile sup" data-id="'.concat(f.id, '" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small></button>');
+    if (!fold && !vid && isSupportDoc(f)) return '<button class="ol-tile sup" data-id="'.concat(f.id, '" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small><span class="sup-logos" style="display:flex;gap:.4em;justify-content:center;margin-top:.4em"><img src="assets/brand/patreon.png" alt="Patreon" style="height:1.6em;background:#fff;border-radius:50%;padding:.2em"><img src="assets/brand/paypal.png" alt="PayPal" style="height:1.6em;background:#fff;border-radius:.4em;padding:.2em"><img src="assets/brand/venmo.png" alt="Venmo" style="height:1.6em;background:#fff;border-radius:.4em;padding:.3em"></span></button>');
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
     return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? personKind(pp) : fold ? "" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
       const on = !!(window.UD && UD.isStarred(f.id));
@@ -854,7 +854,7 @@ var __spreadValues = (a, b) => {
     }
   }
   const FOLD = { readFirst: "1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT", collections: "1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB", tbc: "1503Wl56hzRppaIFcQisvQksOaeYOEjnk", actors: "1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS", directors: "1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib" };
-  const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<svg viewBox="0 0 24 24"><circle cx="15" cy="9.5" r="6.5" fill="currentColor"/><rect x="3" y="3" width="3.6" height="18" fill="currentColor"/></svg>' }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub", sub: "One-time donation", logo: "<b>P</b>" }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: "<b>V</b>" }];
+  const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<img class="sup-logo" src="assets/brand/patreon.png" alt="Patreon" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub", sub: "One-time donation", logo: '<img class="sup-logo" src="assets/brand/paypal.png" alt="PayPal" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: '<img class="sup-logo" src="assets/brand/venmo.png" alt="Venmo" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }];
   let posters = {}, people = {}, mosaicList = [], mosaicTimer = null, genreMap = {}, fthumbs = {};
   const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Crime", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
   let _tfC = /* @__PURE__ */ new Map(), _tfN = -1;
@@ -1303,7 +1303,7 @@ var __spreadValues = (a, b) => {
     let pool = mosaicList.length ? mosaicList.slice() : vids().slice(0, 40).map((f) => ({ id: f.id, target: target(f), name: f.name }));
     const grid = layoutHomeGrid();
     const gkey = grid ? Math.round(grid.pw) + "x" + Math.round(grid.ph) : "0";
-    if (M && M._gridKey === gkey && M.childElementCount >= HOME_COLS * HOME_ROWS - HOME_HUB * HOME_HUB) return;
+    if (M && M._gridKey === gkey && M.childElementCount >= HOME_COLS * HOME_ROWS - HOME_HUB * HOME_HUB - HOME_HUB) return;
     if (M) M._gridKey = gkey;
     if (M) M.innerHTML = "";
     [].slice.call(document.querySelectorAll("#home-plane .mc,#hub .mc")).forEach((x) => x.remove());
@@ -1312,6 +1312,7 @@ var __spreadValues = (a, b) => {
     if (grid && M) {
       for (let r = 0; r < HOME_ROWS; r++) for (let c = 0; c < HOME_COLS; c++) {
         if (c >= hub0 && c <= hub1 && r >= hub0 && r <= hub1) continue;
+        if (r === 0 && c >= hub0 && c <= hub1) continue;
         const el = document.createElement("div");
         el.className = "mc";
         el._ring = 1;
@@ -2030,7 +2031,7 @@ var __spreadValues = (a, b) => {
     return null;
   }
   const RF_HOME_TILE = '<button class="ol-tile fold rfhome" data-rfhome="1" data-hub="readfirst" aria-label="Read First"><span class="rf-t">Read First</span></button>';
-  const SUP_HOME_TILE = '<button class="ol-tile fold sup" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small></button>';
+  const SUP_HOME_TILE = '<button class="ol-tile fold sup" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small><span class="sup-logos" style="display:flex;gap:.4em;justify-content:center;margin-top:.4em"><img src="assets/brand/patreon.png" alt="Patreon" style="height:1.6em;background:#fff;border-radius:50%;padding:.2em"><img src="assets/brand/paypal.png" alt="PayPal" style="height:1.6em;background:#fff;border-radius:.4em;padding:.2em"><img src="assets/brand/venmo.png" alt="Venmo" style="height:1.6em;background:#fff;border-radius:.4em;padding:.3em"></span></button>';
   function stripReadFirst(list) {
     return list.filter((f) => !isReadFirst(f));
   }
@@ -2243,7 +2244,7 @@ var __spreadValues = (a, b) => {
       const g = gm.genres.find((x) => genreClipPool(x).length);
       if (g) {
         const pool = genreClipPool(g);
-        return pool[Math.random() * pool.length | 0];
+        return sfxBag(pool);
       }
     }
     const names = [];
@@ -2256,20 +2257,50 @@ var __spreadValues = (a, b) => {
     for (const [g, rx] of SFX_GENRE_RX) {
       if (G[g] && rx.test(txt)) {
         const L = G[g];
-        return Array.isArray(L) && L.length && Array.isArray(L[0]) ? L[Math.random() * L.length | 0] : L;
+        return sfxBag(L);
       }
     }
     let h = 0;
     for (let i = 0; i < id.length; i++) h = h * 31 + id.charCodeAt(i) >>> 0;
     return SFX_DEFAULTS[h % SFX_DEFAULTS.length];
   }
-  function sfxPickPool(V, rec) {
+  function sfxBag(V) {
     if (!V || !V.length) return null;
     if (!Array.isArray(V[0])) return V;
-    let i = Math.random() * V.length | 0;
-    if (V.length > 1 && rec && i === rec._last) i = (i + 1 + (Math.random() * (V.length - 1) | 0)) % V.length;
-    if (rec) rec._last = i;
+    if (V.length === 1) return V[0];
+    const key = "b:" + V.map((x) => x[0]).join("|");
+    let st = {};
+    try {
+      st = JSON.parse(localStorage.getItem("fefc_sfxbag") || "{}");
+    } catch (e) {
+    }
+    let b = st[key] || { o: [], l: -1 };
+    if (!b.o || !b.o.length || b.o.some((i2) => i2 >= V.length)) {
+      const o = V.map((_, i2) => i2);
+      for (let i2 = o.length - 1; i2 > 0; i2--) {
+        const j = Math.random() * (i2 + 1) | 0;
+        const t = o[i2];
+        o[i2] = o[j];
+        o[j] = t;
+      }
+      if (o[0] === b.l) {
+        const t = o[0];
+        o[0] = o[1];
+        o[1] = t;
+      }
+      b.o = o;
+    }
+    const i = b.o.shift();
+    b.l = i;
+    st[key] = b;
+    try {
+      localStorage.setItem("fefc_sfxbag", JSON.stringify(st));
+    } catch (e) {
+    }
     return V[i];
+  }
+  function sfxPickPool(V, rec) {
+    return sfxBag(V);
   }
   function sfxResolve(id, nf) {
     const f = items.get(id);
@@ -5720,7 +5751,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.27";
+  const HOME_VER_FALLBACK = "0.4.0";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
