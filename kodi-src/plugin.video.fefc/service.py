@@ -220,6 +220,15 @@ def _get_json(url, timeout=15):
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read().decode('utf-8'))
 
 
+TICKER_ICONS = {'discord': ('\ue001', 'FF5865F2'), 'facebook': ('\ue002', 'FF1877F2'),
+                'x': ('\ue003', 'FFFFFFFF'), 'reddit': ('\ue004', 'FFFF4500')}
+
+
+def _cta(c):
+    ic = TICKER_ICONS.get(c[0].split()[0].lower())
+    return ('[COLOR %s]%s[/COLOR]  JOIN  %s' % (ic[1], ic[0], c[1])) if ic else 'JOIN  ' + c[1]
+
+
 def build_ticker():
     """Same community news as the web app's ticker: the live /api/feed, else data/community-feed.json; a join call-to-action every 3rd item."""
     base = (ADDON.getSetting('base_url') or BASE).rstrip('/')
@@ -241,12 +250,16 @@ def build_ticker():
         if not t:
             continue
         src = str(it.get('src') or '').strip()
-        parts.append(('%s: %s' % (src.upper(), t)) if src else t)
+        ic = TICKER_ICONS.get(src.lower().replace('twitter', 'x'))
+        if ic:  # brand icon glyph (bundled in the FEFC Jura font) right before the post, like the web ticker
+            parts.append('[COLOR %s]%s[/COLOR]  %s' % (ic[1], ic[0], t))
+        else:
+            parts.append(('%s: %s' % (src.upper(), t)) if src else t)
         k += 1
         if k % 3 == 0:
-            parts.append('JOIN  ' + CTA[(k // 3 - 1) % len(CTA)][1])
+            parts.append(_cta(CTA[(k // 3 - 1) % len(CTA)]))
     if not parts:
-        parts = ['JOIN  ' + c[1] for c in CTA]
+        parts = [_cta(c) for c in CTA]
     return '        \u2022        '.join(parts) + '        \u2022        '
 
 

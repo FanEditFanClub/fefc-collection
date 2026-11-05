@@ -1,6 +1,13 @@
 {
  "versions": [
   {
+   "version": "0.3.5 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "News ticker: each post now has its Discord, Facebook, X or Reddit icon right before it as it scrolls, like the web app. The grouped icons by COMMUNITY are gone."
+   ]
+  },
+  {
    "version": "0.3.4 Beta",
    "date": "2026-11-04",
    "notes": [
