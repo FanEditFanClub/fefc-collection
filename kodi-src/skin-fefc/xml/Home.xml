@@ -189,6 +189,11 @@
 				<align>right</align><aligny>center</aligny>
 				<visible>!String.IsEmpty(Window(Home).Property(FEFC.UpdateAvail))</visible>
 			</control>
+			<control type="image">
+				<width>96</width><height>60</height>
+				<texture>fefc-logo.png</texture>
+				<aspectratio>keep</aspectratio>
+			</control>
 			<control type="button" id="9023">
 				<width>760</width><height>60</height>
 				<include>FefcSmallButton</include>
