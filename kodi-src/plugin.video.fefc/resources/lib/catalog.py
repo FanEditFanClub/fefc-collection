@@ -16,7 +16,7 @@ SOURCES = ['index', 'video-genres', 'genres', 'posters', 'editinfo', 'metadata',
            'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart', 'fileinfo']
 VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 4
+MODEL_VERSION = 5
 UA = 'plugin.video.fefc/1.0 (Kodi)'
 
 
@@ -68,6 +68,14 @@ def build_model(raw):
         kids.setdefault(it.get('parent') or '', []).append(iid)
     for p in kids:
         kids[p].sort(key=lambda i: (0 if items[i][2] else 1, natkey(items[i][0])))
+    try:
+        from . import webcounts as _wc
+    except ImportError:
+        import webcounts as _wc
+    try:
+        web_counts = _wc.web_counts(idx, {'Main': None, 'Collections': _wc.FOLD['collections'], 'TBC': _wc.FOLD['tbc']})
+    except Exception:
+        web_counts = {}
     # recursive video counts
     cnt = {}
 
@@ -177,7 +185,7 @@ def build_model(raw):
         if out:
             ratings[k] = out
     added = {k: v for k, v in (raw.get('added') or {}).items() if isinstance(v, str)}
-    return {'v': MODEL_VERSION, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
+    return {'v': MODEL_VERSION, 'web_counts': web_counts, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
             'items': items, 'kids': kids, 'cnt': cnt, 'vgenres': vgenres,
             'genre_videos': genre_videos, 'genre_folders': genre_folders,
             'posters': posters, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,

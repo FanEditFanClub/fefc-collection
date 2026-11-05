@@ -1,6 +1,13 @@
 {
  "versions": [
   {
+   "version": "0.3.10 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Home tile counts now match the web app: Main Collection no longer double-counts files from shortcuts and To Be Catalogued, and Fan Edit Collections now counts its shortcut collections."
+   ]
+  },
+  {
    "version": "0.3.9 Beta",
    "date": "2026-11-04",
    "notes": [

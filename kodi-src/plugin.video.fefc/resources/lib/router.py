@@ -143,8 +143,14 @@ def home_counts():
     m = _model()
 
     def line(fid):
-        folders = sum(1 for k in m['kids'].get(fid, []) if m['items'][k][2])
-        files = len(_descendant_videos(m, fid, cap=100000))
+        # same numbers as the web app's countsLine (see webcounts.py)
+        key = {m['root']: 'Main', COLL_ID: 'Collections', TBC_ID: 'TBC'}.get(fid)
+        wc = (m.get('web_counts') or {}).get(key)
+        if wc:
+            folders, files = wc
+        else:
+            folders = sum(1 for k in m['kids'].get(fid, []) if m['items'][k][2])
+            files = len(_descendant_videos(m, fid, cap=100000))
         return _fmt(folders, 'collection', 'collections') + '  \u00b7  ' + _fmt(files, 'file', 'files')
     meta = m.get('people_meta') or {}
     people = sum(1 for k, (n, r) in meta.items() if k in m['items'] and m['cnt'].get(k))
