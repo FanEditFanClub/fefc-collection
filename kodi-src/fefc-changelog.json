@@ -1,6 +1,13 @@
 {
  "versions": [
   {
+   "version": "0.3.11 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "The FEFC icon and banner on the Fire TV home and apps row are fixed: each update now has its own Android version number, so Fire TV refreshes the app tile instead of showing it blank."
+   ]
+  },
+  {
    "version": "0.3.10 Beta",
    "date": "2026-11-04",
    "notes": [

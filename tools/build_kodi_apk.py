@@ -77,6 +77,14 @@ _b = _json.load(open(bj)); _vf = os.path.join(root, 'kodi-src', 'fefc-version.tx
 if os.path.exists(_vf): _b['version'] = open(_vf).read().strip()
 open(os.path.join(A, 'fefc-build.json'), 'w').write(_json.dumps(_b) + '\n')
 shutil.copy(os.path.join(root, 'kodi-src', 'FEFC-NOTICE.txt'), os.path.join(A, 'FEFC-NOTICE.txt'))
+# versionCode must rise with every FEFC build: with the stock code (2103000) on every update, Android/Fire OS treat each
+# install as the same version and the launcher keeps a stale cached icon/banner entry (the app tile shows no icon).
+yml = os.path.join(dec, 'apktool.yml'); y = open(yml, encoding='utf-8').read()
+_vc = re.search(r"versionCode: '?(\d+)'?", y)
+if _vc:
+    y = y.replace(_vc.group(0), "versionCode: %d" % (int(_vc.group(1)) + int(_b.get('build') or 0)))
+    y = re.sub(r"versionName: .*", "versionName: %s-fefc-%s" % (_b.get('kodi', ''), str(_b.get('version', '')).replace(' ', '-')), y, 1)
+    open(yml, 'w', encoding='utf-8').write(y)
 # apktool 2.x keeps 'doNotCompress' for assets already; build
 unsigned = os.path.join(tmp, 'u.apk')
 run('java', '-jar', apktool, 'b', '--use-aapt2', '-o', unsigned, dec, stdout=subprocess.DEVNULL)
