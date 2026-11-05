@@ -165,6 +165,13 @@
 					<label>STOP</label>
 					<onclick>PlayerControl(Stop)</onclick>
 				</control>
+				<!-- 0.3.22: HOME on every page's menu bar (back to the live Home screen) -->
+				<control type="button" id="9298">
+					<width>150</width><height>60</height>
+					<include>FefcSmallButton</include><font>font10_title</font>
+					<label>HOME</label>
+					<onclick>ActivateWindow(Home,return)</onclick>
+				</control>
 				<control type="group">
 					<width>190</width><height>60</height>
 					<control type="button" id="9291">
