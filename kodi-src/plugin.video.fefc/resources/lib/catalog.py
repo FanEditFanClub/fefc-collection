@@ -12,11 +12,11 @@ import time
 import urllib.request
 import urllib.error
 
-SOURCES = ['index', 'video-genres', 'genres', 'posters', 'editinfo', 'metadata', 'fanedit-ratings',
+SOURCES = ['drive-changes', 'index', 'video-genres', 'genres', 'posters', 'editinfo', 'metadata', 'fanedit-ratings',
            'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart', 'fileinfo']
 VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 5
+MODEL_VERSION = 6
 UA = 'plugin.video.fefc/1.0 (Kodi)'
 
 
@@ -55,17 +55,45 @@ def build_model(raw):
     root = idx.get('root')
     items = {}
     kids = {}
-    for it in idx.get('items', []):
+    docs = {}
+    allit = {it['id']: it for it in idx.get('items', []) if it.get('id')}
+    SUPRE = re.compile(r'support\s+(us|patreon)|patreon|paypal|venmo|donat(e|ion)', re.I)
+    RFRE = re.compile(r'\bread (first|me)\b|^\s*\d{0,2}[A-Z]?\s*-\s*read first\b', re.I)
+
+    def _isdir(it):
+        # like the web app's isFolder(): real folders and Drive shortcuts that point at a folder
+        if it.get('mimeType') == FOLDER or it.get('targetMime') == FOLDER:
+            return True
+        t = it.get('targetId')
+        return bool(t and t != it['id'] and (allit.get(t) or {}).get('mimeType') == FOLDER)
+
+    def _add(it, parent):
         iid = it['id']
-        isdir = it.get('mimeType') == FOLDER
+        isdir = _isdir(it)
         name = it.get('name') or ''
+        tname = (allit.get(it.get('targetId') or '') or {}).get('name') or ''
         isvid = (not isdir) and (it.get('kind') == 'video' or bool(VIDEO_RX.search(name)))
         if not isdir and not isvid:
-            continue
+            # Support Us / Read First docs are shown inside folders like the web app
+            if not name.startswith('.') and (SUPRE.search(name) or SUPRE.search(tname)):
+                docs.setdefault(parent, []).append([iid, name, 'support'])
+            elif not name.startswith('.') and RFRE.search(name):
+                docs.setdefault(parent, []).append([iid, name, 'readfirst'])
+            return
         if iid == root:
-            continue
-        items[iid] = [name, it.get('parent') or '', 1 if isdir else 0, it.get('targetId') or '']
-        kids.setdefault(it.get('parent') or '', []).append(iid)
+            return
+        if iid not in items:
+            items[iid] = [name, it.get('parent') or '', 1 if isdir else 0, it.get('targetId') or '']
+        a = kids.setdefault(parent, [])
+        if iid not in a:
+            a.append(iid)
+    for it in idx.get('items', []):
+        _add(it, it.get('parent') or '')
+    # Drive shortcuts placed in other folders (index 'links': parent -> [item ids]), like the web app's applyLinks()
+    for par, ids in (idx.get('links') or {}).items():
+        for i in ids or []:
+            if i in allit:
+                _add(allit[i], par)
     for p in kids:
         kids[p].sort(key=lambda i: (0 if items[i][2] else 1, natkey(items[i][0])))
     try:
@@ -86,7 +114,8 @@ def build_model(raw):
             return 0
         seen.add(i)
         n = 0
-        for k in kids.get(i, []):
+        t = items[i][3] if i in items and items[i][2] and items[i][3] else i
+        for k in kids.get(t, []):
             n += count(k, seen) if items[k][2] else 1
         cnt[i] = n
         return n
@@ -168,7 +197,7 @@ def build_model(raw):
     edits = {}
     for k, e in (ed.get('edits') or {}).items():
         if isinstance(e, dict):
-            edits[k] = {x: e.get(x) for x in ('title', 'editor', 'description', 'type', 'origYear', 'runtime', 'year') if e.get(x)}
+            edits[k] = {x: e.get(x) for x in ('title', 'editor', 'description', 'type', 'origYear', 'runtime', 'year', 'synopsis', 'details', 'url', 'released', 'src') if e.get(x)}
             ds = e.get('descriptionSource')
             if isinstance(ds, dict) and ds.get('name'):
                 edits[k]['source'] = ds['name']
@@ -182,10 +211,20 @@ def build_model(raw):
         ch = r.get('changes') if isinstance(r, dict) else None
         if isinstance(ch, dict) and ch.get('label'):
             out['changes'] = ch['label']
+        for src in ('ifdb', 'mrdb'):
+            s2 = r.get(src) if isinstance(r, dict) else None
+            if isinstance(s2, dict) and s2.get('url'):
+                out[src + '_url'] = s2['url']
         if out:
             ratings[k] = out
+    # fan edit change lists (Drive changelog / README, precomputed read-only by tools/drive_changes.py), like the web app
+    changes = {}
+    for k, v in ((raw.get('drive-changes') or {}).get('by_id') or {}).items():
+        lines = [c.get('text') for c in (v or {}).get('changes') or [] if isinstance(c, dict) and c.get('text')]
+        if lines:
+            changes[k] = lines[:60]
     added = {k: v for k, v in (raw.get('added') or {}).items() if isinstance(v, str)}
-    return {'v': MODEL_VERSION, 'web_counts': web_counts, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
+    return {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
             'items': items, 'kids': kids, 'cnt': cnt, 'vgenres': vgenres,
             'genre_videos': genre_videos, 'genre_folders': genre_folders,
             'posters': posters, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
@@ -299,7 +338,7 @@ def folder_art(m, base, fid):
         for _ in range(3):
             nq = []
             for i in q:
-                for k in m['kids'].get(i, []):
+                for k in m['kids'].get((m['items'].get(i) or [0, 0, 0, ''])[3] or i, []):
                     if m['items'][k][2]:
                         nq.append(k)
                     else:
@@ -322,14 +361,38 @@ def video_info(m, vid):
     f = f or {}
     r = m['ratings'].get(vid) or (m['ratings'].get(tgt) if tgt else None) or {}
     plot = []
-    if e.get('description'):
-        plot.append(e['description'])
+    # same sections as the web app's details page: FAN EDIT (synopsis, details, editor, ratings), CHANGES, SOURCE FILM
+    syn = e.get('synopsis') or e.get('description')
+    if syn:
+        plot.append('[COLOR FFFF9C00]FAN EDIT[/COLOR]\n' + syn)
+    if e.get('details'):
+        plot.append('[COLOR FFCC99FF]ABOUT THIS EDIT[/COLOR]\n' + e['details'])
+    facts = []
     if e.get('editor'):
-        plot.append('Edited by %s%s' % (e['editor'], (' (%s)' % e['type']) if e.get('type') else ''))
+        facts.append('Editor: %s' % e['editor'])
+    if e.get('type'):
+        facts.append('Type: %s' % e['type'])
+    if e.get('runtime'):
+        facts.append('Runtime: %s' % e['runtime'])
+    if e.get('released'):
+        facts.append('Released: %s' % e['released'])
+    for src, label in (('ifdb', 'FanEdit.org IFDB'), ('mrdb', 'Movies Remastered')):
+        if r.get(src):
+            s0, sc, v = r[src]
+            facts.append('%s: %.1f/10%s' % (label, s0 / sc * 10, (' (%d votes)' % v) if v else ''))
+    if facts:
+        plot.append('[COLOR FF99CCFF]' + '   |   '.join(facts) + '[/COLOR]')
+    par = it[1] if it else ''
+    ch = (m.get('changes') or {}).get(vid) or ((m.get('changes') or {}).get(tgt) if tgt else None) or (m.get('changes') or {}).get('folder:' + par)
+    if ch:
+        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + c for c in ch))
+    elif r.get('changes'):
+        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + r['changes'] + ' (see FanEdit.org)')
     if f.get('plot'):
-        plot.append(('Source film: %s\n' % f['title'] if f.get('title') else '') + f['plot'])
-    if r.get('changes'):
-        plot.append('Changes: ' + r['changes'])
+        plot.append('[COLOR FFFFCC66]SOURCE FILM%s[/COLOR]\n' % (': ' + f['title'] if f.get('title') else '') + f['plot'])
+    links = [u for u in (e.get('url'), r.get('ifdb_url'), r.get('mrdb_url')) if u]
+    if links:
+        plot.append('[COLOR FF888888]' + '\n'.join(dict.fromkeys(links)) + '[/COLOR]')
     ratings = []
     for src, label in (('ifdb', 'FEFC-IFDb'), ('mrdb', 'MRDb')):
         if r.get(src):

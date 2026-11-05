@@ -115,11 +115,11 @@
 		<aligny>center</aligny>
 	</include>
 	<include name="FefcDialogButton">
-		<texturenofocus border="26">fefc-tile.png</texturenofocus>
-		<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+		<texturenofocus border="38" colordiffuse="FFFF9C00">fefc-lc-pill.png</texturenofocus>
+		<texturefocus border="38" colordiffuse="FFFFFFFF">fefc-lc-pill.png</texturefocus>
 		<font>font12_title</font>
-		<textcolor>FFFFFFFF</textcolor>
-		<focusedcolor>FFFFFFFF</focusedcolor>
+		<textcolor>FF000000</textcolor>
+		<focusedcolor>FF000000</focusedcolor>
 		<align>center</align>
 		<aligny>center</aligny>
 	</include>

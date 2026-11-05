@@ -17,6 +17,14 @@ ADDON = xbmcaddon.Addon()
 PAGE = 200
 
 
+
+def _kids(m, fid):
+    """Children of a folder; a Drive shortcut folder lists its target's children (like the web app)."""
+    it = m['items'].get(fid)
+    if it and it[2] and it[3]:
+        fid = it[3]
+    return m['kids'].get(fid, [])
+
 def _log(msg):
     xbmc.log('[plugin.video.fefc] ' + str(msg), xbmc.LOGINFO)
 
@@ -88,7 +96,7 @@ def _newest(m, i):
         r = m['added'].get(i) or ''
     else:
         r = ''
-        for k in m['kids'].get(i, []):
+        for k in _kids(m, i):
             t = _newest(m, k)
             if t > r:
                 r = t
@@ -104,7 +112,7 @@ def _descendant_videos(m, fid, cap=20000):
         if x in seen:
             continue
         seen.add(x)
-        for k in m['kids'].get(x, []):
+        for k in _kids(m, x):
             if m['items'][k][2]:
                 st.append(m['items'][k][3] if m['items'][k][3] in m['items'] and m['items'][m['items'][k][3]][2] else k)
             else:
@@ -325,7 +333,7 @@ class Router:
         m = _model()
         fid = self.params.get('id') or m['root']
         page = int(self.params.get('page') or 0)
-        ks = m['kids'].get(fid, [])
+        ks = _kids(m, fid)
         # drop empty folders
         ks = [k for k in ks if not m['items'][k][2] or m['cnt'].get(k)]
         key = _sort_get(fid)
@@ -340,6 +348,16 @@ class Router:
                 if any(not m['items'][k][2] for k in ks) or any(m['items'][k][2] for k in ks):
                     self.add_tool('Shuffle Play', 'Play a random mix of edits from this collection.', 'DefaultMusicPlaylists.png', action='shuffle', id=fid)
         nf = nv = 0
+        if not page:   # Support Us / Read First docs in this folder, like the web app's tiles
+            seen_kind = set()
+            for did, dname, kind in (m.get('docs') or {}).get((m['items'].get(fid) or [0, 0, 0, ''])[3] or fid, []):
+                if kind in seen_kind:
+                    continue
+                seen_kind.add(kind)
+                if kind == 'support':
+                    self.add_folder('Support Us', '', 'Patreon, PayPal and Venmo.', action='support')
+                else:
+                    self.add_folder('Read First', '', 'Welcome and how the collection works.', action='readme')
         for k in chunk:
             if m['items'][k][2]:
                 self.add_dir_item(m, k)

@@ -119,6 +119,21 @@ def make_textures(media):
     pts = [(64 + (60 if i % 2 == 0 else 25) * math.sin(i * math.pi / 5), 68 - (60 if i % 2 == 0 else 25) * math.cos(i * math.pi / 5)) for i in range(10)]
     ImageDraw.Draw(st).polygon(pts, fill=(255, 196, 0, 255))
     st.save(media / 'fefc-star.png')
+    # LCARS (web app details page): white shapes tinted with colordiffuse in the XML
+    W = (255, 255, 255, 255)
+    pill = Image.new('RGBA', (96, 96), (0, 0, 0, 0)); ImageDraw.Draw(pill).rounded_rectangle((0, 0, 95, 95), 47, fill=W)
+    pill.save(media / 'fefc-lc-pill.png')
+    lpill = Image.new('RGBA', (96, 96), (0, 0, 0, 0)); d = ImageDraw.Draw(lpill)
+    d.rounded_rectangle((0, 0, 95, 95), 47, fill=W); d.rectangle((48, 0, 95, 95), fill=W)
+    lpill.save(media / 'fefc-lc-lpill.png')   # rounded left end only
+    for name, flip in (('fefc-lc-elbow-top.png', False), ('fefc-lc-elbow-bot.png', True)):
+        el = Image.new('RGBA', (220, 120), W); d = ImageDraw.Draw(el); T = (0, 0, 0, 0)
+        d.rectangle((0, 0, 59, 59), fill=T); d.pieslice((0, 0, 119, 119), 180, 270, fill=W)   # outer curve
+        d.rectangle((170, 40, 219, 119), fill=T)                                               # inside cut-out
+        d.rectangle((170, 40, 199, 69), fill=W); d.pieslice((170, 40, 229, 99), 180, 270, fill=T)  # inner curve
+        if flip:
+            el = el.transpose(Image.FLIP_TOP_BOTTOM)
+        el.save(media / name)
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')
     for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):

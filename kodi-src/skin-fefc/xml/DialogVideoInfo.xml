@@ -14,13 +14,23 @@
 		</control>
 		<control type="group">
 			<include>FefcContentZoom</include>
-		<control type="image">
-			<left>96</left><top>54</top><width>1728</width><height>972</height>
-			<texture border="26">fefc-tile.png</texture>
-		</control>
+		<!-- LCARS frame like the web app's details page: black panel, orange elbows, coloured bars -->
+		<control type="image"><left>96</left><top>54</top><width>1728</width><height>972</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+		<control type="image"><left>96</left><top>54</top><width>220</width><height>120</height><texture colordiffuse="FFFF9C00">fefc-lc-elbow-top.png</texture></control>
+		<control type="image"><left>322</left><top>54</top><width>560</width><height>40</height><texture colordiffuse="FFFF9C00">colors/white.png</texture></control>
+		<control type="image"><left>888</left><top>54</top><width>300</width><height>40</height><texture colordiffuse="FFCC99FF">colors/white.png</texture></control>
+		<control type="image"><left>1194</left><top>54</top><width>580</width><height>40</height><texture colordiffuse="FF99CCFF">colors/white.png</texture></control>
+		<control type="image"><left>1780</left><top>54</top><width>44</width><height>40</height><texture border="20,0,0,0" colordiffuse="FFFF7AA2">fefc-lc-pill.png</texture></control>
+		<control type="image"><left>96</left><top>180</top><width>170</width><height>660</height><texture colordiffuse="FFCC99FF">colors/white.png</texture></control>
+		<control type="image"><left>96</left><top>906</top><width>220</width><height>120</height><texture colordiffuse="FFFF9C00">fefc-lc-elbow-bot.png</texture></control>
+		<control type="image"><left>96</left><top>846</top><width>170</width><height>54</height><texture colordiffuse="FF33CCBB">colors/white.png</texture></control>
+		<control type="image"><left>322</left><top>986</top><width>900</width><height>40</height><texture colordiffuse="FFFF9C00">colors/white.png</texture></control>
+		<control type="image"><left>1228</left><top>986</top><width>596</width><height>40</height><texture colordiffuse="FFFFCC66">colors/white.png</texture></control>
+		<control type="label"><left>110</left><top>190</top><width>150</width><height>40</height><font>font12_title</font><textcolor>FF000000</textcolor><align>right</align><label>FEFC</label></control>
+		<control type="label"><left>110</left><top>236</top><width>150</width><height>40</height><font>font12_title</font><textcolor>FF000000</textcolor><align>right</align><label>$INFO[ListItem.Year]</label></control>
 		<!-- poster -->
 		<control type="image">
-			<left>140</left><top>100</top><width>480</width><height>720</height>
+			<left>300</left><top>120</top><width>330</width><height>495</height>
 			<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
 			<aspectratio aligny="top">keep</aspectratio>
 		</control>
@@ -133,7 +143,7 @@
 			</control>
 		</control>
 		<control type="image">
-			<left>140</left><top>850</top><width>480</width><height>110</height>
+			<left>300</left><top>640</top><width>330</width><height>90</height>
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
 		</control>
