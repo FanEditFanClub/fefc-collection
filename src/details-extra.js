@@ -23,12 +23,14 @@ function loc(f,ctx){const its=ctx.items,ids=[];let x=f,g=0;while(x&&x.parent&&g+
  const names=ids.filter(i=>i!==ctx.root).map(i=>(its.get(i)||{}).name).filter(Boolean);return{parent:names[0],top:names[names.length-1]}}
 function fileInfo(f,ctx,F,e){const t=ctx.target(f),T=ctx.items.get(t)||{},r=FI[t]||{},size=r.s||+T.size||+f.size||0,o=r.o,sc=!!(f.targetId&&f.targetId!==f.id),L=loc(f,ctx);
  const host=sc?`Shortcut → hosted by ${esc(owner(o)||'another account')}`:`Hosted directly in ${esc(L.top||'Fan Edit Fan Club Collection')}`;
- const dur=e&&e.runtime?esc(e.runtime)+(e.origRuntime?` <span class="src">vs ${esc(e.origRuntime)} original</span>`:F&&F.runtime?` <span class="src">vs ${F.runtime} min original</span>`:''):(F&&F.runtime?esc(F.runtime)+' min':'');
- return `<h3 class="lc-h b fx-sec" id="lc-fileinfo">File Info</h3><dl class="fx-kv">${dur?`<dt>Duration</dt><dd>${dur}</dd>`:''}${size?`<dt>Size</dt><dd>${hs(size)}</dd>`:''}<dt>Hosting</dt><dd>${host}</dd>${o?`<dt>Owner</dt><dd>${esc(owner(o))}${owner(o)!==o?` <span class="src">${esc(o)}</span>`:''}</dd>`:''}${L.parent?`<dt>Folder</dt><dd>${esc(L.top&&L.top!==L.parent?L.top+' › ':'')}${esc(L.parent)}</dd>`:''}</dl>`}
+ const dm=r.d?(r.d>=3600?Math.floor(r.d/3600)+'h '+Math.round(r.d%3600/60)+'m':Math.max(1,Math.round(r.d/60))+'m'):'',ext=((T.name||f.name||'').match(/\.([a-z0-9]{2,4})$/i)||[])[1];
+ const dur=dm?esc(dm)+(F&&F.runtime?` <span class="src">vs ${F.runtime} min original</span>`:''):e&&e.runtime?esc(e.runtime)+(e.origRuntime?` <span class="src">vs ${esc(e.origRuntime)} original</span>`:F&&F.runtime?` <span class="src">vs ${F.runtime} min original</span>`:''):(F&&F.runtime?esc(F.runtime)+' min':'');
+ return `<h3 class="lc-h b fx-sec" id="lc-fileinfo">File Info</h3><dl class="fx-kv">${dur?`<dt>Duration</dt><dd>${dur}</dd>`:''}${size?`<dt>Size</dt><dd>${hs(size)}</dd>`:''}${r.r?`<dt>Resolution</dt><dd>${esc(r.r)}</dd>`:''}${ext?`<dt>Format</dt><dd>${esc(ext.toUpperCase())} container</dd>`:''}<dt>Hosting</dt><dd>${host}</dd>${o?`<dt>Owner</dt><dd>${esc(owner(o))}${owner(o)!==o?` <span class="src">${esc(o)}</span>`:''}</dd>`:''}${L.parent?`<dt>Folder</dt><dd>${esc(L.top&&L.top!==L.parent?L.top+' › ':'')}${esc(L.parent)}</dd>`:''}</dl>`}
 function fillChips(D,f,ctx,F,e){const chips=D.querySelector('.fchips');if(!chips)return;const t=ctx.target(f),T=ctx.items.get(t)||{},r=FI[t]||{},size=r.s||+T.size||+f.size||0;
  const have=[...chips.querySelectorAll('span')].map(s=>s.textContent);
  if(size&&!have.some(x=>/\bGB\b|\bMB\b|\bKB\b/.test(x)))chips.insertAdjacentHTML('beforeend',`<span>${hs(size)}</span>`);
- const durTxt=e&&e.runtime?String(e.runtime).replace(/\s*minutes?/i,'m'):(F&&F.runtime?F.runtime+'m':'');
+ if(r.r&&!have.includes(r.r))chips.insertAdjacentHTML('beforeend',`<span>${esc(r.r)}</span>`);
+ const durTxt=r.d?(r.d>=3600?Math.floor(r.d/3600)+'h '+Math.round(r.d%3600/60)+'m':Math.max(1,Math.round(r.d/60))+'m'):e&&e.runtime?String(e.runtime).replace(/\s*minutes?/i,'m'):(F&&F.runtime?F.runtime+'m':'');
  if(durTxt&&!have.some(x=>/\d+m\b|\dh\b|min/i.test(x)))chips.insertAdjacentHTML('beforeend',`<span>${esc(durTxt)}</span>`);
 }
 function normCh(s){return String(s||'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim()}

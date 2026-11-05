@@ -1789,3 +1789,5 @@ html body .ol-tile.fold,html body .ol-tile.doc,html body .ol-tile.person,html bo
 #details,#details .pill,#details .lc-h,#details h1,#details h2{font-family:'FEFC LCARS','Antonio','Arial Narrow',sans-serif;letter-spacing:.02em}
 #details .pill,#details .pill.on,#details .pill:disabled,#details .bigplay{color:#000!important;text-shadow:none!important}
 html body #details .cast{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;max-height:24vh;overflow:auto;animation:none!important}
+
+#details .star-btn .sb-ic{font-style:normal;color:currentColor;margin-right:.45em;font-size:1.1em;line-height:1}

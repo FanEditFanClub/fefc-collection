@@ -106,12 +106,21 @@
 				<label>$LOCALIZE[13404]</label>
 				<include>FefcDialogButton</include>
 			</control>
-			<control type="button" id="12">
-				<width>300</width><height>76</height>
-				<label>$VAR[FefcMyLabel]</label>
-				<include>FefcDialogButton</include>
-				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=mylist_toggle&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
+			<!-- 0.4.0: same star icon as the Home 'My List' tile, left of the label -->
+			<control type="group">
+				<width>340</width><height>76</height>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
+				<control type="button" id="12">
+					<left>0</left><top>0</top><width>340</width><height>76</height>
+					<label>$VAR[FefcMyLabel]</label>
+					<include>FefcDialogButton</include>
+					<textoffsetx>40</textoffsetx>
+					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=mylist_toggle&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
+				</control>
+				<control type="image">
+					<left>24</left><top>21</top><width>34</width><height>34</height>
+					<texture colordiffuse="FF000000">fefc-star.png</texture><aspectratio>keep</aspectratio>
+				</control>
 			</control>
 			<control type="button" id="11">
 				<width>190</width><height>76</height>

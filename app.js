@@ -1685,6 +1685,9 @@ var __spreadValues = (a, b) => {
     clearTimeout(el._t);
     el._t = setTimeout(() => el.classList.remove("show"), 1600);
   }
+  function starLbl(on) {
+    return '<i class="hb-star sb-ic" aria-hidden="true">\u2605</i>' + (on ? "Remove from My List" : "Add to My List");
+  }
   function paintStars(id, on) {
     document.querySelectorAll('[data-star="' + id + '"]').forEach((x) => {
       x.classList.toggle("on", on);
@@ -1696,7 +1699,7 @@ var __spreadValues = (a, b) => {
         x.classList.remove("pop");
         void x.offsetWidth;
         x.classList.add("pop");
-      } else if (x.classList.contains("star-btn")) x.textContent = on ? "\u2605 Starred" : "\u2606 Star";
+      } else if (x.classList.contains("star-btn")) x.innerHTML = starLbl(on);
     });
   }
   function toggleStarFor(id) {
@@ -3862,7 +3865,7 @@ var __spreadValues = (a, b) => {
     }
     $("#details").innerHTML = '<div class="lc-top"><div class="lc-elbow"></div><div class="lc-bars"><span class="p2" style="width:60px"></span><span class="p3" style="flex:1"></span></div><div class="lc-bars" style="flex:0 0 40px"><span class="p1" style="flex:1;border-radius:0 13px 13px 0"></span></div></div>\n <div class="lc-side"><button class="pill p1" data-act="back">\u25C0 Back</button>'.concat(tr ? '<button class="pill p2" data-jump="trailer">Trailer</button>' : "").concat((() => {
       const on = !!(window.UD && UD.isStarred(f.id));
-      return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>");
+      return '<button class="pill p4 star-btn side-star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" aria-pressed="').concat(on, '">').concat(starLbl(on), "</button>");
     })(), '<div class="grow"></div></div>\n <div class="lc-body').concat(PU ? "" : " nopo", '"><div class="lc-head').concat(PU ? " has-poster" : "", '">').concat(PU ? '<div class="lc-poster"><img src="'.concat(esc(PU), '" alt="" decoding="async" onload="if(this.naturalWidth>this.naturalHeight*.8)this.classList.add(\'wide\')"></div>') : "", '<div class="lc-info"><h1 class="lc-title">').concat(esc(T), "</h1>").concat(meta1 || film.title ? '<div class="lc-sub">'.concat(esc(film.title && film.title !== T ? film.title : "")).concat(meta1 ? (film.title && film.title !== T ? " \xB7 " : "") + esc(meta1) : "", "</div>") : "").concat(fileChips(f), '<div class="det-acts">').concat(window.FEFCNative && typeof FEFCNative.openInVlc === "function" ? '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><button type="button" class="pill p5 det-ext" data-act="vlc" aria-label="Open in VLC">Open in VLC</button><button type="button" class="pill p3 det-ext" data-act="drive" aria-label="Open in Drive">Open in Drive</button>') : '<button class="bigplay" data-act="play" tabindex="0" data-default aria-label="Play '.concat(esc(T), '"><span class="tri"></span>PLAY</button><a class="pill p3 det-ext" href="https://drive.google.com/file/d/').concat(id, '/view" target="_blank" rel="noopener">Open in Drive</a>'), "</div></div></div><div>\n  ").concat(desc ? '<h3 class="lc-h">Fan edit</h3><div class="tv-scroll" tabindex="0" data-tvscroll="desc"><p>'.concat(esc(desc), "</p></div>").concat(m.descriptionSource ? '<p class="src">Source: <a href="'.concat(esc(m.descriptionSource.url), '" target="_blank" rel="noopener">').concat(esc(m.descriptionSource.name), "</a></p>") : "") : "", '\n  <div id="lc-fanedit"></div>\n  <h3 class="lc-h l">Source Media</h3><p><b>').concat(esc(film.title || "Unknown"), "</b>").concat(film.year ? " (" + esc(film.year) + ")" : "").concat(film.director ? "<br>Directed by " + esc(film.director) : "").concat(F2 && F2.genres ? '<br><span class="src">' + esc(F2.genres.join(" \xB7 ")) + "</span>" : "").concat(m.editor ? '<br><span class="src">Fan edit by ' + esc(m.editor) + "</span>" : "", "</p>\n  ").concat(plot ? '<h3 class="lc-h l">Overview</h3><div class="tv-scroll" tabindex="0" data-tvscroll="plot"><p class="plot">'.concat(esc(plot), "</p></div>").concat(F2.wiki ? '<p class="src">Plot: <a href="'.concat(esc(F2.wiki), '" target="_blank" rel="noopener">Wikipedia</a></p>') : "") : "", '\n  <div id="lc-eps"></div>\n  ').concat(cast.length ? '<h3 class="lc-h p">Cast</h3><div class="cast">'.concat(cast.map((c) => "<span>".concat(esc(c.name), "</span>")).join(""), "</div>") : "", "\n </div><div>\n  ").concat(FE.length ? '<h3 class="lc-h b" id="lc-feratings">Fan Edit Ratings</h3><div class="rt fer">'.concat(feRt, "</div>") : "", '\n  <h3 class="lc-h b" id="lc-ratings">Source Ratings</h3><div class="rt">').concat(rt, '</div>\n  <div id="lc-fileinfo-slot"></div>\n  <h3 class="lc-h p" id="lc-trailer" style="margin-top:14px">Trailer').concat(film.title ? " \xB7 " + esc(film.title) : "", '</h3><div class="trailer">').concat(tr ? '<iframe src="https://www.youtube-nocookie.com/embed/'.concat(esc(tr.id), '" allowfullscreen allow="encrypted-media" loading="lazy" title="Trailer"></iframe>') : '<span>No trailer on file.<br><a href="https://www.youtube.com/results?search_query='.concat(encodeURIComponent((film.title || p.raw) + " " + (film.year || "") + " official trailer"), '" target="_blank" rel="noopener">Search YouTube \u203A</a></span>'), '</div>\n </div></div><div class="lc-foot"><div class="lc-elbow" style="background:var(--l)"></div><span></span><span></span><span></span></div>');
     const _det = $("#details");
     _det.classList.remove("leaving");
@@ -5700,7 +5703,7 @@ var __spreadValues = (a, b) => {
       const id = $("#details").dataset.id;
       if (id && window.UD && !p.parentNode.querySelector(".star-btn")) {
         const on = UD.isStarred(id);
-        p.insertAdjacentHTML("afterend", '<button class="pill p4 star-btn'.concat(on ? " on" : "", '" data-star="').concat(id, '" aria-pressed="').concat(on, '">').concat(on ? "\u2605 Starred" : "\u2606 Star", "</button>"));
+        p.insertAdjacentHTML("afterend", '<button class="pill p4 star-btn'.concat(on ? " on" : "", '" data-star="').concat(id, '" aria-pressed="').concat(on, '">').concat(starLbl(on), "</button>"));
       }
       const B = document.body.classList, D = $("#details");
       if (B.contains("tv") || B.contains("kbd")) {

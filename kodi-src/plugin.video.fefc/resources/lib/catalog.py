@@ -405,6 +405,25 @@ def video_info(m, vid):
         plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + c for c in ch))
     elif r.get('changes'):
         plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + r['changes'] + ' (see FanEdit.org)')
+    # 0.4.0: FILE INFO (web parity) from data/fileinfo.json - read-only Drive metadata (size, owner, length, resolution)
+    fi = (m.get('fileinfo') or {}).get(tgt or vid) or (m.get('fileinfo') or {}).get(vid) or {}
+    nm = (m['items'].get(tgt) or it or [''])[0] if (tgt or it) else ''
+    xm = re.search(r'\.([a-z0-9]{2,4})$', nm or '', re.I)
+    fl = []
+    if fi.get('d'):
+        d = int(fi['d'])
+        fl.append('Length: ' + ('%dh %dm' % (d // 3600, round(d % 3600 / 60)) if d >= 3600 else '%dm' % max(1, round(d / 60))))
+    if fi.get('s'):
+        sz = float(fi['s'])
+        fl.append('Size: ' + ('%.1f GB' % (sz / 1e9) if sz >= 1e9 else '%d MB' % round(sz / 1e6)))
+    if fi.get('r'):
+        fl.append('Resolution: ' + fi['r'])
+    if xm:
+        fl.append('Format: ' + xm.group(1).upper())
+    if fi.get('o'):
+        fl.append('Host: ' + fi['o'].split('@')[0])
+    if fl:
+        plot.append('[COLOR FF99FFCC]FILE INFO[/COLOR]\n' + '   |   '.join(fl))
     if f.get('plot'):
         plot.append('[COLOR FFFFCC66]SOURCE FILM%s[/COLOR]\n' % (': ' + f['title'] if f.get('title') else '') + f['plot'])
     links = [u for u in (e.get('url'), r.get('ifdb_url'), r.get('mrdb_url')) if u]
@@ -426,7 +445,7 @@ def video_info(m, vid):
     except ValueError:
         year = 0
     return {'plot': '\n\n'.join(plot), 'year': year, 'director': f.get('director') or [], 'cast': f.get('cast') or [],
-            'runtime': f.get('runtime') or 0, 'ratings': ratings, 'trailer': f.get('trailer'),
+            'runtime': (round(int(fi['d']) / 60) if fi.get('d') else f.get('runtime') or 0), 'ratings': ratings, 'trailer': f.get('trailer'),
             'editor': e.get('editor') or '', 'title': e.get('title') or '', 'film': f.get('title') or ''}
 
 
