@@ -1,6 +1,13 @@
 {
  "versions": [
   {
+   "version": "0.3.3 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "The community news ticker shows the Discord, Facebook, X and Reddit icons, like the web app ticker."
+   ]
+  },
+  {
    "version": "0.3.2 Beta",
    "date": "2026-11-04",
    "notes": [

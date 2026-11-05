@@ -209,14 +209,30 @@
 			<texture border="26">fefc-tile.png</texture>
 		</control>
 		<control type="label">
-			<left>176</left><top>892</top><width>170</width><height>52</height>
+			<left>340</left><top>892</top><width>170</width><height>52</height>
 			<aligny>center</aligny>
 			<font>font10_title</font>
 			<textcolor>FFFF9C00</textcolor>
 			<label>COMMUNITY</label>
 		</control>
+		<control type="image">
+			<left>176</left><top>904</top><width>28</width><height>28</height>
+			<texture>tk-discord.png</texture><aspectratio>keep</aspectratio>
+		</control>
+		<control type="image">
+			<left>216</left><top>904</top><width>28</width><height>28</height>
+			<texture>tk-facebook.png</texture><aspectratio>keep</aspectratio>
+		</control>
+		<control type="image">
+			<left>256</left><top>904</top><width>28</width><height>28</height>
+			<texture>tk-x.png</texture><aspectratio>keep</aspectratio>
+		</control>
+		<control type="image">
+			<left>296</left><top>904</top><width>28</width><height>28</height>
+			<texture>tk-reddit.png</texture><aspectratio>keep</aspectratio>
+		</control>
 		<control type="label">
-			<left>356</left><top>892</top><width>1388</width><height>52</height>
+			<left>520</left><top>892</top><width>1224</width><height>52</height>
 			<aligny>center</aligny>
 			<font>font12</font>
 			<textcolor>FFFFFFFF</textcolor>
@@ -226,7 +242,7 @@
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 		</control>
 		<control type="label">
-			<left>356</left><top>892</top><width>1388</width><height>52</height>
+			<left>520</left><top>892</top><width>1224</width><height>52</height>
 			<aligny>center</aligny>
 			<font>font12</font>
 			<textcolor>FFFFFFFF</textcolor>

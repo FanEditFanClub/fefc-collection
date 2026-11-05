@@ -111,6 +111,8 @@ def make_textures(media):
     background(media / 'fefc-bg.jpg')
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')
+    for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):
+        shutil.copy(f, media / f.name)
     return media
 
 
