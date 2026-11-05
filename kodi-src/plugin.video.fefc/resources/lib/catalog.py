@@ -351,8 +351,8 @@ def video_info(m, vid):
 
 
 def display_title(name):
-    t = VIDEO_RX.sub('', name or '')
-    t = re.sub(r'\s+-\s+(Movie\s+)?Fan\s*Edit\s*$', '', t, flags=re.I)
+    # exactly like the web app's caption (parse(n).raw): the full file name, only the extension removed
+    t = re.sub(r'\.[a-z0-9]{2,4}$', '', name or '', flags=re.I)
     return t.strip() or name
 
 

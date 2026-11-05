@@ -54,9 +54,9 @@
 				<texture>fefc-shade.png</texture>
 			</control>
 			<control type="label">
-				<left>16</left><top>110</top><width>373</width><height>82</height>
+				<left>14</left><top>60</top><width>377</width><height>134</height>
 				<aligny>bottom</aligny>
-				<font>font9_title</font>
+				<font>font10_title</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
 				<wrapmultiline>true</wrapmultiline>
@@ -95,9 +95,9 @@
 				<shadowcolor>FF000000</shadowcolor>
 			</control>
 			<control type="label">
-				<left>0</left><top>339</top><width>222</width><height>66</height>
+				<left>-6</left><top>337</top><width>234</width><height>92</height>
 				<aligny>top</aligny><align>center</align>
-				<font>font10_title</font>
+				<font>font10</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
 				<wrapmultiline>true</wrapmultiline>

@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.3.17 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "File titles now show the full name like the web app, including endings such as \"- Fan Edit\". Only the file extension is hidden.",
+    "Long titles have more room: collection tiles fit up to 4 lines and poster tiles up to 3, in a slightly smaller font. The full title of the focused item scrolls along the bottom bar."
+   ]
+  },
+  {
    "version": "0.3.16 Beta",
    "date": "2026-11-04",
    "notes": [
