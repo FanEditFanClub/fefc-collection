@@ -108,13 +108,22 @@ def install_update(new):
         home.clearProperty('FEFC.Updating')
 
 
+def my_package():
+    return str((installed_build() or {}).get('pkg') or 'org.xbmc.kodi')
+
+
+def _for_my_package(new):
+    """version.json lists one APK per package id; download the one matching this install (legacy org.xbmc.kodi
+    installs fall back to the top-level url/sha256, which always stay the org.xbmc.kodi APK)."""
+    p = ((new.get('packages') or {}).get(my_package())) or {}
+    return p.get('url') or new.get('url', ''), int(p.get('size') or new.get('size') or 0), p.get('sha256') or new.get('sha256') or ''
+
+
 def _install_update(new):
     import hashlib
-    url = new.get('url', '')
+    url, want, sha = _for_my_package(new)
     dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
     part = dst + '.part'
-    want = int(new.get('size') or 0)
-    sha = new.get('sha256') or ''
     xbmc.executebuiltin('Dialog.Close(all,true)')
     xbmc.sleep(300)
     ok = False
@@ -181,15 +190,16 @@ def _install_update(new):
         return
     xbmc.executebuiltin('Dialog.Close(all,true)')
     uri = None
+    pkg = my_package()
     for marker, name in (('/files/', 'ext'), ('/cache/', 'extcache')):
         if '/Android/data/' in dst and marker in dst:
-            uri = 'content://org.xbmc.kodi.fefcupdate/%s/%s' % (name, dst.split(marker, 1)[1]); break
+            uri = 'content://%s.fefcupdate/%s/%s' % (pkg, name, dst.split(marker, 1)[1]); break
     if uri is None:
         for marker, name in (('/files/', 'int'), ('/cache/', 'cache')):
-            if '/org.xbmc.kodi/' in dst and marker in dst:
-                uri = 'content://org.xbmc.kodi.fefcupdate/%s/%s' % (name, dst.split(marker, 1)[1]); break
+            if '/%s/' % pkg in dst and marker in dst:
+                uri = 'content://%s.fefcupdate/%s/%s' % (pkg, name, dst.split(marker, 1)[1]); break
     if uri is None:  # unknown location: Kodi's own exported file provider
-        uri = 'content://org.xbmc.kodi.file/#' + dst
+        uri = 'content://%s.file/#' % pkg + dst
     log('launching installer: %s' % uri)
     # 5th argument 1 = FLAG_GRANT_READ_URI_PERMISSION so the installer can read our FileProvider URI
     xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)' % uri)

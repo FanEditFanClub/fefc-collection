@@ -113,6 +113,8 @@ jobs:
           echo "APP_VERSION=$APPV" >> "$GITHUB_ENV"
           printf '{"kodi":"%s","build":%s,"src":"%s","version":"%s"}\n' "$KODI_VER" "$NEXT" "$SRC_HASH" "$APPV" > kodi-src/fefc-build.json
           python3 tools/build_kodi_apk.py stock.apk FEFC-Kodi.apk
+          # same source, same key, same versionCode: new-install package that coexists with Play Store Kodi
+          FEFC_KODI_PACKAGE=com.faneditfanclub.fefc.kodi python3 tools/build_kodi_apk.py stock.apk FEFC.apk
           echo "NEXT_BUILD=$NEXT" >> "$GITHUB_ENV"
       - name: Verify (signature, cert, manifest, banner, add-ons)
         if: env.REBUILD == 'true'
@@ -128,13 +130,19 @@ jobs:
           unzip -l FEFC-Kodi.apk | grep -q "assets/addons/skin.fefc/addon.xml"
           unzip -l FEFC-Kodi.apk | grep -q "assets/addons/skin.fefc/fonts/Jura-Regular.ttf"
           unzip -l FEFC-Kodi.apk | grep -q "lib/armeabi-v7a/libkodi.so"
-          ls -l FEFC-Kodi.apk
+          "$BUILD_TOOLS/apksigner" verify --print-certs FEFC.apk | grep -qi "certificate SHA-256 digest: ${EXPECT_CERT_PREFIX}"
+          "$BUILD_TOOLS/aapt2" dump badging FEFC.apk | tee badging2.txt | head -3
+          grep -q "package: name='com.faneditfanclub.fefc.kodi'" badging2.txt
+          grep -q "package: name='org.xbmc.kodi'" badging.txt
+          "$BUILD_TOOLS/aapt2" dump xmltree FEFC.apk --file AndroidManifest.xml | grep -q 'com.faneditfanclub.fefc.kodi.Splash'
+          ls -l FEFC-Kodi.apk FEFC.apk
       - name: Publish to R2 (kodi/FEFC-Kodi.apk + version.json)
         if: env.REBUILD == 'true'
         run: |
           set -euo pipefail
           SHA=$(sha256sum FEFC-Kodi.apk | cut -d' ' -f1); SIZE=$(stat -c%s FEFC-Kodi.apk)
-          SHA="$SHA" SIZE="$SIZE" python3 - <<'PY'
+          SHA2=$(sha256sum FEFC.apk | cut -d' ' -f1); SIZE2=$(stat -c%s FEFC.apk)
+          SHA="$SHA" SIZE="$SIZE" SHA2="$SHA2" SIZE2="$SIZE2" python3 - <<'PY'
           import json, os, datetime
           cl = json.load(open('kodi-src/fefc-changelog.json', encoding='utf-8')).get('versions', [])
           v = {"kodi": os.environ['KODI_VER'], "build": int(os.environ['NEXT_BUILD']), "version": os.environ['APP_VERSION'],
@@ -142,11 +150,15 @@ jobs:
                "url": "https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk",
                "built": datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
                "notes": "FEFC app %s on Kodi %s" % (os.environ['APP_VERSION'], os.environ['KODI_VER']),
+               "packages": {
+                 "org.xbmc.kodi": {"url": "https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk", "sha256": os.environ['SHA'], "size": int(os.environ['SIZE'])},
+                 "com.faneditfanclub.fefc.kodi": {"url": "https://fefc-collection.pages.dev/kodi-app/FEFC.apk", "sha256": os.environ['SHA2'], "size": int(os.environ['SIZE2'])}},
                "changelog": cl}
           json.dump(v, open('version.json', 'w'), ensure_ascii=False)
           PY
           npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
           npx wrangler r2 object put fan-edit-media/kodi/FEFC-Kodi.apk --file=FEFC-Kodi.apk --content-type=application/vnd.android.package-archive --remote
+          npx wrangler r2 object put fan-edit-media/kodi/FEFC.apk --file=FEFC.apk --content-type=application/vnd.android.package-archive --remote
           npx wrangler r2 object put fan-edit-media/kodi/version.json --file=version.json --content-type=application/json --remote
           cat version.json
       - name: Nothing to do

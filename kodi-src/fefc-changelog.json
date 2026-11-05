@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.3.14 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "New installs can use a separate FEFC app (com.faneditfanclub.fefc.kodi) that installs alongside regular Kodi from the Play Store.",
+    "Existing FEFC installs keep updating as before, and each one downloads the update that matches it."
+   ]
+  },
+  {
    "version": "0.3.13 Beta",
    "date": "2026-11-04",
    "notes": [

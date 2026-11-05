@@ -10,12 +10,26 @@ import kodi_brand
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 stock, out = sys.argv[1], os.path.abspath(sys.argv[2])
 bt, apktool = os.environ['BUILD_TOOLS'], os.environ['APKTOOL']
-# NOTE: the package MUST stay org.xbmc.kodi: libkodi.so derives its Java class names from the package name at runtime
-# (a renamed package crashes at start: JNI 'java_class == null'), so a distinct package id is not possible without rebuilding Kodi.
+# libkodi.so derives its Java class names from getPackageName() at runtime (a manifest-only rename crashes at start:
+# JNI 'java_class == null'). So a different package (FEFC_KODI_PACKAGE) also moves Kodi's Java classes in the dex
+# (smali org/xbmc/kodi -> new/package/path) so the runtime lookups match. Default stays org.xbmc.kodi (legacy installs).
 PKG = os.environ.get('FEFC_KODI_PACKAGE', 'org.xbmc.kodi')
+RENAME = PKG != 'org.xbmc.kodi'
 tmp = tempfile.mkdtemp(); dec = os.path.join(tmp, 'dec')
 run = lambda *a, **k: subprocess.run(list(a), check=True, **k)
-run('java', '-jar', apktool, 'd', '-s', '-f', '-o', dec, stock, stdout=subprocess.DEVNULL)
+run('java', '-jar', apktool, 'd', *([] if RENAME else ['-s']), '-f', '-o', dec, stock, stdout=subprocess.DEVNULL)
+if RENAME:
+    old_s, new_s = 'org/xbmc/kodi', PKG.replace('.', '/')
+    for sd in glob.glob(os.path.join(dec, 'smali*')):
+        src = os.path.join(sd, *old_s.split('/'))
+        if os.path.isdir(src):
+            dstd = os.path.join(sd, *new_s.split('/')); os.makedirs(os.path.dirname(dstd), exist_ok=True); shutil.move(src, dstd)
+        for dp, _, fs in os.walk(sd):
+            for fn in fs:
+                if fn.endswith('.smali'):
+                    fp = os.path.join(dp, fn); t = open(fp, encoding='utf-8').read()
+                    t2 = t.replace('L' + old_s + '/', 'L' + new_s + '/').replace('"' + old_s + '/', '"' + new_s + '/').replace('org.xbmc.kodi', PKG)
+                    if t2 != t: open(fp, 'w', encoding='utf-8').write(t2)
 # manifest: package, provider authorities
 mf = os.path.join(dec, 'AndroidManifest.xml'); s = open(mf, encoding='utf-8').read()
 s = s.replace('package="org.xbmc.kodi"', 'package="%s"' % PKG)
@@ -24,8 +38,10 @@ s = re.sub(r'(<application [^>]*?)android:banner="[^"]*"', r'\1', s)
 s = re.sub(r'(<application [^>]*?)android:logo="[^"]*"', r'\1', s)
 s = s.replace('<application ', '<application android:banner="@drawable/banner" android:logo="@drawable/banner" ', 1)
 s = s.replace('<activity android:configChanges', '<activity android:banner="@drawable/banner" android:icon="@mipmap/ic_launcher" android:configChanges', 0)
-s = re.sub(r'<activity ([^>]*android:name="org\.xbmc\.kodi\.Splash")', r'<activity android:banner="@drawable/banner" android:icon="@mipmap/ic_launcher" \1', s)
+s = re.sub(r'<activity ([^>]*android:name="[A-Za-z0-9_.]*\.Splash")', r'<activity android:banner="@drawable/banner" android:icon="@mipmap/ic_launcher" \1', s)
 s = re.sub(r'android:authorities="org\.xbmc\.kodi\.', 'android:authorities="%s.' % PKG, s)
+if RENAME:  # activity/service/receiver class names move with the dex classes
+    s = s.replace('org.xbmc.kodi.', PKG + '.')
 s = s.replace('org.xbmc.kodi.permission', PKG + '.permission')
 if 'REQUEST_INSTALL_PACKAGES' not in s:  # lets the in-app updater hand the downloaded APK to Android's installer
     s = s.replace('<application', '<uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>\n    <application', 1)
@@ -78,6 +94,7 @@ if not os.path.exists(bj):
 import json as _json
 _b = _json.load(open(bj)); _vf = os.path.join(root, 'kodi-src', 'fefc-version.txt')
 if os.path.exists(_vf): _b['version'] = open(_vf).read().strip()
+_b['pkg'] = PKG
 open(os.path.join(A, 'fefc-build.json'), 'w').write(_json.dumps(_b) + '\n')
 shutil.copy(os.path.join(root, 'kodi-src', 'FEFC-NOTICE.txt'), os.path.join(A, 'FEFC-NOTICE.txt'))
 # versionCode must rise with every FEFC build: with the stock code (2103000) on every update, Android/Fire OS treat each
