@@ -748,18 +748,20 @@ class Router:
             def a(mo):
                 u = _html.unescape(mo.group(1))
                 label = re.sub(r'<[^>]+>', '', mo.group(2))
-                if u.startswith('http') and label.strip() and label.strip() != u and (label.strip(), u) not in links:
-                    links.append((label.strip(), u))
-                return mo.group(2)
+                lt = label.strip()
+                if re.match(r'https?://', lt):
+                    # a bare URL as link text: show a short clean form only
+                    return re.sub(r'^https?://(www\.)?', '', lt).replace('/cw/', '/').rstrip('/')
+                return label
             raw = re.sub(r'<a [^>]*href="([^"]+)"[^>]*>(.*?)</a>', a, raw, flags=re.S)
             raw = re.sub(r'</p>\s*<p>', '\n\n', raw)
             raw = re.sub(r'<br\s*/?>', '\n', raw)
             txt = _html.unescape(re.sub(r'<[^>]+>', '', raw)).replace('\xa0', ' ')
             txt = re.sub(r'\n{3,}', '\n\n', txt).strip()
+            txt = re.sub(r'https?://\S+', '', txt)
+            txt = re.sub(r'over 5,000!?', 'over 6,000!', txt)
         except Exception as e:
             txt = 'Could not load the Read Me right now (%s). It is also in the FEFC web app.' % e
-        if links:
-            txt += '\n\nLinks:\n' + '\n'.join('- %s: %s' % x for x in links[:24])
         xbmcgui.Dialog().textviewer('Read Me: The Fan Edit Fan Club Collection', txt)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)

@@ -1,6 +1,15 @@
 {
  "versions": [
   {
+   "version": "0.3.2 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Home screen is back to the 3x3 grid in the same order as the web app: Read Me, New Arrivals, Support Us / Fan Edit Collections, Main Collection, To Be Catalogued / Actors & Directors, My List, Genres.",
+    "Search, Settings and About moved to a top bar, like the web app header.",
+    "Read Me: link addresses are no longer spelled out, and the file count now says 6,000."
+   ]
+  },
+  {
    "version": "0.3.1 Beta",
    "date": "2026-11-04",
    "notes": [
