@@ -124,9 +124,12 @@
 	<include name="FefcDialogButton">
 		<texturenofocus border="38" colordiffuse="FFFF9C00">fefc-lc-pill.png</texturenofocus>
 		<texturefocus border="38" colordiffuse="FFFFFFFF">fefc-lc-pill.png</texturefocus>
-		<font>font12_title</font>
+		<!-- 0.3.22: one high-contrast text colour on every button, incl. disabled ones (Resume without a resume point) -->
+		<font>lcars_btn</font>
 		<textcolor>FF000000</textcolor>
 		<focusedcolor>FF000000</focusedcolor>
+		<disabledcolor>FF000000</disabledcolor>
+		<shadowcolor>00000000</shadowcolor>
 		<align>center</align>
 		<aligny>center</aligny>
 	</include>

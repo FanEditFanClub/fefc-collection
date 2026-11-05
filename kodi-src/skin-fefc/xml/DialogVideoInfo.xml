@@ -26,8 +26,8 @@
 		<control type="image"><left>96</left><top>846</top><width>170</width><height>54</height><texture colordiffuse="FF33CCBB">colors/white.png</texture></control>
 		<control type="image"><left>322</left><top>986</top><width>900</width><height>40</height><texture colordiffuse="FFFF9C00">colors/white.png</texture></control>
 		<control type="image"><left>1228</left><top>986</top><width>596</width><height>40</height><texture colordiffuse="FFFFCC66">colors/white.png</texture></control>
-		<control type="label"><left>110</left><top>190</top><width>150</width><height>40</height><font>font12_title</font><textcolor>FF000000</textcolor><align>right</align><label>FEFC</label></control>
-		<control type="label"><left>110</left><top>236</top><width>150</width><height>40</height><font>font12_title</font><textcolor>FF000000</textcolor><align>right</align><label>$INFO[ListItem.Year]</label></control>
+		<control type="label"><left>110</left><top>190</top><width>150</width><height>40</height><font>lcars_med</font><textcolor>FF000000</textcolor><align>right</align><label>FEFC</label></control>
+		<control type="label"><left>110</left><top>236</top><width>150</width><height>40</height><font>lcars_med</font><textcolor>FF000000</textcolor><align>right</align><label>$INFO[ListItem.Year]</label></control>
 		<!-- poster -->
 		<control type="image">
 			<left>300</left><top>120</top><width>330</width><height>495</height>
@@ -37,7 +37,7 @@
 		<!-- title: wraps over up to 2 lines instead of being cut off -->
 		<control type="textbox">
 			<left>660</left><top>84</top><width>1120</width><height>112</height>
-			<font>font14_title</font>
+			<font>lcars_title</font>
 			<textcolor>FFFFFFFF</textcolor>
 			<aligny>center</aligny>
 			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
@@ -46,7 +46,7 @@
 		<control type="label">
 			<left>660</left><top>200</top><width>1120</width><height>40</height>
 			<aligny>center</aligny>
-			<font>font13_title</font>
+			<font>lcars_med</font>
 			<textcolor>FFFF9C00</textcolor>
 			<label>$INFO[ListItem.Year]$INFO[ListItem.Duration,   ,]$INFO[ListItem.Rating,   Rating: ]$INFO[ListItem.Genre,   ,]</label>
 		</control>
@@ -76,24 +76,26 @@
 		<control type="label">
 			<left>660</left><top>668</top><width>600</width><height>30</height>
 			<aligny>center</aligny>
-			<font>font12_title</font>
+			<font>lcars_med</font>
 			<textcolor>FFFF9C00</textcolor>
 			<label>CAST</label>
 			<visible>!String.IsEmpty(ListItem.Cast)</visible>
 		</control>
-		<control type="textbox">
-			<left>660</left><top>702</top><width>1120</width><height>100</height>
-			<font>font12</font>
-			<textcolor>FF99CCFF</textcolor>
-			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
-			<label>$INFO[ListItem.Cast]</label>
+		<!-- 0.3.22: full cast, no auto-scroll: 3 columns in the free space on the right, manual scroll (focus + up/down) if it overflows -->
+		<control type="list" id="62">
+			<left>660</left><top>702</top><width>1120</width><height>108</height>
+			<scrolltime>200</scrolltime>
+			<onup>9290</onup><ondown>5000</ondown>
+			<itemlayout width="1120" height="36"><control type="label"><left>0</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FF99CCFF</textcolor><label>$INFO[ListItem.Label]</label></control><control type="label"><left>375</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FF99CCFF</textcolor><label>$INFO[ListItem.Label2]</label></control><control type="label"><left>750</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FF99CCFF</textcolor><label>$INFO[ListItem.Property(c3)]</label></control></itemlayout>
+			<focusedlayout width="1120" height="36"><control type="label"><left>0</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FFFFFFFF</textcolor><label>$INFO[ListItem.Label]</label></control><control type="label"><left>375</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FFFFFFFF</textcolor><label>$INFO[ListItem.Label2]</label></control><control type="label"><left>750</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FFFFFFFF</textcolor><label>$INFO[ListItem.Property(c3)]</label></control></focusedlayout>
+			<content>plugin://plugin.video.fefc/?action=castrows&amp;id=$INFO[ListItem.Property(fefc_id)]</content>
 		</control>
 		<!-- buttons: row 1 (Play / Resume / My List / Trailer), row 2 (Open in VLC / Open in Drive / Close) -->
 		<control type="grouplist" id="5000">
 			<left>660</left><top>818</top><width>1120</width><height>76</height>
 			<orientation>horizontal</orientation>
 			<itemgap>16</itemgap>
-			<onleft>5000</onleft><onright>5000</onright><onup>9290</onup><ondown>5001</ondown>
+			<onleft>5000</onleft><onright>5000</onright><onup>62</onup><ondown>5001</ondown>
 			<control type="button" id="8">
 				<width>190</width><height>76</height>
 				<label>$LOCALIZE[208]</label>
@@ -135,11 +137,6 @@
 				<include>FefcDialogButton</include>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=open_drive&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
-			</control>
-			<control type="button" id="7">
-				<width>190</width><height>76</height>
-				<label>$LOCALIZE[15067]</label>
-				<include>FefcDialogButton</include>
 			</control>
 		</control>
 		<control type="image">

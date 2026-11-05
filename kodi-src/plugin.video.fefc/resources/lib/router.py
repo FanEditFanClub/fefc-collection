@@ -851,6 +851,25 @@ class Router:
             xbmcgui.Dialog().notification('My List', 'Linking %s.' % status, xbmcgui.NOTIFICATION_ERROR, 4000)
 
     # -- Read Me / Support Us (same content as the web app) -------------------------------------------------
+    def castrows(self):
+        """0.3.22: whole cast for the details screen, 3 names per row (no auto-scroll)."""
+        m = _model(); vid = self.params.get('id', '')
+        cast = []
+        try:
+            if vid in m['items']:
+                cast = list(catalog.video_info(m, vid).get('cast') or [])
+        except Exception:
+            cast = []
+        for i in range(0, len(cast), 3):
+            r = cast[i:i + 3] + ['', '']
+            li = xbmcgui.ListItem(r[0], r[1], offscreen=True)
+            li.setProperty('c3', r[2])
+            xbmcplugin.addDirectoryItem(self.handle, 'plugin://plugin.video.fefc/?action=noop', li, False)
+        xbmcplugin.endOfDirectory(self.handle, cacheToDisc=False)
+
+    def noop(self):
+        pass
+
     def gdoc(self):
         """0.3.22: read-only view of a Google Doc from Fan Edit Collections (plain-text export; Drive is never changed)."""
         import urllib.request
@@ -1112,7 +1131,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'mylist_sync': 'mylist_sync', 'open_vlc': 'open_vlc', 'open_drive': 'open_drive', 'readme': 'readme', 'support': 'support',
           'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
-          'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc'}
+          'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop'}
 
 
 def run(argv):

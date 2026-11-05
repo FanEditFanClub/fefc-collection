@@ -42,7 +42,7 @@ ADDON = '''<?xml version="1.0" encoding="UTF-8"?>
 	</extension>
 	<extension point="xbmc.addon.metadata">
 		<platform>all</platform>
-		<license>CC BY-SA 4.0, GNU GENERAL PUBLIC LICENSE Version 2.0, SIL OFL 1.1 (Jura font)</license>
+		<license>CC BY-SA 4.0, GNU GENERAL PUBLIC LICENSE Version 2.0, SIL OFL 1.1 (Jura and Antonio fonts)</license>
 		<source>https://github.com/FanEditFanClub/fefc-collection</source>
 		<summary lang="en_GB">FEFC skin for the Fan Edit Fan Club app</summary>
 		<description lang="en_GB">Skin of the Fan Edit Fan Club app: FEFC colours, Noto Sans font, 5x5 tile grid and a details page that fits the screen. Derived from the Estuary skin by phil65 and Ichabod Fletchman (Kodi, GPL-2.0-or-later / CC BY-SA 4.0). Not an official Kodi skin.</description>
@@ -238,6 +238,10 @@ def patch_fonts(xml_dir):
     # add to every fontset
     if not (xml_dir.parent / 'fonts' / 'NotoSans-Bold.ttf').exists():
         extra = extra.replace('NotoSans-Bold.ttf', 'NotoSans-Regular.ttf')
+    # 0.3.22: Star Trek LCARS-style condensed font (Antonio Bold, SIL OFL 1.1) for the info/details screen
+    for name, size in (('lcars_title', 64), ('lcars_med', 34), ('lcars_small', 28), ('lcars_btn', 32)):
+        extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>Antonio-Bold.ttf</filename>\n'
+                  '\t\t\t<size>%d</size>\n\t\t</font>\n') % (name, size)
     s = re.sub(r'(</fontset>)', extra + r'\1', s)
     p.write_text(s, encoding='utf-8')
 
@@ -261,7 +265,7 @@ def build(est, out):
     (out / 'addon.xml').write_text(ADDON, encoding='utf-8')
     (out / 'colors' / 'defaults.xml').write_text(COLORS, encoding='utf-8')
     fonts = out / 'fonts'
-    for f in ('Jura-Regular.ttf', 'Jura-Bold.ttf', 'OFL.txt'):
+    for f in ('Jura-Regular.ttf', 'Jura-Bold.ttf', 'OFL.txt', 'Antonio-Bold.ttf', 'ANTONIO-OFL.txt'):
         shutil.copy(OVER / 'fonts' / f, fonts / ('JURA-OFL.txt' if f == 'OFL.txt' else f))
     for f in ('Roboto-Thin.ttf', 'NotoSans-Regular.ttf'):
         pass  # kept: other fonts may still be referenced by language-specific font sets
