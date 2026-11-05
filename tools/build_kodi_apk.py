@@ -56,6 +56,16 @@ for f in glob.glob(os.path.join(dec, 'res', 'values*', 'strings.xml')):
     t = open(f, encoding='utf-8').read()
     t2 = re.sub(r'(<string name="(?:app_name|search_hint)">)[^<]*(</string>)', r'\1FEFC\2', t)
     if t2 != t: open(f, 'w', encoding='utf-8').write(t2)
+# universal build: add another ABI's native libs from a second stock APK of the same Kodi version (FEFC_EXTRA_ABI_APK),
+# e.g. armeabi-v7a libs into the arm64-v8a build so the new-package app installs on 64-bit-only phones and 32-bit devices.
+_extra = os.environ.get('FEFC_EXTRA_ABI_APK')
+if _extra:
+    import zipfile
+    with zipfile.ZipFile(_extra) as z:
+        for n in z.namelist():
+            if n.startswith('lib/') and not n.endswith('/') and not os.path.exists(os.path.join(dec, n)):
+                os.makedirs(os.path.dirname(os.path.join(dec, n)), exist_ok=True)
+                with z.open(n) as r, open(os.path.join(dec, n), 'wb') as w: shutil.copyfileobj(r, w)
 kodi_brand.brand_apk_tree(dec)
 kodi_brand.adaptive(dec)
 A = os.path.join(dec, 'assets')

@@ -96,7 +96,10 @@ jobs:
           FORCE: ${{ inputs.force }}
       - name: Download stock Kodi
         if: env.REBUILD == 'true'
-        run: curl -fsSL -o stock.apk "https://mirrors.kodi.tv/releases/android/arm/${KODI_APK}"
+        run: |
+          curl -fsSL -o stock.apk "https://mirrors.kodi.tv/releases/android/arm/${KODI_APK}"
+          # 64-bit stock Kodi (same version) for the new-package app: Pixel Fold/Tablet are 64-bit-only
+          curl -fsSL -o stock64.apk "https://mirrors.kodi.tv/releases/android/arm64-v8a/${KODI_APK/armeabi-v7a/arm64-v8a}"
       - name: Build + sign branded FEFC app
         if: env.REBUILD == 'true'
         env:
@@ -114,7 +117,7 @@ jobs:
           printf '{"kodi":"%s","build":%s,"src":"%s","version":"%s"}\n' "$KODI_VER" "$NEXT" "$SRC_HASH" "$APPV" > kodi-src/fefc-build.json
           python3 tools/build_kodi_apk.py stock.apk FEFC-Kodi.apk
           # same source, same key, same versionCode: new-install package that coexists with Play Store Kodi
-          FEFC_KODI_PACKAGE=com.faneditfanclub.fefc.kodi python3 tools/build_kodi_apk.py stock.apk FEFC.apk
+          FEFC_KODI_PACKAGE=com.faneditfanclub.fefc.kodi FEFC_EXTRA_ABI_APK=stock.apk python3 tools/build_kodi_apk.py stock64.apk FEFC.apk
           echo "NEXT_BUILD=$NEXT" >> "$GITHUB_ENV"
       - name: Verify (signature, cert, manifest, banner, add-ons)
         if: env.REBUILD == 'true'
@@ -133,6 +136,9 @@ jobs:
           "$BUILD_TOOLS/apksigner" verify --print-certs FEFC.apk | grep -qi "certificate SHA-256 digest: ${EXPECT_CERT_PREFIX}"
           "$BUILD_TOOLS/aapt2" dump badging FEFC.apk | tee badging2.txt | head -3
           grep -q "package: name='com.faneditfanclub.fefc.kodi'" badging2.txt
+          unzip -l FEFC.apk | grep -q "lib/arm64-v8a/libkodi.so"
+          unzip -l FEFC.apk | grep -q "lib/armeabi-v7a/libkodi.so"
+          ! unzip -l FEFC-Kodi.apk | grep -q "lib/arm64-v8a/"
           grep -q "package: name='org.xbmc.kodi'" badging.txt
           "$BUILD_TOOLS/aapt2" dump xmltree FEFC.apk --file AndroidManifest.xml | grep -q 'com.faneditfanclub.fefc.kodi.Splash'
           ls -l FEFC-Kodi.apk FEFC.apk
