@@ -11,6 +11,8 @@
 			<texture>fefc-bg.jpg</texture>
 			<aspectratio>scale</aspectratio>
 		</control>
+		<control type="group">
+			<include>FefcContentZoom</include>
 		<control type="image">
 			<left>96</left><top>54</top><width>220</width><height>56</height>
 			<texture>fefc-wordmark.png</texture>
@@ -35,14 +37,14 @@
 				<width>290</width><height>56</height>
 				<include>FefcSmallButton</include>
 				<label>RESUME VIDEO</label>
-				<onleft>9211</onleft><onright>9211</onright><ondown>500</ondown>
+				<onleft>9211</onleft><onright>9211</onright><ondown>500</ondown><onup>9291</onup>
 				<onclick>ActivateWindow(fullscreenvideo)</onclick>
 			</control>
 			<control type="button" id="9211">
 				<width>160</width><height>56</height>
 				<include>FefcSmallButton</include>
 				<label>STOP</label>
-				<onleft>9210</onleft><onright>9210</onright><ondown>500</ondown>
+				<onleft>9210</onleft><onright>9210</onright><ondown>500</ondown><onup>9291</onup>
 				<onclick>PlayerControl(Stop)</onclick>
 			</control>
 		</control>
@@ -52,7 +54,7 @@
 			<left>96</left><top>122</top><width>1700</width><height>868</height>
 			<onleft>500</onleft><onright>60</onright>
 			<onup condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">9210</onup>
-			<onup>500</onup>
+			<onup>9291</onup>
 			<ondown>500</ondown>
 			<viewtype label="31102">icon</viewtype>
 			<pagecontrol>60</pagecontrol>
@@ -82,7 +84,7 @@
 			<left>96</left><top>122</top><width>1700</width><height>868</height>
 			<onleft>501</onleft><onright>60</onright>
 			<onup condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">9210</onup>
-			<onup>501</onup>
+			<onup>9291</onup>
 			<ondown>501</ondown>
 			<viewtype label="31102">icon</viewtype>
 			<pagecontrol>60</pagecontrol>
@@ -128,5 +130,8 @@
 			<textcolor>FFFF9C00</textcolor>
 			<label>$INFO[Container.NumItems] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</label>
 		</control>
+			</control>
+		<include content="FefcTopBar"><param name="down" value="500"/><param name="up" value="500"/></include>
+		<include>FefcTicker</include>
 	</controls>
 </window>

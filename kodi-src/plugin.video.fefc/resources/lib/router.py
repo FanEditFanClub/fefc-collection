@@ -691,7 +691,7 @@ class Router:
                 url, qid, secret, verify = j['url'], j['id'], j['secret'], j.get('verify', '')
                 lines = ['Link My List', 'Scan the QR code with your phone (or open the address below).',
                          'On the phone, sign in with Google (or use a sync code) and tap Approve.',
-                         'Check that the phone shows this confirm code: %s' % verify, _short_url(url)]
+                         'Check that the phone shows this confirm code: %s' % verify, url]
                 ttl = int(j.get('expires_in') or 300)
             else:
                 j = ml.device_start()
@@ -705,11 +705,11 @@ class Router:
             return
         qr_path = ''
         if mode == 'qr':
-            try:
-                qr_path = _make_qr_png(url)
-            except Exception as e:
-                _log('qr failed: %s' % e)
-                qr_path = _remote_qr_png(url)
+            # Remote QR image by default: local PNGs in special://temp never appeared on Fire TV (black square),
+            # while Kodi loads remote https images reliably. Unique query param defeats the texture cache.
+            qr_path = ('https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=24&format=png&color=000000&bgcolor=ffffff'
+                       '&data=%s&_=%d' % (quote_plus(url), int(time.time() * 1000)))
+            lines[-1] = url.replace('https://', '')  # full link, own line, so it can be typed if the QR still doesn't show
         win = LinkWindow(lines, qr_path)
         win.show()
         mon = xbmc.Monitor()
@@ -910,26 +910,24 @@ class LinkWindow(xbmcgui.WindowDialog):
     def __init__(self, lines, qr_path):
         super().__init__()
         self.closed = False
-        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'colors/white.png', colorDiffuse='F0050A14'))
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F0050A14'))
         self.addControl(xbmcgui.ControlLabel(96, 54, 1088, 50, lines[0], font='font14_title', textColor='FFFFFFFF'))
         y = 120
         if qr_path:
-            try:
-                self.addControl(xbmcgui.ControlImage(86, 120, 420, 420, _white_png()))
-            except Exception:
-                pass
-            img = xbmcgui.ControlImage(96, 130, 400, 400, '', aspectRatio=1)
-            self.addControl(img)
-            img.setImage(qr_path, False)
+            self.addControl(xbmcgui.ControlImage(86, 120, 420, 420, 'fefc-white.png'))
+            self.addControl(xbmcgui.ControlImage(96, 130, 400, 400, qr_path, aspectRatio=1))
             x = 540
         else:
             x = 96
         w = 1184 - x
-        for t in lines[1:]:
+        side = lines[1:-1] if qr_path else lines[1:]
+        for t in side:
             tb = xbmcgui.ControlTextBox(x, y, w, 90, font='font13', textColor='FFFFFFFF')
             self.addControl(tb)
             tb.setText(t)
             y += 84
+        if qr_path:  # the full link on its own full-width line under the QR, so it can be typed on a phone
+            self.addControl(xbmcgui.ControlLabel(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF'))
         self.addControl(xbmcgui.ControlLabel(96, 610, 1088, 40, 'Press Back to cancel.', font='font12', textColor='FFFF9C00'))
 
     def onAction(self, action):

@@ -12,6 +12,8 @@
 			<texture colordiffuse="55FFFFFF">$INFO[ListItem.Art(fanart)]</texture>
 			<aspectratio>scale</aspectratio>
 		</control>
+		<control type="group">
+			<include>FefcContentZoom</include>
 		<control type="image">
 			<left>96</left><top>54</top><width>1728</width><height>972</height>
 			<texture border="26">fefc-tile.png</texture>
@@ -81,7 +83,7 @@
 			<left>660</left><top>818</top><width>1120</width><height>76</height>
 			<orientation>horizontal</orientation>
 			<itemgap>16</itemgap>
-			<onleft>5000</onleft><onright>5000</onright><onup>5000</onup><ondown>5001</ondown>
+			<onleft>5000</onleft><onright>5000</onright><onup>9291</onup><ondown>5001</ondown>
 			<control type="button" id="8">
 				<width>190</width><height>76</height>
 				<label>$LOCALIZE[208]</label>
@@ -135,5 +137,8 @@
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
 		</control>
+			</control>
+		<include content="FefcTopBar"><param name="down" value="8"/><param name="up" value="8"/></include>
+		<include>FefcTicker</include>
 	</controls>
 </window>

@@ -12,7 +12,7 @@
 		</control>
 		<!-- Wordmark + tagline -->
 		<control type="image">
-			<left>560</left><top>54</top><width>800</width><height>76</height>
+			<left>680</left><top>54</top><width>520</width><height>76</height>
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
 		</control>
@@ -23,20 +23,6 @@
 			<textcolor>FF99CCFF</textcolor>
 			<label>A Community for Creators, Editors &amp; Fans dedicated to the art of The Fan Edit.</label>
 		</control>
-		<control type="label">
-			<left>96</left><top>54</top><width>420</width><height>40</height>
-			<aligny>center</aligny>
-			<font>font12_title</font>
-			<textcolor>FFFF9C00</textcolor>
-			<label>$INFO[Window(Home).Property(FEFC.Version)]</label>
-		</control>
-		<control type="label">
-			<right>96</right><top>54</top><width>260</width><height>40</height>
-			<align>right</align><aligny>center</aligny>
-			<font>font13</font>
-			<textcolor>FFFF9C00</textcolor>
-			<label>$INFO[System.Time]</label>
-		</control>
 
 		<!-- 3 x 3 tiles, same order as the web app home -->
 		<control type="group" id="9000">
@@ -46,7 +32,7 @@
 				<include>FefcTile</include>
 				<label>READ ME</label>
 				<wrapmultiline>true</wrapmultiline>
-				<onleft>9003</onleft><onright>9002</onright><onup>9201</onup><ondown>9004</ondown>
+				<onleft>9003</onleft><onright>9002</onright><onup>9291</onup><ondown>9004</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=readme)</onclick>
 			</control>
 			<control type="button" id="9002">
@@ -54,7 +40,7 @@
 				<include>FefcTile</include>
 				<label>NEW ARRIVALS</label>
 				<wrapmultiline>true</wrapmultiline>
-				<onleft>9001</onleft><onright>9003</onright><onup>9201</onup><ondown>9005</ondown>
+				<onleft>9001</onleft><onright>9003</onright><onup>9291</onup><ondown>9005</ondown>
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent,return)</onclick>
 			</control>
 			<control type="button" id="9003">
@@ -62,7 +48,7 @@
 				<include>FefcTile</include>
 				<label>SUPPORT US</label>
 				<wrapmultiline>true</wrapmultiline>
-				<onleft>9002</onleft><onright>9001</onright><onup>9201</onup><ondown>9006</ondown>
+				<onleft>9002</onleft><onright>9001</onright><onup>9291</onup><ondown>9006</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=support)</onclick>
 			</control>
 			<control type="button" id="9004">
@@ -127,35 +113,6 @@
 			</control>
 		</control>
 
-		<!-- top bar (like the web app header): search, settings, about -->
-		<control type="grouplist" id="9200">
-			<right>96</right><top>96</top><width>620</width><height>36</height>
-			<orientation>horizontal</orientation>
-			<align>right</align>
-			<itemgap>12</itemgap>
-			<control type="button" id="9201">
-				<width>180</width><height>36</height>
-				<include>FefcSmallButton</include>
-				<label>SEARCH</label>
-				<onleft>9203</onleft><onright>9202</onright><onup>9023</onup><ondown>9001</ondown>
-				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
-			</control>
-			<control type="button" id="9202">
-				<width>180</width><height>36</height>
-				<include>FefcSmallButton</include>
-				<label>SETTINGS</label>
-				<onleft>9201</onleft><onright>9203</onright><onup>9023</onup><ondown>9001</ondown>
-				<onclick>ActivateWindow(Settings)</onclick>
-			</control>
-			<control type="button" id="9203">
-				<width>180</width><height>36</height>
-				<include>FefcSmallButton</include>
-				<label>ABOUT</label>
-				<onleft>9202</onleft><onright>9201</onright><onup>9023</onup><ondown>9001</ondown>
-				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
-			</control>
-		</control>
-
 		<!-- utility strip: resume/stop (only while a video is paused), app update, exit -->
 		<control type="grouplist" id="9100">
 			<left>152</left><top>814</top><width>1616</width><height>60</height>
@@ -167,7 +124,7 @@
 				<include>FefcSmallButton</include>
 				<label>RESUME: $INFO[Window(Home).Property(FEFC.PausedTitle)]</label>
 				<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
-				<onleft>9024</onleft><onright>9022</onright><onup>9008</onup><ondown>9201</ondown>
+				<onleft>9024</onleft><onright>9022</onright><onup>9008</onup><ondown>9291</ondown>
 				<onclick>ActivateWindow(fullscreenvideo)</onclick>
 			</control>
 			<control type="button" id="9022">
@@ -175,7 +132,7 @@
 				<include>FefcSmallButton</include>
 				<label>STOP</label>
 				<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
-				<onleft>9021</onleft><onright>9023</onright><onup>9008</onup><ondown>9201</ondown>
+				<onleft>9021</onleft><onright>9023</onright><onup>9008</onup><ondown>9291</ondown>
 				<onclick>PlayerControl(Stop)</onclick>
 			</control>
 			<control type="label">
@@ -191,58 +148,29 @@
 				<include>FefcSmallButton</include>
 				<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
 				<textcolor>FFFFFFFF</textcolor>
-				<onleft>9022</onleft><onright>9024</onright><onup>9008</onup><ondown>9201</ondown>
+				<onleft>9022</onleft><onright>9024</onright><onup>9008</onup><ondown>9291</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
 			</control>
 			<control type="button" id="9024">
 				<width>200</width><height>60</height>
 				<include>FefcSmallButton</include>
 				<label>EXIT</label>
-				<onleft>9023</onleft><onright>9021</onright><onup>9008</onup><ondown>9201</ondown>
+				<onleft>9023</onleft><onright>9021</onright><onup>9008</onup><ondown>9291</ondown>
 				<onclick>Quit</onclick>
 			</control>
 		</control>
 
-		<!-- community news ticker (same feed as the web app) -->
-		<control type="image">
-			<left>152</left><top>892</top><width>1616</width><height>52</height>
-			<texture border="26">fefc-tile.png</texture>
-		</control>
-		<control type="label">
-			<left>176</left><top>892</top><width>170</width><height>52</height>
-			<aligny>center</aligny>
-			<font>font10_title</font>
-			<textcolor>FFFF9C00</textcolor>
-			<label>COMMUNITY</label>
-		</control>
-		<control type="label">
-			<left>356</left><top>892</top><width>1388</width><height>52</height>
-			<aligny>center</aligny>
-			<font>font12</font>
-			<textcolor>FFFFFFFF</textcolor>
-			<scroll>true</scroll>
-			<scrollspeed>70</scrollspeed>
-			<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
-		</control>
-		<control type="label">
-			<left>356</left><top>892</top><width>1388</width><height>52</height>
-			<aligny>center</aligny>
-			<font>font12</font>
-			<textcolor>FFFFFFFF</textcolor>
-			<label>Loading community news...</label>
-			<visible>String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
-		</control>
+		<include>FefcTicker</include>
 		<!-- notices -->
 		<control type="label">
-			<left>96</left><top>956</top><width>1728</width><height>30</height>
+			<left>96</left><top>900</top><width>1728</width><height>30</height>
 			<align>center</align><aligny>center</aligny>
 			<font>font10</font>
 			<textcolor>FF7F8FA6</textcolor>
 			<label>FEFC is an unofficial community app built on Kodi (GPL-2.0-or-later). Not affiliated with the Kodi Foundation.</label>
 		</control>
 		<control type="label">
-			<left>96</left><top>990</top><width>1728</width><height>30</height>
+			<left>96</left><top>936</top><width>1728</width><height>30</height>
 			<align>center</align><aligny>center</aligny>
 			<font>font10</font>
 			<textcolor>FF99CCFF</textcolor>
@@ -255,5 +183,6 @@
 			<visible>String.IsEmpty(Window(Home).Property(FEFC.Ready))</visible>
 			<animation effect="fade" start="100" end="0" time="200" delay="180000" condition="String.IsEmpty(Window(Home).Property(FEFC.Ready))">Conditional</animation>
 		</control>
+		<include content="FefcTopBar"><param name="down" value="9005"/><param name="up" value="9023"/></include>
 	</controls>
 </window>

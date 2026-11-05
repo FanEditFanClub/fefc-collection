@@ -98,6 +98,10 @@ def background(path):
     img.save(path, quality=90)
 
 
+CHROME_WINDOWS = {'DialogTextViewer.xml', 'Settings.xml', 'SettingsCategory.xml', 'SettingsSystemInfo.xml',
+                  'DialogAddonSettings.xml', 'SkinSettings.xml', 'SettingsProfile.xml'}
+
+
 def make_textures(media):
     media.mkdir(parents=True, exist_ok=True)
     rrect_tile(128, 26, (24, 42, 68, 235), (6, 10, 18, 245), (153, 204, 255, 90), 2, 22).save(media / 'fefc-tile.png')
@@ -109,6 +113,7 @@ def make_textures(media):
             sh.putpixel((x, y), (0, 0, 0, int(235 * (y / 63) ** 1.4)))
     sh.save(media / 'fefc-shade.png')
     background(media / 'fefc-bg.jpg')
+    Image.new('RGB', (16, 16), (255, 255, 255)).save(media / 'fefc-white.png')
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')
     for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):
@@ -167,7 +172,16 @@ def build(est, out):
         if f.name in own:
             continue
         t = f.read_text(encoding='utf-8')
-        t2 = re.sub(r'(<window\b[^>]*>)', lambda m: m.group(1) + zoom, t, count=1)
+        if f.name in CHROME_WINDOWS and '</controls>' in t:
+            # full-page stock windows get the FEFC top bar + ticker; their own content is shrunk to 82 % to sit between them
+            z = zoom.replace('end="90"', 'end="82"')
+            t2 = re.sub(r'(<window\b[^>]*>)', lambda m: m.group(1) + z, t, count=1)
+            i = t2.rindex('</controls>')
+            t2 = (t2[:i] + '\t<control type="group">\n\t\t<animation effect="zoom" start="100" end="121.95" center="960,540" time="0" '
+                  'condition="true" type="conditional">Conditional</animation>\n\t\t<include>FefcTopBar</include>\n'
+                  '\t\t<include>FefcTicker</include>\n\t</control>\n\t' + t2[i:])
+        else:
+            t2 = re.sub(r'(<window\b[^>]*>)', lambda m: m.group(1) + zoom, t, count=1)
         if t2 != t:
             f.write_text(t2, encoding='utf-8'); nz += 1
     print('overscan zoom added to', nz, 'windows')

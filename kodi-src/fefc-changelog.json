@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.3.7 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "The top bar (version, Search, Settings, About, clock) and the community news ticker with its icons now show on every page: home, lists, details, Read Me and settings. Press Up to reach the bar. Both hide while a video plays full screen.",
+    "Link My List: the QR code now loads from the web on a white background, and the full link shows underneath so you can type it on your phone if you need to."
+   ]
+  },
+  {
    "version": "0.3.6 Beta",
    "date": "2026-11-04",
    "notes": [
