@@ -126,6 +126,16 @@ def build_model(raw):
     for i, v in items.items():
         if v[2]:
             count(i, set())
+    # 0.3.22: the number SHOWN next to a folder = video files directly inside it (not recursive), like the web
+    # Main Collection root count. The recursive total (rcnt) is only used to hide empty folders.
+    rcnt = cnt
+    _vx = re.compile(r'\.(mp4|mkv|mov|avi|m4v|webm|ts|wmv|mpg|mpeg)$', re.I)
+    dcnt = {}
+    for i, v in items.items():
+        if v[2]:
+            t = v[3] if v[3] else i
+            dcnt[i] = sum(1 for k in kids.get(t, []) if k in items and not items[k][2] and _vx.search(items[k][0] or ''))
+    cnt = dcnt
     count(root, set())
 
     # genres: video-genres sets + genres.json (collection folders), unioned along the ancestor chain
@@ -232,7 +242,7 @@ def build_model(raw):
             changes[k] = lines[:60]
     added = {k: v for k, v in (raw.get('added') or {}).items() if isinstance(v, str)}
     return {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
-            'items': items, 'kids': kids, 'cnt': cnt, 'vgenres': vgenres,
+            'items': items, 'kids': kids, 'cnt': cnt, 'rcnt': rcnt, 'vgenres': vgenres,
             'genre_videos': genre_videos, 'genre_folders': genre_folders,
             'posters': posters, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
             'ratings': ratings, 'fthumbs': raw.get('folderthumbs') or {},
@@ -572,7 +582,7 @@ def search(m, query, limit=300):
         if e and e.get('title'):
             hay += ' ' + e['title'].lower()
         if all(t in hay for t in toks):
-            if v[2] and not m['cnt'].get(i):
+            if v[2] and not (m.get('rcnt') or m['cnt']).get(i):
                 continue
             out.append(i)
     out = dedupe(m, out)

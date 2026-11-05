@@ -161,7 +161,7 @@ def home_counts():
             files = len(_descendant_videos(m, fid, cap=100000))
         return _fmt(folders, 'collection', 'collections') + '  \u00b7  ' + _fmt(files, 'file', 'files')
     meta = m.get('people_meta') or {}
-    people = sum(1 for k, (n, r) in meta.items() if k in m['items'] and m['cnt'].get(k))
+    people = sum(1 for k, (n, r) in meta.items() if k in m['items'] and (m.get('rcnt') or m['cnt']).get(k))
     genres = len(set(m.get('genre_videos', {})) | set(m.get('genre_folders', {})))
     try:
         stars = len(_ml().ids())
@@ -361,7 +361,7 @@ class Router:
         page = int(self.params.get('page') or 0)
         ks = _kids(m, fid)
         # drop empty folders
-        ks = [k for k in ks if not m['items'][k][2] or m['cnt'].get(k)]
+        ks = [k for k in ks if not m['items'][k][2] or (m.get('rcnt') or m['cnt']).get(k)]
         key = _sort_get(fid)
         if key != 'az':
             ks = _sorted_kids(m, ks, key)
@@ -637,7 +637,7 @@ class Router:
         m = _model()
         meta = m.get('people_meta') or {}
         role = self.params.get('role')
-        rows = [k for k, (n, r) in meta.items() if (not role or r == role) and k in m['items'] and m['cnt'].get(k)]
+        rows = [k for k, (n, r) in meta.items() if (not role or r == role) and k in m['items'] and (m.get('rcnt') or m['cnt']).get(k)]
         rows.sort(key=lambda k: catalog.natkey(meta[k][0]))
         for k in rows:
             art = catalog.folder_art(m, _base(), k)

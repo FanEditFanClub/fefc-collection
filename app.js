@@ -1047,9 +1047,27 @@ var __spreadValues = (a, b) => {
         }
       });
     }
-    return _sc[id] = { k: items.size, d: !!NA.dates, n, sz: sz2, nw };
+    return _sc[id] = { k: items.size, d: !!NA.dates, n: directVids(id), sz: sz2, nw, deep: n };
   }
   const fmtN = (n) => n.toLocaleString("en-US");
+  const _dv = {};
+  function directVids(id) {
+    const t = target(items.get(id) || { id }) || id;
+    const c = _dv[t];
+    if (c && c.k === items.size) return c.n;
+    let n = 0;
+    const fs = {};
+    (kids.get(t) || []).forEach((f) => {
+      if (isFolder(f) || JUNK.test(f.name || "") || !isVid(f) || fs[target(f)]) return;
+      fs[target(f)] = 1;
+      const ck = vcanon(f);
+      if (ck === null || fs["c:" + ck]) return;
+      fs["c:" + ck] = 1;
+      n++;
+    });
+    _dv[t] = { k: items.size, n };
+    return n;
+  }
   function immFolderCount(id) {
     let c = 0;
     const seen = {};
@@ -1063,7 +1081,7 @@ var __spreadValues = (a, b) => {
     return c;
   }
   function countsLine(id) {
-    const d = deepCounts(id);
+    const d0 = deepCounts(id), d = id === ROOT || id === FOLD.collections || id === FOLD.tbc ? d0 : Object.assign({}, d0, { n: directVids(id) });
     const c = id === ROOT || id === FOLD.collections || id === FOLD.tbc ? immFolderCount(id) : d.c;
     return fmtN(c) + (c === 1 ? " collection" : " collections") + " \xB7 " + fmtN(d.n) + (d.n === 1 ? " file" : " files");
   }
