@@ -706,21 +706,10 @@ class Router:
         qr_path = ''
         if mode == 'qr':
             try:
-                from . import segno
-                tmp = xbmcvfs.translatePath('special://temp/')
-                for old in os.listdir(tmp):
-                    if old.startswith('fefc-link-qr'):
-                        try:
-                            os.remove(os.path.join(tmp, old))
-                        except OSError:
-                            pass
-                # unique name every time so Kodi's texture cache never serves a stale/blank image
-                qr_path = os.path.join(tmp, 'fefc-link-qr-%d.png' % int(time.time() * 1000))
-                segno.make(url, error='m').save(qr_path, kind='png', scale=10, border=4, dark='#000000', light='#ffffff')
-                if not os.path.getsize(qr_path):
-                    raise IOError('empty QR png')
+                qr_path = _make_qr_png(url)
             except Exception as e:
                 _log('qr failed: %s' % e)
+                qr_path = _remote_qr_png(url)
         win = LinkWindow(lines, qr_path)
         win.show()
         mon = xbmc.Monitor()
@@ -841,6 +830,73 @@ class Router:
         xbmcgui.Dialog().notification('FEFC', 'Opening in Drive: ' + catalog.display_title(name), xbmcgui.NOTIFICATION_INFO, 4000)
 
 
+def _png_rgb(path, rows):
+    """Plain 8-bit RGB PNG (Kodi decodes this everywhere; 1-bit PNGs show up black/blank)."""
+    import struct
+    import zlib
+    h, w = len(rows), len(rows[0]) // 3
+    raw = b''.join(b'\x00' + r for r in rows)
+
+    def chunk(t, d):
+        return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
+    data = (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
+            + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
+    with open(path, 'wb') as f:
+        f.write(data)
+        f.flush()
+        os.fsync(f.fileno())
+    return path
+
+
+def _tmpdir():
+    tmp = xbmcvfs.translatePath('special://temp/')
+    for old in os.listdir(tmp):
+        if old.startswith('fefc-link-qr') or old.startswith('fefc-white'):
+            try:
+                os.remove(os.path.join(tmp, old))
+            except OSError:
+                pass
+    return tmp
+
+
+def _make_qr_png(url, size=600):
+    """QR code as an absolute-path 8-bit RGB PNG, unique name so Kodi's texture cache never serves an old one."""
+    from . import segno
+    m = [list(r) for r in segno.make(url, error='m').matrix]
+    n = len(m) + 8  # 4-module white quiet zone
+    px = max(1, size // n)
+    W, B = b'\xff\xff\xff', b'\x00\x00\x00'
+    rows = []
+    for y in range(n):
+        line = b''.join((B if (4 <= y < n - 4 and 4 <= x < n - 4 and m[y - 4][x - 4]) else W) * px for x in range(n))
+        rows.extend([line] * px)
+    path = os.path.join(_tmpdir(), 'fefc-link-qr-%d.png' % int(time.time() * 1000))
+    _png_rgb(path, rows)
+    if os.path.getsize(path) < 100:
+        raise IOError('QR png not written')
+    return path
+
+
+def _remote_qr_png(url):
+    """Fallback: a QR PNG from a public QR service, saved locally."""
+    src = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&format=png&data=' + quote_plus(url)
+    try:
+        import urllib.request
+        data = urllib.request.urlopen(urllib.request.Request(src, headers={'User-Agent': 'FEFC-Kodi'}), timeout=15).read()
+        path = os.path.join(xbmcvfs.translatePath('special://temp/'), 'fefc-link-qr-r%d.png' % int(time.time() * 1000))
+        with open(path, 'wb') as f:
+            f.write(data)
+        return path
+    except Exception as e:
+        _log('remote qr failed: %s' % e)
+        return src  # let Kodi fetch it directly
+
+
+def _white_png():
+    path = os.path.join(xbmcvfs.translatePath('special://temp/'), 'fefc-white-%d.png' % int(time.time() * 1000))
+    return _png_rgb(path, [b'\xff\xff\xff' * 8] * 8)
+
+
 def _short_url(u):
     """Display form of a link that fits on screen (the QR code carries the full address)."""
     import re
@@ -858,6 +914,10 @@ class LinkWindow(xbmcgui.WindowDialog):
         self.addControl(xbmcgui.ControlLabel(96, 54, 1088, 50, lines[0], font='font14_title', textColor='FFFFFFFF'))
         y = 120
         if qr_path:
+            try:
+                self.addControl(xbmcgui.ControlImage(86, 120, 420, 420, _white_png()))
+            except Exception:
+                pass
             img = xbmcgui.ControlImage(96, 130, 400, 400, '', aspectRatio=1)
             self.addControl(img)
             img.setImage(qr_path, False)
