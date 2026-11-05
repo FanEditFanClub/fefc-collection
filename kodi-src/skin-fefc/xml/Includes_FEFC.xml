@@ -35,34 +35,37 @@
 	<include name="FefcGridTile">
 		<definition>
 			<control type="image">
-				<width>405</width><height>201</height>
+				<width>265</width><height>138</height>
 				<texture border="26">fefc-tile.png</texture>
 			</control>
 			<control type="image">
-				<left>6</left><top>6</top><width>393</width><height>189</height>
+				<left>5</left><top>5</top><width>255</width><height>128</height>
 				<texture fallback="DefaultFolder.png">$VAR[FefcTileArt]</texture>
 				<aspectratio scalediffuse="false">scale</aspectratio>
 				<colordiffuse>66FFFFFF</colordiffuse>
 			</control>
 			<control type="image">
-				<left>6</left><top>6</top><width>393</width><height>189</height>
+				<left>5</left><top>5</top><width>255</width><height>128</height>
 				<texture fallback="DefaultFolder.png">$VAR[FefcTileArt]</texture>
 				<aspectratio scalediffuse="false">keep</aspectratio>
 			</control>
 			<control type="image">
-				<left>6</left><top>84</top><width>393</width><height>111</height>
+				<left>5</left><top>58</top><width>255</width><height>75</height>
 				<texture>fefc-shade.png</texture>
+				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile)</visible>
 			</control>
 			<control type="label">
-				<left>14</left><top>60</top><width>377</width><height>134</height>
+				<left>10</left><top>30</top><width>245</width><height>102</height>
 				<aligny>bottom</aligny>
-				<font>font10_title</font>
+				<font>font10</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
 				<wrapmultiline>true</wrapmultiline>
+				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile)</visible>
+				<!-- 0.3.22: Shuffle / Sort / Support Us art already carries the big centred label; no small duplicate -->
 			</control>
 			<control type="image">
-				<width>405</width><height>201</height>
+				<width>265</width><height>138</height>
 				<texture border="26">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
@@ -129,76 +132,81 @@
 	</include>
 	<!-- Shared chrome on every FEFC page (like the web app): top bar (version, Search, Settings, About, clock) and the community ticker.
 	     Pages lay their own content out between y=102 and y=978 so nothing overlaps. Hidden during fullscreen video. -->
+	<!-- 0.3.22: no version / top-right menu anywhere. Every page gets the same bottom-centre rounded menu bar as Home
+	     (Resume/Stop when paused, Search, Sound, Settings, About, Update). Home draws its own bar (9100), so this one hides there. -->
 	<include name="FefcTopBar">
 		<param name="down">noop</param>
 		<param name="up">noop</param>
 		<definition>
 		<control type="group">
-			<visible>!Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</visible>
-			<control type="label">
-				<left>96</left><top>54</top><width>420</width><height>44</height>
-				<aligny>center</aligny>
-				<font>font12_title</font>
-				<textcolor>FFFF9C00</textcolor>
-				<label>$INFO[Window(Home).Property(FEFC.Version)]</label>
-				<visible>!Window.IsActive(home)</visible>
+			<visible>!Window.IsActive(home) + !Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</visible>
+			<control type="image">
+				<left>96</left><top>866</top><width>1728</width><height>84</height>
+				<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
 			</control>
 			<control type="grouplist" id="9290">
-				<visible>!Window.IsActive(home)</visible>
-				<right>96</right><top>54</top><width>900</width><height>44</height>
+				<left>110</left><top>878</top><width>1700</width><height>60</height>
 				<orientation>horizontal</orientation>
-				<align>right</align>
+				<align>center</align>
 				<itemgap>12</itemgap>
+				<onup condition="Control.IsVisible(501)">501</onup><onup>$PARAM[down]</onup><ondown condition="Control.IsVisible(501)">501</ondown><ondown>$PARAM[down]</ondown><onleft>9290</onleft><onright>9290</onright>
+				<control type="button" id="9295">
+					<width>190</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+					<include>FefcSmallButton</include><font>font10_title</font>
+					<label>RESUME</label>
+					<onclick>ActivateWindow(fullscreenvideo)</onclick>
+				</control>
+				<control type="button" id="9296">
+					<width>140</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+					<include>FefcSmallButton</include><font>font10_title</font>
+					<label>STOP</label>
+					<onclick>PlayerControl(Stop)</onclick>
+				</control>
 				<control type="group">
-					<width>170</width><height>44</height>
+					<width>190</width><height>60</height>
 					<control type="button" id="9291">
-						<left>0</left><top>0</top><width>170</width><height>44</height>
-						<include>FefcSmallButton</include>
-						<textoffsetx>46</textoffsetx><align>left</align>
+						<left>0</left><top>0</top><width>190</width><height>60</height>
+						<include>FefcSmallButton</include><font>font10_title</font>
+						<textoffsetx>58</textoffsetx><align>left</align>
 						<label>SEARCH</label>
-						<onleft>9293</onleft><onright>9294</onright><onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 						<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
 					</control>
-					<control type="image"><left>14</left><top>8</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+					<control type="image"><left>16</left><top>14</top><width>32</width><height>32</height><texture>fefc-ic-search.png</texture></control>
 				</control>
 				<control type="group">
-					<width>150</width><height>44</height>
+					<width>230</width><height>60</height>
 					<control type="button" id="9294">
-						<left>0</left><top>0</top><width>150</width><height>44</height>
-						<include>FefcSmallButton</include>
-						<textoffsetx>46</textoffsetx><align>left</align>
+						<left>0</left><top>0</top><width>230</width><height>60</height>
+						<include>FefcSmallButton</include><font>font10_title</font>
+						<textoffsetx>58</textoffsetx><align>left</align>
 						<label>$VAR[FefcSoundLabel]</label>
-						<onleft>9291</onleft><onright>9292</onright><onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 						<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
 					</control>
-					<control type="image"><left>14</left><top>8</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
-					<control type="image"><left>14</left><top>8</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+					<control type="image"><left>16</left><top>14</top><width>32</width><height>32</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+					<control type="image"><left>16</left><top>14</top><width>32</width><height>32</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 				</control>
 				<control type="group">
-					<width>190</width><height>44</height>
+					<width>230</width><height>60</height>
 					<control type="button" id="9292">
-						<left>0</left><top>0</top><width>190</width><height>44</height>
-						<include>FefcSmallButton</include>
-						<textoffsetx>46</textoffsetx><align>left</align>
+						<left>0</left><top>0</top><width>230</width><height>60</height>
+						<include>FefcSmallButton</include><font>font10_title</font>
+						<textoffsetx>58</textoffsetx><align>left</align>
 						<label>SETTINGS</label>
-						<onleft>9294</onleft><onright>9293</onright><onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
-						<onclick>ActivateWindow(Settings)</onclick>
+						<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 					</control>
-					<control type="image"><left>14</left><top>8</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+					<control type="image"><left>16</left><top>14</top><width>32</width><height>32</height><texture>fefc-ic-gear.png</texture></control>
 				</control>
 				<control type="button" id="9293">
-					<width>150</width><height>44</height>
-					<include>FefcSmallButton</include>
+					<width>170</width><height>60</height>
+					<include>FefcSmallButton</include><font>font10_title</font>
 					<label>ABOUT</label>
-					<onleft>9292</onleft><onright>9291</onright><onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
 				</control>
-				<control type="label">
-					<width>120</width><height>44</height>
-					<align>right</align><aligny>center</aligny>
-					<font>font13</font>
-					<textcolor>FFFF9C00</textcolor>
-					<label>$INFO[System.Time]</label>
+				<control type="button" id="9297">
+					<width>440</width><height>60</height>
+					<include>FefcSmallButton</include><font>font10_title</font>
+					<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
+					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
 				</control>
 			</control>
 		</control>

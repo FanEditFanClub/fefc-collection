@@ -1,41 +1,89 @@
-"""Pre-render the Kodi Home background: one muted 1280x720 looping 'video wall' whose cells line up with the
-3x3 menu grid (Home.xml: tiles 400x200 on a 412x212 pitch at x=348, y=200 in 1920x1080; scaled 2/3 here).
-Each cell plays a different run of the short fan edit clips already in assets/clips (no Drive access)."""
+"""Pre-render the Kodi Home background (0.3.22): a muted-or-ambient 1280x720 'video wall' loop of fan edit clips
+that only fills the EDGES around the centred 3x3 menu (OnLive style). The centre is solid black, exactly where
+Home.xml draws its black panel (324..1596 x 192..856 in 1920x1080 -> 216..1064 x 128..571 here), so no clip ever
+shows behind or over a tile.
+
+Seamless loop: the composite is rendered L+F seconds long; the output is V[F..L] followed by a crossfade of
+V[L..L+F] into V[0..F], so the last frame equals the first frame. Encoded closed-GOP, IDR at frame 0, no B-frames
+across the seam, constant 24 fps, so Fire Stick's hardware decoder restarts cleanly.
+
+Ambience: the original FEFC home ambience = the recorded tail of Carson's assets/intro.mp3 (24.65 s .. ~26.12 s,
+low-passed at 850 Hz, crossfaded loop) - the same sample the web app looped. It is tiled to exactly L seconds,
+loudness-normalised (-20 LUFS integrated, true peak <= -1.5 dBTP) and muxed as AAC.
+
+Outputs: assets/home-wall.mp4 (with ambience), assets/home-wall-silent.mp4 (Sound Off), assets/home-wall-still.jpg
+(the loop's first frame, 1920x1080, shown instantly before the video starts and across the loop seam),
+assets/home-amb.m4a (the same ambience loop for the web app). Uses only assets/clips (no Drive access)."""
 import glob, os, random, subprocess, sys
 src = sorted(glob.glob('assets/clips/*.mp4'))
-out = sys.argv[1] if len(sys.argv) > 1 else 'assets/home-wall.mp4'
-S = 2 / 3
-CW, CH = 266, 132           # cell (400x200 * 2/3)
-PX, PY = 412 * S, 212 * S   # pitch
-X0, Y0 = 348 * S, 200 * S
-cols = [X0 + k * PX for k in range(-1, 4)]
-rows = [Y0 + j * PY for j in range(-1, 4)]
-N, DUR = 8, 32
-random.seed(7)
+L, F, FPS = 75.0, 1.5, 24
+T = L + F
+W, H = 1280, 720
+G = 8
+cells = []
+cw = (W - 7 * G) // 6
+for k in range(6):                       # top and bottom rows across the full width
+    cells.append((G + k * (cw + G), 8, cw, 112))
+    cells.append((G + k * (cw + G), 600, cw, 112))
+for j in range(4):                       # side columns between them
+    y = 128 + j * 116
+    cells.append((8, y, 200, 108))
+    cells.append((1072, y, 200, 108))
+random.seed(22)
 order = src[:]; random.shuffle(order)
-cells, i = [], 0
-tmp = '/tmp/wall'; os.makedirs(tmp, exist_ok=True)
-for r, y in enumerate(rows):
-    for c, x in enumerate(cols):
-        pick = [order[(i * N + n) % len(order)] for n in range(N)]; i += 1
-        lst = os.path.join(tmp, 'c%d_%d.txt' % (r, c))
-        open(lst, 'w').write(''.join("file '%s'\n" % os.path.abspath(p) for p in pick))
-        cells.append((lst, int(round(x)), int(round(y))))
-args = ['ffmpeg', '-y', '-v', 'error']
-fl = []
-for k, (lst, x, y) in enumerate(cells):
-    cell = lst[:-4] + '.mp4'   # each cell rendered on its own first (robust timestamps), then stacked
+tmp = '/tmp/wall2'; os.makedirs(tmp, exist_ok=True)
+N = int(T // 3.9) + 2
+ins = []
+for i, (x, y, w, h) in enumerate(cells):
+    pick = [order[(i * 7 + n * len(cells)) % len(order)] for n in range(N)]
+    lst = os.path.join(tmp, 'c%d.txt' % i)
+    open(lst, 'w').write(''.join("file '%s'\n" % os.path.abspath(p) for p in pick))
+    cell = os.path.join(tmp, 'c%d.mp4' % i)
     subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-f', 'concat', '-safe', '0', '-i', lst, '-an',
-                           '-vf', 'fps=24,scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,eq=brightness=-0.08:saturation=0.85' % (CW, CH, CW, CH),
-                           '-ss', '%.2f' % ((k * 1.37) % 4), '-t', str(DUR - 1), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18', cell])
+                           '-vf', 'fps=%d,scale=%d:%d:force_original_aspect_ratio=increase,crop=%d:%d,eq=brightness=-0.06:saturation=0.85,setsar=1' % (FPS, w, h, w, h),
+                           '-ss', '%.2f' % ((i * 1.37) % 3), '-t', '%.3f' % T, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '16', cell])
+    ins.append((cell, x, y))
+# composite V (length T) on black
+args = ['ffmpeg', '-y', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=%dx%d:r=%d:d=%.3f' % (W, H, FPS, T)]
+fl, last = [], '0:v'
+for k, (cell, x, y) in enumerate(ins):
     args += ['-i', cell]
-    fl.append('[%d:v]setpts=PTS-STARTPTS[v%d]' % (k, k))
-OX, OY = 60, 20   # xstack needs positions >= 0: shift, then crop back to 1280x720
-lay = '|'.join('%d_%d' % (x + OX, y + OY) for _, x, y in cells)
-fl.append(''.join('[v%d]' % k for k in range(len(cells))) + 'xstack=inputs=%d:layout=%s:fill=black,pad=1400:780:0:0:black,crop=1280:720:%d:%d[out]' % (len(cells), lay, OX, OY))
-fl = fl[1:]
-args += ['-filter_complex', ';'.join(fl), '-map', '[out]', '-t', str(DUR - 1), '-an',
-         '-c:v', 'libx264', '-profile:v', 'main', '-level', '3.1', '-pix_fmt', 'yuv420p', '-preset', 'slow',
-         '-b:v', '900k', '-maxrate', '1200k', '-bufsize', '2400k', '-g', '48', '-movflags', '+faststart', out]
+    fl.append('[%d:v]setpts=PTS-STARTPTS[c%d]' % (k + 1, k))
+for k, (cell, x, y) in enumerate(ins):
+    o = 'o%d' % k
+    fl.append('[%s][c%d]overlay=%d:%d:eof_action=repeat[%s]' % (last, k, x, y, o)); last = o
+comp = os.path.join(tmp, 'comp.mp4')
+args += ['-filter_complex', ';'.join(fl), '-map', '[%s]' % last, '-t', '%.3f' % T, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '14', '-pix_fmt', 'yuv420p', comp]
 subprocess.check_call(args)
-print(out, os.path.getsize(out))
+# seamless loop: V[F..L] + xfade(V[L..T] -> V[0..F])
+loopv = os.path.join(tmp, 'loop.mp4')
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', comp, '-filter_complex',
+    '[0:v]split=3[a][b][c];[a]trim=%.3f:%.3f,setpts=PTS-STARTPTS,fps=24,settb=1/24[body];[b]trim=%.3f:%.3f,setpts=PTS-STARTPTS,fps=24,settb=1/24[tail];'
+    '[c]trim=0:%.3f,setpts=PTS-STARTPTS,fps=24,settb=1/24[head];[tail][head]xfade=transition=fade:duration=%.3f:offset=0[seam];'
+    '[body][seam]concat=n=2:v=1:a=0,fps=%d,format=yuv420p[v]' % (F, L, L, T, F, F, FPS),
+    '-map', '[v]', '-frames:v', str(int(L * FPS)), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12', loopv])
+# ambience: intro.mp3 tail, crossfade-looped, tiled to exactly L seconds
+n = 51; seg = L / n; xf = 0.28
+raw = os.path.join(tmp, 'seg.wav')
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-ss', '%.4f' % (24.65 - xf), '-t', '%.4f' % (seg + xf), '-i', 'assets/intro.mp3',
+                       '-af', 'lowpass=f=850,aresample=48000', '-ac', '2', raw])
+segl = os.path.join(tmp, 'segl.wav')   # first xf seconds = crossfade of (pre-roll -> start), so the end flows into the start
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', raw, '-filter_complex',
+    "[0:a]asplit[a][b];[a]atrim=%.4f:%.4f,asetpts=PTS-STARTPTS[main];[b]atrim=0:%.4f,asetpts=PTS-STARTPTS[pre];"
+    "[main]afade=t=in:d=%.4f:curve=qsin[mi];[pre]afade=t=out:d=%.4f:curve=qsin,apad=whole_dur=%.4f[po];[mi][po]amix=inputs=2:normalize=0[o]"
+    % (xf, xf + seg, xf, xf, xf, seg), '-map', '[o]', '-t', '%.4f' % seg, segl])
+amb = os.path.join(tmp, 'amb.wav')
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-stream_loop', str(n + 1), '-i', segl, '-t', '%.4f' % L, amb])
+ambn = os.path.join(tmp, 'ambn.wav')   # two-pass-ish: linear loudnorm to -20 LUFS / -1.5 dBTP
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', amb, '-af', 'loudnorm=I=-20:TP=-2:LRA=7,aresample=48000', '-t', '%.4f' % L, ambn])
+venc = ['-c:v', 'libx264', '-profile:v', 'main', '-level', '3.1', '-pix_fmt', 'yuv420p', '-preset', 'slow', '-r', str(FPS),
+        '-crf', '27', '-maxrate', '650k', '-bufsize', '1300k', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0', '-bf', '0',
+        '-x264-params', 'open-gop=0', '-forced-idr', '1', '-movflags', '+faststart']
+os.makedirs('assets', exist_ok=True)
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', loopv, '-i', ambn, '-map', '0:v', '-map', '1:a'] + venc +
+                      ['-c:a', 'aac', '-b:a', '64k', '-ar', '48000', '-ac', '2', '-t', '%.3f' % L, 'assets/home-wall.mp4'])
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', loopv, '-an'] + venc + ['assets/home-wall-silent.mp4'])
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', ambn, '-c:a', 'aac', '-b:a', '64k', '-movflags', '+faststart', 'assets/home-amb.m4a'])
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', loopv, '-frames:v', '1', '-vf', 'scale=1920:1080:flags=lanczos', '-q:v', '3', 'assets/home-wall-still.jpg'])
+for f in ('assets/home-wall.mp4', 'assets/home-wall-silent.mp4', 'assets/home-amb.m4a', 'assets/home-wall-still.jpg'):
+    print(f, os.path.getsize(f))

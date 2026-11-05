@@ -93,7 +93,7 @@
 			<left>660</left><top>818</top><width>1120</width><height>76</height>
 			<orientation>horizontal</orientation>
 			<itemgap>16</itemgap>
-			<onleft>5000</onleft><onright>5000</onright><onup>9291</onup><ondown>5001</ondown>
+			<onleft>5000</onleft><onright>5000</onright><onup>9290</onup><ondown>5001</ondown>
 			<control type="button" id="8">
 				<width>190</width><height>76</height>
 				<label>$LOCALIZE[208]</label>

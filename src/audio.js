@@ -28,27 +28,18 @@ function getAmbBuf(ib){
   return ambBuf=b;
  }catch(e){return null}
 }
+/* 0.8.27: Home ambience = the original recorded intro.mp3 tail, pre-rendered as a seamless loop (assets/home-amb.m4a,
+   ~-20 LUFS / TP -5.9 dBTP, same 75 s length as the Home wall video). No synthetic oscillators. */
+let ambFile=null,ambFileP=null;
+function loadAmbFile(){if(ambFile)return Promise.resolve(ambFile);if(ambFileP)return ambFileP;
+ ambFileP=fetch('assets/home-amb.m4a').then(r=>r.ok?r.arrayBuffer():Promise.reject(r.status)).then(a=>new Promise((ok,no)=>ctx.decodeAudioData(a,ok,no))).then(b=>ambFile=b).catch(e=>{ambFileP=null;return null});return ambFileP}
 function ambStart(){
  if(!ctx||amb||ctx.state!=='running')return;
  const t=ctx.currentTime,g=ctx.createGain();
- g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.085,t+3);
- const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=850;lp.Q.value=.5;lp.connect(g);g.connect(master);
- const os=[];
- const ab=S._ib&&getAmbBuf(S._ib);
- if(ab){
-  const src=ctx.createBufferSource();src.buffer=ab;src.loop=true;src.connect(lp);src.start(t);os.push(src);
- }else{
-  S.loadIntro().then(b=>{if(b&&ambWant&&amb&&!amb.hasBuf){const ab2=getAmbBuf(b);if(ab2){const src=ctx.createBufferSource();src.buffer=ab2;src.loop=true;src.connect(lp);src.start();amb.os.push(src);amb.hasBuf=true}}});
- }
- // E-major resonant tail bed matching the 24.75s chord of the intro
- const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.04;lg.gain.value=180;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
- [[55,'sine',.4],[164.81,'triangle',.2],[329.63,'sine',.16],[415.30,'sine',.12],[493.88,'sine',.09],[659.25,'sine',.06],[987.77,'sine',.03]].forEach(([f,ty,v],i)=>{
-  [-4,4].forEach(dt=>{
-   const o=ctx.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=dt+(i%2?1.5:-1.5);
-   const vg=ctx.createGain();vg.gain.value=v/2.5;o.connect(vg);vg.connect(lp);o.start();os.push(o);
-  });
- });
- amb={g,os:[...os,lfo],hasBuf:!!ab};
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(1,t+1.5);g.connect(master);
+ amb={g,os:[],hasBuf:false};const me=amb;
+ const play=b=>{if(!b||amb!==me||me.hasBuf)return;const src=ctx.createBufferSource();src.buffer=b;src.loop=true;src.connect(g);src.start();me.os.push(src);me.hasBuf=true};
+ if(ambFile)play(ambFile);else loadAmbFile().then(b=>{if(b)play(b);else{const ab=S._ib&&getAmbBuf(S._ib);if(ab){g.gain.value=.085;play(ab)}}});
 }
 function ambStop(){if(!amb)return;const a=amb;amb=null;const t=ctx.currentTime;a.g.gain.cancelScheduledValues(t);a.g.gain.setValueAtTime(a.g.gain.value,t);a.g.gain.linearRampToValueAtTime(0,t+.8);setTimeout(()=>a.os.forEach(o=>{try{o.stop()}catch(e){}}),900)}
 /* The intro has exactly one sound: Carson's assets/intro.mp3. No synthesized intro, drone, bells or stings. */

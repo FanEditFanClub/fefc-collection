@@ -1765,3 +1765,21 @@ body.mosaic-atlas.home-grid #mosaic .mc{opacity:0!important}
 body.tv #tagline,body.firetv #tagline{top:calc(4.6vh + env(safe-area-inset-top))!important}
 html body.tv #bar,html body.firetv #bar{margin-top:2.6vh}
 body.tv #crumb,body.firetv #crumb{margin-top:.6vh}
+/* ---- 0.8.27 ---- */
+/* every grid screen is 6 tiles wide (landscape + portrait); Home stays 3x3 */
+html body #grid:not(.sectioned),html body #arena,html body #na-list,html body .sgrid.vids,html body .sgrid.folds,html body .sgrid.docs,html body #grid.gnrs{grid-template-columns:repeat(6,minmax(0,1fr))!important}
+html body #grid.gnrs{gap:1vmin}
+html body .sgrid .ol-tile .nm,html body #grid .ol-tile .nm{overflow-wrap:anywhere}
+/* black glossy home tiles, orange focus glow kept */
+.hb{background:linear-gradient(180deg,#1a1a1a 0,#050505 48%,#000 52%,#0a0a0a 100%)!important}
+.hb:before{background:linear-gradient(175deg,#ffffff30 0,#ffffff0d 40%,#fff0 50%)!important}
+.hb span{max-width:100%;overflow-wrap:anywhere;text-align:center;line-height:1.05}
+/* Support Us / Shuffle / Sort tiles: only the big centred label */
+.ol-tile.ad .kind,.ol-tile.sup .kind{display:none!important}
+/* Read First / To Be Catalogued tiles inside Main Collection match the Home hub tiles */
+.ol-tile.fecc-tbc,.ol-tile.rfhome{border:2px solid #9fb6cf!important;border-radius:3px!important;background:linear-gradient(180deg,#1a1a1a 0,#050505 48%,#000 52%,#0a0a0a 100%)!important;box-shadow:inset 0 0 0 1px #000,inset 0 1px 0 #ffffff55,0 2px 8px #000!important}
+.ol-tile.fecc-tbc:focus,.ol-tile.rfhome:focus,.ol-tile.fecc-tbc:hover,.ol-tile.rfhome:hover{border-color:#ffb02e!important;box-shadow:inset 0 0 0 1px #000,inset 0 0 26px #ff9c0033,0 0 0 2px #ff9c00,0 0 24px #ff9c00cc!important}
+/* video FILES are always portrait posters; folders / docs / tools stay landscape */
+html body .ol-tile.vid:not(.ad),html body #arena .ol-tile.vid:not(.ad){aspect-ratio:2/3!important}
+html body .ol-tile.vid:not(.ad) .art{background-size:cover!important}
+html body .ol-tile.fold,html body .ol-tile.doc,html body .ol-tile.person,html body .ol-tile.ad{aspect-ratio:16/9}

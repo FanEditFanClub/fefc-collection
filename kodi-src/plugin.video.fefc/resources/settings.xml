@@ -48,6 +48,20 @@
           <default>true</default>
           <control type="toggle"/>
         </setting>
+        <setting id="notify_perm_btn" type="action" label="30013">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=notify_perm)</data>
+          <control type="button" format="action"/>
+        </setting>
+      </group>
+    </category>
+    <category id="system" label="30020">
+      <group id="1">
+        <setting id="kodi_settings_btn" type="action" label="30021">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=kodi_settings)</data>
+          <control type="button" format="action"/>
+        </setting>
       </group>
     </category>
   </section>

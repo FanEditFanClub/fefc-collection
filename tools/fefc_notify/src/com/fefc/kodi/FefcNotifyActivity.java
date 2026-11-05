@@ -55,6 +55,8 @@ public class FefcNotifyActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        boolean ok = grantResults != null && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+        writeFile("fefc-notify-perm.txt", ok ? "granted" : "denied");
         try {
             if (pendingKind != null) {
                 post(pendingKind, pendingTitle, pendingText, pendingNid);
@@ -101,9 +103,9 @@ public class FefcNotifyActivity extends Activity {
 
     /** @return true if a permission dialog was shown (caller must wait). */
     private boolean ensurePerm(boolean finishIfGranted) {
-        if (Build.VERSION.SDK_INT < 33) return false;
+        if (Build.VERSION.SDK_INT < 33) { writeFile("fefc-notify-perm.txt", "granted"); return false; }
         if (checkSelfPermission("android.permission.POST_NOTIFICATIONS")
-                == PackageManager.PERMISSION_GRANTED) return false;
+                == PackageManager.PERMISSION_GRANTED) { writeFile("fefc-notify-perm.txt", "granted"); return false; }
         waitingPerm = true;
         requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1);
         return true;
@@ -141,6 +143,18 @@ public class FefcNotifyActivity extends Activity {
             b.setPriority(Notification.PRIORITY_DEFAULT);
         }
         nm.notify(idHash, b.build());
+    }
+
+    private void writeFile(String name, String body) {
+        File dir = getExternalFilesDir(null);
+        if (dir == null) dir = getFilesDir();
+        if (dir == null) return;
+        try {
+            FileOutputStream out = new FileOutputStream(new File(dir, name));
+            out.write(body.getBytes(StandardCharsets.UTF_8));
+            out.close();
+        } catch (Exception e) {
+        }
     }
 
     private void writePending(String kind) {

@@ -190,6 +190,30 @@ def android_os_notify(kind, title, text, nid):
         log('os notify failed: %s' % e)
 
 
+def notify_perm_state():
+    d = _android_ext_files_dir()
+    try:
+        with open(os.path.join(d, 'fefc-notify-perm.txt'), 'r') as f:
+            return f.read().strip()
+    except Exception:
+        return ''
+
+
+def maybe_ask_notify_perm(asked):
+    """0.3.22: ask for POST_NOTIFICATIONS once per launch until granted, but only after the intro, on Home
+    (0.3.21 asked at service start while the intro played, and the no-history activity dropped the dialog)."""
+    if asked[0] or not is_phone_pkg():
+        return
+    if xbmcgui.Window(10000).getProperty('FEFC.Ready') != '1' or not xbmc.getCondVisibility('Window.IsActive(home)'):
+        return
+    asked[0] = True
+    if notify_perm_state() == 'granted':
+        return
+    if ADDON.getSetting('notify_app_update') != 'true' and ADDON.getSetting('notify_new_files') != 'true':
+        return
+    xbmc.executebuiltin('StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,fefcnotify://perm,,,,com.fefc.kodi.FefcNotifyActivity)')
+
+
 def consume_pending_nav():
     """Notification tap writes fefc-pending-nav.txt; open New Arrivals or the updater."""
     if not is_phone_pkg():
@@ -681,16 +705,23 @@ _last_info = ['']
 
 
 class HomeWall(object):
-    """OnLive-style Home background: one pre-rendered, silent 1280x720 loop (assets/home-wall.mp4, ~3 MB) played
-    windowed behind the 3x3 menu while Home is showing and nothing else plays. Downloaded once; the static
-    background stays if it is missing or fails. Stopped as soon as Home is left or anything else wants the player."""
+    """OnLive-style Home background. 0.3.22: a 75 s 1280x720 seamless loop bundled in the APK (instant start; the
+    still first frame is the skin background so there is never a blank wait). Two encodes: with the original FEFC
+    ambience (intro.mp3 tail, ~-20 LUFS, TP -5.9 dBTP) and silent, picked by the SOUND toggle. Falls back to a
+    one-time download when the bundle is missing. Stopped as soon as Home is left or anything else wants the player."""
     URL = BASE + '/assets/home-wall.mp4'
+    LOOP = 75.0
 
     def __init__(self):
-        self.path = os.path.join(xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/'), 'home-wall-v1.mp4')
+        self.path = os.path.join(xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/'), 'home-wall-v2.mp4')
         self.fetching = False
         self.fails = 0
         self.t_next = 0.0
+        self.cur_sound = None
+
+    def _bundled(self, sound):
+        f = xbmcvfs.translatePath('special://xbmc/media/fefc-home-wall%s.mp4' % ('' if sound else '-silent'))
+        return f if xbmcvfs.exists(f) or os.path.exists(f) else ''
 
     def _fetch(self):
         try:
@@ -711,6 +742,7 @@ class HomeWall(object):
 
     def stop(self):
         home = xbmcgui.Window(10000)
+        home.clearProperty('FEFC.WallSeam')
         if self.playing():
             home.clearProperty('FEFC.Wall')
             try:
@@ -720,9 +752,36 @@ class HomeWall(object):
             except Exception:
                 pass
 
+    def _start(self, pl, sound, at=0.0):
+        home = xbmcgui.Window(10000)
+        src = self._bundled(sound) or self._bundled(not sound)
+        if not src:
+            if not os.path.exists(self.path):
+                if not self.fetching:
+                    self.fetching = True
+                    self.t_next = time.time() + 60
+                    threading.Thread(target=self._fetch, daemon=True).start()
+                return
+            src = self.path
+        li = xbmcgui.ListItem('FEFC', offscreen=True)
+        li.setProperty('fefc_wall', '1')
+        if at > 0.5:
+            li.setProperty('StartOffset', '%.2f' % at)
+        home.setProperty('FEFC.Wall', '1')
+        self.cur_sound = sound
+        try:
+            pl.play(src, li, windowed=True)
+            xbmc.executebuiltin('PlayerControl(RepeatOne)')
+        except Exception as e:
+            log('home wall play: %s' % e)
+            self.fails += 1
+            home.clearProperty('FEFC.Wall')
+        self.t_next = time.time() + 2
+
     def tick(self):
         home = xbmcgui.Window(10000)
         pl = xbmc.Player()
+        sound = home.getProperty('FEFC.SoundOff') != '1'
         at_home = xbmc.getCondVisibility('Window.IsActive(home) + !Window.IsActive(fullscreenvideo)') and home.getProperty('FEFC.Ready') == '1'
         if self.playing():
             cur = ''
@@ -735,32 +794,29 @@ class HomeWall(object):
                     self.stop()
                 else:
                     home.clearProperty('FEFC.Wall')   # something else took the player
+                    home.clearProperty('FEFC.WallSeam')
                 return
-            if not cur:   # loop ended or failed: restart (fallback to the static image after repeated failures)
+            if not cur:   # loop ended or failed: restart straight away
                 home.clearProperty('FEFC.Wall')
+                self.t_next = 0.0
             else:
+                try:
+                    t = pl.getTime()
+                except Exception:
+                    t = 1.0
+                # hide the decoder restart behind the identical still frame
+                if t > self.LOOP - 0.6 or t < 0.35:
+                    home.setProperty('FEFC.WallSeam', '1')
+                else:
+                    home.clearProperty('FEFC.WallSeam')
+                if sound != self.cur_sound:   # SOUND toggled: swap encode, same position
+                    self._start(pl, sound, t)
                 return
         if not at_home or pl.isPlaying() or home.getProperty('FEFC.PausedTitle') or time.time() < self.t_next:
             return
-        if not os.path.exists(self.path):
-            if not self.fetching:
-                self.fetching = True
-                self.t_next = time.time() + 60
-                threading.Thread(target=self._fetch, daemon=True).start()
-            return
         if self.fails >= 3:
             return
-        li = xbmcgui.ListItem('FEFC', offscreen=True)
-        li.setProperty('fefc_wall', '1')
-        home.setProperty('FEFC.Wall', '1')
-        try:
-            pl.play(self.path, li, windowed=True)
-            xbmc.executebuiltin('PlayerControl(RepeatOne)')
-        except Exception as e:
-            log('home wall play: %s' % e)
-            self.fails += 1
-            home.clearProperty('FEFC.Wall')
-        self.t_next = time.time() + 5
+        self._start(pl, sound)
 
 
 class SkipIntro(xbmcgui.WindowDialog):
@@ -882,15 +938,13 @@ def main():
         sync_notify_prefs()
     except Exception as e:
         log('notify prefs start: %s' % e)
-    try:
-        if is_phone_pkg() and ADDON.getSetting('asked_notify_perm') != 'true':
-            ADDON.setSetting('asked_notify_perm', 'true')
-            xbmc.executebuiltin(
-                'StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,fefcnotify://perm,,,,com.fefc.kodi.FefcNotifyActivity)')
-    except Exception as e:
-        log('notify perm ask: %s' % e)
+    perm_asked = [False]
     while not monitor.abortRequested():
         now = time.time()
+        try:
+            maybe_ask_notify_perm(perm_asked)
+        except Exception as e:
+            log('notify perm ask: %s' % e)
         try:
             consume_pending_nav()
         except Exception as e:
@@ -939,7 +993,7 @@ def main():
         elif checked and now - last_check > 21600:
             last_check = now
             check_update(prompt=False)
-        if monitor.waitForAbort(0.5):
+        if monitor.waitForAbort(0.2 if wall.playing() else 0.5):
             break
 
 

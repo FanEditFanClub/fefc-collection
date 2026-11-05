@@ -184,6 +184,7 @@ class Router:
         self._mydb = None
         self._content = 'files'
         self._land = False  # True once any landscape card (folder / tool / Support Us) is added
+        self._vid = False   # 0.3.22: True once any video file is added (files are always portrait)
 
     def mydb(self):
         if self._mydb is None:
@@ -216,6 +217,11 @@ class Router:
         n = m['cnt'].get(fid, 0)
         art = catalog.folder_art(m, _base(), fid)
         gs = m['vgenres'].get(fid) or []
+        if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' or v[3] == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk':
+            # 0.3.22: same To Be Catalogued tile + destination as Home
+            t = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
+            self.add_folder('To Be Catalogued  (%d)' % n, t, ', '.join(gs), landscape=t, action='folder', id='1503Wl56hzRppaIFcQisvQksOaeYOEjnk')
+            return
         self.add_folder('%s  (%d)' % (v[0], n), art, ', '.join(gs), action='folder', id=fid)
 
     def add_tool(self, label, plot, art='DefaultAddonService.png', folder=False, landscape='', **kw):
@@ -238,6 +244,7 @@ class Router:
         xbmcplugin.addDirectoryItem(self.handle, _url(self.url, **kw), li, folder)
 
     def add_video(self, m, vid):
+        self._vid = True
         v = m['items'][vid]
         base = _base()
         info = catalog.video_info(m, vid)
@@ -279,7 +286,7 @@ class Router:
         if info['year']:
             tag.setYear(info['year'])
         gs = m['vgenres'].get(vid) or []
-        if gs and gs != ['Unsorted']:
+        if gs and gs != ['Uncategorized']:
             tag.setGenres(gs)
         if info['director']:
             tag.setDirectors(info['director'])
@@ -318,9 +325,9 @@ class Router:
 
     def end(self, content='files', cache=True):
         xbmcplugin.setPluginCategory(self.handle, self._title())
-        # Portrait posters only when the list is video-only; any folder / tool / Support Us tile forces landscape.
-        if self._land and content == 'movies':
-            content = 'files'
+                # 0.3.22: video files are ALWAYS portrait posters; folders / tools / docs are landscape cards. Any list with a
+        # video uses view 501, whose folder layout draws a landscape card, so mixed folders keep both shapes.
+        content = 'movies' if self._vid else 'files'
         xbmcplugin.setContent(self.handle, content)
         xbmcplugin.addSortMethod(self.handle, xbmcplugin.SORT_METHOD_UNSORTED)
         xbmcplugin.endOfDirectory(self.handle, cacheToDisc=cache)
@@ -370,13 +377,16 @@ class Router:
         if not page:   # Support Us / Read First docs in this folder, like the web app's tiles
             seen_kind = set()
             for did, dname, kind in (m.get('docs') or {}).get((m['items'].get(fid) or [0, 0, 0, ''])[3] or fid, []):
+                if kind == 'gdoc':
+                    self.add_folder(dname, 'special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png', 'Document (read-only).', landscape='special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png', action='gdoc', id=did, title=dname)
+                    continue
                 if kind in seen_kind:
                     continue
                 seen_kind.add(kind)
                 if kind == 'support':
                     self.add_folder('Support Us', 'special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', action='support')
                 else:
-                    self.add_folder('Read First', '', 'Welcome and how the collection works.', action='readme')
+                    self.add_folder('Read First', 'special://xbmc/addons/skin.fefc/media/fefc-readfirst-tile.png', 'Welcome and how the collection works.', landscape='special://xbmc/addons/skin.fefc/media/fefc-readfirst-tile.png', action='readme')
         for k in chunk:
             if m['items'][k][2]:
                 self.add_dir_item(m, k)
@@ -423,11 +433,12 @@ class Router:
     def genres(self):
         m = _model()
         art = m.get('genreart') or {}
-        names = sorted(set(m['genre_videos']) - {'Unsorted'}) + (['Unsorted'] if 'Unsorted' in m['genre_videos'] else [])
+        gk = set(m['genre_videos']) | set(m.get('genre_folders') or {})
+        names = sorted(gk - {'Uncategorized', 'Unsorted'}) + (['Uncategorized'] if 'Uncategorized' in gk else [])
         for g in names:
             a = art.get(g) or {}
             img = catalog.abs_url(_base(), (a.get('img') or '').split('?')[0]) if a.get('img') else ''
-            self.add_folder('%s  (%d)' % (g, len(catalog.dedupe(m, m['genre_videos'][g])) + len(m['genre_folders'].get(g, []))), '', landscape=img, action='genre', genre=g)
+            self.add_folder('%s  (%d)' % (g, len(catalog.dedupe(m, m['genre_videos'].get(g, []))) + len(m['genre_folders'].get(g, []))), '', landscape=img, action='genre', genre=g)
         self.end()
 
     def genre(self):
@@ -472,12 +483,11 @@ class Router:
     def search(self):
         q = self.params.get('q')
         if q is None:
-            kb = xbmc.Keyboard('', 'Search the FEFC collection')
-            kb.doModal()
-            if not kb.isConfirmed() or not kb.getText().strip():
+            from . import osinput
+            q = (osinput.get_text('Search the FEFC collection') or '').strip()
+            if not q:
                 xbmcplugin.endOfDirectory(self.handle, succeeded=False)
                 return
-            q = kb.getText().strip()
             # re-enter with the query so back/refresh works
             xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='search', q=q))
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
@@ -499,10 +509,9 @@ class Router:
     def searchbox(self):
         """Home Search tile (RunPlugin, no directory handle): ask for the text first, then open the results list directly.
         Nothing is returned from a failed directory, so the keyboard cannot reappear over the results."""
-        kb = xbmc.Keyboard('', 'Search the FEFC collection')
-        kb.doModal()
-        if kb.isConfirmed() and kb.getText().strip():
-            q = kb.getText().strip()
+        from . import osinput
+        q = (osinput.get_text('Search the FEFC collection') or '').strip()
+        if q:
             xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(self.url, action='search', q=q))
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
@@ -624,17 +633,11 @@ class Router:
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def people(self):
+        """0.3.22: one flat A-Z list of every actor and director folder (display only; Drive is untouched)."""
         m = _model()
-        role = self.params.get('role')
         meta = m.get('people_meta') or {}
-        if not role:
-            na = sum(1 for k, (n, r) in meta.items() if r == 'actor' and k in m['items'])
-            nd = sum(1 for k, (n, r) in meta.items() if r == 'director' and k in m['items'])
-            self.add_folder('Actors  (%d)' % na, '', 'Edits grouped by actor.', action='people', role='actor')
-            self.add_folder('Directors  (%d)' % nd, '', 'Edits grouped by director.', action='people', role='director')
-            self.end()
-            return
-        rows = [k for k, (n, r) in meta.items() if r == role and k in m['items'] and m['cnt'].get(k)]
+        role = self.params.get('role')
+        rows = [k for k, (n, r) in meta.items() if (not role or r == role) and k in m['items'] and m['cnt'].get(k)]
         rows.sort(key=lambda k: catalog.natkey(meta[k][0]))
         for k in rows:
             art = catalog.folder_art(m, _base(), k)
@@ -652,6 +655,16 @@ class Router:
         raw = re.sub(r'(?i)<br\s*/?>', '\n', raw)
         txt = _html.unescape(re.sub(r'<[^>]+>', '', raw)).replace('\xa0', ' ')
         return re.sub(r'\n{3,}', '\n\n', re.sub(r'[ \t]+', ' ', txt)).strip()
+
+    def settings(self):
+        """Menu-bar SETTINGS opens the FEFC settings (Notifications etc.); Kodi system settings are one entry away."""
+        xbmc.executebuiltin('Addon.OpenSettings(plugin.video.fefc)')
+
+    def kodi_settings(self):
+        xbmc.executebuiltin('ActivateWindow(Settings)')
+
+    def notify_perm(self):
+        xbmc.executebuiltin('StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,fefcnotify://perm,,,,com.fefc.kodi.FefcNotifyActivity)')
 
     def sound_toggle(self):
         """Top-bar sound on/off (saved in the add-on settings, so it survives restarts and app updates)."""
@@ -771,7 +784,8 @@ class Router:
                 ml.unlink()
                 dlg.notification('My List', 'Unlinked. Your list stays on this device.', xbmcgui.NOTIFICATION_INFO, 3500)
             elif a == 'code':
-                code = dlg.input('Sync code (web app: My List > Sync My List > Create a code)', type=xbmcgui.INPUT_NUMERIC)
+                from . import osinput
+                code = osinput.get_text('Sync code (web app: My List > Sync My List > Create a code)', numeric=True)
                 if code:
                     err = ml.link(code) or ml.sync()
                     dlg.notification('My List', err or 'Linked and synced', xbmcgui.NOTIFICATION_ERROR if err else xbmcgui.NOTIFICATION_INFO, 4000)
@@ -837,6 +851,22 @@ class Router:
             xbmcgui.Dialog().notification('My List', 'Linking %s.' % status, xbmcgui.NOTIFICATION_ERROR, 4000)
 
     # -- Read Me / Support Us (same content as the web app) -------------------------------------------------
+    def gdoc(self):
+        """0.3.22: read-only view of a Google Doc from Fan Edit Collections (plain-text export; Drive is never changed)."""
+        import urllib.request
+        did = self.params.get('id', '')
+        title = self.params.get('title') or 'Document'
+        try:
+            req = urllib.request.Request('https://docs.google.com/document/d/%s/export?format=txt' % did, headers={'User-Agent': 'FEFC-Kodi'})
+            txt = urllib.request.urlopen(req, timeout=20).read().decode('utf-8-sig', 'replace').strip()
+            if txt.lstrip().startswith('<'):
+                raise ValueError('not shared publicly')
+        except Exception as e:
+            txt = 'Could not load this document right now (%s). It is also in the FEFC web app.' % e
+        xbmcgui.Dialog().textviewer(title, txt)
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     def readme(self):
         import html as _html
         import re
@@ -1081,7 +1111,8 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'search': 'search', 'searchbox': 'searchbox', 'play': 'play', 'update': 'update', 'mylist': 'mylist', 'mylist_toggle': 'mylist_toggle',
           'mylist_sync': 'mylist_sync', 'open_vlc': 'open_vlc', 'open_drive': 'open_drive', 'readme': 'readme', 'support': 'support',
           'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
-          'about': 'about', 'sound_toggle': 'sound_toggle'}
+          'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
+          'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc'}
 
 
 def run(argv):

@@ -134,9 +134,14 @@ def make_textures(media):
             ImageDraw.Draw(gl).rounded_rectangle((m - 6, m - 6, w - m + 5, h - m + 5), 14, fill=(255, 156, 0, 200))
             im = Image.alpha_composite(im, gl.filter(ImageFilter.GaussianBlur(5)))
         body = Image.new('RGBA', (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(body)
-        d.rounded_rectangle((m, m, w - m - 1, h - m - 1), 10, fill=(14, 15, 18, 242),
+        # 0.3.22: opaque black glossy body (gradient sheen on the top half), orange focus glow kept
+        d.rounded_rectangle((m, m, w - m - 1, h - m - 1), 10, fill=(0, 0, 0, 255),
                             outline=(255, 156, 0, 255) if focus else (110, 114, 120, 255), width=3 if focus else 2)
-        d.rounded_rectangle((m + 3, m + 3, w - m - 4, (h // 2)), 8, fill=(255, 255, 255, 18))   # gloss
+        gl2 = Image.new('RGBA', (w, h), (0, 0, 0, 0)); dg = ImageDraw.Draw(gl2)
+        for yy in range(m + 3, h // 2):
+            a = int(46 - 34 * (yy - m - 3) / max(1, h // 2 - m - 3))
+            dg.line((m + 4, yy, w - m - 5, yy), fill=(255, 255, 255, a))
+        body = Image.alpha_composite(body, gl2)
         return Image.alpha_composite(im, body)
     ol(False).save(media / 'fefc-ol-tile.png'); ol(True).save(media / 'fefc-ol-focus.png')
     # top-bar icons (white, 4x supersampled): magnifier, gear, speaker on / muted
@@ -193,8 +198,10 @@ def make_textures(media):
         w, h, m = 640, 320, 24
         im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
         body = Image.new('RGBA', (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(body)
-        d.rounded_rectangle((m, m, w - m - 1, h - m - 1), 18, fill=(14, 15, 18, 242), outline=(110, 114, 120, 255), width=3)
-        d.rounded_rectangle((m + 4, m + 4, w - m - 5, h // 2), 14, fill=(255, 255, 255, 18))
+        d.rounded_rectangle((m, m, w - m - 1, h - m - 1), 18, fill=(0, 0, 0, 255), outline=(110, 114, 120, 255), width=3)
+        gl3 = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        ImageDraw.Draw(gl3).rounded_rectangle((m + 4, m + 4, w - m - 5, h // 2), 14, fill=(255, 255, 255, 22))
+        body = Image.alpha_composite(body, gl3); d = ImageDraw.Draw(body)
         y = 110 if len(lines) == 1 else 95
         for i, t in enumerate(lines):
             f = font_tile if i == 0 else font_sub
@@ -205,9 +212,14 @@ def make_textures(media):
     land_tile(['SUPPORT US', 'Patreon  ·  PayPal  ·  Venmo'], 'fefc-support-tile.png')
     land_tile(['SHUFFLE PLAY'], 'fefc-shuffle-tile.png')
     land_tile(['SORT'], 'fefc-sort-tile.png')
+    land_tile(['READ FIRST'], 'fefc-readfirst-tile.png')
+    land_tile(['TO BE CATALOGUED'], 'fefc-tbc-tile.png')
+    land_tile(['DOCUMENT'], 'fefc-doc-tile.png')
 
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')
+    if (ROOT / 'assets' / 'home-wall-still.jpg').exists():   # 0.3.22: instant Home background + loop-seam cover
+        shutil.copy(ROOT / 'assets' / 'home-wall-still.jpg', media / 'fefc-wall-still.jpg')
     for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):
         shutil.copy(f, media / f.name)
     return media

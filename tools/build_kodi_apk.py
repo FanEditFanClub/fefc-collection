@@ -68,13 +68,37 @@ if PKG == 'com.fefc.kodi':
         if 'FefcNotifyActivity' not in s:
             s = s.replace('</application>',
                 '<activity android:name="com.fefc.kodi.FefcNotifyActivity" android:exported="false" '
-                'android:excludeFromRecents="true" android:noHistory="true" android:taskAffinity="" '
+                'android:excludeFromRecents="true" android:taskAffinity="" '
                 'android:theme="@android:style/Theme.Translucent.NoTitleBar">'
                 '<intent-filter><action android:name="android.intent.action.VIEW"/>'
                 '<category android:name="android.intent.category.DEFAULT"/>'
                 '<data android:scheme="fefcnotify"/></intent-filter></activity>\n    </application>', 1)
         open(mf, 'w', encoding='utf-8').write(s)
         print('injected FefcNotifyActivity for com.fefc.kodi')
+# Both packages: system-keyboard text entry (Android / Fire TV IME, Gboard voice typing) for Search and every
+# FEFC text field; Python falls back to Kodi's keyboard if this activity does not open.
+_in_dir = os.path.join(root, 'tools', 'fefc_input', 'smali', 'com', 'fefc', 'kodi')
+if os.path.isdir(_in_dir):
+    _dest_dir = None
+    for sd in sorted(glob.glob(os.path.join(dec, 'smali*'))):
+        _dest_dir = os.path.join(sd, 'com', 'fefc', 'kodi')
+    assert _dest_dir, 'no smali* dir to inject FefcInputActivity'
+    os.makedirs(_dest_dir, exist_ok=True)
+    for f in glob.glob(os.path.join(_in_dir, '*.smali')):
+        shutil.copy(f, os.path.join(_dest_dir, os.path.basename(f)))
+    s = open(mf, encoding='utf-8').read()
+    if 'FefcInputActivity' not in s:
+        s = s.replace('</application>',
+            '<activity android:name="com.fefc.kodi.FefcInputActivity" android:exported="false" '
+            'android:excludeFromRecents="true" android:noHistory="true" '
+            'android:windowSoftInputMode="stateAlwaysVisible|adjustResize" '
+            'android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|navigation" '
+            'android:theme="@android:style/Theme.Translucent.NoTitleBar">'
+            '<intent-filter><action android:name="android.intent.action.VIEW"/>'
+            '<category android:name="android.intent.category.DEFAULT"/>'
+            '<data android:scheme="fefcinput"/></intent-filter></activity>\n    </application>', 1)
+    open(mf, 'w', encoding='utf-8').write(s)
+    print('injected FefcInputActivity for', PKG)
 # label "FEFC" in every locale
 for f in glob.glob(os.path.join(dec, 'res', 'values*', 'strings.xml')):
     t = open(f, encoding='utf-8').read()
@@ -166,6 +190,10 @@ extra = ''.join('  <addon>%s</addon>\n' % a for a in ('plugin.video.fefc', 'repo
 t = t.replace('</addons>', extra + '</addons>'); open(am, 'w', encoding='utf-8').write(t)
 if os.path.exists(os.path.join(root, 'assets', 'intro-tv.mp4')):
     shutil.copy(os.path.join(root, 'assets', 'intro-tv.mp4'), os.path.join(A, 'media', 'fefc-intro.mp4'))
+# 0.3.22: Home wall loop bundled for an instant start (with ambience + silent twin for the SOUND toggle)
+for _src, _dst in (('home-wall.mp4', 'fefc-home-wall.mp4'), ('home-wall-silent.mp4', 'fefc-home-wall-silent.mp4')):
+    if os.path.exists(os.path.join(root, 'assets', _src)):
+        shutil.copy(os.path.join(root, 'assets', _src), os.path.join(A, 'media', _dst))
 bj = os.path.join(root, 'kodi-src', 'fefc-build.json')
 if not os.path.exists(bj):
     open(bj, 'w').write('{"kodi": "21.3", "build": 0, "src": "local"}\n')

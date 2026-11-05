@@ -79,6 +79,10 @@ def build_model(raw):
                 docs.setdefault(parent, []).append([iid, name, 'support'])
             elif not name.startswith('.') and RFRE.search(name):
                 docs.setdefault(parent, []).append([iid, name, 'readfirst'])
+            elif (not name.startswith('.') and parent == '1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB'
+                  and (it.get('mimeType') or it.get('targetMime') or '') == 'application/vnd.google-apps.document'):
+                # 0.3.22: Google Docs inside Fan Edit Collections are listed (opened read-only as text)
+                docs.setdefault(parent, []).append([it.get('targetId') or iid, name, 'gdoc'])
             return
         if iid == root:
             return
@@ -155,7 +159,10 @@ def build_model(raw):
             p = items.get(p, [None, ''])[1]
             depth += 1
         if not g:
-            g = {'Unsorted'} if not v[2] else set()
+            g = {'Uncategorized'} if not v[2] else set()
+        if 'Unsorted' in g:  # 0.3.22: no separate Unsorted, it folds into Uncategorized
+            g.discard('Unsorted')
+            g.add('Uncategorized')
         if g:
             vgenres[i] = sorted(g)
             for x in g:

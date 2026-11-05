@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- FEFC library / add-on view inside the 5% TV-safe margin (96..1824 x 54..1026).
-     View 500: landscape tiles (collections, genres), 4 x 4.  View 501: portrait posters (video files), 7 x 2. -->
+     0.3.22: every grid is 6 tiles wide. View 500: landscape tiles (collections, genres). View 501: portrait posters (video files). -->
 <window id="25">
 	<defaultcontrol always="true">500</defaultcontrol>
 	<backgroundcolor>background</backgroundcolor>
@@ -26,52 +26,29 @@
 			<label>$VAR[FefcHeader]</label>
 			<scroll>true</scroll>
 		</control>
-		<!-- paused video: resume / stop -->
-		<control type="grouplist" id="9200">
-			<right>96</right><top>54</top><width>470</width><height>56</height>
-			<orientation>horizontal</orientation>
-			<align>right</align>
-			<itemgap>16</itemgap>
-			<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
-			<control type="button" id="9210">
-				<width>290</width><height>56</height>
-				<include>FefcSmallButton</include>
-				<label>RESUME VIDEO</label>
-				<onleft>9211</onleft><onright>9211</onright><ondown>500</ondown><onup>9291</onup>
-				<onclick>ActivateWindow(fullscreenvideo)</onclick>
-			</control>
-			<control type="button" id="9211">
-				<width>160</width><height>56</height>
-				<include>FefcSmallButton</include>
-				<label>STOP</label>
-				<onleft>9210</onleft><onright>9210</onright><ondown>500</ondown><onup>9291</onup>
-				<onclick>PlayerControl(Stop)</onclick>
-			</control>
-		</control>
 		<!-- landscape tiles -->
 		<control type="panel" id="500">
 			<visible>!Container.Content(movies)</visible>
-			<left>96</left><top>122</top><width>1700</width><height>868</height>
+			<left>96</left><top>122</top><width>1700</width><height>760</height>
 			<onleft>500</onleft><onright>60</onright>
-			<onup condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">9210</onup>
-			<onup>9291</onup>
-			<ondown>500</ondown>
+			<onup>9290</onup>
+			<ondown>9290</ondown>
 			<viewtype label="31102">icon</viewtype>
 			<pagecontrol>60</pagecontrol>
 			<scrolltime tween="cubic" easing="out">300</scrolltime>
 			<preloaditems>2</preloaditems>
 			<orientation>vertical</orientation>
-			<itemlayout width="425" height="217">
+			<itemlayout width="283" height="150">
 				<control type="group">
 					<left>10</left><top>8</top>
 					<include content="FefcGridTile"></include>
 				</control>
 			</itemlayout>
-			<focusedlayout width="425" height="217">
+			<focusedlayout width="283" height="150">
 				<control type="group">
 					<left>10</left><top>8</top>
 					<depth>DepthContentPopout</depth>
-					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="202,100" reversible="true">Focus</animation>
+					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
 					<include content="FefcGridTile">
 						<param name="focused" value="true" />
 					</include>
@@ -81,25 +58,41 @@
 		<!-- portrait posters -->
 		<control type="panel" id="501">
 			<visible>Container.Content(movies)</visible>
-			<left>96</left><top>122</top><width>1700</width><height>868</height>
+			<left>96</left><top>122</top><width>1700</width><height>760</height>
 			<onleft>501</onleft><onright>60</onright>
-			<onup condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">9210</onup>
-			<onup>9291</onup>
-			<ondown>501</ondown>
+			<onup>9290</onup>
+			<ondown>9290</ondown>
 			<viewtype label="31102">icon</viewtype>
 			<pagecontrol>60</pagecontrol>
 			<scrolltime tween="cubic" easing="out">300</scrolltime>
 			<preloaditems>2</preloaditems>
 			<orientation>vertical</orientation>
-			<itemlayout width="242" height="430">
+			<!-- 0.3.22: folders / tools / docs inside a list that also has files keep their landscape card -->
+			<itemlayout width="283" height="430" condition="ListItem.IsFolder | !String.IsEqual(ListItem.Property(IsPlayable),true)">
 				<control type="group">
-					<left>10</left><top>8</top>
+					<left>9</left><top>8</top>
+					<include content="FefcGridTile"></include>
+				</control>
+			</itemlayout>
+			<focusedlayout width="283" height="430" condition="ListItem.IsFolder | !String.IsEqual(ListItem.Property(IsPlayable),true)">
+				<control type="group">
+					<left>9</left><top>8</top>
+					<depth>DepthContentPopout</depth>
+					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
+					<include content="FefcGridTile">
+						<param name="focused" value="true" />
+					</include>
+				</control>
+			</focusedlayout>
+			<itemlayout width="283" height="430">
+				<control type="group">
+					<left>30</left><top>8</top>
 					<include content="FefcPosterTile"></include>
 				</control>
 			</itemlayout>
-			<focusedlayout width="242" height="430">
+			<focusedlayout width="283" height="430">
 				<control type="group">
-					<left>10</left><top>8</top>
+					<left>30</left><top>8</top>
 					<depth>DepthContentPopout</depth>
 					<animation effect="zoom" start="100" end="105" time="180" tween="sine" easing="inout" center="111,166" reversible="true">Focus</animation>
 					<include content="FefcPosterTile">
@@ -109,14 +102,15 @@
 			</focusedlayout>
 		</control>
 		<control type="scrollbar" id="60">
-			<left>1806</left><top>130</top><width>10</width><height>850</height>
+			<left>1806</left><top>130</top><width>10</width><height>750</height>
 			<orientation>vertical</orientation>
 			<showonepage>false</showonepage>
 			<onleft>500</onleft>
 		</control>
+			</control>
 		<!-- footer: full title of the focused item + position -->
 		<control type="label">
-			<left>96</left><top>994</top><width>1200</width><height>32</height>
+			<left>96</left><top>954</top><width>1200</width><height>32</height>
 			<aligny>center</aligny>
 			<font>font10</font>
 			<textcolor>FF99CCFF</textcolor>
@@ -124,13 +118,12 @@
 			<scroll>true</scroll>
 		</control>
 		<control type="label">
-			<right>96</right><top>994</top><width>500</width><height>32</height>
+			<right>96</right><top>954</top><width>500</width><height>32</height>
 			<align>right</align><aligny>center</aligny>
 			<font>font10</font>
 			<textcolor>FFFF9C00</textcolor>
 			<label>$INFO[Container.NumItems] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</label>
 		</control>
-			</control>
 		<include content="FefcTopBar"><param name="down" value="500"/><param name="up" value="500"/></include>
 		<include>FefcTicker</include>
 	</controls>

@@ -885,15 +885,15 @@ var __spreadValues = (a, b) => {
     while (x && n++ < 40) {
       const a = genreMap[x.id], b = VG[x.id];
       if (a && a.genres) {
-        for (const g of a.genres) if (g !== "Uncategorized" && hit.indexOf(g) < 0) hit.push(g);
+        for (const g of a.genres) if (g !== "Uncategorized" && g !== "Unsorted" && hit.indexOf(g) < 0) hit.push(g);
       }
       if (b) {
-        for (const g of b) if (hit.indexOf(g) < 0) hit.push(g);
+        for (const g of b) if (g !== "Unsorted" && hit.indexOf(g) < 0) hit.push(g);
       }
       x = items.get(x.parent);
     }
     if (f.targetId && VG[f.targetId]) {
-      for (const g of VG[f.targetId]) if (hit.indexOf(g) < 0) hit.push(g);
+      for (const g of VG[f.targetId]) if (g !== "Unsorted" && hit.indexOf(g) < 0) hit.push(g);
     }
     r = hit.length ? hit : ["Uncategorized"];
     _goC.set(f.id, r);
@@ -2561,6 +2561,7 @@ var __spreadValues = (a, b) => {
     }
     renderBase(location.hash);
     if (view === "home" || k === "") S.ambience(true);
+    else S.ambience(false);
   }
   function renderBase(h) {
     baseKey = h;
@@ -3233,7 +3234,7 @@ var __spreadValues = (a, b) => {
       const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === FOLD.tbc || underTBC(cur) || /to be catalogued/i.test(title) ? "tbc" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
       const _rf = cur === ROOT && mode !== "arena" ? RF_HOME_TILE + SUP_HOME_TILE : "";
-      g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/, "$1" + _rf) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? "" : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
+      g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/, "$1" + _rf) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? sec("docs", "DOCUMENTS", docs) : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
     }
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach(lazyArt);
     if (mode !== "arena" && !(mode === "all" && cur === ROOT)) drain(Q, isNew);
@@ -5701,7 +5702,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.26";
+  const HOME_VER_FALLBACK = "0.8.27";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

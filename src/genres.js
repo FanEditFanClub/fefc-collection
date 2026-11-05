@@ -4,8 +4,8 @@ var art={};fetch('data/genreart.json').then(function(r){return r.json()}).then(f
 var css=document.createElement('style');css.textContent=
 '#grid.gnrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(30vw,340px),1fr));gap:1.4vmin;padding:2vmin 3vmin 6vmin;perspective:1400px}'+
 '#grid.gnrs .gwrap{display:contents}'+
-'#grid.gnrs .ol-tile.gnr{position:relative;aspect-ratio:1.55;border:2px solid #9fb6cf;border-radius:3px;overflow:hidden;background:#0b111a;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:.35em .4em .3em;gap:.1em;font:700 clamp(18px,5vmin,72px)/.98 "Source Sans 3","Segoe UI","PT Sans",sans-serif;letter-spacing:-.01em;text-shadow:0 1px 3px #000,0 0 12px #000;container-type:size;transform:rotateX(var(--tilt-x,11deg));transform-origin:50% 100%;box-shadow:inset 0 0 0 1px #000,0 6px 18px #000a;transition:box-shadow .15s,border-color .15s}'+
-'#grid.gnrs .ol-tile.gnr:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(170deg,#ffffff26 0,#fff0 45%),linear-gradient(0deg,#000c,#0006 55%,#0003);pointer-events:none}'+
+'#grid.gnrs .ol-tile.gnr{position:relative;aspect-ratio:1.55;border:2px solid #9fb6cf;border-radius:3px;overflow:hidden;background:#0b111a;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;padding:.35em .4em .45em;gap:.1em;font:700 clamp(18px,5vmin,72px)/.98 "Source Sans 3","Segoe UI","PT Sans",sans-serif;letter-spacing:-.01em;text-shadow:0 0 2px #000,0 0 2px #000,0 2px 4px #000,0 0 14px #000;-webkit-text-stroke:.6px #000;container-type:size;transform:rotateX(var(--tilt-x,11deg));transform-origin:50% 100%;box-shadow:inset 0 0 0 1px #000,0 6px 18px #000a;transition:box-shadow .15s,border-color .15s}'+
+'#grid.gnrs .ol-tile.gnr:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(170deg,#ffffff26 0,#fff0 45%),linear-gradient(0deg,#000e 0,#000a 28%,#0000 62%);pointer-events:none}'+
 '#grid.gnrs .gimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}'+
 '#grid.gnrs .gimg.brand{object-fit:contain;padding:18%;background:radial-gradient(circle at 50% 40%,#1c2636,#05070b 75%);opacity:.55}'+
 '#grid.gnrs .gnr span,#grid.gnrs .gnr small{position:relative;z-index:2;max-width:100%;overflow-wrap:break-word}'+
@@ -43,10 +43,10 @@ var css=document.createElement('style');css.textContent=
 document.head.appendChild(css);
 function pl(n,w){return n+' '+w+(n===1?'':'s')}
 function list(o){var vg0=(window.__fefcVG&&window.__fefcVG())||{};if(st.list&&st.key===o.items.size+':'+Object.keys(o.genreMap).length+':'+Object.keys(vg0).length)return st.list;
- var by={},foldG={};Object.keys(o.genreMap||{}).forEach(function(fid){var gens=o.genreMap[fid].genres||[];foldG[fid]=gens;gens.forEach(function(g){(by[g]=by[g]||[]).push(fid)})});
+ var by={},foldG={};Object.keys(o.genreMap||{}).forEach(function(fid){var gens=(o.genreMap[fid].genres||[]).map(function(g){return g==='Unsorted'?'Uncategorized':g}).filter(function(g,i,a){return a.indexOf(g)===i});foldG[fid]=gens;gens.forEach(function(g){(by[g]=by[g]||[]).push(fid)})});
  var gs=Object.keys(by).sort(function(a,b){return (a==='Uncategorized')-(b==='Uncategorized')||a.localeCompare(b)});var cnt={};gs.forEach(function(g){cnt[g]=0});
  /* O(videos × depth × genres-per-folder) — never scan every genre name per parent (was freezing Fire TV). */
- var vgm=(window.__fefcVG&&window.__fefcVG())||{};o.items.forEach(function(f){if(!o.isVid(f))return;var p=f.id,k=0,hit={};while(p&&k++<30){var gens=foldG[p]||vgm[p];if(gens){for(var i=0;i<gens.length;i++){var g=gens[i];if(!hit[g]){hit[g]=1;cnt[g]++}}}var x=o.items.get(p);p=x&&x.parent}});
+ var vgm=(window.__fefcVG&&window.__fefcVG())||{};o.items.forEach(function(f){if(!o.isVid(f))return;var p=f.id,k=0,hit={};while(p&&k++<30){var gens=foldG[p]||vgm[p];if(gens){for(var i=0;i<gens.length;i++){var g=gens[i]==='Unsorted'?'Uncategorized':gens[i];if(!hit[g]&&g in cnt){hit[g]=1;cnt[g]++}}}var x=o.items.get(p);p=x&&x.parent}});
  st.key=o.items.size+':'+Object.keys(o.genreMap).length+':'+Object.keys(vgm).length;st.list=gs.map(function(g){return {g:g,c:by[g].length,m:cnt[g]}});return st.list}
 function art(g){var a=(window.FEFCGenres&&FEFCGenres._art)||{};return a[g]||a.Uncategorized||{img:'assets/fefc-logo.png',brand:1}}
 function pages(){return Math.max(1,Math.ceil(st.list.length/9))}

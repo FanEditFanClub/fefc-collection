@@ -1,8 +1,8 @@
 {
  "Horror": {
-  "img": "assets/genres/horror.jpg?v=2",
+  "img": "assets/genres/horror.jpg?v=4",
   "src0": "assets/posters/bride-of-frankenstein-raymix-the.webp",
-  "credit": "Boris Karloff as the Monster, Frankenstein (1931) publicity still, public domain, Wikimedia Commons: https://commons.wikimedia.org/wiki/File:Frankenstein%27s_monster_(Boris_Karloff).jpg"
+  "credit": "The Shining (1980), REDRUM scene, TMDB backdrop https://www.themoviedb.org/movie/694"
  },
  "Sci-Fi": {
   "img": "assets/genres/scifi.webp?v=1",
@@ -10,9 +10,9 @@
  },
  "Family": {
   "folder": "Harry Potter and The Sorcerer's Stone - Extended Edition - ADigitalMan Cut - Fan Edit",
-  "img": "assets/genres/family.webp?v=3",
+  "img": "assets/genres/family.jpg?v=4",
   "src0": "assets/clips/132.jpg",
-  "credit": "Still from Father of the Bride (1991) via TMDB (themoviedb.org) backdrops"
+  "credit": "E.T. the Extra-Terrestrial (1982), the moon bike shot, TMDB backdrop https://www.themoviedb.org/movie/601"
  },
  "Fantasy": {
   "folder": "The Lord of The Rings - The Reinvented Series - Season 3 Episode 6 - There And Back Again - Fan Edit",
@@ -28,8 +28,9 @@
  },
  "Drama": {
   "folder": "Battlestar Galactica - Season 1 Episode 5 - You Cant Go Home Again - Extended Episode - Fan Edit",
-  "img": "assets/genres/drama.jpg",
-  "src0": "assets/clips/78.jpg"
+  "img": "assets/genres/drama.jpg?v=4",
+  "src0": "assets/clips/78.jpg",
+  "credit": "Schindler's List (1993), the girl in the red coat, TMDB backdrop https://www.themoviedb.org/movie/424"
  },
  "Adventure": {
   "folder": "Lost - In The Detail - Part 100 - Day 92-93 - Chronological Fan Edit.avi",
@@ -85,8 +86,12 @@
  },
  "War": {
   "folder": "She-Hulk: Attorney at Law - Episode 5-6 - Titania Cut - Fan Edit",
-  "img": "assets/genres/action.webp?v=3",
+  "img": "assets/genres/war.jpg?v=4",
   "src0": "assets/clips/9.jpg",
-  "credit": "Still from Die Hard (1988) via TMDB (themoviedb.org) backdrops (shared with Action until dedicated art is picked)"
+  "credit": "Band of Brothers (2001), Easy Company silhouette, TMDB backdrop https://www.themoviedb.org/tv/4613"
+ },
+ "Musical": {
+  "img": "assets/genres/musical.jpg?v=4",
+  "credit": "The Producers (1968), Gene Wilder and Zero Mostel, TMDB backdrop https://www.themoviedb.org/movie/30197"
  }
 }

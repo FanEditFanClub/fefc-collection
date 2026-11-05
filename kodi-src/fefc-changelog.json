@@ -1,6 +1,21 @@
 {
  "versions": [
   {
+   "version": "0.3.22 Beta",
+   "date": "2026-11-05",
+   "notes": [
+    "Home: menu bar labels no longer cut off; 3x3 grid centred, black glossy tiles with the orange focus glow, long tile names wrap inside the tile",
+    "Home: mosaic video only around the grid, instant still-frame start, longer 75 s seamless loop (720p, low bitrate) bundled in the app",
+    "Home ambience is back (original FEFC recording), follows the Sound toggle, stops when you leave Home or play a file",
+    "Search and every FEFC text box use the Android / Fire TV system keyboard",
+    "Notifications: permission asked after the intro on Home (and again next launch until allowed); Settings now opens FEFC settings with the Notifications section, plus an 'Allow notifications' button",
+    "Actors & Directors: one A–Z list of everyone",
+    "Genres: new art for Musical, Drama, Horror, Family and War; names centred at the bottom; Unsorted merged into Uncategorized",
+    "Every page: same bottom menu bar as Home, no version in the corner; grids are 6 tiles wide",
+    "Shuffle Play / Sort / Support Us tiles show their name once"
+   ]
+  },
+  {
    "version": "0.3.21 Beta",
    "date": "2026-11-04",
    "notes": [

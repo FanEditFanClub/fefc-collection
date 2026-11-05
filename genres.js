@@ -8,7 +8,7 @@
   }).catch(function() {
   });
   var css = document.createElement("style");
-  css.textContent = '#grid.gnrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(30vw,340px),1fr));gap:1.4vmin;padding:2vmin 3vmin 6vmin;perspective:1400px}#grid.gnrs .gwrap{display:contents}#grid.gnrs .ol-tile.gnr{position:relative;aspect-ratio:1.55;border:2px solid #9fb6cf;border-radius:3px;overflow:hidden;background:#0b111a;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:.35em .4em .3em;gap:.1em;font:700 clamp(18px,5vmin,72px)/.98 "Source Sans 3","Segoe UI","PT Sans",sans-serif;letter-spacing:-.01em;text-shadow:0 1px 3px #000,0 0 12px #000;container-type:size;transform:rotateX(var(--tilt-x,11deg));transform-origin:50% 100%;box-shadow:inset 0 0 0 1px #000,0 6px 18px #000a;transition:box-shadow .15s,border-color .15s}#grid.gnrs .ol-tile.gnr:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(170deg,#ffffff26 0,#fff0 45%),linear-gradient(0deg,#000c,#0006 55%,#0003);pointer-events:none}#grid.gnrs .gimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}#grid.gnrs .gimg.brand{object-fit:contain;padding:18%;background:radial-gradient(circle at 50% 40%,#1c2636,#05070b 75%);opacity:.55}#grid.gnrs .gnr span,#grid.gnrs .gnr small{position:relative;z-index:2;max-width:100%;overflow-wrap:break-word}#grid.gnrs .gnr small{font-size:.36em;font-weight:600;color:#ffb02e}@supports (font-size:1cqh){#grid.gnrs .gnr span{font-size:clamp(16px,min(30cqh,18.5cqw),130px)}#grid.gnrs .gnr small{font-size:clamp(10px,min(9cqh,5.5cqw),36px)}}#grid.gnrs .ol-tile.gnr:hover,#grid.gnrs .ol-tile.gnr:focus,#grid.gnrs .ol-tile.gnr:focus-visible{outline:0;transform:rotateX(var(--tilt-x,11deg));border-color:#ffb02e;box-shadow:inset 0 0 0 1px #000,inset 0 0 26px #ff9c0033,0 0 0 2px #ff9c00,0 0 24px #ff9c00cc;z-index:2}html.no3d #grid.gnrs .ol-tile.gnr{transform:none}';
+  css.textContent = '#grid.gnrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(30vw,340px),1fr));gap:1.4vmin;padding:2vmin 3vmin 6vmin;perspective:1400px}#grid.gnrs .gwrap{display:contents}#grid.gnrs .ol-tile.gnr{position:relative;aspect-ratio:1.55;border:2px solid #9fb6cf;border-radius:3px;overflow:hidden;background:#0b111a;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;text-align:center;padding:.35em .4em .45em;gap:.1em;font:700 clamp(18px,5vmin,72px)/.98 "Source Sans 3","Segoe UI","PT Sans",sans-serif;letter-spacing:-.01em;text-shadow:0 0 2px #000,0 0 2px #000,0 2px 4px #000,0 0 14px #000;-webkit-text-stroke:.6px #000;container-type:size;transform:rotateX(var(--tilt-x,11deg));transform-origin:50% 100%;box-shadow:inset 0 0 0 1px #000,0 6px 18px #000a;transition:box-shadow .15s,border-color .15s}#grid.gnrs .ol-tile.gnr:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(170deg,#ffffff26 0,#fff0 45%),linear-gradient(0deg,#000e 0,#000a 28%,#0000 62%);pointer-events:none}#grid.gnrs .gimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}#grid.gnrs .gimg.brand{object-fit:contain;padding:18%;background:radial-gradient(circle at 50% 40%,#1c2636,#05070b 75%);opacity:.55}#grid.gnrs .gnr span,#grid.gnrs .gnr small{position:relative;z-index:2;max-width:100%;overflow-wrap:break-word}#grid.gnrs .gnr small{font-size:.36em;font-weight:600;color:#ffb02e}@supports (font-size:1cqh){#grid.gnrs .gnr span{font-size:clamp(16px,min(30cqh,18.5cqw),130px)}#grid.gnrs .gnr small{font-size:clamp(10px,min(9cqh,5.5cqw),36px)}}#grid.gnrs .ol-tile.gnr:hover,#grid.gnrs .ol-tile.gnr:focus,#grid.gnrs .ol-tile.gnr:focus-visible{outline:0;transform:rotateX(var(--tilt-x,11deg));border-color:#ffb02e;box-shadow:inset 0 0 0 1px #000,inset 0 0 26px #ff9c0033,0 0 0 2px #ff9c00,0 0 24px #ff9c00cc;z-index:2}html.no3d #grid.gnrs .ol-tile.gnr{transform:none}';
   document.head.appendChild(css);
   function pl(n, w) {
     return n + " " + w + (n === 1 ? "" : "s");
@@ -74,7 +74,11 @@
     if (st.list && st.key === o.items.size + ":" + Object.keys(o.genreMap).length + ":" + Object.keys(vg0).length) return st.list;
     var by = {}, foldG = {};
     Object.keys(o.genreMap || {}).forEach(function(fid) {
-      var gens = o.genreMap[fid].genres || [];
+      var gens = (o.genreMap[fid].genres || []).map(function(g) {
+        return g === "Unsorted" ? "Uncategorized" : g;
+      }).filter(function(g, i, a) {
+        return a.indexOf(g) === i;
+      });
       foldG[fid] = gens;
       gens.forEach(function(g) {
         (by[g] = by[g] || []).push(fid);
@@ -95,8 +99,8 @@
         var gens = foldG[p] || vgm[p];
         if (gens) {
           for (var i = 0; i < gens.length; i++) {
-            var g = gens[i];
-            if (!hit[g]) {
+            var g = gens[i] === "Unsorted" ? "Uncategorized" : gens[i];
+            if (!hit[g] && g in cnt) {
               hit[g] = 1;
               cnt[g]++;
             }
