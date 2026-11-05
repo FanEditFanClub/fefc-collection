@@ -170,7 +170,7 @@
 					<width>150</width><height>60</height>
 					<include>FefcSmallButton</include><font>font10_title</font>
 					<label>HOME</label>
-					<onclick>ActivateWindow(Home,return)</onclick>
+					<onclick>ActivateWindow(Home)</onclick>
 				</control>
 				<control type="group">
 					<width>190</width><height>60</height>
