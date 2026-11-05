@@ -21,8 +21,8 @@
 	</variable>
 	<!-- Home tile button look -->
 	<include name="FefcTile">
-		<texturenofocus border="26">fefc-tile.png</texturenofocus>
-		<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+		<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+		<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 		<font>font11_tile</font>
 		<textcolor>FFFFFFFF</textcolor>
 		<focusedcolor>FFFFFFFF</focusedcolor>
@@ -144,6 +144,7 @@
 				<visible>!Window.IsActive(home)</visible>
 			</control>
 			<control type="grouplist" id="9290">
+				<visible>!Window.IsActive(home)</visible>
 				<right>96</right><top>54</top><width>900</width><height>44</height>
 				<orientation>horizontal</orientation>
 				<align>right</align>

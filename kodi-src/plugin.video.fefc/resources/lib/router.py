@@ -858,22 +858,12 @@ class Router:
                ('Venmo', 'https://venmo.com/u/FanEditFanClub', '@FanEditFanClub')]
 
     def support(self):
-        dlg = xbmcgui.Dialog()
-        intro = ('If you enjoy The Collection, consider making a donation to our Patreon starting at just $1/Month, or PayPal/Venmo '
-                 '@FanEditFanClub anything you can spare. It helps cover the cloud storage fees and our time to find and organize '
-                 'the world\'s largest fan edit collection so we can keep adding new edits for the community.')
-        dlg.textviewer('Support Us', intro + '\n\n' + '\n'.join('%s (%s): %s' % (n, sub, u) for n, u, sub in self.SUPPORT))
-        while True:
-            k = dlg.select('Support Us: open a page on this device', ['%s  -  %s' % (n, sub) for n, u, sub in self.SUPPORT] + ['Close'])
-            if k < 0 or k >= len(self.SUPPORT):
-                break
-            u = self.SUPPORT[k][1]
-            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % u)
-            xbmc.sleep(800)
-            dlg.notification('Support Us', 'If nothing opened, visit: %s' % u, xbmcgui.NOTIFICATION_INFO, 8000)
+        """Support Us: PayPal / Patreon / Venmo tiles with QR codes (like the old Fire TV app and the web app)."""
+        win = SupportWindow(self.SUPPORT)
+        win.doModal()
+        del win
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
-
 
     def play(self):
         m = _model()
@@ -990,6 +980,52 @@ def _short_url(u):
     import re
     t = re.sub(r'^https?://(www\.)?', '', u or '')
     return t if len(t) <= 44 else t[:42] + '...'
+
+
+class SupportWindow(xbmcgui.WindowDialog):
+    """Three tiles (Patreon, PayPal, Venmo): brand colour, QR code to scan with a phone, OK opens it on this device."""
+    COLORS = {'Patreon': 'FFF96854', 'PayPal': 'FF0070BA', 'Venmo': 'FF3D95CE'}
+
+    def __init__(self, items):
+        super().__init__()
+        self.items = items
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
+        self.addControl(xbmcgui.ControlLabel(80, 40, 1120, 50, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(80, 92, 1120, 60, 'Scan a code with your phone, or press OK to open it here. '
+                                             'It helps cover the cloud storage and our time adding new edits.', font='font12',
+                                             textColor='FFE8EEF6', alignment=2))
+        self.btns = []
+        w, gap = 340, 30
+        x0 = (1280 - 3 * w - 2 * gap) // 2
+        for k, (name, url, sub) in enumerate(items):
+            x = x0 + k * (w + gap)
+            col = self.COLORS.get(name, 'FFFF9C00')
+            b = xbmcgui.ControlButton(x, 160, w, 470, '', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+            self.addControl(b)
+            self.btns.append(b)
+            self.addControl(xbmcgui.ControlImage(x + 20, 180, w - 40, 64, 'fefc-lc-pill.png', colorDiffuse=col))
+            self.addControl(xbmcgui.ControlLabel(x + 20, 180, w - 40, 64, name.upper(), font='font14_title', textColor='FFFFFFFF', alignment=6))
+            qr = ('https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=16&format=png&data=%s' % quote_plus(url))
+            self.addControl(xbmcgui.ControlImage(x + 50, 262, w - 100, w - 100, 'fefc-white.png'))
+            self.addControl(xbmcgui.ControlImage(x + 56, 268, w - 112, w - 112, qr, aspectRatio=1))
+            self.addControl(xbmcgui.ControlLabel(x + 10, 516, w - 20, 36, sub, font='font12_title', textColor='FFFFFFFF', alignment=6))
+            self.addControl(xbmcgui.ControlLabel(x + 10, 556, w - 20, 60, _short_url(url), font='font10', textColor='FF99CCFF', alignment=6))
+        for k, b in enumerate(self.btns):
+            b.controlLeft(self.btns[k - 1])
+            b.controlRight(self.btns[(k + 1) % len(self.btns)])
+        self.addControl(xbmcgui.ControlLabel(80, 650, 1120, 36, 'Back to close', font='font10', textColor='FF7F8FA6', alignment=2))
+        self.setFocus(self.btns[0])
+
+    def onControl(self, c):
+        for k, b in enumerate(self.btns):
+            if c == b:
+                u = self.items[k][1]
+                xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % u)
+                xbmcgui.Dialog().notification('Support Us', 'If nothing opened, scan the code or visit %s' % _short_url(u), xbmcgui.NOTIFICATION_INFO, 6000)
+
+    def onAction(self, action):
+        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+            self.close()
 
 
 class LinkWindow(xbmcgui.WindowDialog):

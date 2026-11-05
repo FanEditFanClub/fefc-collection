@@ -45,7 +45,7 @@ ADDON = '''<?xml version="1.0" encoding="UTF-8"?>
 		<license>CC BY-SA 4.0, GNU GENERAL PUBLIC LICENSE Version 2.0, SIL OFL 1.1 (Jura font)</license>
 		<source>https://github.com/FanEditFanClub/fefc-collection</source>
 		<summary lang="en_GB">FEFC skin for the Fan Edit Fan Club app</summary>
-		<description lang="en_GB">Skin of the Fan Edit Fan Club app: FEFC colours, Jura font, 5x5 tile grid and a details page that fits the screen. Derived from the Estuary skin by phil65 and Ichabod Fletchman (Kodi, GPL-2.0-or-later / CC BY-SA 4.0). Not an official Kodi skin.</description>
+		<description lang="en_GB">Skin of the Fan Edit Fan Club app: FEFC colours, Noto Sans font, 5x5 tile grid and a details page that fits the screen. Derived from the Estuary skin by phil65 and Ichabod Fletchman (Kodi, GPL-2.0-or-later / CC BY-SA 4.0). Not an official Kodi skin.</description>
 		<assets>
 			<icon>resources/icon.png</icon>
 			<fanart>resources/fanart.jpg</fanart>
@@ -123,6 +123,21 @@ def make_textures(media):
     W = (255, 255, 255, 255)
     pill = Image.new('RGBA', (96, 96), (0, 0, 0, 0)); ImageDraw.Draw(pill).rounded_rectangle((0, 0, 95, 95), 47, fill=W)
     pill.save(media / 'fefc-lc-pill.png')
+    # OnLive-style Home tiles: dark glossy, thin grey border; focus = orange border with a soft glow
+    from PIL import ImageFilter
+    def ol(focus):
+        w, h, m = 200, 100, 12
+        im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        if focus:
+            gl = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+            ImageDraw.Draw(gl).rounded_rectangle((m - 6, m - 6, w - m + 5, h - m + 5), 14, fill=(255, 156, 0, 200))
+            im = Image.alpha_composite(im, gl.filter(ImageFilter.GaussianBlur(5)))
+        body = Image.new('RGBA', (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(body)
+        d.rounded_rectangle((m, m, w - m - 1, h - m - 1), 10, fill=(14, 15, 18, 242),
+                            outline=(255, 156, 0, 255) if focus else (110, 114, 120, 255), width=3 if focus else 2)
+        d.rounded_rectangle((m + 3, m + 3, w - m - 4, (h // 2)), 8, fill=(255, 255, 255, 18))   # gloss
+        return Image.alpha_composite(im, body)
+    ol(False).save(media / 'fefc-ol-tile.png'); ol(True).save(media / 'fefc-ol-focus.png')
     # top-bar icons (white, 4x supersampled): magnifier, gear, speaker on / muted
     def icon(draw_fn, name):
         im = Image.new('RGBA', (224, 224), (0, 0, 0, 0)); draw_fn(ImageDraw.Draw(im))
@@ -164,13 +179,16 @@ def make_textures(media):
 def patch_fonts(xml_dir):
     p = xml_dir / 'Font.xml'
     s = p.read_text(encoding='utf-8')
-    s = s.replace('NotoSans-Regular.ttf', 'Jura-Regular.ttf').replace('Roboto-Thin.ttf', 'Jura-Regular.ttf')
+    # 0.3.20: clean, readable TV sans everywhere (Noto Sans, OFL, ships with Estuary) instead of Jura
+    s = s.replace('Roboto-Thin.ttf', 'NotoSans-Regular.ttf')
     extra = ''
     for name, size in (('font9_title', 20), ('font10_title', 22), ('font12_title', 27), ('font13_title', 30), ('font14_title', 42),
                        ('font_tile', 44), ('font11_tile', 34), ('font_title_big', 56)):
-        extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>Jura-Bold.ttf</filename>\n'
+        extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
                   '\t\t\t<size>%d</size>\n\t\t</font>\n') % (name, size)
     # add to every fontset
+    if not (xml_dir.parent / 'fonts' / 'NotoSans-Bold.ttf').exists():
+        extra = extra.replace('NotoSans-Bold.ttf', 'NotoSans-Regular.ttf')
     s = re.sub(r'(</fontset>)', extra + r'\1', s)
     p.write_text(s, encoding='utf-8')
 
@@ -242,7 +260,7 @@ def build(est, out):
     (out / 'LICENSE-FEFC.txt').write_text(
         'skin.fefc is derived from the Estuary skin of Kodi (c) phil65, Ichabod Fletchman and the Kodi contributors, '
         'licensed CC BY-SA 4.0 and GPL-2.0-or-later (see LICENSE.txt). The Jura font is (c) Daniel Johnson, SIL OFL 1.1 '
-        '(fonts/JURA-OFL.txt). Changes: FEFC colours, Jura font, 5x5 grid view, details page and home layout. '
+        '(fonts/JURA-OFL.txt). Changes: FEFC colours, Noto Sans font, 5x5 grid view, details page and home layout. '
         'Not an official Kodi skin.\n', encoding='utf-8')
     return out
 

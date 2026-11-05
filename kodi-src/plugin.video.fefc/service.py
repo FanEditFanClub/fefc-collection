@@ -109,6 +109,16 @@ def install_update(new):
 
 
 def my_package():
+    """Android package of this install: the app's own data paths name it (com.fefc.kodi vs org.xbmc.kodi), so the
+    updater always downloads the APK for the package that is actually running; fefc-build.json is the fallback."""
+    for sp in ('special://xbmc/', 'special://home/', 'special://temp/'):
+        try:
+            t = xbmcvfs.translatePath(sp)
+        except Exception:
+            t = ''
+        for pkg in ('com.fefc.kodi', 'org.xbmc.kodi'):
+            if '/%s/' % pkg in t:
+                return pkg
     return str((installed_build() or {}).get('pkg') or 'org.xbmc.kodi')
 
 
@@ -506,6 +516,115 @@ def refresh_home_counts():
 _last_info = ['']
 
 
+class HomeWall(object):
+    """OnLive-style Home background: one pre-rendered, silent 1280x720 loop (assets/home-wall.mp4, ~3 MB) played
+    windowed behind the 3x3 menu while Home is showing and nothing else plays. Downloaded once; the static
+    background stays if it is missing or fails. Stopped as soon as Home is left or anything else wants the player."""
+    URL = BASE + '/assets/home-wall.mp4'
+
+    def __init__(self):
+        self.path = os.path.join(xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/'), 'home-wall-v1.mp4')
+        self.fetching = False
+        self.fails = 0
+        self.t_next = 0.0
+
+    def _fetch(self):
+        try:
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            req = urllib.request.Request(self.URL, headers={'User-Agent': 'FEFC-Kodi'})
+            with urllib.request.urlopen(req, timeout=30) as r:
+                data = r.read(20 * 1024 * 1024)
+            if len(data) > 100000 and data[4:8] == b'ftyp':
+                with open(self.path + '.tmp', 'wb') as f:
+                    f.write(data)
+                os.replace(self.path + '.tmp', self.path)
+        except Exception as e:
+            log('home wall download: %s' % e)
+        self.fetching = False
+
+    def playing(self):
+        return xbmcgui.Window(10000).getProperty('FEFC.Wall') == '1'
+
+    def stop(self):
+        home = xbmcgui.Window(10000)
+        if self.playing():
+            home.clearProperty('FEFC.Wall')
+            try:
+                pl = xbmc.Player()
+                if pl.isPlaying() and 'home-wall' in (pl.getPlayingFile() or ''):
+                    pl.stop()
+            except Exception:
+                pass
+
+    def tick(self):
+        home = xbmcgui.Window(10000)
+        pl = xbmc.Player()
+        at_home = xbmc.getCondVisibility('Window.IsActive(home) + !Window.IsActive(fullscreenvideo)') and home.getProperty('FEFC.Ready') == '1'
+        if self.playing():
+            cur = ''
+            try:
+                cur = pl.getPlayingFile() if pl.isPlaying() else ''
+            except Exception:
+                pass
+            if not at_home or (cur and 'home-wall' not in cur):
+                if 'home-wall' in cur:
+                    self.stop()
+                else:
+                    home.clearProperty('FEFC.Wall')   # something else took the player
+                return
+            if not cur:   # loop ended or failed: restart (fallback to the static image after repeated failures)
+                home.clearProperty('FEFC.Wall')
+            else:
+                return
+        if not at_home or pl.isPlaying() or home.getProperty('FEFC.PausedTitle') or time.time() < self.t_next:
+            return
+        if not os.path.exists(self.path):
+            if not self.fetching:
+                self.fetching = True
+                self.t_next = time.time() + 60
+                threading.Thread(target=self._fetch, daemon=True).start()
+            return
+        if self.fails >= 3:
+            return
+        li = xbmcgui.ListItem('FEFC', offscreen=True)
+        li.setProperty('fefc_wall', '1')
+        home.setProperty('FEFC.Wall', '1')
+        try:
+            pl.play(self.path, li, windowed=True)
+            xbmc.executebuiltin('PlayerControl(RepeatOne)')
+        except Exception as e:
+            log('home wall play: %s' % e)
+            self.fails += 1
+            home.clearProperty('FEFC.Wall')
+        self.t_next = time.time() + 5
+
+
+class SkipIntro(xbmcgui.WindowDialog):
+    """Small overlay on the intro video: 'Skip intro' is focused, one press of OK goes straight to Home."""
+
+    def __init__(self):
+        super().__init__()
+        self.done = False
+        self.addControl(xbmcgui.ControlImage(1010, 600, 230, 64, 'fefc-lc-pill.png', colorDiffuse='DD000000'))
+        self.btn = xbmcgui.ControlButton(1020, 608, 210, 48, 'SKIP INTRO  >', font='font13_title', textColor='FF000000',
+                                         focusedColor='FF000000', alignment=6,
+                                         focusTexture='fefc-lc-pill.png', noFocusTexture='fefc-lc-pill.png')
+        self.addControl(self.btn)
+        self.setFocus(self.btn)
+
+    def onControl(self, c):
+        self.done = True
+        try:
+            xbmc.Player().stop()
+        except Exception:
+            pass
+        self.close()
+
+    def onAction(self, action):
+        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+            self.onControl(None)
+
+
 def details_sfx():
     """Play the file's franchise clip once when its details page opens (web parity). Local wav only; never a remote URL."""
     if not xbmc.getCondVisibility('Window.IsActive(movieinformation)'):
@@ -516,7 +635,7 @@ def details_sfx():
     if not url or key == _last_info[0]:
         return
     _last_info[0] = key
-    if ADDON.getSetting('play_sfx') != 'true' or xbmc.Player().isPlaying():
+    if ADDON.getSetting('play_sfx') != 'true' or (xbmc.Player().isPlaying() and not xbmcgui.Window(10000).getProperty('FEFC.Wall')):
         return
     def go():
         try:
@@ -561,12 +680,25 @@ def main():
         if ADDON.getSettingBool('play_intro'):
             xbmc.executebuiltin('PlayMedia(%s,noresume)' % INTRO)
             xbmc.sleep(1500)
-            # wait until the intro finishes (or is skipped), max 60 s
-            for _ in range(120):
+            # wait until the intro finishes (or is skipped), max 60 s; after ~3 s show a focused 'Skip intro' button
+            skip = None
+            for n in range(120):
                 if monitor.waitForAbort(0.5):
                     return
                 if not xbmc.Player().isPlaying():
                     break
+                if n == 6 and skip is None:
+                    try:
+                        skip = SkipIntro()
+                        skip.show()
+                    except Exception as e:
+                        log('skip intro: %s' % e)
+            if skip is not None:
+                try:
+                    skip.close()
+                except Exception:
+                    pass
+                del skip
         home.setProperty('FEFC.Ready', '1')  # the home screen stays hidden behind a black splash until the intro has finished
         if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')
@@ -575,6 +707,7 @@ def main():
     # main loop: news ticker, pause-on-back, daily app update notice
     watcher = Watcher()
     tracker = Tracker()
+    wall = HomeWall()
     next_feed = 0.0
     next_counts = 0.0
     t_start = time.time()
@@ -598,7 +731,12 @@ def main():
         except Exception as e:
             log('details sfx: %s' % e)
         try:
-            watcher.tick()
+            wall.tick()
+        except Exception as e:
+            log('home wall: %s' % e)
+        try:
+            if not wall.playing():
+                watcher.tick()
         except Exception as e:
             log('watcher: %s' % e)
         try:

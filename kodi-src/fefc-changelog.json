@@ -1,6 +1,18 @@
 {
  "versions": [
   {
+   "version": "0.3.20 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "New OnLive-style Home: centred 3x3 menu of dark glossy tiles with an orange glow on focus, over a looping wall of fan edit clips (silent)",
+    "Menu bar moved to a dark rounded bar at the bottom centre: Search, Sound, Settings, About and the update button",
+    "Clean, easier-to-read font throughout the app",
+    "Support Us opens tiles for Patreon, PayPal and Venmo with QR codes",
+    "Intro: a focused Skip Intro button appears after 3 seconds; one press of OK goes to Home",
+    "Updater always downloads the APK for the app that is actually installed (phones/tablets vs Fire TV)"
+   ]
+  },
+  {
    "version": "0.3.19 Beta",
    "date": "2026-11-04",
    "notes": [
