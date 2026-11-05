@@ -691,14 +691,14 @@ class Router:
                 url, qid, secret, verify = j['url'], j['id'], j['secret'], j.get('verify', '')
                 lines = ['Link My List', 'Scan the QR code with your phone (or open the address below).',
                          'On the phone, sign in with Google (or use a sync code) and tap Approve.',
-                         'Check that the phone shows this confirm code: %s' % verify, url]
+                         'Check that the phone shows this confirm code: %s' % verify, _short_url(url)]
                 ttl = int(j.get('expires_in') or 300)
             else:
                 j = ml.device_start()
                 url = j['verification_url']
                 did = j['id']
-                lines = ['Sign in with Google', 'On your phone or computer open: %s' % url,
-                         'Enter this code: %s' % j['user_code'], 'Then choose your Google account and allow.', url]
+                lines = ['Sign in with Google', 'On your phone or computer open: %s' % _short_url(url),
+                         'Enter this code: %s' % j['user_code'], 'Then choose your Google account and allow.', _short_url(url)]
                 ttl = int(j.get('expires_in') or 600)
         except Exception as e:
             xbmcgui.Dialog().ok('My List', 'Could not start linking: %s' % e)
@@ -707,8 +707,18 @@ class Router:
         if mode == 'qr':
             try:
                 from . import segno
-                qr_path = os.path.join(xbmcvfs.translatePath('special://temp/'), 'fefc-link-qr.png')
-                segno.make(url, error='m').save(qr_path, scale=8, border=3, dark='#000000', light='#ffffff')
+                tmp = xbmcvfs.translatePath('special://temp/')
+                for old in os.listdir(tmp):
+                    if old.startswith('fefc-link-qr'):
+                        try:
+                            os.remove(os.path.join(tmp, old))
+                        except OSError:
+                            pass
+                # unique name every time so Kodi's texture cache never serves a stale/blank image
+                qr_path = os.path.join(tmp, 'fefc-link-qr-%d.png' % int(time.time() * 1000))
+                segno.make(url, error='m').save(qr_path, kind='png', scale=10, border=4, dark='#000000', light='#ffffff')
+                if not os.path.getsize(qr_path):
+                    raise IOError('empty QR png')
             except Exception as e:
                 _log('qr failed: %s' % e)
         win = LinkWindow(lines, qr_path)
@@ -831,6 +841,13 @@ class Router:
         xbmcgui.Dialog().notification('FEFC', 'Opening in Drive: ' + catalog.display_title(name), xbmcgui.NOTIFICATION_INFO, 4000)
 
 
+def _short_url(u):
+    """Display form of a link that fits on screen (the QR code carries the full address)."""
+    import re
+    t = re.sub(r'^https?://(www\.)?', '', u or '')
+    return t if len(t) <= 44 else t[:42] + '...'
+
+
 class LinkWindow(xbmcgui.WindowDialog):
     """Full-screen card with a QR code / device code; Back closes it. Coordinates are 1280x720, inside the TV-safe area."""
 
@@ -841,8 +858,9 @@ class LinkWindow(xbmcgui.WindowDialog):
         self.addControl(xbmcgui.ControlLabel(96, 54, 1088, 50, lines[0], font='font14_title', textColor='FFFFFFFF'))
         y = 120
         if qr_path:
-            self.addControl(xbmcgui.ControlImage(96, 130, 400, 400, 'colors/white.png', colorDiffuse='FFFFFFFF'))
-            self.addControl(xbmcgui.ControlImage(106, 140, 380, 380, qr_path))
+            img = xbmcgui.ControlImage(96, 130, 400, 400, '', aspectRatio=1)
+            self.addControl(img)
+            img.setImage(qr_path, False)
             x = 540
         else:
             x = 96

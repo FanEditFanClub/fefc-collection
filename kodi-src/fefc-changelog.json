@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.3.4 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Link My List: the QR code now shows (it was a blank square on Fire TV).",
+    "Link My List: the link address is shortened so it fits on screen."
+   ]
+  },
+  {
    "version": "0.3.3 Beta",
    "date": "2026-11-04",
    "notes": [
