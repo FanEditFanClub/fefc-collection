@@ -123,6 +123,26 @@ def make_textures(media):
     W = (255, 255, 255, 255)
     pill = Image.new('RGBA', (96, 96), (0, 0, 0, 0)); ImageDraw.Draw(pill).rounded_rectangle((0, 0, 95, 95), 47, fill=W)
     pill.save(media / 'fefc-lc-pill.png')
+    # top-bar icons (white, 4x supersampled): magnifier, gear, speaker on / muted
+    def icon(draw_fn, name):
+        im = Image.new('RGBA', (224, 224), (0, 0, 0, 0)); draw_fn(ImageDraw.Draw(im))
+        im.resize((56, 56), Image.LANCZOS).save(media / name)
+    def mag(d):
+        d.ellipse((24, 24, 144, 144), outline=W, width=22); d.line((128, 128, 200, 200), fill=W, width=30)
+    def gear(d):
+        import math
+        for k in range(8):
+            a = k * math.pi / 4; cx, cy = 112 + 78 * math.cos(a), 112 + 78 * math.sin(a)
+            d.ellipse((cx - 22, cy - 22, cx + 22, cy + 22), fill=W)
+        d.ellipse((36, 36, 188, 188), fill=W); d.ellipse((82, 82, 142, 142), fill=(0, 0, 0, 0))
+    def spk(d, on):
+        d.rectangle((20, 80, 70, 144), fill=W); d.polygon([(60, 80), (120, 30), (120, 194), (60, 144)], fill=W)
+        if on:
+            d.arc((100, 60, 170, 164), -50, 50, fill=W, width=16); d.arc((110, 26, 210, 198), -50, 50, fill=W, width=16)
+        else:
+            d.line((145, 75, 205, 150), fill=W, width=20); d.line((205, 75, 145, 150), fill=W, width=20)
+    icon(mag, 'fefc-ic-search.png'); icon(gear, 'fefc-ic-gear.png')
+    icon(lambda d: spk(d, True), 'fefc-ic-sound.png'); icon(lambda d: spk(d, False), 'fefc-ic-mute.png')
     lpill = Image.new('RGBA', (96, 96), (0, 0, 0, 0)); d = ImageDraw.Draw(lpill)
     d.rounded_rectangle((0, 0, 95, 95), 47, fill=W); d.rectangle((48, 0, 95, 95), fill=W)
     lpill.save(media / 'fefc-lc-lpill.png')   # rounded left end only

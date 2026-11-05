@@ -480,6 +480,32 @@ def dedupe(m, ids):
     return out
 
 
+def sfx_wav(rel):
+    import random
+    files = rel if isinstance(rel, list) else [rel]
+    if files and isinstance(files[0], list):
+        files = random.choice(files)
+    files = [x for x in files if isinstance(x, str) and os.path.basename(x)]
+    if not files:
+        return ''
+    f = files[0]
+    return 'kodi-sfx/' + os.path.splitext(os.path.basename(f))[0] + '.wav'
+
+
+def sfx_up(m, vid):
+    """Clip set of the nearest ancestor folder with clips (e.g. any Terminator file -> the Terminator folder's clips)."""
+    it = m['items'].get(vid)
+    p = it[1] if it else ''
+    n = 0
+    while p and n < 30:
+        r = sfx_for(m, p)
+        if r:
+            return r
+        p = (m['items'].get(p) or ['', ''])[1]
+        n += 1
+    return ''
+
+
 def sfx_for(m, fid):
     """Resolve a folder's sound clip per data/folder-sfx.json (id / exact name / rules). -> relative asset path or ''."""
     import random

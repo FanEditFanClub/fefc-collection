@@ -1,7 +1,18 @@
 {
  "versions": [
   {
-   "version": "0.3.18",
+   "version": "0.3.19 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Every file's details page plays a clip from its franchise folder (nearest parent folder with sounds)",
+    "Sound on/off button with a speaker icon in the top menu, remembered across restarts and updates",
+    "Search has a magnifying glass and Settings a gear icon",
+    "Home: Exit button, bottom-left logo, top-left version text and the word Community removed",
+    "Update button reads 'Up To Date · v…' or 'Update Available · v…'; pressing it always checks fresh and installs if newer"
+   ]
+  },
+  {
+   "version": "0.3.18 Beta",
    "date": "2026-11-04",
    "notes": [
     "Details page restyled LCARS like the web app",

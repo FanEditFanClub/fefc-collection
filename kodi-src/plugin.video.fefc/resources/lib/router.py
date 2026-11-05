@@ -235,6 +235,10 @@ class Router:
         self._art(li, art, video=True)
         on = self.mydb().has(vid)
         li.setProperty('fefc_id', vid)
+        rel = catalog.sfx_up(m, vid)  # franchise clip: nearest ancestor folder that has clips (played by the service on the details page)
+        wav = catalog.sfx_wav(rel) if rel else ''
+        if wav:
+            li.setProperty('fefc_sfx', catalog.abs_url(base, wav))
         li.setProperty('fefc_mylabel', 'Remove from My List' if on else 'Add to My List')
         li.addContextMenuItems([('Remove from My List' if on else 'Add to My List',
                                  'RunPlugin(%s)' % _url(self.url, action='mylist_toggle', id=vid))])
@@ -634,6 +638,13 @@ class Router:
         txt = _html.unescape(re.sub(r'<[^>]+>', '', raw)).replace('\xa0', ' ')
         return re.sub(r'\n{3,}', '\n\n', re.sub(r'[ \t]+', ' ', txt)).strip()
 
+    def sound_toggle(self):
+        """Top-bar sound on/off (saved in the add-on settings, so it survives restarts and app updates)."""
+        on = ADDON.getSetting('play_sfx') != 'true'
+        ADDON.setSetting('play_sfx', 'true' if on else 'false')
+        xbmcgui.Window(10000).setProperty('FEFC.SoundOff', '' if on else '1')
+        xbmcgui.Dialog().notification('FEFC', 'Sound on' if on else 'Sound off', time=1500, sound=False)
+
     def about(self):
         dlg = xbmcgui.Dialog()
         build = {}
@@ -1017,7 +1028,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'search': 'search', 'searchbox': 'searchbox', 'play': 'play', 'update': 'update', 'mylist': 'mylist', 'mylist_toggle': 'mylist_toggle',
           'mylist_sync': 'mylist_sync', 'open_vlc': 'open_vlc', 'open_drive': 'open_drive', 'readme': 'readme', 'support': 'support',
           'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
-          'about': 'about'}
+          'about': 'about', 'sound_toggle': 'sound_toggle'}
 
 
 def run(argv):

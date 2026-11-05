@@ -228,10 +228,10 @@ def set_update_state(cur, new=None, avail=False):
         if nv == cv:   # same version name, newer build: say which build
             nv, cv = 'build %s' % new.get('build'), 'build %s' % (cur or {}).get('build', '?')
         home.setProperty('FEFC.UpdateAvail', '1')
-        home.setProperty('FEFC.UpdateLabel', 'UPDATE AVAILABLE: %s   (now %s)' % (nv, cv))
+        home.setProperty('FEFC.UpdateLabel', 'Update Available · v%s' % re.sub(r'(?i)\s*beta$', '', nv))
     else:
         home.clearProperty('FEFC.UpdateAvail')
-        home.setProperty('FEFC.UpdateLabel', 'APP UPDATE  -  you have %s' % cv)
+        home.setProperty('FEFC.UpdateLabel', 'Up To Date · v%s' % re.sub(r'(?i)\s*beta$', '', cv))
 
 
 def check_update(manual=False, prompt=True):
@@ -256,6 +256,9 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Dialog().notification('FEFC update', 'Already downloading the update...', time=3000)
         return
+    if avail and manual:   # the Home update button: always a fresh check, then install straight away
+        install_update(new)
+        return
     if avail:
         if not prompt:
             return
@@ -271,10 +274,7 @@ def check_update(manual=False, prompt=True):
             install_update(new)
         return
     if manual:
-        xbmcgui.Dialog().ok('FEFC', 'You have the latest FEFC app: %s (on Kodi %s).' % (version_label(cur), cur.get('kodi')))
-        wn = whats_new(new, None)
-        if wn:
-            xbmcgui.Dialog().textviewer('FEFC app %s' % version_label(cur), wn)
+        xbmcgui.Dialog().notification('FEFC', 'Up to date', time=2000, sound=False)
 
 
 def _prompt(new, cur):
@@ -503,6 +503,42 @@ def refresh_home_counts():
         log('home counts: %s' % e)
 
 
+_last_info = ['']
+
+
+def details_sfx():
+    """Play the file's franchise clip once when its details page opens (web parity). Local wav only; never a remote URL."""
+    if not xbmc.getCondVisibility('Window.IsActive(movieinformation)'):
+        _last_info[0] = ''
+        return
+    url = xbmc.getInfoLabel('ListItem.Property(fefc_sfx)')
+    key = xbmc.getInfoLabel('ListItem.Property(fefc_id)')
+    if not url or key == _last_info[0]:
+        return
+    _last_info[0] = key
+    if ADDON.getSetting('play_sfx') != 'true' or xbmc.Player().isPlaying():
+        return
+    def go():
+        try:
+            d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/sfx/')
+            os.makedirs(d, exist_ok=True)
+            dst = os.path.join(d, os.path.basename(url.split('?')[0]))
+            if not os.path.exists(dst) or os.path.getsize(dst) < 1000:
+                req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
+                with urllib.request.urlopen(req, timeout=8) as r:
+                    data = r.read(8 * 1024 * 1024)
+                if len(data) < 1000 or data[:4] != b'RIFF':
+                    return
+                with open(dst + '.tmp', 'wb') as f:
+                    f.write(data)
+                os.replace(dst + '.tmp', dst)
+            if xbmc.getCondVisibility('Window.IsActive(movieinformation)'):
+                xbmc.playSFX(dst, False)
+        except Exception as e:
+            log('details sfx: %s' % e)
+    threading.Thread(target=go, daemon=True).start()
+
+
 def main():
     home = xbmcgui.Window(10000)
     if not xbmcvfs.exists(INTRO):
@@ -535,6 +571,7 @@ def main():
         if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')
     home.setProperty('FEFC.Ready', '1')
+    home.setProperty('FEFC.SoundOff', '' if ADDON.getSetting('play_sfx') == 'true' else '1')
     # main loop: news ticker, pause-on-back, daily app update notice
     watcher = Watcher()
     tracker = Tracker()
@@ -556,6 +593,10 @@ def main():
                     log('ticker: %s' % e)
             threading.Thread(target=refresh, daemon=True).start()
             next_feed = now + 1200
+        try:
+            details_sfx()
+        except Exception as e:
+            log('details sfx: %s' % e)
         try:
             watcher.tick()
         except Exception as e:

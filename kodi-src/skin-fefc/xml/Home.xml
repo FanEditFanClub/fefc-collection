@@ -159,7 +159,7 @@
 			</control>
 		</control>
 
-		<!-- utility strip: resume/stop (only while a video is paused), app update, exit -->
+		<!-- utility strip: resume/stop (only while a video is paused), app update -->
 		<control type="grouplist" id="9100">
 			<left>152</left><top>814</top><width>1616</width><height>60</height>
 			<orientation>horizontal</orientation>
@@ -170,7 +170,7 @@
 				<include>FefcSmallButton</include>
 				<label>RESUME: $INFO[Window(Home).Property(FEFC.PausedTitle)]</label>
 				<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
-				<onleft>9024</onleft><onright>9022</onright><onup>9008</onup><ondown>9291</ondown>
+				<onleft>9023</onleft><onright>9022</onright><onup>9008</onup><ondown>9291</ondown>
 				<onclick>ActivateWindow(fullscreenvideo)</onclick>
 			</control>
 			<control type="button" id="9022">
@@ -189,25 +189,13 @@
 				<align>right</align><aligny>center</aligny>
 				<visible>!String.IsEmpty(Window(Home).Property(FEFC.UpdateAvail))</visible>
 			</control>
-			<control type="image">
-				<width>96</width><height>60</height>
-				<texture>fefc-logo.png</texture>
-				<aspectratio>keep</aspectratio>
-			</control>
 			<control type="button" id="9023">
 				<width>760</width><height>60</height>
 				<include>FefcSmallButton</include>
 				<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
 				<textcolor>FFFFFFFF</textcolor>
-				<onleft>9022</onleft><onright>9024</onright><onup>9008</onup><ondown>9291</ondown>
+				<onleft>9022</onleft><onright>9021</onright><onup>9008</onup><ondown>9291</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
-			</control>
-			<control type="button" id="9024">
-				<width>200</width><height>60</height>
-				<include>FefcSmallButton</include>
-				<label>EXIT</label>
-				<onleft>9023</onleft><onright>9021</onright><onup>9008</onup><ondown>9291</ondown>
-				<onclick>Quit</onclick>
 			</control>
 		</control>
 
