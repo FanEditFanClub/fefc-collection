@@ -183,6 +183,7 @@ class Router:
         self.params = dict(parse_qsl(argv[2][1:])) if len(argv) > 2 and argv[2] else {}
         self._mydb = None
         self._content = 'files'
+        self._land = False  # True once any landscape card (folder / tool / Support Us) is added
 
     def mydb(self):
         if self._mydb is None:
@@ -199,9 +200,11 @@ class Router:
 
     def add_folder(self, label, art='', info=None, landscape='', **kw):
         li = xbmcgui.ListItem(label, offscreen=True)
+        land = landscape or art
         self._art(li, art)
-        if landscape:
-            li.setArt({'landscape': landscape, 'thumb': landscape, 'fanart': landscape})
+        if land:
+            li.setArt({'landscape': land, 'thumb': land, 'fanart': land or art})
+        self._land = True
         tag = li.getVideoInfoTag()
         tag.setTitle(label)
         if info:
@@ -215,9 +218,18 @@ class Router:
         gs = m['vgenres'].get(fid) or []
         self.add_folder('%s  (%d)' % (v[0], n), art, ', '.join(gs), action='folder', id=fid)
 
-    def add_tool(self, label, plot, art='DefaultAddonService.png', folder=False, **kw):
+    def add_tool(self, label, plot, art='DefaultAddonService.png', folder=False, landscape='', **kw):
         li = xbmcgui.ListItem(label, offscreen=True)
-        li.setArt({'thumb': art, 'icon': art})
+        # Sort / Shuffle / similar tools are landscape cards (same shape as folders)
+        low = (label or '').lower()
+        if not landscape:
+            if 'shuffle' in low:
+                landscape = 'special://xbmc/addons/skin.fefc/media/fefc-shuffle-tile.png'
+            elif 'sort' in low:
+                landscape = 'special://xbmc/addons/skin.fefc/media/fefc-sort-tile.png'
+        land = landscape or art
+        li.setArt({'thumb': land, 'icon': art, 'landscape': land, 'fanart': land})
+        self._land = True
         tag = li.getVideoInfoTag()
         tag.setTitle(label)
         tag.setPlot(plot)
@@ -306,10 +318,13 @@ class Router:
 
     def end(self, content='files', cache=True):
         xbmcplugin.setPluginCategory(self.handle, self._title())
+        # Portrait posters only when the list is video-only; any folder / tool / Support Us tile forces landscape.
+        if self._land and content == 'movies':
+            content = 'files'
         xbmcplugin.setContent(self.handle, content)
         xbmcplugin.addSortMethod(self.handle, xbmcplugin.SORT_METHOD_UNSORTED)
         xbmcplugin.endOfDirectory(self.handle, cacheToDisc=cache)
-        # FEFC skin: view 500 = landscape grid (collections), 501 = portrait poster grid (video files)
+        # FEFC skin: view 500 = landscape grid (collections / tools), 501 = portrait poster grid (video files)
         if xbmc.getSkinDir() == 'skin.fefc':
             xbmc.executebuiltin('Container.SetViewMode(%d)' % (501 if content == 'movies' else 500))
 
@@ -322,7 +337,7 @@ class Router:
         self.add_folder('My List', '', 'Your saved edits, synced with the FEFC web app.', action='mylist')
         self.add_folder('Search', '', 'Search every collection and edit.', action='search')
         self.add_folder('Read Me', '', 'Welcome and how the collection works.', action='readme')
-        self.add_folder('Support Us', '', 'Patreon, PayPal and Venmo.', action='support')
+        self.add_folder('Support Us', 'special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', action='support')
         if xbmcvfs.exists('special://xbmc/fefc-build.json'):
             self.add_folder('Check for FEFC app update', '', 'See if a newer FEFC app is available.', action='update')
         self.end()
@@ -359,7 +374,7 @@ class Router:
                     continue
                 seen_kind.add(kind)
                 if kind == 'support':
-                    self.add_folder('Support Us', '', 'Patreon, PayPal and Venmo.', action='support')
+                    self.add_folder('Support Us', 'special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', action='support')
                 else:
                     self.add_folder('Read First', '', 'Welcome and how the collection works.', action='readme')
         for k in chunk:
@@ -1003,13 +1018,15 @@ class SupportWindow(xbmcgui.WindowDialog):
             b = xbmcgui.ControlButton(x, 160, w, 470, '', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
             self.addControl(b)
             self.btns.append(b)
-            self.addControl(xbmcgui.ControlImage(x + 20, 180, w - 40, 64, 'fefc-lc-pill.png', colorDiffuse=col))
-            self.addControl(xbmcgui.ControlLabel(x + 20, 180, w - 40, 64, name.upper(), font='font14_title', textColor='FFFFFFFF', alignment=6))
+            icon = {'Patreon': 'fefc-ic-patreon.png', 'PayPal': 'fefc-ic-paypal.png', 'Venmo': 'fefc-ic-venmo.png'}.get(name, 'fefc-lc-pill.png')
+            self.addControl(xbmcgui.ControlImage(x + (w - 72) // 2, 176, 72, 72, icon, aspectRatio=1))
+            self.addControl(xbmcgui.ControlImage(x + 20, 258, w - 40, 48, 'fefc-lc-pill.png', colorDiffuse=col))
+            self.addControl(xbmcgui.ControlLabel(x + 20, 258, w - 40, 48, name.upper(), font='font13_title', textColor='FFFFFFFF', alignment=6))
             qr = ('https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=16&format=png&data=%s' % quote_plus(url))
-            self.addControl(xbmcgui.ControlImage(x + 50, 262, w - 100, w - 100, 'fefc-white.png'))
-            self.addControl(xbmcgui.ControlImage(x + 56, 268, w - 112, w - 112, qr, aspectRatio=1))
-            self.addControl(xbmcgui.ControlLabel(x + 10, 516, w - 20, 36, sub, font='font12_title', textColor='FFFFFFFF', alignment=6))
-            self.addControl(xbmcgui.ControlLabel(x + 10, 556, w - 20, 60, _short_url(url), font='font10', textColor='FF99CCFF', alignment=6))
+            self.addControl(xbmcgui.ControlImage(x + 55, 318, w - 110, w - 110, 'fefc-white.png'))
+            self.addControl(xbmcgui.ControlImage(x + 61, 324, w - 122, w - 122, qr, aspectRatio=1))
+            self.addControl(xbmcgui.ControlLabel(x + 10, 560, w - 20, 32, sub, font='font12_title', textColor='FFFFFFFF', alignment=6))
+            self.addControl(xbmcgui.ControlLabel(x + 10, 590, w - 20, 40, _short_url(url), font='font10', textColor='FF99CCFF', alignment=6))
         for k, b in enumerate(self.btns):
             b.controlLeft(self.btns[k - 1])
             b.controlRight(self.btns[(k + 1) % len(self.btns)])

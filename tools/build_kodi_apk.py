@@ -36,7 +36,7 @@ s = s.replace('package="org.xbmc.kodi"', 'package="%s"' % PKG)
 s = s.replace('android:icon="@drawable/ic_launcher"', 'android:icon="@mipmap/ic_launcher"')
 s = re.sub(r'(<application [^>]*?)android:banner="[^"]*"', r'\1', s)
 s = re.sub(r'(<application [^>]*?)android:logo="[^"]*"', r'\1', s)
-s = s.replace('<application ', '<application android:banner="@drawable/banner" android:logo="@drawable/banner" ', 1)
+s = s.replace('<application ', '<application android:banner="@drawable/banner" android:logo="@drawable/banner" android:enableOnBackInvokedCallback="false" ', 1)
 s = s.replace('<activity android:configChanges', '<activity android:banner="@drawable/banner" android:icon="@mipmap/ic_launcher" android:configChanges', 0)
 s = re.sub(r'<activity ([^>]*android:name="[A-Za-z0-9_.]*\.Splash")', r'<activity android:banner="@drawable/banner" android:icon="@mipmap/ic_launcher" \1', s)
 s = re.sub(r'android:authorities="org\.xbmc\.kodi\.', 'android:authorities="%s.' % PKG, s)
@@ -95,6 +95,37 @@ build_kodi_skin.build(est, os.path.join(A, 'addons', 'skin.fefc'))
 ap = os.path.join(A, 'system', 'settings', 'android.xml'); t = open(ap, encoding='utf-8').read()
 t = t.replace('  <section id="interface">\n', '  <section id="interface">\n    <category id="skin">\n      <group id="1">\n        <setting id="lookandfeel.skin">\n          <default>skin.fefc</default>\n        </setting>\n      </group>\n    </category>\n', 1)
 assert 'skin.fefc' in t; open(ap, 'w', encoding='utf-8').write(t)
+
+# Phone edge-swipe / gesture Back must pop history like the remote Back button.
+# Android 13+ predictive back can swallow the event (GUI back sound plays, no navigate); opt out above.
+# Also map one-finger swipe-left to Back on the windows users navigate in.
+_km = os.path.join(A, 'system', 'keymaps')
+os.makedirs(_km, exist_ok=True)
+open(os.path.join(_km, 'fefc-touch.xml'), 'w', encoding='utf-8').write("""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<!-- FEFC: one-finger swipe left = Back (same as remote), so phone edge-swipe pops history. -->
+<keymap>
+  <global>
+    <touch>
+      <swipe direction=\"left\">Back</swipe>
+    </touch>
+  </global>
+  <Home>
+    <touch>
+      <swipe direction=\"left\">Back</swipe>
+    </touch>
+  </Home>
+  <MyVideoNav>
+    <touch>
+      <swipe direction=\"left\">Back</swipe>
+    </touch>
+  </MyVideoNav>
+  <movieinformation>
+    <touch>
+      <swipe direction=\"left\">Back</swipe>
+    </touch>
+  </movieinformation>
+</keymap>
+""")
 # FEFC navigation sounds (same as the web / Fire TV app) as the default UI sound add-on, played also while a video is paused
 import kodi_navsfx
 print('uisounds:', kodi_navsfx.build(os.path.join(A, 'addons', 'resource.uisounds.fefc')))

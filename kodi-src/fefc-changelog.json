@@ -9,7 +9,10 @@
     "Clean, easier-to-read font throughout the app",
     "Support Us opens tiles for Patreon, PayPal and Venmo with QR codes",
     "Intro: a focused Skip Intro button appears after 3 seconds; one press of OK goes to Home",
-    "Updater always downloads the APK for the app that is actually installed (phones/tablets vs Fire TV)"
+    "Updater always downloads the APK for the app that is actually installed (phones/tablets vs Fire TV)",
+    "Support Us shows Patreon, PayPal and Venmo icons above each QR code",
+    "Phone edge-swipe Back pops history the same way remote Back does",
+    "Folders, folder shortcuts, Shuffle Play, Sort and Support Us are landscape cards; video files stay portrait posters"
    ]
   },
   {

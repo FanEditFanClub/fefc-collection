@@ -103,6 +103,7 @@ CHROME_WINDOWS = {'DialogTextViewer.xml', 'Settings.xml', 'SettingsCategory.xml'
 
 
 def make_textures(media):
+    from PIL import ImageFont
     media.mkdir(parents=True, exist_ok=True)
     rrect_tile(128, 26, (24, 42, 68, 235), (6, 10, 18, 245), (153, 204, 255, 90), 2, 22).save(media / 'fefc-tile.png')
     rrect_tile(128, 26, (30, 62, 104, 245), (8, 18, 34, 250), (47, 168, 255, 255), 4, 22, glow=(47, 168, 255, 200)).save(media / 'fefc-tile-focus.png')
@@ -169,6 +170,42 @@ def make_textures(media):
         if flip:
             el = el.transpose(Image.FLIP_TOP_BOTTOM)
         el.save(media / name)
+
+    # Support Us brand icons (Patreon / PayPal / Venmo) + landscape tiles for Support / Shuffle / Sort
+    _jf = OVER / 'fonts' / 'Jura-Bold.ttf'
+    _jr = OVER / 'fonts' / 'Jura-Regular.ttf'
+    try:
+        font_b = ImageFont.truetype(str(_jf), 140)
+        font_tile = ImageFont.truetype(str(_jf), 52)
+        font_sub = ImageFont.truetype(str(_jr if _jr.exists() else _jf), 28)
+    except Exception:
+        font_b = font_tile = font_sub = ImageFont.load_default()
+    def brand_icon(letter, bg, name):
+        im = Image.new('RGBA', (256, 256), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+        d.ellipse((16, 16, 240, 240), fill=bg)
+        bb = d.textbbox((0, 0), letter, font=font_b); tw, th = bb[2] - bb[0], bb[3] - bb[1]
+        d.text(((256 - tw) / 2, (256 - th) / 2 - 10), letter, fill=W, font=font_b)
+        im.resize((128, 128), Image.LANCZOS).save(media / name)
+    brand_icon('P', (255, 66, 77, 255), 'fefc-ic-patreon.png')
+    brand_icon('P', (0, 112, 186, 255), 'fefc-ic-paypal.png')
+    brand_icon('V', (61, 149, 217, 255), 'fefc-ic-venmo.png')
+    def land_tile(lines, name):
+        w, h, m = 640, 320, 24
+        im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        body = Image.new('RGBA', (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(body)
+        d.rounded_rectangle((m, m, w - m - 1, h - m - 1), 18, fill=(14, 15, 18, 242), outline=(110, 114, 120, 255), width=3)
+        d.rounded_rectangle((m + 4, m + 4, w - m - 5, h // 2), 14, fill=(255, 255, 255, 18))
+        y = 110 if len(lines) == 1 else 95
+        for i, t in enumerate(lines):
+            f = font_tile if i == 0 else font_sub
+            col = (255, 255, 255, 255) if i == 0 else (200, 205, 215, 255)
+            bb = d.textbbox((0, 0), t, font=f); tw = bb[2] - bb[0]
+            d.text(((w - tw) / 2, y), t, fill=col, font=f); y += 60 if i == 0 else 40
+        Image.alpha_composite(im, body).save(media / name)
+    land_tile(['SUPPORT US', 'Patreon  ·  PayPal  ·  Venmo'], 'fefc-support-tile.png')
+    land_tile(['SHUFFLE PLAY'], 'fefc-shuffle-tile.png')
+    land_tile(['SORT'], 'fefc-sort-tile.png')
+
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')
     for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):
