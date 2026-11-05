@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.3.13 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Fire Stick home: the FEFC app tile now uses a plain FEFC icon like the original FEFC Fire TV app, instead of the adaptive icon that Fire Sticks showed as a grey grid.",
+    "Updates: after What's New, pressing Install closes every popup and downloads in one go with a progress bar. No other update popup can open on top, a dropped connection resumes and retries by itself, and the file is checked before Android's installer opens."
+   ]
+  },
+  {
    "version": "0.3.12 Beta",
    "date": "2026-11-04",
    "notes": [

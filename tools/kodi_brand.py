@@ -61,12 +61,17 @@ def adaptive(dec):
     for d, px in (('mdpi', 48), ('hdpi', 72), ('xhdpi', 96), ('xxhdpi', 144), ('xxxhdpi', 192)):
         os.makedirs(os.path.join(res, 'mipmap-' + d), exist_ok=True)
         icon(px).convert('RGB').save(os.path.join(res, 'mipmap-' + d, 'ic_launcher.png'))
-    os.makedirs(os.path.join(res, 'mipmap-anydpi-v26'), exist_ok=True)
-    bgim = grad(432, 432); bgim.save(os.path.join(res, 'drawable-xxxhdpi', 'ic_launcher_bg.png'))
-    fg = Image.new('RGBA', (432, 432), (0, 0, 0, 0)); paste_fit(fg, logo(), 0.56, 0.56); fg.save(os.path.join(res, 'drawable-xxxhdpi', 'ic_launcher_fg.png'))
-    open(os.path.join(res, 'mipmap-anydpi-v26', 'ic_launcher.xml'), 'w').write(
-        '<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
-        '    <background android:drawable="@drawable/ic_launcher_bg"/>\n    <foreground android:drawable="@drawable/ic_launcher_fg"/>\n</adaptive-icon>\n')
+    # NO adaptive icon: the FEFC Fire TV WebView app (whose tile shows on Fire Sticks) ships only legacy PNG mipmaps.
+    # Fire Stick launchers (Fire OS 7/8) render an adaptive mipmap-anydpi-v26 XML icon of a sideloaded app as a blank grey tile.
+    import shutil as _sh
+    for d in os.listdir(res):
+        if 'anydpi' in d:
+            for n in os.listdir(os.path.join(res, d)):
+                if n.startswith('ic_launcher'): os.remove(os.path.join(res, d, n))
+    for d in os.listdir(res):
+        for n in ('ic_launcher_bg.png', 'ic_launcher_fg.png'):
+            f = os.path.join(res, d, n)
+            if os.path.isfile(f): os.remove(f)
     # Leanback banner exactly like the FEFC Fire TV WebView app (whose tile shows on older Fire OS launchers):
     # 320x180 dp => 320x180 px in plain drawable/ and drawable-xhdpi, 640x360 in xxhdpi/xxxhdpi, 8-bit RGB PNG.
     # (Earlier builds put 640x360 in xhdpi, had no default drawable/banner.png and no mdpi/hdpi-correct sizes.)

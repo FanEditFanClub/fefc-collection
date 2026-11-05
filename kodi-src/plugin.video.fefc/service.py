@@ -88,47 +88,98 @@ def whats_new(new, cur=None, limit=14):
     return '\n'.join(lines).strip()
 
 
+def _updating():
+    return bool(xbmcgui.Window(10000).getProperty('FEFC.Updating'))
+
+
 def install_update(new):
-    """Download the new APK (verified against the published sha256) and hand it to Android's package installer."""
+    """One non-interruptible flow: close every dialog, download with resume + automatic retries (one flow at a time,
+    guarded by FEFC.Updating so no update popup or second download can start meanwhile), verify size + sha256,
+    then hand the APK to Android's package installer."""
+    import hashlib
+    home = xbmcgui.Window(10000)
+    if _updating():
+        log('update already in progress')
+        return
+    home.setProperty('FEFC.Updating', '1')
+    try:
+        _install_update(new)
+    finally:
+        home.clearProperty('FEFC.Updating')
+
+
+def _install_update(new):
     import hashlib
     url = new.get('url', '')
     dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
-    prog = xbmcgui.DialogProgress()
-    wn = whats_new(new, installed_build(), limit=2)
-    extra = ('\n\n' + '\n'.join(l[:60] for l in wn.split('\n')[:4])) if wn else ''
-    prog.create('FEFC update', 'Downloading the new FEFC app...' + extra)
+    part = dst + '.part'
+    want = int(new.get('size') or 0)
+    sha = new.get('sha256') or ''
+    xbmc.executebuiltin('Dialog.Close(all,true)')
+    xbmc.sleep(300)
     ok = False
-    try:
-        req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
+    # already downloaded and verified earlier?
+    if os.path.exists(dst) and sha:
         h = hashlib.sha256()
-        with urllib.request.urlopen(req, timeout=30) as r, open(dst + '.part', 'wb') as f:
-            total = int(r.headers.get('Content-Length') or new.get('size') or 0)
-            done = 0
-            while True:
-                chunk = r.read(256 * 1024)
-                if not chunk:
-                    break
-                f.write(chunk)
-                h.update(chunk)
-                done += len(chunk)
-                if total:
-                    prog.update(min(99, int(done * 100 / total)), 'Downloading the new FEFC app... %d / %d MB' % (done >> 20, total >> 20) + extra)
-                if prog.iscanceled():
-                    raise RuntimeError('cancelled')
-        if new.get('sha256') and h.hexdigest() != new['sha256']:
-            raise RuntimeError('checksum mismatch')
-        os.replace(dst + '.part', dst)
-        ok = True
-    except Exception as e:
-        log('update download failed: %s' % e)
+        with open(dst, 'rb') as f:
+            for c in iter(lambda: f.read(1 << 20), b''):
+                h.update(c)
+        ok = h.hexdigest() == sha
+    if not ok:
         try:
-            os.remove(dst + '.part')
+            os.remove(dst)
         except OSError:
             pass
-    prog.close()
+        prog = xbmcgui.DialogProgressBG()
+        prog.create('FEFC update', 'Downloading %s...' % version_label(new))
+        tries = 0
+        while tries < 8 and not ok:
+            tries += 1
+            try:
+                have = os.path.getsize(part) if os.path.exists(part) else 0
+                if want and have >= want:
+                    have = 0
+                hdr = {'User-Agent': 'FEFC-Kodi'}
+                if have:
+                    hdr['Range'] = 'bytes=%d-' % have
+                with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
+                    if have and r.status != 206:
+                        have = 0
+                    total = want or (have + int(r.headers.get('Content-Length') or 0))
+                    with open(part, 'ab' if have else 'wb') as f:
+                        done = have
+                        while True:
+                            chunk = r.read(256 * 1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            done += len(chunk)
+                            if total:
+                                prog.update(min(99, int(done * 100 / total)), 'FEFC update',
+                                            'Downloading %s: %d / %d MB' % (version_label(new), done >> 20, total >> 20))
+                size = os.path.getsize(part)
+                if want and size < want:
+                    raise RuntimeError('short download %d/%d' % (size, want))
+                if sha:
+                    prog.update(99, 'FEFC update', 'Checking the download...')
+                    h = hashlib.sha256()
+                    with open(part, 'rb') as f:
+                        for c in iter(lambda: f.read(1 << 20), b''):
+                            h.update(c)
+                    if h.hexdigest() != sha:
+                        os.remove(part)
+                        raise RuntimeError('checksum mismatch')
+                os.replace(part, dst)
+                ok = True
+            except Exception as e:
+                log('update download attempt %d failed: %s' % (tries, e))
+                prog.update(0, 'FEFC update', 'Connection problem, retrying (%d/8)...' % tries)
+                xbmc.sleep(min(30, 3 * tries) * 1000)
+        prog.close()
     if not ok:
-        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish. Try again later.')
+        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again; it will continue where it stopped.')
         return
+    xbmc.executebuiltin('Dialog.Close(all,true)')
     uri = None
     for marker, name in (('/files/', 'ext'), ('/cache/', 'extcache')):
         if '/Android/data/' in dst and marker in dst:
@@ -191,22 +242,40 @@ def check_update(manual=False, prompt=True):
         return
     avail = int(new.get('build', 0)) > int(cur.get('build', 0))
     set_update_state(cur, new, avail)
+    if _updating():
+        if manual:
+            xbmcgui.Dialog().notification('FEFC update', 'Already downloading the update...', time=3000)
+        return
     if avail:
         if not prompt:
             return
-        msg = 'A new FEFC app is available: %s. You have %s.' % (version_label(new), version_label(cur))
-        wn = whats_new(new, cur)
-        if wn:   # full-size scrollable notes first, then the short Install / Later question
-            xbmcgui.Dialog().textviewer('FEFC app update: %s' % version_label(new), msg + '\n\n' + wn)
-        msg += ' Download and install it now?'
-        if xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN):
+        home = xbmcgui.Window(10000)
+        if home.getProperty('FEFC.UpdatePrompt'):   # the other process already shows the update popup
+            return
+        home.setProperty('FEFC.UpdatePrompt', '1')
+        try:
+            go = _prompt(new, cur)
+        finally:
+            home.clearProperty('FEFC.UpdatePrompt')
+        if go:
             install_update(new)
-    elif manual:
+        return
+    if manual:
         xbmcgui.Dialog().ok('FEFC', 'You have the latest FEFC app: %s (on Kodi %s).' % (version_label(cur), cur.get('kodi')))
         wn = whats_new(new, None)
         if wn:
             xbmcgui.Dialog().textviewer('FEFC app %s' % version_label(cur), wn)
 
+
+def _prompt(new, cur):
+    """What's new first, then Install / Later. Returns True for Install."""
+    if True:
+        msg = 'A new FEFC app is available: %s. You have %s.' % (version_label(new), version_label(cur))
+        wn = whats_new(new, cur)
+        if wn:   # full-size scrollable notes first, then the short Install / Later question
+            xbmcgui.Dialog().textviewer('FEFC app update: %s' % version_label(new), msg + '\n\n' + wn)
+        msg += ' Download and install it now?'
+        return xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN)
 
 BASE = 'https://fefc-collection.pages.dev'
 CTA = [('Discord', 'Join the FEFC Discord: discord.gg/d8A9xHTey7'),
