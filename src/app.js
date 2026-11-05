@@ -523,12 +523,14 @@ const SFX_GENRE_RX=[['Horror',/horror|slasher|nasties|schlock|monster|creepshow|
 /* Last-resort layers so EVERY collection has a clip: (1) the collection's catalogued genre, (2) a genre inferred from its own and its ancestors' names, (3) a deterministic generic projector/clapper/chime sound. */
 function sfxFallback(id,f){const G=FSFX._genres||{};
  const gm=(typeof genreMap==='object'&&genreMap&&(genreMap[id]||(f&&genreMap[f.id])))||null;
- if(gm&&gm.genres){const g=gm.genres.find(x=>genreClipPool(x).length);if(g){const pool=genreClipPool(g);return pool[Math.random()*pool.length|0]}}
+ if(gm&&gm.genres){const g=gm.genres.find(x=>genreClipPool(x).length);if(g){const pool=genreClipPool(g);return sfxBag(pool)}}
  const names=[];let c=f,n=0;while(c&&n++<12){names.push(c.name||'');c=items.get(c.parent)}
  const txt=names.join(' | ');
- for(const [g,rx] of SFX_GENRE_RX){if(G[g]&&rx.test(txt)){const L=G[g];return Array.isArray(L)&&L.length&&Array.isArray(L[0])?L[Math.random()*L.length|0]:L}}
+ for(const [g,rx] of SFX_GENRE_RX){if(G[g]&&rx.test(txt)){const L=G[g];return sfxBag(L)}}
  let h=0;for(let i=0;i<id.length;i++)h=(h*31+id.charCodeAt(i))>>>0;return SFX_DEFAULTS[h%SFX_DEFAULTS.length]}
-function sfxPickPool(V,rec){if(!V||!V.length)return null;if(!(Array.isArray(V[0])))return V;let i=Math.random()*V.length|0;if(V.length>1&&rec&&i===rec._last)i=(i+1+(Math.random()*(V.length-1)|0))%V.length;if(rec)rec._last=i;return V[i]}
+/* 0.3.22 shuffle-bag: every rotation shuffles, never repeats back-to-back, persisted per rotation (localStorage) */
+function sfxBag(V){if(!V||!V.length)return null;if(!Array.isArray(V[0]))return V;if(V.length===1)return V[0];const key='b:'+V.map(x=>x[0]).join('|');let st={};try{st=JSON.parse(localStorage.getItem('fefc_sfxbag')||'{}')}catch(e){}let b=st[key]||{o:[],l:-1};if(!b.o||!b.o.length||b.o.some(i=>i>=V.length)){const o=V.map((_,i)=>i);for(let i=o.length-1;i>0;i--){const j=Math.random()*(i+1)|0;const t=o[i];o[i]=o[j];o[j]=t}if(o[0]===b.l){const t=o[0];o[0]=o[1];o[1]=t}b.o=o}const i=b.o.shift();b.l=i;st[key]=b;try{localStorage.setItem('fefc_sfxbag',JSON.stringify(st))}catch(e){}return V[i]}
+function sfxPickPool(V,rec){return sfxBag(V)}
 function sfxResolve(id,nf){
  const f=items.get(id);let L=FSFX[id]||(f&&FSFX[f.name]);
  if(L&&Array.isArray(L)&&Array.isArray(L[0])){L=sfxPickPool(L,FSFX)}

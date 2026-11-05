@@ -436,6 +436,40 @@ def display_title(name):
     return t.strip() or name
 
 
+def _bag(files):
+    """0.3.22 shuffle-bag (web parity): shuffled order, never the same clip twice in a row, persisted per rotation."""
+    import random, json, os
+    if len(files) == 1:
+        return files[0]
+    try:
+        import xbmcvfs
+        d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/')
+    except Exception:
+        d = '/tmp/'
+    fn = os.path.join(d, 'sfxbag.json')
+    key = '|'.join(str(f[0] if isinstance(f, list) else f) for f in files)
+    try:
+        st = json.load(open(fn))
+    except Exception:
+        st = {}
+    b = st.get(key) or {'o': [], 'l': -1}
+    if not b.get('o') or any(i >= len(files) for i in b['o']):
+        o = list(range(len(files)))
+        random.shuffle(o)
+        if o[0] == b.get('l'):
+            o[0], o[1] = o[1], o[0]
+        b['o'] = o
+    i = b['o'].pop(0)
+    b['l'] = i
+    st[key] = b
+    try:
+        os.makedirs(d, exist_ok=True)
+        json.dump(st, open(fn, 'w'))
+    except Exception:
+        pass
+    return files[i]
+
+
 def _pick(v):
     import random
     if isinstance(v, dict):
@@ -446,7 +480,7 @@ def _pick(v):
     if not files:
         return ''
     if files and isinstance(files[0], list):
-        files = random.choice(files) if rnd or len(files) > 1 else files[0]
+        files = _bag(files)
     return files
 
 
@@ -501,7 +535,7 @@ def sfx_wav(rel):
     import random
     files = rel if isinstance(rel, list) else [rel]
     if files and isinstance(files[0], list):
-        files = random.choice(files)
+        files = _bag(files)
     files = [x for x in files if isinstance(x, str) and os.path.basename(x)]
     if not files:
         return ''
@@ -539,7 +573,7 @@ def sfx_for(m, fid):
         if not files:
             return ''
         if files and isinstance(files[0], list):
-            files = random.choice(files) if rnd or len(files) > 1 else files[0]
+            files = _bag(files)
         return files
     for key in (fid, name):
         if key and key in sfx and not key.startswith('_'):
