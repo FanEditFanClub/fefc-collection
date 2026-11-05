@@ -1,6 +1,13 @@
 {
  "versions": [
   {
+   "version": "0.3.16 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Fixes the new FEFC app for phones and tablets (FEFC.apk) crashing on launch. Its app ID is now com.fefc.kodi, so reinstall it from the link. The Fire TV app is unchanged."
+   ]
+  },
+  {
    "version": "0.3.15 Beta",
    "date": "2026-11-04",
    "notes": [

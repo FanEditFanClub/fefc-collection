@@ -66,6 +66,20 @@ if _extra:
             if n.startswith('lib/') and not n.endswith('/') and not os.path.exists(os.path.join(dec, n)):
                 os.makedirs(os.path.dirname(os.path.join(dec, n)), exist_ok=True)
                 with z.open(n) as r, open(os.path.join(dec, n), 'wb') as w: shutil.copyfileobj(r, w)
+# libkodi.so has the build-time package baked in (CCompileInfo::GetPackage() = "org.xbmc.kodi"); Kodi derives its JNI
+# class path (GetClass(): org/xbmc/kodi) from it, so a renamed app crashes on launch unless that string matches.
+# Patch it in place in every ABI: the new package must be exactly as long (13 chars, e.g. com.fefc.kodi).
+if RENAME:
+    assert len(PKG) == len('org.xbmc.kodi'), 'FEFC_KODI_PACKAGE must be 13 characters to patch libkodi.so'
+    n_patched = 0
+    for so in glob.glob(os.path.join(dec, 'lib', '*', '*.so')):
+        b = open(so, 'rb').read()
+        b2 = b.replace(b'org.xbmc.kodi', PKG.encode()).replace(b'org/xbmc/kodi', PKG.replace('.', '/').encode()).replace(b'org_xbmc_kodi', PKG.replace('.', '_').encode())
+        if b2 != b:
+            open(so, 'wb').write(b2); n_patched += 1
+        assert b'org.xbmc.kodi' not in b2 and b'org/xbmc/kodi' not in b2, so
+    print('patched package in %d native libs' % n_patched)
+    assert n_patched >= 1
 kodi_brand.brand_apk_tree(dec)
 kodi_brand.adaptive(dec)
 A = os.path.join(dec, 'assets')
