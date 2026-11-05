@@ -2180,6 +2180,26 @@ var __spreadValues = (a, b) => {
       navBack = false;
     }, 2500);
   }
+  function franchiseSfx(f) {
+    if (!f || !f.parent) return;
+    let p = f.parent, n = 0;
+    while (p && p !== ROOT && n++ < 30) {
+      const L = sfxResolve(p, true);
+      if (Array.isArray(L) && L.length) {
+        if (window.S && S.unlock) try {
+          S.unlock();
+        } catch (e) {
+        }
+        if (S.fx) S.fx(L);
+        _lastSfxId = p;
+        _lastSfxAt = Date.now();
+        return;
+      }
+      const q = items.get(p);
+      p = q && q.parent;
+    }
+    folderSfx(f.parent);
+  }
   function folderSfx(id) {
     if (navBack || !id || id === ROOT) return;
     const now = Date.now();
@@ -2233,7 +2253,7 @@ var __spreadValues = (a, b) => {
     if (rec) rec._last = i;
     return V[i];
   }
-  function sfxResolve(id) {
+  function sfxResolve(id, nf) {
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
     if (L && Array.isArray(L) && Array.isArray(L[0])) {
@@ -2296,7 +2316,7 @@ var __spreadValues = (a, b) => {
         L = ["assets/sfx/director-action.mp3"];
       }
     }
-    if (!L && f) L = sfxFallback(id, f);
+    if (!L && f && !nf) L = sfxFallback(id, f);
     return L;
   }
   addEventListener("hashchange", () => {
@@ -2489,8 +2509,7 @@ var __spreadValues = (a, b) => {
       }
       if (!navBack) {
         try {
-          const pid = _ef && _ef.parent;
-          if (pid) folderSfx(pid);
+          franchiseSfx(_ef);
         } catch (e) {
         }
       }
@@ -5682,7 +5701,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.8.24";
+  const HOME_VER_FALLBACK = "0.8.25";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
