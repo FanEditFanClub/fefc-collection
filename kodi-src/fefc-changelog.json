@@ -1,6 +1,15 @@
 {
  "versions": [
   {
+   "version": "0.3.8 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "My List: the sync popup only opens when you select Link My List or Sync, and it no longer pops up again after you close it and go back Home.",
+    "When My List isn't linked, its first item reads Link My List.",
+    "The update popup now waits until the Home screen is showing after the intro."
+   ]
+  },
+  {
    "version": "0.3.7 Beta",
    "date": "2026-11-04",
    "notes": [

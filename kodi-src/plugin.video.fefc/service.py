@@ -470,7 +470,7 @@ def main():
         except Exception as e:
             log('tracker: %s' % e)
         # update check right after the intro (every launch), popup once; re-checked every 6 h to keep the tile badge current
-        if not checked and now - t_start > 4:
+        if not checked and now - t_start > 4 and (xbmc.getCondVisibility('Window.IsActive(home)') or now - t_start > 120):
             checked = True
             last_check = now
             ADDON.setSetting('last_update_check', str(now))

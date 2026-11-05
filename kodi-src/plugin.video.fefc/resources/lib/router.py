@@ -454,7 +454,7 @@ class Router:
             if err:
                 _log('mylist sync: %s' % err)
         who = ml.db.get('user') or 'linked'
-        li = xbmcgui.ListItem('Sync My List with the FEFC web app' + ('  (%s)' % who if ml.linked else '  (not linked)'), offscreen=True)
+        li = xbmcgui.ListItem(('Sync My List with the FEFC web app  (%s)' % who) if ml.linked else 'Link My List  (sync with the web app)', offscreen=True)
         li.setArt({'thumb': 'DefaultAddonService.png', 'icon': 'DefaultAddonService.png'})
         li.getVideoInfoTag().setPlot('Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.')
         li.setProperty('IsPlayable', 'false')
@@ -645,7 +645,29 @@ class Router:
             xbmc.executebuiltin('Container.Refresh')
 
     def mylist_sync(self):
+        # Kodi invokes non-folder list items with a handle and expects a resolve; without one it can re-run this URL later
+        # (e.g. after Back to Home), which re-opened the popup. Answer the handle at once, and only open the dialog on an
+        # explicit press inside the FEFC list views or settings (never on Home, never twice at the same time).
+        if self.handle >= 0:
+            try:
+                xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem(offscreen=True))
+            except Exception:
+                pass
+        home = xbmcgui.Window(10000)
+        if xbmc.getCondVisibility('Window.IsActive(home)') and self.params.get('src') != 'menu':
+            _log('mylist_sync: ignored (not an explicit press; Home is active)')
+            return
+        if home.getProperty('FEFC.LinkOpen') == '1':
+            return
+        home.setProperty('FEFC.LinkOpen', '1')
+        try:
+            self._mylist_sync()
+        finally:
+            home.clearProperty('FEFC.LinkOpen')
+
+    def _mylist_sync(self):
         ml = self.mydb()
+        changed = False
         dlg = xbmcgui.Dialog()
         while True:
             opts = []
@@ -679,9 +701,12 @@ class Router:
                 self._link_window(ml, 'qr')
             elif a == 'device':
                 self._link_window(ml, 'device')
+            changed = True
             if ml.linked and a in ('code', 'qr', 'device'):
                 break
-        xbmc.executebuiltin('Container.Refresh')
+        # refresh only if something changed and the My List view is still the one on screen (never pop anything on Home)
+        if changed and xbmc.getCondVisibility('Window.IsActive(videos) + String.Contains(Container.FolderPath,action=mylist)'):
+            xbmc.executebuiltin('Container.Refresh')
 
     def _link_window(self, ml, mode):
         """On-screen link flow: QR code approved on a signed-in phone, or Google's device code."""
