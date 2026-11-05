@@ -412,6 +412,18 @@ class Tracker(object):
             log('finish: %s' % e)
 
 
+def refresh_home_counts():
+    try:
+        import sys
+        sys.path.insert(0, xbmcvfs.translatePath(ADDON.getAddonInfo('path')))
+        from resources.lib import router
+        home = xbmcgui.Window(10000)
+        for k, v in router.home_counts().items():
+            home.setProperty('FEFC.Cnt.' + k, v)
+    except Exception as e:
+        log('home counts: %s' % e)
+
+
 def main():
     home = xbmcgui.Window(10000)
     if not xbmcvfs.exists(INTRO):
@@ -448,11 +460,15 @@ def main():
     watcher = Watcher()
     tracker = Tracker()
     next_feed = 0.0
+    next_counts = 0.0
     t_start = time.time()
     checked = False
     last_check = 0.0
     while not monitor.abortRequested():
         now = time.time()
+        if now >= next_counts:  # tile counts (catalog + My List), refreshed every minute like the web app's home
+            threading.Thread(target=refresh_home_counts, daemon=True).start()
+            next_counts = now + 60
         if now >= next_feed:
             def refresh():
                 try:

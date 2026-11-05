@@ -68,12 +68,12 @@
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder,return)</onclick>
 			</control>
 			<control type="image">
-				<left>544</left><top>220</top><width>528</width><height>108</height>
+				<left>544</left><top>216</top><width>528</width><height>96</height>
 				<texture>fefc-logo.png</texture>
 				<aspectratio>keep</aspectratio>
 			</control>
 			<control type="label">
-				<left>544</left><top>338</top><width>528</width><height>44</height>
+				<left>544</left><top>312</top><width>528</width><height>40</height>
 				<align>center</align><aligny>center</aligny>
 				<font>font12_title</font>
 				<textcolor>FFFF9C00</textcolor>
@@ -110,6 +110,52 @@
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9008</onleft><onright>9007</onright><onup>9006</onup><ondown>9023</ondown>
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=genres,return)</onclick>
+			</control>
+			<control type="label">
+				<left>12</left><top>346</top><width>504</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font>
+				<textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.Collections)]</label>
+			</control>
+			<control type="label">
+				<left>1100</left><top>346</top><width>504</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font>
+				<textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.TBC)]</label>
+			</control>
+			<control type="label">
+				<left>12</left><top>552</top><width>504</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font>
+				<textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.People)]</label>
+			</control>
+			<control type="label">
+				<left>556</left><top>552</top><width>504</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font>
+				<textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.MyList)]</label>
+			</control>
+			<control type="label">
+				<left>1100</left><top>552</top><width>504</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font>
+				<textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.Genres)]</label>
+			</control>
+			<control type="label">
+				<left>556</left><top>352</top><width>504</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font>
+				<textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.Main)]</label>
+			</control>
+			<control type="image">
+				<left>786</left><top>430</top><width>44</width><height>44</height>
+				<texture>fefc-star.png</texture><aspectratio>keep</aspectratio>
 			</control>
 		</control>
 

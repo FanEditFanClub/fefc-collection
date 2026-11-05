@@ -114,6 +114,11 @@ def make_textures(media):
     sh.save(media / 'fefc-shade.png')
     background(media / 'fefc-bg.jpg')
     Image.new('RGB', (16, 16), (255, 255, 255)).save(media / 'fefc-white.png')
+    import math
+    st = Image.new('RGBA', (128, 128), (0, 0, 0, 0))
+    pts = [(64 + (60 if i % 2 == 0 else 25) * math.sin(i * math.pi / 5), 68 - (60 if i % 2 == 0 else 25) * math.cos(i * math.pi / 5)) for i in range(10)]
+    ImageDraw.Draw(st).polygon(pts, fill=(255, 196, 0, 255))
+    st.save(media / 'fefc-star.png')
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')
     for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):

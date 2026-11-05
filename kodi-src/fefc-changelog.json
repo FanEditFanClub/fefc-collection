@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.3.9 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Home tiles show counts like the web app: collections and files on Main Collection, Fan Edit Collections and To Be Catalogued; collections on Actors & Directors; genres on Genres.",
+    "The My List tile has a star and shows how many items you've starred. Counts update every minute."
+   ]
+  },
+  {
    "version": "0.3.8 Beta",
    "date": "2026-11-04",
    "notes": [

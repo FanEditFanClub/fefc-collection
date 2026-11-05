@@ -130,6 +130,34 @@ def _sorted_kids(m, ks, key):
     return one(folders) + one(vids)
 
 
+COLL_ID = '1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB'
+TBC_ID = '1503Wl56hzRppaIFcQisvQksOaeYOEjnk'
+
+
+def _fmt(n, one, many):
+    return '{:,} {}'.format(n, one if n == 1 else many)
+
+
+def home_counts():
+    """Home tile sub-labels, worded like the web app: 'N collections · N files', '★ N Starred', 'N Genres'."""
+    m = _model()
+
+    def line(fid):
+        folders = sum(1 for k in m['kids'].get(fid, []) if m['items'][k][2])
+        files = len(_descendant_videos(m, fid, cap=100000))
+        return _fmt(folders, 'collection', 'collections') + '  \u00b7  ' + _fmt(files, 'file', 'files')
+    meta = m.get('people_meta') or {}
+    people = sum(1 for k, (n, r) in meta.items() if k in m['items'] and m['cnt'].get(k))
+    genres = len(set(m.get('genre_videos', {})) | set(m.get('genre_folders', {})))
+    try:
+        stars = len(_ml().ids())
+    except Exception:
+        stars = 0
+    return {'Main': line(m['root']), 'Collections': line(COLL_ID), 'TBC': line(TBC_ID),
+            'People': _fmt(people, 'Collection', 'Collections'), 'Genres': _fmt(genres, 'Genre', 'Genres') if genres else '',
+            'MyList': 'History  \u00b7  %d Starred' % stars}
+
+
 def _url(handle_url, **kw):
     return handle_url + '?' + urlencode(kw)
 
