@@ -18,11 +18,17 @@ import java.nio.charset.StandardCharsets;
  * Transparent bridge: service.py starts fefcnotify://notify?... to post a shade
  * notification; tapping one re-opens this activity with fefcnotify://open?... which
  * writes a pending-nav file and launches the main Splash so the Python service can
- * route to New Arrivals or the updater.
+ * route to New Arrivals or the updater. fefcnotify://perm asks for POST_NOTIFICATIONS
+ * once on first launch (Android 13+).
  */
 public class FefcNotifyActivity extends Activity {
     private static final String CH_ID = "fefc";
     private static final String CH_NAME = "FEFC";
+    private boolean waitingPerm;
+    private String pendingKind;
+    private String pendingTitle;
+    private String pendingText;
+    private String pendingNid;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,14 +38,27 @@ public class FefcNotifyActivity extends Activity {
         } catch (Throwable t) {
             // never crash the host app over a notification
         }
-        finish();
+        if (!waitingPerm) finish();
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        waitingPerm = false;
         try {
             handle(intent);
+        } catch (Throwable t) {
+        }
+        if (!waitingPerm) finish();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        try {
+            if (pendingKind != null) {
+                post(pendingKind, pendingTitle, pendingText, pendingNid);
+            }
         } catch (Throwable t) {
         }
         finish();
@@ -51,12 +70,22 @@ public class FefcNotifyActivity extends Activity {
         if (data == null) return;
         String host = data.getHost();
         if (host == null) host = "";
+        if ("perm".equals(host)) {
+            ensurePerm(true);
+            return;
+        }
         if ("notify".equals(host)) {
-            ensurePerm();
             String kind = q(data, "kind", "files");
             String title = q(data, "title", "FEFC");
             String text = q(data, "text", "");
             String nid = q(data, "nid", kind);
+            if (ensurePerm(false)) {
+                pendingKind = kind;
+                pendingTitle = title;
+                pendingText = text;
+                pendingNid = nid;
+                return;
+            }
             post(kind, title, text, nid);
         } else if ("open".equals(host)) {
             String kind = q(data, "kind", "files");
@@ -70,11 +99,14 @@ public class FefcNotifyActivity extends Activity {
         return v == null || v.length() == 0 ? def : v;
     }
 
-    private void ensurePerm() {
-        if (Build.VERSION.SDK_INT < 33) return;
+    /** @return true if a permission dialog was shown (caller must wait). */
+    private boolean ensurePerm(boolean finishIfGranted) {
+        if (Build.VERSION.SDK_INT < 33) return false;
         if (checkSelfPermission("android.permission.POST_NOTIFICATIONS")
-                == PackageManager.PERMISSION_GRANTED) return;
+                == PackageManager.PERMISSION_GRANTED) return false;
+        waitingPerm = true;
         requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 1);
+        return true;
     }
 
     private void post(String kind, String title, String text, String nid) {

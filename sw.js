@@ -1,5 +1,5 @@
 // FEFC Collection service worker. Version is stamped at build time; a new build = new cache.
-const V='mw30mj37',SHELL='fefc-shell-'+V;
+const V='mw31tiw8',SHELL='fefc-shell-'+V;
 const ASSETS=[
  '/',
  '/index.html',

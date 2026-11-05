@@ -9,89 +9,124 @@
 .field private static final CH_NAME:Ljava/lang/String; = "FEFC"
 
 
+# instance fields
+.field private pendingKind:Ljava/lang/String;
+
+.field private pendingNid:Ljava/lang/String;
+
+.field private pendingText:Ljava/lang/String;
+
+.field private pendingTitle:Ljava/lang/String;
+
+.field private waitingPerm:Z
+
+
 # direct methods
 .method public constructor <init>()V
     .registers 1
 
-    .line 23
+    .line 24
     invoke-direct {p0}, Landroid/app/Activity;-><init>()V
 
     return-void
 .end method
 
-.method private ensurePerm()V
-    .registers 3
+.method private ensurePerm(Z)Z
+    .registers 4
 
-    .line 74
-    sget v0, Landroid/os/Build$VERSION;->SDK_INT:I
+    .line 104
+    sget p1, Landroid/os/Build$VERSION;->SDK_INT:I
 
-    const/16 v1, 0x21
+    const/16 v0, 0x21
 
-    if-ge v0, v1, :cond_7
+    const/4 v1, 0x0
 
-    return-void
+    if-ge p1, v0, :cond_8
 
-    .line 75
-    :cond_7
-    const-string v0, "android.permission.POST_NOTIFICATIONS"
+    return v1
 
-    invoke-virtual {p0, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->checkSelfPermission(Ljava/lang/String;)I
+    .line 105
+    :cond_8
+    const-string p1, "android.permission.POST_NOTIFICATIONS"
 
-    move-result v1
+    invoke-virtual {p0, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->checkSelfPermission(Ljava/lang/String;)I
 
-    if-nez v1, :cond_10
+    move-result v0
 
-    .line 76
-    return-void
+    if-nez v0, :cond_11
 
-    .line 77
-    :cond_10
-    filled-new-array {v0}, [Ljava/lang/String;
+    .line 106
+    return v1
 
-    move-result-object v0
+    .line 107
+    :cond_11
+    const/4 v0, 0x1
 
-    const/4 v1, 0x1
+    iput-boolean v0, p0, Lcom/fefc/kodi/FefcNotifyActivity;->waitingPerm:Z
 
-    invoke-virtual {p0, v0, v1}, Lcom/fefc/kodi/FefcNotifyActivity;->requestPermissions([Ljava/lang/String;I)V
+    .line 108
+    filled-new-array {p1}, [Ljava/lang/String;
 
-    .line 78
-    return-void
+    move-result-object p1
+
+    invoke-virtual {p0, p1, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->requestPermissions([Ljava/lang/String;I)V
+
+    .line 109
+    return v0
 .end method
 
 .method private handle(Landroid/content/Intent;)V
     .registers 7
 
-    .line 49
+    .line 68
     if-nez p1, :cond_3
 
     return-void
 
-    .line 50
+    .line 69
     :cond_3
     invoke-virtual {p1}, Landroid/content/Intent;->getData()Landroid/net/Uri;
 
     move-result-object p1
 
-    .line 51
+    .line 70
     if-nez p1, :cond_a
 
     return-void
 
-    .line 52
+    .line 71
     :cond_a
     invoke-virtual {p1}, Landroid/net/Uri;->getHost()Ljava/lang/String;
 
     move-result-object v0
 
-    .line 53
+    .line 72
     const-string v1, ""
 
     if-nez v0, :cond_13
 
     move-object v0, v1
 
-    .line 54
+    .line 73
     :cond_13
+    const-string v2, "perm"
+
+    invoke-virtual {v2, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+
+    move-result v2
+
+    if-eqz v2, :cond_20
+
+    .line 74
+    const/4 p1, 0x1
+
+    invoke-direct {p0, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->ensurePerm(Z)Z
+
+    .line 75
+    return-void
+
+    .line 77
+    :cond_20
     const-string v2, "notify"
 
     invoke-virtual {v2, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
@@ -102,17 +137,14 @@
 
     const-string v4, "kind"
 
-    if-eqz v2, :cond_3e
+    if-eqz v2, :cond_58
 
-    .line 55
-    invoke-direct {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->ensurePerm()V
-
-    .line 56
+    .line 78
     invoke-static {p1, v4, v3}, Lcom/fefc/kodi/FefcNotifyActivity;->q(Landroid/net/Uri;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v0
 
-    .line 57
+    .line 79
     const-string v2, "title"
 
     const-string v3, "FEFC"
@@ -121,62 +153,87 @@
 
     move-result-object v2
 
-    .line 58
+    .line 80
     const-string v3, "text"
 
     invoke-static {p1, v3, v1}, Lcom/fefc/kodi/FefcNotifyActivity;->q(Landroid/net/Uri;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object v1
 
-    .line 59
+    .line 81
     const-string v3, "nid"
 
     invoke-static {p1, v3, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->q(Landroid/net/Uri;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object p1
 
-    .line 60
+    .line 82
+    const/4 v3, 0x0
+
+    invoke-direct {p0, v3}, Lcom/fefc/kodi/FefcNotifyActivity;->ensurePerm(Z)Z
+
+    move-result v3
+
+    if-eqz v3, :cond_54
+
+    .line 83
+    iput-object v0, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingKind:Ljava/lang/String;
+
+    .line 84
+    iput-object v2, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingTitle:Ljava/lang/String;
+
+    .line 85
+    iput-object v1, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingText:Ljava/lang/String;
+
+    .line 86
+    iput-object p1, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingNid:Ljava/lang/String;
+
+    .line 87
+    return-void
+
+    .line 89
+    :cond_54
     invoke-direct {p0, v0, v2, v1, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->post(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 
-    goto :goto_51
+    goto :goto_6b
 
-    .line 61
-    :cond_3e
+    .line 90
+    :cond_58
     const-string v1, "open"
 
     invoke-virtual {v1, v0}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
 
     move-result v0
 
-    if-eqz v0, :cond_51
+    if-eqz v0, :cond_6b
 
-    .line 62
+    .line 91
     invoke-static {p1, v4, v3}, Lcom/fefc/kodi/FefcNotifyActivity;->q(Landroid/net/Uri;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object p1
 
-    .line 63
+    .line 92
     invoke-direct {p0, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->writePending(Ljava/lang/String;)V
 
-    .line 64
+    .line 93
     invoke-direct {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->launchMain()V
 
-    goto :goto_52
+    goto :goto_6c
 
-    .line 61
-    :cond_51
-    :goto_51
+    .line 90
+    :cond_6b
+    :goto_6b
     nop
 
-    .line 66
-    :goto_52
+    .line 95
+    :goto_6c
     return-void
 .end method
 
 .method private launchMain()V
     .registers 3
 
-    .line 128
+    .line 160
     invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->getPackageManager()Landroid/content/pm/PackageManager;
 
     move-result-object v0
@@ -189,45 +246,45 @@
 
     move-result-object v0
 
-    .line 129
+    .line 161
     if-nez v0, :cond_21
 
-    .line 130
+    .line 162
     new-instance v0, Landroid/content/Intent;
 
     const-string v1, "android.intent.action.MAIN"
 
     invoke-direct {v0, v1}, Landroid/content/Intent;-><init>(Ljava/lang/String;)V
 
-    .line 131
+    .line 163
     invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->getPackageName()Ljava/lang/String;
 
     move-result-object v1
 
     invoke-virtual {v0, v1}, Landroid/content/Intent;->setPackage(Ljava/lang/String;)Landroid/content/Intent;
 
-    .line 132
+    .line 164
     const-string v1, "android.intent.category.LAUNCHER"
 
     invoke-virtual {v0, v1}, Landroid/content/Intent;->addCategory(Ljava/lang/String;)Landroid/content/Intent;
 
-    .line 134
+    .line 166
     :cond_21
     const/high16 v1, 0x10200000
 
     invoke-virtual {v0, v1}, Landroid/content/Intent;->addFlags(I)Landroid/content/Intent;
 
-    .line 135
+    .line 167
     invoke-virtual {p0, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->startActivity(Landroid/content/Intent;)V
 
-    .line 136
+    .line 168
     return-void
 .end method
 
 .method private post(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
     .registers 11
 
-    .line 81
+    .line 113
     const-string v0, "notification"
 
     invoke-virtual {p0, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->getSystemService(Ljava/lang/String;)Ljava/lang/Object;
@@ -236,12 +293,12 @@
 
     check-cast v0, Landroid/app/NotificationManager;
 
-    .line 82
+    .line 114
     if-nez v0, :cond_b
 
     return-void
 
-    .line 83
+    .line 115
     :cond_b
     sget v1, Landroid/os/Build$VERSION;->SDK_INT:I
 
@@ -251,7 +308,7 @@
 
     if-lt v1, v3, :cond_23
 
-    .line 84
+    .line 116
     new-instance v1, Landroid/app/NotificationChannel;
 
     const-string v4, "FEFC"
@@ -260,15 +317,15 @@
 
     invoke-direct {v1, v2, v4, v5}, Landroid/app/NotificationChannel;-><init>(Ljava/lang/String;Ljava/lang/CharSequence;I)V
 
-    .line 85
+    .line 117
     const-string v4, "Fan Edit Fan Club Collection"
 
     invoke-virtual {v1, v4}, Landroid/app/NotificationChannel;->setDescription(Ljava/lang/String;)V
 
-    .line 86
+    .line 118
     invoke-virtual {v0, v1}, Landroid/app/NotificationManager;->createNotificationChannel(Landroid/app/NotificationChannel;)V
 
-    .line 88
+    .line 120
     :cond_23
     new-instance v1, Landroid/content/Intent;
 
@@ -276,7 +333,7 @@
 
     invoke-direct {v1, p0, v4}, Landroid/content/Intent;-><init>(Landroid/content/Context;Ljava/lang/Class;)V
 
-    .line 89
+    .line 121
     new-instance v4, Ljava/lang/StringBuilder;
 
     invoke-direct {v4}, Ljava/lang/StringBuilder;-><init>()V
@@ -305,15 +362,15 @@
 
     invoke-virtual {v1, p1}, Landroid/content/Intent;->setData(Landroid/net/Uri;)Landroid/content/Intent;
 
-    .line 90
+    .line 122
     const/high16 p1, 0x14000000
 
     invoke-virtual {v1, p1}, Landroid/content/Intent;->setFlags(I)Landroid/content/Intent;
 
-    .line 91
+    .line 123
     nop
 
-    .line 92
+    .line 124
     sget p1, Landroid/os/Build$VERSION;->SDK_INT:I
 
     const/16 v4, 0x17
@@ -327,42 +384,42 @@
     :cond_57
     const/high16 p1, 0x8000000
 
-    .line 93
+    .line 125
     :goto_59
     invoke-virtual {p4}, Ljava/lang/String;->hashCode()I
 
     move-result p4
 
-    .line 94
+    .line 126
     invoke-static {p0, p4, v1, p1}, Landroid/app/PendingIntent;->getActivity(Landroid/content/Context;ILandroid/content/Intent;I)Landroid/app/PendingIntent;
 
     move-result-object p1
 
-    .line 97
+    .line 129
     sget v1, Landroid/os/Build$VERSION;->SDK_INT:I
 
     if-lt v1, v3, :cond_6b
 
-    .line 98
+    .line 130
     new-instance v1, Landroid/app/Notification$Builder;
 
     invoke-direct {v1, p0, v2}, Landroid/app/Notification$Builder;-><init>(Landroid/content/Context;Ljava/lang/String;)V
 
     goto :goto_70
 
-    .line 100
+    .line 132
     :cond_6b
     new-instance v1, Landroid/app/Notification$Builder;
 
     invoke-direct {v1, p0}, Landroid/app/Notification$Builder;-><init>(Landroid/content/Context;)V
 
-    .line 102
+    .line 134
     :goto_70
     invoke-virtual {v1, p2}, Landroid/app/Notification$Builder;->setContentTitle(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;
 
     move-result-object p2
 
-    .line 103
+    .line 135
     invoke-virtual {p2, p3}, Landroid/app/Notification$Builder;->setContentText(Ljava/lang/CharSequence;)Landroid/app/Notification$Builder;
 
     move-result-object p2
@@ -371,7 +428,7 @@
 
     invoke-direct {v2}, Landroid/app/Notification$BigTextStyle;-><init>()V
 
-    .line 104
+    .line 136
     invoke-virtual {v2, p3}, Landroid/app/Notification$BigTextStyle;->bigText(Ljava/lang/CharSequence;)Landroid/app/Notification$BigTextStyle;
 
     move-result-object p3
@@ -380,34 +437,34 @@
 
     move-result-object p2
 
-    .line 105
+    .line 137
     const p3, 0x108009b
 
     invoke-virtual {p2, p3}, Landroid/app/Notification$Builder;->setSmallIcon(I)Landroid/app/Notification$Builder;
 
     move-result-object p2
 
-    .line 106
+    .line 138
     const/4 p3, 0x1
 
     invoke-virtual {p2, p3}, Landroid/app/Notification$Builder;->setAutoCancel(Z)Landroid/app/Notification$Builder;
 
     move-result-object p2
 
-    .line 107
+    .line 139
     invoke-virtual {p2, p1}, Landroid/app/Notification$Builder;->setContentIntent(Landroid/app/PendingIntent;)Landroid/app/Notification$Builder;
 
-    .line 108
+    .line 140
     sget p1, Landroid/os/Build$VERSION;->SDK_INT:I
 
     if-ge p1, v3, :cond_9c
 
-    .line 109
+    .line 141
     const/4 p1, 0x0
 
     invoke-virtual {v1, p1}, Landroid/app/Notification$Builder;->setPriority(I)Landroid/app/Notification$Builder;
 
-    .line 111
+    .line 143
     :cond_9c
     invoke-virtual {v1}, Landroid/app/Notification$Builder;->build()Landroid/app/Notification;
 
@@ -415,19 +472,19 @@
 
     invoke-virtual {v0, p4, p1}, Landroid/app/NotificationManager;->notify(ILandroid/app/Notification;)V
 
-    .line 112
+    .line 144
     return-void
 .end method
 
 .method private static q(Landroid/net/Uri;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
     .registers 3
 
-    .line 69
+    .line 98
     invoke-virtual {p0, p1}, Landroid/net/Uri;->getQueryParameter(Ljava/lang/String;)Ljava/lang/String;
 
     move-result-object p0
 
-    .line 70
+    .line 99
     if-eqz p0, :cond_e
 
     invoke-virtual {p0}, Ljava/lang/String;->length()I
@@ -449,27 +506,27 @@
 .method private writePending(Ljava/lang/String;)V
     .registers 5
 
-    .line 115
+    .line 147
     const/4 v0, 0x0
 
     invoke-virtual {p0, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->getExternalFilesDir(Ljava/lang/String;)Ljava/io/File;
 
     move-result-object v0
 
-    .line 116
+    .line 148
     if-nez v0, :cond_b
 
     invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->getFilesDir()Ljava/io/File;
 
     move-result-object v0
 
-    .line 117
+    .line 149
     :cond_b
     if-nez v0, :cond_e
 
     return-void
 
-    .line 118
+    .line 150
     :cond_e
     new-instance v1, Ljava/io/File;
 
@@ -477,13 +534,13 @@
 
     invoke-direct {v1, v0, v2}, Ljava/io/File;-><init>(Ljava/io/File;Ljava/lang/String;)V
 
-    .line 120
+    .line 152
     :try_start_15
     new-instance v0, Ljava/io/FileOutputStream;
 
     invoke-direct {v0, v1}, Ljava/io/FileOutputStream;-><init>(Ljava/io/File;)V
 
-    .line 121
+    .line 153
     sget-object v1, Ljava/nio/charset/StandardCharsets;->UTF_8:Ljava/nio/charset/Charset;
 
     invoke-virtual {p1, v1}, Ljava/lang/String;->getBytes(Ljava/nio/charset/Charset;)[B
@@ -492,19 +549,19 @@
 
     invoke-virtual {v0, p1}, Ljava/io/FileOutputStream;->write([B)V
 
-    .line 122
+    .line 154
     invoke-virtual {v0}, Ljava/io/FileOutputStream;->close()V
     :try_end_26
     .catch Ljava/lang/Exception; {:try_start_15 .. :try_end_26} :catch_27
 
-    .line 124
+    .line 156
     goto :goto_28
 
-    .line 123
+    .line 155
     :catch_27
     move-exception p1
 
-    .line 125
+    .line 157
     :goto_28
     return-void
 .end method
@@ -514,10 +571,10 @@
 .method protected onCreate(Landroid/os/Bundle;)V
     .registers 2
 
-    .line 29
+    .line 35
     invoke-super {p0, p1}, Landroid/app/Activity;->onCreate(Landroid/os/Bundle;)V
 
-    .line 31
+    .line 37
     :try_start_3
     invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->getIntent()Landroid/content/Intent;
 
@@ -527,44 +584,98 @@
     :try_end_a
     .catchall {:try_start_3 .. :try_end_a} :catchall_b
 
-    .line 34
+    .line 40
     goto :goto_c
 
-    .line 32
+    .line 38
     :catchall_b
     move-exception p1
 
-    .line 35
+    .line 41
     :goto_c
+    iget-boolean p1, p0, Lcom/fefc/kodi/FefcNotifyActivity;->waitingPerm:Z
+
+    if-nez p1, :cond_13
+
     invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->finish()V
 
-    .line 36
+    .line 42
+    :cond_13
     return-void
 .end method
 
 .method protected onNewIntent(Landroid/content/Intent;)V
-    .registers 2
-
-    .line 40
-    invoke-super {p0, p1}, Landroid/app/Activity;->onNewIntent(Landroid/content/Intent;)V
-
-    .line 42
-    :try_start_3
-    invoke-direct {p0, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->handle(Landroid/content/Intent;)V
-    :try_end_6
-    .catchall {:try_start_3 .. :try_end_6} :catchall_7
-
-    .line 44
-    goto :goto_8
-
-    .line 43
-    :catchall_7
-    move-exception p1
-
-    .line 45
-    :goto_8
-    invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->finish()V
+    .registers 3
 
     .line 46
+    invoke-super {p0, p1}, Landroid/app/Activity;->onNewIntent(Landroid/content/Intent;)V
+
+    .line 47
+    const/4 v0, 0x0
+
+    iput-boolean v0, p0, Lcom/fefc/kodi/FefcNotifyActivity;->waitingPerm:Z
+
+    .line 49
+    :try_start_6
+    invoke-direct {p0, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->handle(Landroid/content/Intent;)V
+    :try_end_9
+    .catchall {:try_start_6 .. :try_end_9} :catchall_a
+
+    .line 51
+    goto :goto_b
+
+    .line 50
+    :catchall_a
+    move-exception p1
+
+    .line 52
+    :goto_b
+    iget-boolean p1, p0, Lcom/fefc/kodi/FefcNotifyActivity;->waitingPerm:Z
+
+    if-nez p1, :cond_12
+
+    invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->finish()V
+
+    .line 53
+    :cond_12
+    return-void
+.end method
+
+.method public onRequestPermissionsResult(I[Ljava/lang/String;[I)V
+    .registers 5
+
+    .line 57
+    invoke-super {p0, p1, p2, p3}, Landroid/app/Activity;->onRequestPermissionsResult(I[Ljava/lang/String;[I)V
+
+    .line 59
+    :try_start_3
+    iget-object p1, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingKind:Ljava/lang/String;
+
+    if-eqz p1, :cond_10
+
+    .line 60
+    iget-object p2, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingTitle:Ljava/lang/String;
+
+    iget-object p3, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingText:Ljava/lang/String;
+
+    iget-object v0, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingNid:Ljava/lang/String;
+
+    invoke-direct {p0, p1, p2, p3, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->post(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+    :try_end_10
+    .catchall {:try_start_3 .. :try_end_10} :catchall_11
+
+    .line 63
+    :cond_10
+    goto :goto_12
+
+    .line 62
+    :catchall_11
+    move-exception p1
+
+    .line 64
+    :goto_12
+    invoke-virtual {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->finish()V
+
+    .line 65
     return-void
 .end method

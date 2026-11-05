@@ -7,7 +7,8 @@
     "Phone/tablet: Android notifications when new files are added (same time as the daily social posts) — tap opens New Arrivals",
     "Phone/tablet: Android notification when an app update is available (Update Available · v…) — tap opens the updater",
     "Settings → Notifications: separate toggles for App update notifications and New files notifications (both default ON, remembered across updates)",
-    "Fire TV update popup is unchanged"
+    "Fire TV update popup is unchanged",
+    "News ticker (web + both Kodi packages): newly added collection files from the same daily feed as the social posts"
    ]
   },
   {

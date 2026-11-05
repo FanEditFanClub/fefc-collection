@@ -230,7 +230,12 @@ def poll_new_files_feed():
     fid = str((feed or {}).get('id') or '').strip()
     if not fid:
         return
-    if ADDON.getSetting('last_new_files_id') == fid:
+    prev = ADDON.getSetting('last_new_files_id')
+    if prev == fid:
+        return
+    if not prev:
+        # First poll after install/update: remember the current feed id without blasting a stale notification.
+        ADDON.setSetting('last_new_files_id', fid)
         return
     count = int(feed.get('count') or 0)
     title = str(feed.get('title') or '').strip()
@@ -444,38 +449,71 @@ def _cta(c):
     return ('[COLOR %s]%s[/COLOR]  JOIN  %s' % (ic[1], ic[0], c[1])) if ic else 'JOIN  ' + c[1]
 
 
-def build_ticker():
-    """Same community news as the web app's ticker: the live /api/feed, else data/community-feed.json; a join call-to-action every 3rd item."""
-    base = (ADDON.getSetting('base_url') or BASE).rstrip('/')
-    items = []
+def _new_files_ticker_items():
+    """Count line + recent titles from the same feed the daily notifier publishes with its social posts."""
+    out = []
     try:
-        items = _get_json(base + '/api/feed').get('items') or []
+        feed = _get_json(NEW_FILES_FEED + '?t=%d' % int(time.time()), timeout=10) or {}
+    except Exception as e:
+        log('new-files ticker: %s' % e)
+        return out
+    title = str(feed.get('title') or '').strip()
+    count = int(feed.get('count') or 0)
+    if not title and count:
+        label = 'New File' if count == 1 else 'New Files'
+        verb = 'has been added' if count == 1 else 'have been added'
+        title = '%s %s %s to The Fan Edit Fan Club Collection' % (count, label, verb)
+    if title:
+        out.append({'src': 'new', 'title': title})
+    for name in (feed.get('recent') or [])[:12]:
+        t = ' '.join(str(name or '').split())
+        if t:
+            out.append({'src': 'new', 'title': t})
+    return out
+
+
+def build_ticker():
+    """Community news + newly added collection files (same new-files.json feed as the phone notifications)."""
+    base = (ADDON.getSetting('base_url') or BASE).rstrip('/')
+    new_items = []
+    try:
+        new_items = _new_files_ticker_items()
+    except Exception as e:
+        log('new-files ticker merge: %s' % e)
+    community = []
+    try:
+        community = _get_json(base + '/api/feed').get('items') or []
     except Exception as e:
         log('feed: %s' % e)
-    if not items:
+    if not community:
         try:
             for p in _get_json(base + '/data/community-feed.json').get('posts') or []:
-                items.append({'src': p.get('src') or p.get('label') or '', 'title': p.get('title') or ''})
+                community.append({'src': p.get('src') or p.get('label') or '', 'title': p.get('title') or ''})
         except Exception as e:
             log('community-feed: %s' % e)
+    items = list(new_items) + list(community)
     parts = []
     k = 0
-    for it in items[:30]:
+    for it in items[:40]:
         t = ' '.join(str(it.get('title') or '').split())
         if not t:
             continue
         src = str(it.get('src') or '').strip()
-        ic = TICKER_ICONS.get(src.lower().replace('twitter', 'x'))
-        if ic:  # brand icon glyph (bundled in the FEFC Jura font) right before the post, like the web ticker
-            parts.append('[COLOR %s]%s[/COLOR]  %s' % (ic[1], ic[0], t))
+        if src.lower() == 'new':
+            parts.append('[COLOR FFFFB02E]NEW[/COLOR]  %s' % t)
         else:
-            parts.append(('%s: %s' % (src.upper(), t)) if src else t)
+            ic = TICKER_ICONS.get(src.lower().replace('twitter', 'x'))
+            if ic:  # brand icon glyph (bundled in the FEFC Jura font) right before the post, like the web ticker
+                parts.append('[COLOR %s]%s[/COLOR]  %s' % (ic[1], ic[0], t))
+            else:
+                parts.append(('%s: %s' % (src.upper(), t)) if src else t)
         k += 1
         if k % 3 == 0:
             parts.append(_cta(CTA[(k // 3 - 1) % len(CTA)]))
     if not parts:
         parts = [_cta(c) for c in CTA]
-    return '        \u2022        '.join(parts) + '        \u2022        '
+    return '        •        '.join(parts) + '        •        '
+
 
 
 NOT_PLAYER_SCREENS = ('fullscreenvideo', 'videoosd', 'seekbar', 'osdvideosettings', 'osdaudiosettings', 'osdsubtitlesettings',
@@ -844,6 +882,13 @@ def main():
         sync_notify_prefs()
     except Exception as e:
         log('notify prefs start: %s' % e)
+    try:
+        if is_phone_pkg() and ADDON.getSetting('asked_notify_perm') != 'true':
+            ADDON.setSetting('asked_notify_perm', 'true')
+            xbmc.executebuiltin(
+                'StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,fefcnotify://perm,,,,com.fefc.kodi.FefcNotifyActivity)')
+    except Exception as e:
+        log('notify perm ask: %s' % e)
     while not monitor.abortRequested():
         now = time.time()
         try:
