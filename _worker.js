@@ -763,7 +763,7 @@ export default {
       if (!obj) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
       const h = new Headers({ 'content-type': isApk ? 'application/vnd.android.package-archive' : 'application/json', 'accept-ranges': 'bytes',
         'cache-control': isApk ? 'public, max-age=300, must-revalidate' : 'no-cache', 'access-control-allow-origin': '*' });
-      if (isApk) h.set('content-disposition', 'attachment; filename="FEFC-Kodi.apk"');
+      if (isApk) { h.set('content-disposition', 'attachment; filename="' + (url.pathname === '/kodi-app/FEFC.apk' ? 'FEFC.apk' : 'FEFC-Kodi.apk') + '"'); h.set('cache-control', 'no-store'); }
       if (obj.httpEtag) h.set('etag', obj.httpEtag);
       let status = 200;
       if (obj.range && obj.size != null) {
