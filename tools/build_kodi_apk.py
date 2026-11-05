@@ -51,6 +51,30 @@ if 'fefc_update_paths' not in s:
 os.makedirs(os.path.join(dec, 'res', 'xml'), exist_ok=True)
 open(os.path.join(dec, 'res', 'xml', 'fefc_update_paths.xml'), 'w').write('<?xml version="1.0" encoding="utf-8"?>\n<paths>\n    <external-files-path name="ext" path="."/>\n    <external-cache-path name="extcache" path="."/>\n    <files-path name="int" path="."/>\n    <cache-path name="cache" path="."/>\n</paths>\n')
 open(mf, 'w', encoding='utf-8').write(s)
+# Phone/tablet package only: transparent activity that posts true Android shade notifications
+# (service.py starts fefcnotify://notify?... via StartAndroidActivity). Legacy Fire TV APK is unchanged.
+if PKG == 'com.fefc.kodi':
+    _nf_smali = os.path.join(root, 'tools', 'fefc_notify', 'smali', 'com', 'fefc', 'kodi', 'FefcNotifyActivity.smali')
+    if os.path.isfile(_nf_smali):
+        _dest_dir = None
+        for sd in sorted(glob.glob(os.path.join(dec, 'smali*'))):
+            _dest_dir = os.path.join(sd, 'com', 'fefc', 'kodi')
+        assert _dest_dir, 'no smali* dir to inject FefcNotifyActivity'
+        os.makedirs(_dest_dir, exist_ok=True)
+        shutil.copy(_nf_smali, os.path.join(_dest_dir, 'FefcNotifyActivity.smali'))
+        s = open(mf, encoding='utf-8').read()
+        if 'POST_NOTIFICATIONS' not in s:
+            s = s.replace('<application', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <application', 1)
+        if 'FefcNotifyActivity' not in s:
+            s = s.replace('</application>',
+                '<activity android:name="com.fefc.kodi.FefcNotifyActivity" android:exported="false" '
+                'android:excludeFromRecents="true" android:noHistory="true" android:taskAffinity="" '
+                'android:theme="@android:style/Theme.Translucent.NoTitleBar">'
+                '<intent-filter><action android:name="android.intent.action.VIEW"/>'
+                '<category android:name="android.intent.category.DEFAULT"/>'
+                '<data android:scheme="fefcnotify"/></intent-filter></activity>\n    </application>', 1)
+        open(mf, 'w', encoding='utf-8').write(s)
+        print('injected FefcNotifyActivity for com.fefc.kodi')
 # label "FEFC" in every locale
 for f in glob.glob(os.path.join(dec, 'res', 'values*', 'strings.xml')):
     t = open(f, encoding='utf-8').read()

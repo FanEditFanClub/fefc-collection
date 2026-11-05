@@ -129,6 +129,122 @@ def _for_my_package(new):
     return p.get('url') or new.get('url', ''), int(p.get('size') or new.get('size') or 0), p.get('sha256') or new.get('sha256') or ''
 
 
+NEW_FILES_FEED = 'https://fefc-collection.pages.dev/kodi-app/new-files.json'
+
+
+def is_phone_pkg():
+    """com.fefc.kodi = phones/tablets (OS notifications). org.xbmc.kodi = Fire TV (keeps the in-app popup)."""
+    return my_package() == 'com.fefc.kodi'
+
+
+def _android_ext_files_dir():
+    """Android/data/<pkg>/files — same folder Java FefcNotifyActivity uses via getExternalFilesDir(null)."""
+    for sp in ('special://home/', 'special://temp/', 'special://xbmc/'):
+        try:
+            t = xbmcvfs.translatePath(sp)
+        except Exception:
+            t = ''
+        if not t:
+            continue
+        marker = '/Android/data/com.fefc.kodi/files'
+        i = t.find(marker)
+        if i >= 0:
+            return t[:i + len(marker)]
+    return ''
+
+
+def sync_notify_prefs():
+    """Mirror Settings toggles into a JSON file (defaults ON). Addon settings already persist across APK updates."""
+    if not is_phone_pkg():
+        return
+    d = _android_ext_files_dir()
+    if not d:
+        return
+    try:
+        os.makedirs(d, exist_ok=True)
+        prefs = {
+            'notify_app_update': ADDON.getSetting('notify_app_update') != 'false',
+            'notify_new_files': ADDON.getSetting('notify_new_files') != 'false',
+        }
+        with open(os.path.join(d, 'fefc-notify-prefs.json'), 'w', encoding='utf-8') as f:
+            json.dump(prefs, f)
+    except Exception as e:
+        log('notify prefs: %s' % e)
+
+
+def android_os_notify(kind, title, text, nid):
+    """Post a true Android shade notification via the branded APK's FefcNotifyActivity (com.fefc.kodi only)."""
+    if not is_phone_pkg():
+        return
+    try:
+        from urllib.parse import quote
+        data = 'fefcnotify://notify?kind=%s&title=%s&text=%s&nid=%s' % (
+            quote(str(kind), safe=''), quote(str(title), safe=''),
+            quote(str(text), safe=''), quote(str(nid), safe=''))
+        # package, intent, dataType, dataURI, flags, extras, action, category, className
+        xbmc.executebuiltin(
+            'StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,%s,,,,com.fefc.kodi.FefcNotifyActivity)'
+            % data)
+        log('os notify %s: %s' % (kind, title))
+    except Exception as e:
+        log('os notify failed: %s' % e)
+
+
+def consume_pending_nav():
+    """Notification tap writes fefc-pending-nav.txt; open New Arrivals or the updater."""
+    if not is_phone_pkg():
+        return
+    d = _android_ext_files_dir()
+    if not d:
+        return
+    path = os.path.join(d, 'fefc-pending-nav.txt')
+    if not os.path.exists(path):
+        return
+    try:
+        with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+            kind = (f.read() or '').strip().lower()
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    except Exception as e:
+        log('pending nav read: %s' % e)
+        return
+    if kind in ('files', 'recent', 'newfiles', 'new_files'):
+        xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent,return)')
+    elif kind in ('update', 'updater', 'app_update'):
+        check_update(manual=True, prompt=False)
+
+
+def poll_new_files_feed():
+    """When the fan-edit notifier posts, it publishes new-files.json; show one OS notification per new id."""
+    if not is_phone_pkg():
+        return
+    if ADDON.getSetting('notify_new_files') == 'false':
+        return
+    try:
+        feed = _get_json(NEW_FILES_FEED + '?t=%d' % int(time.time()), timeout=12)
+    except Exception as e:
+        log('new-files feed: %s' % e)
+        return
+    fid = str((feed or {}).get('id') or '').strip()
+    if not fid:
+        return
+    if ADDON.getSetting('last_new_files_id') == fid:
+        return
+    count = int(feed.get('count') or 0)
+    title = str(feed.get('title') or '').strip()
+    if not title:
+        label = 'New File' if count == 1 else 'New Files'
+        verb = 'has been added' if count == 1 else 'have been added'
+        title = '%s %s %s to The Fan Edit Fan Club Collection' % (count or '', label, verb)
+        title = title.strip()
+    android_os_notify('files', title, 'Tap to open New Arrivals', fid)
+    ADDON.setSetting('last_new_files_id', fid)
+
+
+
+
 def _install_update(new):
     import hashlib
     url, want, sha = _for_my_package(new)
@@ -270,6 +386,16 @@ def check_update(manual=False, prompt=True):
         install_update(new)
         return
     if avail:
+        if is_phone_pkg():
+            # Android phone/tablet: OS notification (gated by Settings); Fire TV keeps the in-app popup below.
+            if ADDON.getSetting('notify_app_update') != 'false':
+                nb = str(new.get('build') or '')
+                if nb and ADDON.getSetting('last_update_notify_build') != nb:
+                    nv = (str(new.get('version') or '').strip() or ('build %s' % nb))
+                    label = 'Update Available · v%s' % re.sub(r'(?i)\s*beta$', '', nv)
+                    android_os_notify('update', label, 'Tap to open the updater', 'update-%s' % nb)
+                    ADDON.setSetting('last_update_notify_build', nb)
+            return
         if not prompt:
             return
         home = xbmcgui.Window(10000)
@@ -710,14 +836,30 @@ def main():
     wall = HomeWall()
     next_feed = 0.0
     next_counts = 0.0
+    next_new_files = 0.0
     t_start = time.time()
     checked = False
     last_check = 0.0
+    try:
+        sync_notify_prefs()
+    except Exception as e:
+        log('notify prefs start: %s' % e)
     while not monitor.abortRequested():
         now = time.time()
+        try:
+            consume_pending_nav()
+        except Exception as e:
+            log('pending nav: %s' % e)
         if now >= next_counts:  # tile counts (catalog + My List), refreshed every minute like the web app's home
             threading.Thread(target=refresh_home_counts, daemon=True).start()
             next_counts = now + 60
+        if is_phone_pkg() and now >= next_new_files:
+            threading.Thread(target=poll_new_files_feed, daemon=True).start()
+            try:
+                sync_notify_prefs()
+            except Exception:
+                pass
+            next_new_files = now + 900  # 15 min; feed is published with the 9am ET social posts
         if now >= next_feed:
             def refresh():
                 try:

@@ -36,5 +36,19 @@
         </setting>
       </group>
     </category>
+    <category id="notifications" label="30010">
+      <group id="1">
+        <setting id="notify_app_update" type="boolean" label="30011">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+        <setting id="notify_new_files" type="boolean" label="30012">
+          <level>0</level>
+          <default>true</default>
+          <control type="toggle"/>
+        </setting>
+      </group>
+    </category>
   </section>
 </settings>

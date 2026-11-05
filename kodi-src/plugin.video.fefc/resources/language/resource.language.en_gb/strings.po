@@ -31,3 +31,15 @@ msgstr ""
 msgctxt "#30006"
 msgid "Pause the video when I press Back to the menu"
 msgstr ""
+
+msgctxt "#30010"
+msgid "Notifications"
+msgstr ""
+
+msgctxt "#30011"
+msgid "App update notifications"
+msgstr ""
+
+msgctxt "#30012"
+msgid "New files notifications"
+msgstr ""

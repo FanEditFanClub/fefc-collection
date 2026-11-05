@@ -755,11 +755,15 @@ export default {
     if (url.pathname.startsWith('/api/sync/')) {
       try { return await syncApi(req, env, url); } catch (e) { const st = e && e.status || 500; if (st >= 500) console.log('sync error:', String(e && e.message || e).slice(0, 120)); return json({ error: st === 500 ? 'server' : e.message }, st); }
     }
-    // Branded FEFC (Kodi-based) app: APK + version.json live in R2 (kodi/), published by .github/workflows/kodi-apk.yml.
-    if (url.pathname === '/kodi-app/FEFC-Kodi.apk' || url.pathname === '/kodi-app/FEFC.apk' || url.pathname === '/kodi-app/version.json') {
+    // Branded FEFC (Kodi-based) app: APKs + version.json + new-files feed live in R2 (kodi/).
+    if (url.pathname === '/kodi-app/FEFC-Kodi.apk' || url.pathname === '/kodi-app/FEFC.apk' || url.pathname === '/kodi-app/version.json' || url.pathname === '/kodi-app/new-files.json') {
       const isApk = url.pathname.endsWith('.apk');
       if (!env.MEDIA) return new Response('unavailable', { status: 503 });
-      const obj = await env.MEDIA.get(isApk ? (url.pathname === '/kodi-app/FEFC.apk' ? 'kodi/FEFC.apk' : 'kodi/FEFC-Kodi.apk') : 'kodi/version.json', { range: req.headers });
+      const key = url.pathname === '/kodi-app/FEFC.apk' ? 'kodi/FEFC.apk'
+        : url.pathname === '/kodi-app/FEFC-Kodi.apk' ? 'kodi/FEFC-Kodi.apk'
+        : url.pathname === '/kodi-app/new-files.json' ? 'kodi/new-files.json'
+        : 'kodi/version.json';
+      const obj = await env.MEDIA.get(key, { range: req.headers });
       if (!obj) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
       const h = new Headers({ 'content-type': isApk ? 'application/vnd.android.package-archive' : 'application/json', 'accept-ranges': 'bytes',
         'cache-control': isApk ? 'public, max-age=300, must-revalidate' : 'no-cache', 'access-control-allow-origin': '*' });
