@@ -1,6 +1,13 @@
 {
  "versions": [
   {
+   "version": "0.3.12 Beta",
+   "date": "2026-11-04",
+   "notes": [
+    "Fire TV home: the FEFC banner tile now uses the same banner setup as the original FEFC Fire TV app (320x180 banner in the default and xhdpi folders), so older Fire Sticks show FEFC art instead of a grey placeholder."
+   ]
+  },
+  {
    "version": "0.3.11 Beta",
    "date": "2026-11-04",
    "notes": [

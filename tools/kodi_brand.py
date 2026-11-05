@@ -67,6 +67,9 @@ def adaptive(dec):
     open(os.path.join(res, 'mipmap-anydpi-v26', 'ic_launcher.xml'), 'w').write(
         '<?xml version="1.0" encoding="utf-8"?>\n<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
         '    <background android:drawable="@drawable/ic_launcher_bg"/>\n    <foreground android:drawable="@drawable/ic_launcher_fg"/>\n</adaptive-icon>\n')
-    for d, (w, h) in (('mdpi', (320, 180)), ('hdpi', (480, 270)), ('xhdpi', (640, 360)), ('xxhdpi', (960, 540))):
-        os.makedirs(os.path.join(res, 'drawable-' + d), exist_ok=True)
-        banner(w, h).save(os.path.join(res, 'drawable-' + d, 'banner.png'))
+    # Leanback banner exactly like the FEFC Fire TV WebView app (whose tile shows on older Fire OS launchers):
+    # 320x180 dp => 320x180 px in plain drawable/ and drawable-xhdpi, 640x360 in xxhdpi/xxxhdpi, 8-bit RGB PNG.
+    # (Earlier builds put 640x360 in xhdpi, had no default drawable/banner.png and no mdpi/hdpi-correct sizes.)
+    for d, (w, h) in (('', (320, 180)), ('-mdpi', (160, 90)), ('-hdpi', (240, 135)), ('-xhdpi', (320, 180)), ('-xxhdpi', (640, 360)), ('-xxxhdpi', (640, 360))):
+        os.makedirs(os.path.join(res, 'drawable' + d), exist_ok=True)
+        banner(w, h).convert('RGB').save(os.path.join(res, 'drawable' + d, 'banner.png'), optimize=False)
