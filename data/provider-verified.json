@@ -1,0 +1,72 @@
+{
+  "v": 1,
+  "checked_at": "2026-11-07T11:51:19Z",
+  "note": "Representative public checks only. Every other testing-folder link stays unchecked and is not a film.",
+  "items": {
+    "pt:i:881e437c85d6": {
+      "state": "page_only",
+      "detail": "YouTube oEmbed confirms the page. There is no direct media file for the in-app player.",
+      "browser_play": false,
+      "kodi_play": false,
+      "play_url": "",
+      "mime": "",
+      "http": 200,
+      "checked_via": "YouTube oEmbed",
+      "id": "pt:i:881e437c85d6",
+      "name": "My citizens, please use the torrent if at all possible. Seeding them is the fastest and most reliable way to obtain the files and support your new Empire! To watch a playlist of ev",
+      "source_url": "https://www.youtube.com/watch?v=ANC_fi8HTOc&list=PLEh8pd-FJc5OG7tQVigKFFA21vp5JXt3S"
+    },
+    "pt:i:36adbbc5490d": {
+      "state": "playable",
+      "detail": "Pixeldrain info: logan 2017 1080p 15mbps aac 2.0 version.mp4 (video/mp4).",
+      "browser_play": true,
+      "kodi_play": true,
+      "play_url": "https://pixeldrain.com/api/file/cq6nts19",
+      "mime": "video/mp4",
+      "http": 200,
+      "checked_via": "pixeldrain /api/file/{id}/info",
+      "id": "pt:i:36adbbc5490d",
+      "name": "Logan",
+      "source_url": "https://pixeldrain.com/u/cq6nts19"
+    },
+    "pt:i:3ef62d80c7e7": {
+      "state": "direct_file_not_browser",
+      "detail": "Direct HEAD/Range HTTP 206, type none, extension .m2ts.",
+      "browser_play": false,
+      "kodi_play": true,
+      "play_url": "https://storage.open-matte.ru/00000.m2ts",
+      "mime": "",
+      "http": 206,
+      "checked_via": "HTTP Range GET of the published file URL",
+      "id": "pt:i:3ef62d80c7e7",
+      "name": "00000.m2ts",
+      "source_url": "https://storage.open-matte.ru/00000.m2ts"
+    },
+    "pt:i:ebcf3779092c": {
+      "state": "page_only",
+      "detail": "Dailymotion API confirms the video id. No direct file URL is published by that call.",
+      "browser_play": false,
+      "kodi_play": false,
+      "play_url": "",
+      "mime": "",
+      "http": 200,
+      "checked_via": "api.dailymotion.com/video",
+      "id": "pt:i:ebcf3779092c",
+      "name": "Stream Dailymotion:",
+      "source_url": "https://dai.ly/k7oTN5YRyQ43MLweFpb"
+    },
+    "pt:i:a76a2182c121": {
+      "state": "playable",
+      "detail": "Metadata lists EP01 - Night of the Sentinels.mp4 (video/mp4). Range request HTTP 206.",
+      "browser_play": true,
+      "kodi_play": true,
+      "play_url": "https://archive.org/download/x-men-the-animated-series-1080p-ai-upscale_202204/EP01%20-%20Night%20of%20the%20Sentinels.mp4",
+      "mime": "video/mp4",
+      "http": 206,
+      "checked_via": "archive.org metadata API + Range GET",
+      "id": "pt:i:a76a2182c121",
+      "name": "What If\u2026? (Seasons 2 & 3) \u2013 Episodes 14-26",
+      "source_url": "https://archive.org/details/x-men-the-animated-series-1080p-ai-upscale_202204/EP01+-+Night+of+the+Sentinels.mkv"
+    }
+  }
+}

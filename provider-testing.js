@@ -14,12 +14,18 @@
       else if (k === 'page') pages++;
       else files++;
     });
-    return folders + ' folder links · ' + files + ' unverified file links'
+    var playable = 0, checked = 0;
+    (list || []).forEach(function (f) {
+      if (!f || !f.pt || f.ptKind === 'folder') return;
+      if (f.ptState && f.ptState !== 'unchecked') checked++;
+      if (f.ptPlay) playable++;
+    });
+    return folders + ' folder links · ' + files + ' file links'
       + (pages ? ' · ' + pages + ' other links' : '')
       + (magnets ? ' · ' + magnets + ' magnets (not video)' : '')
       + (subs ? ' · ' + subs + ' subtitles (not video)' : '')
       + (notes ? ' · ' + notes + ' notes' : '')
-      + ' · 0 verified videos';
+      + ' · ' + checked + ' public checks · ' + playable + ' browser-playable';
   }
   function row(parent, it, openLabel) {
     var folder = it.kind === 'folder';
@@ -44,26 +50,47 @@
     });
     return out;
   }
+  var STATE = {
+    unchecked: 'Not checked. This is a catalog link, not a film, and in-app play is off.',
+    page_only: 'A public page exists. It is not a media file, so there is no in-app player.',
+    unavailable: 'The public check did not find a file to play.',
+    direct_file_not_browser: 'A public file answered. This browser cannot play that format.',
+    playable: 'A public media file answered and can be played here.',
+    unresolved_short_link: 'Short link left unresolved. Not a verified film.'
+  };
   function mount(add) {
     if (mounted || !add) return Promise.resolve();
-    return fetch('data/provider-testing.json').then(function (r) {
-      if (!r.ok) throw new Error('provider-testing ' + r.status);
-      return r.json();
-    }).then(function (doc) {
+    return Promise.all([
+      fetch('data/provider-testing.json').then(function (r) { if (!r.ok) throw new Error('provider-testing ' + r.status); return r.json(); }),
+      fetch('data/provider-verified.json').then(function (r) { return r.ok ? r.json() : { items: {} }; }).catch(function () { return { items: {} }; })
+    ]).then(function (pair) {
+      var doc = pair[0], ver = pair[1] || {};
       if (!doc || !doc.providers) return;
-      add(flatten(doc));
+      var rows = flatten(doc);
+      var map = ver.items || {};
+      rows.forEach(function (f) {
+        var v = map[f.id];
+        if (!v) { f.ptState = 'unchecked'; return; }
+        f.ptState = v.state || 'unchecked';
+        f.ptDetail = v.detail || '';
+        f.ptPlay = v.browser_play && v.play_url ? v.play_url : '';
+      });
+      add(rows);
       mounted = true;
     });
   }
   function detailsHTML(f, esc) {
     var open = f.ptOpen || 'Open link';
+    var state = f.ptState || 'unchecked';
     var bits = ['<h1 class="lc-title">' + esc(f.name) + '</h1>',
-      '<div class="lc-sub">' + esc(f.ptLabel || 'LINK') + ' · not a verified film</div>',
-      '<p>' + esc(f.ptStatus || 'Destination contents and playback were not verified.') + '</p>'];
+      '<div class="lc-sub">' + esc(f.ptLabel || 'LINK') + ' · ' + esc(state.replace(/_/g, ' ')) + '</div>',
+      '<p>' + esc(STATE[state] || STATE.unchecked) + '</p>'];
+    if (f.ptDetail) bits.push('<p>' + esc(f.ptDetail) + '</p>');
     if (f.ptCatalog) bits.push('<p class="src">Catalog: ' + esc(f.ptCatalog) + (f.ptLine != null ? ' · line ' + esc(String(f.ptLine)) : '') + '</p>');
     if (f.ptSource) bits.push('<p class="src">Listed in: ' + esc(f.ptSource) + '</p>');
-    bits.push('<p class="src">In-app Play is not offered. No stream was verified, and no description or artwork was added.</p>');
+    if (!f.ptPlay) bits.push('<p class="src">No description or artwork was added.</p>');
     var acts = '<button type="button" class="pill p1" data-act="back">Back</button>';
+    if (f.ptPlay) acts += '<button type="button" class="pill p2" data-act="ptplay" data-url="' + esc(f.ptPlay) + '">Play</button>';
     if (f.ptUrl) acts += '<a class="pill p3 det-ext" href="' + esc(f.ptUrl) + '" target="_blank" rel="noopener">' + esc(open) + '</a>';
     return '<div class="lc-body nopo"><div class="lc-info">' + bits.join('') + '<div class="det-acts">' + acts + '</div></div></div>';
   }

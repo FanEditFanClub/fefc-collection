@@ -602,6 +602,10 @@ var __spreadValues = (a, b) => {
     const skipGrace = vid ? Math.max(4e3, tEnd * 1e3 * 0.35 | 0) : sndOn ? 2500 : 0;
     setTimeout(() => {
       skipArmed = true;
+      try {
+        if (hint) hint.focus();
+      } catch (e) {
+      }
     }, skipGrace);
     const sk = (e) => {
       if (e.type === "keydown" && e.repeat) return;
@@ -739,7 +743,7 @@ var __spreadValues = (a, b) => {
     if (fold && target(f) === ROOT && f.parent === FOLD.collections) return '<button class="ol-tile mainc" data-id="'.concat(f.id, '" data-mainc="1" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small class="mc-l">Main Collection</small><small class="mc-c">').concat(esc(countsLine(ROOT)).replace(/ · /g, " <wbr>\xB7 "), "</small></button>");
     if (!fold && !vid && isSupportDoc(f)) return '<button class="ol-tile sup" data-id="'.concat(f.id, '" data-sup="1" aria-label="Support Us: Patreon, PayPal, Venmo"><span class="sup-t">Support Us</span><small class="sup-s">Patreon \xB7 <wbr>PayPal \xB7 <wbr>Venmo</small><span class="sup-logos" style="display:flex;gap:.4em;justify-content:center;margin-top:.4em"><img src="assets/brand/patreon.png" alt="Patreon" style="height:1.6em;background:#fff;border-radius:50%;padding:.2em"><img src="assets/brand/paypal.png" alt="PayPal" style="height:1.6em;background:#fff;border-radius:.4em;padding:.2em"><img src="assets/brand/venmo.png" alt="Venmo" style="height:1.6em;background:#fff;border-radius:.4em;padding:.3em"></span></button>');
     const ad = cls === "doc" && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name);
-    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? personKind(pp) : fold ? "" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
+    return '<button class="ol-tile '.concat(cls).concat(ad ? " ad" : "", " ").concat(live_ ? "live" : "", '" data-id="').concat(f.id, '" title="').concat(esc(f.name), '"><div class="art" style="background:').concat(artBg(f), '"></div><span class="kind">').concat(live_ ? "NEW" : pp ? personKind(pp) : f.pt ? f.ptLabel || "LINK" : fold ? "" : aud ? "AUDIO" : vid ? "FAN EDIT" : "DOCUMENT", "</span>").concat(fold || vid ? (() => {
       const on = !!(window.UD && UD.isStarred(f.id));
       return '<span class="star'.concat(on ? " on" : "", '" data-star="').concat(f.id, '" role="button" aria-pressed="').concat(on, '" aria-label="').concat(on ? "Remove from My List" : "Add to My List", '" title="').concat(on ? "Starred" : "Star", ' (S)">').concat(on ? "\u2605" : "\u2606", "</span>");
     })() : "").concat(vid ? '<div class="pcap '.concat((() => {
@@ -771,6 +775,7 @@ var __spreadValues = (a, b) => {
     return null;
   }
   async function art(el, f) {
+    if (f && f.pt) return;
     if (el.dataset && el.dataset.fecc) return;
     if (!f || el.classList.contains("sup") || el.classList.contains("mainc") || el.classList.contains("rfhome") || el.dataset.rfhome) return;
     let src = null;
@@ -998,6 +1003,7 @@ var __spreadValues = (a, b) => {
       if (seen[x]) continue;
       seen[x] = 1;
       (kids.get(x) || []).forEach((f) => {
+        if (f.pt) return;
         if (noT && underTBC(target(f))) return;
         if (isFolder(f)) {
           const t = target(f);
@@ -1032,6 +1038,7 @@ var __spreadValues = (a, b) => {
       if (seen[x]) continue;
       seen[x] = 1;
       (kids.get(x) || []).forEach((f) => {
+        if (f.pt) return;
         if (isFolder(f)) {
           const t = target(f);
           if (t === f.id && !f.targetId && (items.get(t) || f).parent === x && t !== ROOT && !Object.values(FOLD).includes(t)) st.push(t);
@@ -1058,7 +1065,7 @@ var __spreadValues = (a, b) => {
     let n = 0;
     const fs = {};
     (kids.get(t) || []).forEach((f) => {
-      if (isFolder(f) || JUNK.test(f.name || "") || !isVid(f) || fs[target(f)]) return;
+      if (f.pt || isFolder(f) || JUNK.test(f.name || "") || !isVid(f) || fs[target(f)]) return;
       fs[target(f)] = 1;
       const ck = vcanon(f);
       if (ck === null || fs["c:" + ck]) return;
@@ -1072,7 +1079,7 @@ var __spreadValues = (a, b) => {
     let c = 0;
     const seen = {};
     (kids.get(id) || []).forEach((f) => {
-      if (!isFolder(f)) return;
+      if (f.pt || !isFolder(f)) return;
       const t = target(f);
       if (seen[t]) return;
       seen[t] = 1;
@@ -2309,9 +2316,7 @@ var __spreadValues = (a, b) => {
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
     if (L && !Array.isArray(L) && typeof L === "object" && (L.file || L.files)) L = sfxPickPool(L.file || L.files);
-    if (L && Array.isArray(L) && Array.isArray(L[0])) {
-      L = sfxPickPool(L, FSFX);
-    }
+    if (L && Array.isArray(L) && Array.isArray(L[0])) L = sfxPickPool(L, FSFX);
     if (!L && f && Array.isArray(FSFX._rules)) {
       const names = [], ids = [];
       let c = f, n = 0;
@@ -3269,6 +3274,7 @@ var __spreadValues = (a, b) => {
     });
     const all = mode === "arena" ? vids2 : mode === "collections" ? fold : [...fold, ...vids2];
     $("#sec2").textContent = mode === "arena" ? "Every fan edit in the collection \xB7 newest first" : cur === ROOT || cur === FOLD.collections || cur === FOLD.tbc ? countsLine(cur) : cur === "virtual" ? "".concat(fold.length, " collections \xB7 ").concat(fmtN(vids2.filter(isVid).length), " files") : "".concat(fold.length, " ").concat(fold.length === 1 ? "collection" : "collections", " \xB7 ").concat(fmtN(sortCounts(cur).n), " ").concat(sortCounts(cur).n === 1 ? "file" : "files");
+    if ((items.get(cur) || {}).pt && window.FEFCTesting) $("#sec2").textContent = FEFCTesting.countsLine(kids.get(cur) || []);
     const isAd = (f) => !isVid(f) && /^\s*\w{1,3}\s*-\s*support\b|support patreon|paypal\/venmo/i.test(f.name), nat = (a, b) => a.name.localeCompare(b.name, void 0, { numeric: true, sensitivity: "base" }), docs = vids2.filter((f) => !isVid(f) && !isAd(f)), ck = mode === "arena" ? "az" : csortGet(cur), evs = csortList(vids2.filter((f) => isVid(f) || isAd(f)), ck, isAd), Q = [], sec = (k, l, a) => {
       if (!a.length) return "";
       const qi = Q.length;
@@ -3284,7 +3290,7 @@ var __spreadValues = (a, b) => {
       sortedAll(fold, vids2, g, typeof shufBtn === "function" ? shufBtn("all") : "");
     } else {
       g.className = "sectioned";
-      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === FOLD.tbc || underTBC(cur) || /to be catalogued/i.test(title) ? "tbc" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
+      const shs = cur === ROOT && mode !== "collections" ? "all" : cur === FOLD.collections || mode === "collections" ? "collections" : cur === FOLD.tbc || underTBC(cur) && !String(cur).startsWith("pt:") || /to be catalogued/i.test(title) ? "tbc" : cur === "virtual" && window.__gscope && title === window.__gtitle ? window.__gscope : "", sb = list.length > 1 && cur !== "virtual" || shs ? '<div class="sortbar csort" role="toolbar" aria-label="Sort" data-for="'.concat(cur, '">').concat(shs ? shufBtn(shs) : "").concat(cur === "virtual" ? "" : CSORTS.map(([v, l]) => '<button class="sortpill'.concat(v === ck ? " on" : "", '" data-csort="').concat(v, '" aria-pressed="').concat(v === ck, '">').concat(l, "</button>")).join(""), "</div>") : "";
       const fsorted = csortList(fold, ck, isAd);
       const _rf = cur === ROOT && mode !== "arena" ? RF_HOME_TILE + SUP_HOME_TILE : "";
       g.innerHTML = sb + sec("folds", "COLLECTIONS", fsorted.filter((f) => !people[target(f)])).replace(/(<div class="sgrid folds"[^>]*>)/, "$1" + _rf) + sec("folds", "PEOPLE", fsorted.filter((f) => people[target(f)])) + (mode === "collections" ? sec("docs", "DOCUMENTS", docs) : sec("vids", "FAN EDITS", evs) + sec("docs", "DOCUMENTS", docs));
@@ -4347,6 +4353,42 @@ var __spreadValues = (a, b) => {
     }
     return false;
   }
+  function playDirect(url, title) {
+    S.ambience(false);
+    S.click();
+    document.body.classList.remove("shuf-player");
+    $("#player").classList.remove("floating");
+    $("#player").dataset.pid = "";
+    $("#player").dataset.file = title || "";
+    $("#ptitle").textContent = title || "Verified file";
+    delete $("#player").dataset.sub;
+    delete $("#player").dataset.submime;
+    $("#player").hidden = false;
+    killVideo();
+    const w = $("#player .pwrap");
+    if (!w) return;
+    const v = document.createElement("video");
+    v.id = "pvideo";
+    v.controls = false;
+    v.autoplay = true;
+    v.playsInline = true;
+    v.preload = "auto";
+    v.setAttribute("playsinline", "");
+    v.tabIndex = -1;
+    v.style.objectFit = playerScaleMode();
+    v.dataset.stream = url;
+    v.src = url;
+    w.classList.add("vid");
+    w.appendChild(v);
+    v.addEventListener("error", () => {
+      $("#ptitle").textContent = (title || "Verified file") + " \u2014 did not start in this browser";
+    });
+    const pp = v.play && v.play();
+    if (pp && pp.catch) pp.catch(() => {
+    });
+    ensurePlayerExtras();
+    setPlayerScale(playerScaleMode());
+  }
   function play(f) {
     const E = episodes(f), pn = $("#pprev"), nx = $("#pnext");
     if (pn && nx) {
@@ -4413,6 +4455,10 @@ var __spreadValues = (a, b) => {
     const act = e.target.closest("[data-act]");
     if (act) {
       const f = items.get($("#details").dataset.id);
+      if (act.dataset.act === "ptplay" && act.dataset.url) {
+        playDirect(act.dataset.url, $("#details .lc-title") ? $("#details .lc-title").textContent : "Verified file");
+        return;
+      }
       if (act.dataset.act === "back") return goBack();
       if (act.dataset.act === "vlc") {
         S.chirp(1);
@@ -4461,6 +4507,18 @@ var __spreadValues = (a, b) => {
       }
       const f = items.get(t.dataset.id);
       if (!f) return;
+      if (f.pt) {
+        S.click();
+        if (isFolder(f)) go("#/folder/" + f.id);
+        else {
+          const d = $("#details");
+          d.hidden = false;
+          d.classList.remove("leaving");
+          document.body.classList.add("details-open");
+          d.innerHTML = window.FEFCTesting && FEFCTesting.detailsHTML(f, esc) || "";
+        }
+        return;
+      }
       if (isFolder(f)) {
         S.click();
         go("#/folder/" + target(f));
@@ -4510,7 +4568,7 @@ var __spreadValues = (a, b) => {
       items.forEach((f) => {
         if (isFolder(f) || !isVid(f)) return;
         const mm = meta.map && meta.films && meta.films[meta.map[f.id] || meta.map[target(f)]] || {};
-        const people = [].concat(mm.director || [], (mm.cast || []).map((c) => c && (c.name || c)), mm.editor || []).filter(Boolean).join(" ");
+        const people2 = [].concat(mm.director || [], (mm.cast || []).map((c2) => c2 && (c2.name || c2)), mm.editor || []).filter(Boolean).join(" ");
         let path = f.name || "";
         let c = f, n = 0;
         while (c && c.parent && n++ < 8) {
@@ -4518,10 +4576,13 @@ var __spreadValues = (a, b) => {
           if (c && c.name) path += " " + c.name;
         }
         const notes = (mm.description || "") + " " + (mm.plot || "");
-        recs.push({ id: f.id, blob: path + " " + notes, people: people + " " + path });
+        recs.push({ id: f.id, blob: path + " " + notes, people: people2 + " " + path });
       });
       const hit = FEFCAttrs.search(q, recs);
-      if (hit && hit.handled) return hit.results.map((r) => ({ item: items.get(r.id), why: r.why })).filter((x) => x.item);
+      if (hit && hit.handled) {
+        const by = new Map(recs.map((r) => [r.id, r]));
+        return hit.results.map((r) => ({ item: items.get(r.id), why: r.why })).filter((x) => x.item);
+      }
     }
     const norm2 = (q || "").toLowerCase();
     const matchedKeywords = /* @__PURE__ */ new Set();
@@ -4623,8 +4684,9 @@ var __spreadValues = (a, b) => {
       const sem = semanticSearch(q);
       if (sem.length) {
         const picks = sem.slice(0, 36).map((x) => ({ f: x.item, why: x.why }));
-        showOptimus(picks, "Text match only. Optimus (Gemini) did not answer this request.");
+        showOptimus(picks, "I searched the vault for \u201C".concat(q, "\u201D and picked ").concat(picks.length, " fan edits for you!"));
       } else {
+        $("#sec2").textContent = "Text match only. Optimus (Gemini) did not answer.";
         searchPage(q);
       }
     }
@@ -6118,6 +6180,11 @@ var __spreadValues = (a, b) => {
     if (!live) {
       add(d.items);
       applyLinks(window._links);
+      try {
+        await (window.FEFCTesting && FEFCTesting.mount(add));
+      } catch (e) {
+        console.warn("testing", e);
+      }
       if (!window._links) {
         try {
           window._links = await tmo("data/links.json", 3e4);
