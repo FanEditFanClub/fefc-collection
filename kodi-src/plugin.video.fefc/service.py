@@ -146,10 +146,11 @@ def _android_ext_files_dir():
             t = ''
         if not t:
             continue
-        marker = '/Android/data/com.fefc.kodi/files'
-        i = t.find(marker)
-        if i >= 0:
-            return t[:i + len(marker)]
+        for pkg in (my_package(), 'com.fefc.kodi', 'org.xbmc.kodi'):
+            marker = '/Android/data/%s/files' % pkg
+            i = t.find(marker)
+            if i >= 0:
+                return t[:i + len(marker)]
     return ''
 
 
@@ -211,7 +212,7 @@ def maybe_ask_notify_perm(asked):
         return
     if ADDON.getSetting('notify_app_update') != 'true' and ADDON.getSetting('notify_new_files') != 'true':
         return
-    xbmc.executebuiltin('StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,fefcnotify://perm,,,,com.fefc.kodi.FefcNotifyActivity)')
+    xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"fefcnotify://perm",,,,,"com.fefc.kodi.FefcNotifyActivity")' % my_package())
 
 
 def consume_pending_nav():
@@ -496,47 +497,39 @@ def _new_files_ticker_items():
     return out
 
 
+def _ticker_mod():
+    import sys
+    lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
+    if lib not in sys.path:
+        sys.path.insert(0, lib)
+    import ticker
+    return ticker
+
+
 def build_ticker():
-    """Community news + newly added collection files (same new-files.json feed as the phone notifications)."""
+    """Real posts only. '' means every fetch failed; caller keeps the previous line."""
+    tk = _ticker_mod()
     base = (ADDON.getSetting('base_url') or BASE).rstrip('/')
-    new_items = []
+    new_items, community, any_ok = [], [], False
     try:
-        new_items = _new_files_ticker_items()
+        new_items = tk.items_from_new_files(_get_json(NEW_FILES_FEED + '?t=%d' % int(time.time()), timeout=8) or {})
+        any_ok = True
     except Exception as e:
-        log('new-files ticker merge: %s' % e)
-    community = []
+        log('new-files ticker: %s' % e)
     try:
-        community = _get_json(base + '/api/feed').get('items') or []
+        community = tk.items_from_api(_get_json(base + '/api/feed', timeout=8))
+        any_ok = True
     except Exception as e:
         log('feed: %s' % e)
     if not community:
         try:
-            for p in _get_json(base + '/data/community-feed.json').get('posts') or []:
-                community.append({'src': p.get('src') or p.get('label') or '', 'title': p.get('title') or ''})
+            community = tk.items_from_snapshot(_get_json(base + '/data/community-feed.json', timeout=8))
+            any_ok = True
         except Exception as e:
             log('community-feed: %s' % e)
-    items = list(new_items) + list(community)
-    parts = []
-    k = 0
-    for it in items[:40]:
-        t = ' '.join(str(it.get('title') or '').split())
-        if not t:
-            continue
-        src = str(it.get('src') or '').strip()
-        if src.lower() == 'new':
-            parts.append('[COLOR FFFFB02E]NEW[/COLOR]  %s' % t)
-        else:
-            ic = TICKER_ICONS.get(src.lower().replace('twitter', 'x'))
-            if ic:  # brand icon glyph (bundled in the FEFC Jura font) right before the post, like the web ticker
-                parts.append('[COLOR %s]%s[/COLOR]  %s' % (ic[1], ic[0], t))
-            else:
-                parts.append(('%s: %s' % (src.upper(), t)) if src else t)
-        k += 1
-        if k % 3 == 0:
-            parts.append(_cta(CTA[(k // 3 - 1) % len(CTA)]))
-    if not parts:
-        parts = [_cta(c) for c in CTA]
-    return '   •   '.join(parts) + '   •   '
+    if not any_ok:
+        return ''
+    return tk.build_text(new_items, community)
 
 
 
@@ -825,10 +818,9 @@ class SkipIntro(xbmcgui.WindowDialog):
     def __init__(self):
         super().__init__()
         self.done = False
-        self.addControl(xbmcgui.ControlImage(1010, 600, 230, 64, 'fefc-lc-pill.png', colorDiffuse='DD000000'))
-        self.btn = xbmcgui.ControlButton(1020, 608, 210, 48, 'SKIP INTRO  >', font='font13_title', textColor='FF000000',
-                                         focusedColor='FF000000', alignment=6,
-                                         focusTexture='fefc-lc-pill.png', noFocusTexture='fefc-lc-pill.png')
+        self.btn = xbmcgui.ControlButton(960, 520, 280, 140, 'SKIP', font='font13_title', textColor='FFFFFFFF',
+                                         focusedColor='FFFFFFFF', alignment=6,
+                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.btn)
         self.setFocus(self.btn)
 
@@ -855,7 +847,11 @@ def details_sfx():
     if not url or key == _last_info[0]:
         return
     _last_info[0] = key
-    if ADDON.getSetting('play_sfx') != 'true' or (xbmc.Player().isPlaying() and not xbmcgui.Window(10000).getProperty('FEFC.Wall')):
+    try:
+        from sfxpref import sfx_enabled as _sfx_on
+    except Exception:
+        _sfx_on = lambda raw: str(raw).strip().lower() != 'false'
+    if not _sfx_on(ADDON.getSetting('play_sfx')) or (xbmc.Player().isPlaying() and not xbmcgui.Window(10000).getProperty('FEFC.Wall')):
         return
     def go():
         try:
@@ -923,7 +919,18 @@ def main():
         if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')
     home.setProperty('FEFC.Ready', '1')
-    home.setProperty('FEFC.SoundOff', '' if ADDON.getSetting('play_sfx') == 'true' else '1')
+    try:
+        import sys as _sys
+        _lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
+        if _lib not in _sys.path:
+            _sys.path.insert(0, _lib)
+        from sfxpref import sfx_enabled, should_persist_on
+        _raw = ADDON.getSetting('play_sfx')
+        if should_persist_on(_raw):
+            ADDON.setSetting('play_sfx', 'true')
+        home.setProperty('FEFC.SoundOff', '' if sfx_enabled(ADDON.getSetting('play_sfx')) else '1')
+    except Exception:
+        home.setProperty('FEFC.SoundOff', '' if ADDON.getSetting('play_sfx') != 'false' else '1')
     # main loop: news ticker, pause-on-back, daily app update notice
     watcher = Watcher()
     tracker = Tracker()
@@ -962,9 +969,12 @@ def main():
         if now >= next_feed:
             def refresh():
                 try:
-                    home.setProperty('FEFC.Ticker', build_ticker())
+                    text = build_ticker()
                 except Exception as e:
                     log('ticker: %s' % e)
+                    return
+                if text:
+                    home.setProperty('FEFC.Ticker', text)
             threading.Thread(target=refresh, daemon=True).start()
             next_feed = now + 1200
         try:

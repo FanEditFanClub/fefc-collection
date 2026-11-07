@@ -2308,6 +2308,7 @@ var __spreadValues = (a, b) => {
   function sfxResolve(id, nf) {
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
+    if (L && !Array.isArray(L) && typeof L === "object" && (L.file || L.files)) L = sfxPickPool(L.file || L.files);
     if (L && Array.isArray(L) && Array.isArray(L[0])) {
       L = sfxPickPool(L, FSFX);
     }
@@ -4504,6 +4505,24 @@ var __spreadValues = (a, b) => {
     western: ["good, the bad", "django", "unforgiven", "fistful of dollars", "magnificent seven", "tombstone", "true grit", "wild bunch", "once upon a time in the west", "butch cassidy", "deadwood", "hateful eight"]
   };
   function semanticSearch(q) {
+    if (window.FEFCAttrs) {
+      const recs = [];
+      items.forEach((f) => {
+        if (isFolder(f) || !isVid(f)) return;
+        const mm = meta.map && meta.films && meta.films[meta.map[f.id] || meta.map[target(f)]] || {};
+        const people = [].concat(mm.director || [], (mm.cast || []).map((c) => c && (c.name || c)), mm.editor || []).filter(Boolean).join(" ");
+        let path = f.name || "";
+        let c = f, n = 0;
+        while (c && c.parent && n++ < 8) {
+          c = items.get(c.parent);
+          if (c && c.name) path += " " + c.name;
+        }
+        const notes = (mm.description || "") + " " + (mm.plot || "");
+        recs.push({ id: f.id, blob: path + " " + notes, people: people + " " + path });
+      });
+      const hit = FEFCAttrs.search(q, recs);
+      if (hit && hit.handled) return hit.results.map((r) => ({ item: items.get(r.id), why: r.why })).filter((x) => x.item);
+    }
     const norm2 = (q || "").toLowerCase();
     const matchedKeywords = /* @__PURE__ */ new Set();
     for (const [key, targets] of Object.entries(SEMANTIC_MAP)) {
@@ -4604,7 +4623,7 @@ var __spreadValues = (a, b) => {
       const sem = semanticSearch(q);
       if (sem.length) {
         const picks = sem.slice(0, 36).map((x) => ({ f: x.item, why: x.why }));
-        showOptimus(picks, "I searched the vault for \u201C".concat(q, "\u201D and picked ").concat(picks.length, " fan edits for you!"));
+        showOptimus(picks, "Text match only. Optimus (Gemini) did not answer this request.");
       } else {
         searchPage(q);
       }
@@ -5754,7 +5773,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.4.0";
+  const HOME_VER_FALLBACK = "0.4.1";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";

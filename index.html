@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black"><meta name="apple-mobile-web-app-title" content="FEFC Collection"><meta name="application-name" content="FEFC Collection">
 <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Antonio:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/fonts/fonts.css?v=mw36hy9r"><link rel="stylesheet" href="style.css?v=mw36hy9r"></head><body>
-<div id="intro"><div class="ihint">Skip ›</div></div>
+<div id="intro"><button type="button" class="ihint" id="iskip" aria-label="Skip intro">SKIP</button></div>
 <p id="tagline"><img id="wordmark" src="assets/fefc-wordmark.png" alt="Fan Edit Fan Club"><b class="gtitle">Genres</b><span>A Community for Creators, Editors &amp; Fans dedicated to the art of The Fan Edit.</span></p>
 <div id="rfpanel" hidden><div class="rf-in"><div class="rf-top"><span>Read First</span><button id="rfclose" class="hint-btn rf-x" aria-label="Close"><i class="g g-b">B</i>Close</button></div><div class="rf-scroll"><article id="rfdoc" tabindex="0" aria-label="Read First"></article></div></div></div>
 <div id="install" hidden role="dialog" aria-label="Install FEFC Collection"><div class="ins-card"><img src="/assets/icon-192.png" alt=""><div class="ins-txt"><b>FEFC Collection</b><span id="ins-msg">Install the app for full-screen browsing.</span></div><div class="ins-btns"><button id="ins-go" class="ins-b ins-p">Install FEFC Collection</button><button id="ins-no" class="ins-b">Not now</button></div></div></div>
@@ -22,6 +22,8 @@
 <div id="player" hidden><div class="pcard"><div class="ptop"><button id="back" class="pill p1">◀ BACK</button><button id="pprev" class="pill p4" hidden>◀ PREV EP</button><h2 id="ptitle"></h2><button id="pnext" class="pill p4" hidden>NEXT EP ▶</button><a id="popen" class="pill p2" target="_blank">OPEN IN DRIVE</a><button id="pclose" class="pill p1 pclose-btn" aria-label="Close player">✕</button></div><div class="pwrap"><iframe id="pframe" tabindex="0" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe></div></div></div>
 <div id="hints"><button class="hint-btn hb-home" data-hint="home" aria-label="Home"><i class="g g-o"></i><span>Home</span></button><button class="hint-btn hb-sel" data-hint="select" aria-label="Select"><i class="g g-a">A</i><span>Select</span></button><button class="hint-btn hb-back" data-hint="back" aria-label="Back"><i class="g g-b">B</i><span>Back</span></button><button class="hint-btn hb-search" id="hsearch" data-hint="search" aria-label="Search"><i class="g g-y">Y</i><span>Search</span></button><button class="hint-btn" id="hmute" data-hint="mute"><i class="g g-m">♪</i><span id="hmutel">Sound on</span> <kbd>M</kbd></button></div>
 <script src="config.js?v=mw36hy9r"></script>
+<script src="search-attrs.js?v=mw36hy9r"></script>
+<script src="provider-testing.js?v=mw36hy9r"></script>
 <script src="audio.js?v=mw36hy9r" defer></script>
 <script src="eastereggs.js?v=mw36hy9r" defer></script>
 <script src="intro.js?v=mw36hy9r" defer></script>

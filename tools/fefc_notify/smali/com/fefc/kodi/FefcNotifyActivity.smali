@@ -31,56 +31,138 @@
     return-void
 .end method
 
-.method private ensurePerm(Z)Z
-    .registers 6
+.method private toast(Ljava/lang/String;)V
+    .registers 3
 
-    .line 106
-    sget p1, Landroid/os/Build$VERSION;->SDK_INT:I
-
-    const/16 v0, 0x21
-
-    const/4 v1, 0x0
-
-    const-string v2, "granted"
-
-    const-string v3, "fefc-notify-perm.txt"
-
-    if-ge p1, v0, :cond_f
-
-    invoke-direct {p0, v3, v2}, Lcom/fefc/kodi/FefcNotifyActivity;->writeFile(Ljava/lang/String;Ljava/lang/String;)V
-
-    return v1
-
-    .line 107
-    :cond_f
-    const-string p1, "android.permission.POST_NOTIFICATIONS"
-
-    invoke-virtual {p0, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->checkSelfPermission(Ljava/lang/String;)I
-
-    move-result v0
-
-    if-nez v0, :cond_1b
-
-    .line 108
-    invoke-direct {p0, v3, v2}, Lcom/fefc/kodi/FefcNotifyActivity;->writeFile(Ljava/lang/String;Ljava/lang/String;)V
-
-    return v1
-
-    .line 109
-    :cond_1b
     const/4 v0, 0x1
 
-    iput-boolean v0, p0, Lcom/fefc/kodi/FefcNotifyActivity;->waitingPerm:Z
-
-    .line 110
-    filled-new-array {p1}, [Ljava/lang/String;
+    invoke-static {p0, p1, v0}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;
 
     move-result-object p1
 
-    invoke-virtual {p0, p1, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->requestPermissions([Ljava/lang/String;I)V
+    invoke-virtual {p1}, Landroid/widget/Toast;->show()V
 
-    .line 111
-    return v0
+    return-void
+.end method
+
+.method private openNotifySettings()V
+    .registers 5
+
+    new-instance v0, Landroid/content/Intent;
+
+    invoke-direct {v0}, Landroid/content/Intent;-><init>()V
+
+    sget v1, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v2, 0x1a
+
+    if-lt v1, v2, :cond_old
+
+    const-string v1, "android.settings.APP_NOTIFICATION_SETTINGS"
+
+    invoke-virtual {v0, v1}, Landroid/content/Intent;->setAction(Ljava/lang/String;)Landroid/content/Intent;
+
+    const-string v1, "android.provider.extra.APP_PACKAGE"
+
+    invoke-virtual {p0}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
+
+    move-result-object v2
+
+    invoke-virtual {v0, v1, v2}, Landroid/content/Intent;->putExtra(Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+
+    goto :cond_go
+
+    :cond_old
+    const-string v1, "android.settings.APPLICATION_DETAILS_SETTINGS"
+
+    invoke-virtual {v0, v1}, Landroid/content/Intent;->setAction(Ljava/lang/String;)Landroid/content/Intent;
+
+    invoke-virtual {p0}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
+
+    move-result-object v1
+
+    const/4 v2, 0x0
+
+    const-string v3, "package"
+
+    invoke-static {v3, v1, v2}, Landroid/net/Uri;->fromParts(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Landroid/net/Uri;
+
+    move-result-object v1
+
+    invoke-virtual {v0, v1}, Landroid/content/Intent;->setData(Landroid/net/Uri;)Landroid/content/Intent;
+
+    :cond_go
+    const/high16 v1, 0x10000000
+
+    invoke-virtual {v0, v1}, Landroid/content/Intent;->addFlags(I)Landroid/content/Intent;
+
+    invoke-virtual {p0, v0}, Landroid/app/Activity;->startActivity(Landroid/content/Intent;)V
+
+    return-void
+.end method
+
+.method private ensurePerm(Z)Z
+    .registers 6
+
+    const-string v3, "fefc-notify-perm.txt"
+
+    sget v0, Landroid/os/Build$VERSION;->SDK_INT:I
+
+    const/16 v1, 0x21
+
+    const/4 v2, 0x0
+
+    if-ge v0, v1, :cond_need
+
+    const-string v0, "not_required"
+
+    invoke-direct {p0, v3, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->writeFile(Ljava/lang/String;Ljava/lang/String;)V
+
+    const-string v0, "This Android version does not show an Allow notifications popup. Opening this app's notification settings."
+
+    invoke-direct {p0, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->toast(Ljava/lang/String;)V
+
+    invoke-direct {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->openNotifySettings()V
+
+    return v2
+
+    :cond_need
+    const-string v0, "android.permission.POST_NOTIFICATIONS"
+
+    invoke-virtual {p0, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->checkSelfPermission(Ljava/lang/String;)I
+
+    move-result v1
+
+    if-nez v1, :cond_ask
+
+    const-string v0, "granted"
+
+    invoke-direct {p0, v3, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->writeFile(Ljava/lang/String;Ljava/lang/String;)V
+
+    const-string v0, "Notifications are already allowed. Opening this app's notification settings."
+
+    invoke-direct {p0, v0}, Lcom/fefc/kodi/FefcNotifyActivity;->toast(Ljava/lang/String;)V
+
+    invoke-direct {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->openNotifySettings()V
+
+    return v2
+
+    :cond_ask
+    const/4 v1, 0x1
+
+    iput-boolean v1, p0, Lcom/fefc/kodi/FefcNotifyActivity;->waitingPerm:Z
+
+    const-string v2, "prompt"
+
+    invoke-direct {p0, v3, v2}, Lcom/fefc/kodi/FefcNotifyActivity;->writeFile(Ljava/lang/String;Ljava/lang/String;)V
+
+    filled-new-array {v0}, [Ljava/lang/String;
+
+    move-result-object v0
+
+    invoke-virtual {p0, v0, v1}, Lcom/fefc/kodi/FefcNotifyActivity;->requestPermissions([Ljava/lang/String;I)V
+
+    return v1
 .end method
 
 .method private handle(Landroid/content/Intent;)V
@@ -746,6 +828,21 @@
 
     invoke-direct {p0, p2, p1}, Lcom/fefc/kodi/FefcNotifyActivity;->writeFile(Ljava/lang/String;Ljava/lang/String;)V
 
+    const-string p2, "denied"
+
+    invoke-virtual {p1, p2}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+
+    move-result p2
+
+    if-eqz p2, :cond_denied_done
+
+    const-string p2, "Notifications were not allowed. Opening this app's notification settings."
+
+    invoke-direct {p0, p2}, Lcom/fefc/kodi/FefcNotifyActivity;->toast(Ljava/lang/String;)V
+
+    invoke-direct {p0}, Lcom/fefc/kodi/FefcNotifyActivity;->openNotifySettings()V
+
+    :cond_denied_done
     .line 61
     :try_start_1a
     iget-object p1, p0, Lcom/fefc/kodi/FefcNotifyActivity;->pendingKind:Ljava/lang/String;

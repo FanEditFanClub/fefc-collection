@@ -19,6 +19,10 @@ test('every file referenced by data/folder-sfx.json exists, and id/name keys hol
         assert.ok(Array.isArray(L)&&flat(L).length,'_genres.'+g);
         flat(L).forEach(f=>{if(!exists(f))bad.push('genre '+g+': '+f)});
       });
+    }else if(v&&typeof v==='object'&&!Array.isArray(v)&&(v.file||v.files)){
+      const L=v.file||v.files;
+      assert.ok(Array.isArray(L)&&flat(L).length,'key '+k+' rotation has no files');
+      flat(L).forEach(f=>{if(!exists(f))bad.push(k+': '+f)});
     }else{
       assert.ok(Array.isArray(v)&&v.every(x=>typeof x==='string'),'key '+k+' must be an array of paths');
       v.forEach(f=>{if(!exists(f))bad.push(k+': '+f)});

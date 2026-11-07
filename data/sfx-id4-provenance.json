@@ -1,0 +1,117 @@
+{
+  "integrated": [
+    {
+      "name": "id4-not-go-quietly",
+      "source_file": "/home/box/Downloads/Independence Day - No Family Edition (2015).mp4",
+      "source_start_seconds": 4161.85,
+      "source_end_seconds": 4164.6,
+      "audio_stream": "0:a:0",
+      "quote_or_music": "We will not go quietly into the night.",
+      "verification_status": "asr_supported_quote",
+      "verification_note": "Words/timing supported by word-level small.en ASR. No human listening.",
+      "outputs": [
+        {
+          "duration_seconds": 2.75,
+          "integrated_lufs": -16.01,
+          "true_peak_dbtp": -6.76,
+          "spec_pass": true,
+          "size_bytes": 45690,
+          "sha256": "1ce42b080c552de51accd1c7c6abf600f170ba82bd174a4450d5b93d9b640ac2",
+          "file": "assets/sfx/id4-not-go-quietly.m4a"
+        },
+        {
+          "duration_seconds": 2.784,
+          "integrated_lufs": -16.0,
+          "true_peak_dbtp": -6.54,
+          "spec_pass": true,
+          "size_bytes": 44972,
+          "sha256": "62bb50dcae7a2327fa15f0bc57128215686ff5c1ece4d07be5057b34f59c2f5e",
+          "file": "assets/sfx/id4-not-go-quietly.mp3"
+        }
+      ]
+    },
+    {
+      "name": "id4-not-vanish-without-fight",
+      "source_file": "/home/box/Downloads/Independence Day - No Family Edition (2015).mp4",
+      "source_start_seconds": 4165.0,
+      "source_end_seconds": 4168.2,
+      "audio_stream": "0:a:0",
+      "quote_or_music": "We will not vanish without a fight.",
+      "verification_status": "asr_supported_quote",
+      "verification_note": "Words/timing supported by word-level small.en ASR. No human listening.",
+      "outputs": [
+        {
+          "duration_seconds": 3.2,
+          "integrated_lufs": -16.02,
+          "true_peak_dbtp": -5.14,
+          "spec_pass": true,
+          "size_bytes": 52882,
+          "sha256": "f698e8067226a3a7d1d86bb5dc2f092d5160170e3cd56aaf6b32181037bfb83f",
+          "file": "assets/sfx/id4-not-vanish-without-fight.m4a"
+        },
+        {
+          "duration_seconds": 3.24,
+          "integrated_lufs": -16.0,
+          "true_peak_dbtp": -5.18,
+          "spec_pass": true,
+          "size_bytes": 52268,
+          "sha256": "af8764be6794650d79dd099a17ad4723f145cefabc23c9ee343fdaad8c247dc2",
+          "file": "assets/sfx/id4-not-vanish-without-fight.mp3"
+        }
+      ]
+    }
+  ],
+  "held": [
+    {
+      "name": "diehard-coast-few-laughs",
+      "source_file": "/home/box/Downloads/Die Hard Edited For Content.mp4",
+      "source_start_seconds": 3034.65,
+      "source_end_seconds": 3038.45,
+      "audio_stream": "0:a:0",
+      "quote_or_music": "Come out to the coast, we\u2019ll get together, have a few laughs.",
+      "verification_status": "quote_candidate",
+      "verification_note": "Quote location supported by two small.en ASR passes; they disagree on some words. Requested quotation is a proposed identification, not a human-verified exact transcript.",
+      "outputs": [
+        {
+          "duration_seconds": 3.8,
+          "integrated_lufs": -16.06,
+          "true_peak_dbtp": -2.48,
+          "sha256": "80e9887636c0d7435c4cf86eda923381fe663cb43fc15bd6cce0775b31496bda"
+        },
+        {
+          "duration_seconds": 3.84,
+          "integrated_lufs": -16.0,
+          "true_peak_dbtp": -2.59,
+          "sha256": "841bd5cc5ab6445d3e5675ca6ba343e7a647ece31c8ede87c78588ba79dd08a9"
+        }
+      ],
+      "integrated": false
+    },
+    {
+      "name": "diehard-vault-music-candidate",
+      "source_file": "/home/box/Downloads/Die Hard Edited For Content.mp4",
+      "source_start_seconds": 6097.0,
+      "source_end_seconds": 6102.9,
+      "audio_stream": "0:a:0",
+      "quote_or_music": null,
+      "verification_status": "unverified_music_candidate",
+      "verification_note": "Candidate instrumental passage near FBI power-cut/vault sequence; Ode to Joy musical identity NOT verified. Old 6074.5s scratch candidate contains speech and was rejected. Require human listening before use.",
+      "outputs": [
+        {
+          "duration_seconds": 5.9,
+          "integrated_lufs": -16.02,
+          "true_peak_dbtp": -2.48,
+          "sha256": "8ceb0d46bd85bc6cd5dd625f5b7bef02e6c3b283df0a51d9c00246e0fa4d8ade"
+        },
+        {
+          "duration_seconds": 5.928,
+          "integrated_lufs": -16.01,
+          "true_peak_dbtp": -2.89,
+          "sha256": "5183036cf1148e6c9a4d2b576186e509f5b6ca4f73173ba56348125f93367e9f"
+        }
+      ],
+      "integrated": false
+    }
+  ],
+  "note": "Held clips were measured but not added to folder-sfx and their audio files are not in the repo."
+}
