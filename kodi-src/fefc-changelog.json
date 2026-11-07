@@ -14,7 +14,14 @@
     "Attribute search requires black-and-white wording and recorded names to match. It does not guess a genre.",
     "181 folder covers are listed in data/art-pending-181.json for a later clean-source pass. No generated art is applied.",
     "Nine Facebook group URLs are recorded as unread. No group posts were added as edit notes.",
-    "Emmerich / Independence Day rotation adds two ASR-supported lines: We will not go quietly into the night, and We will not vanish without a fight. Die Hard coast and vault-music candidates were not added."
+    "Emmerich / Independence Day rotation adds two ASR-supported lines: We will not go quietly into the night, and We will not vanish without a fight. Die Hard coast and vault-music candidates were not added.",
+    "Provider Play buttons: only public files a documented check confirmed can play; a mislabeled What If record (actually an X-Men episode) is now a page link only.",
+    "Search results now say when they are a text match only and Optimus (Gemini) did not answer.",
+    "Kodi Testing tile shows the verified video count.",
+    "App feedback: contact email and a feedback form with a QR code (web Support Us, Kodi About > Give feedback).",
+    "Six AI cover edits applied as candidates (A Nightmare on Elm Street, All of Us Are Dead, Arrow, Ash vs Evil Dead, Battlestar Galactica, Black Sails); originals kept, 172 inputs still unprocessed.",
+    "Home ambience corrected to the Fire TV graph (intro tail + E-major pad, no extra +15.4 dB); intro.mp3 unchanged.",
+    "Kodi search dialog uses the Optimus watch image and cue."
    ]
   },
   {
