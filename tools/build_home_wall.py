@@ -62,10 +62,12 @@ subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', comp, '-filter_compl
     '[c]trim=0:%.3f,setpts=PTS-STARTPTS,fps=24,settb=1/24[head];[tail][head]xfade=transition=fade:duration=%.3f:offset=0[seam];'
     '[body][seam]concat=n=2:v=1:a=0,fps=%d,format=yuv420p[v]' % (F, L, L, T, F, F, FPS),
     '-map', '[v]', '-frames:v', str(int(L * FPS)), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12', loopv])
-# ambience (0.4.0): the OLD Fire TV app ambience, rendered offline (tools/render_old_ambience.py), +15.4 dB (~-22 LUFS)
+# Ambience is the Fire TV-era Web Audio graph rendered by tools/render_old_ambience.py
+# (intro tail + E pad, bed gain 0.085, master 0.6). No extra volume. The 0.4.0 +15.4 dB
+# step made the Kodi file about 15 dB louder than that graph.
 raw = os.path.join(tmp, 'old.wav'); ambn = os.path.join(tmp, 'ambn.wav')
 subprocess.check_call([sys.executable, 'tools/render_old_ambience.py', raw])
-subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', raw, '-af', 'volume=15.4dB', '-t', '%.4f' % L, ambn])
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', raw, '-t', '%.4f' % L, ambn])
 venc = ['-c:v', 'libx264', '-profile:v', 'main', '-level', '4.0', '-pix_fmt', 'yuv420p', '-preset', 'slow', '-r', str(FPS),
         '-crf', '27', '-maxrate', '1400k', '-bufsize', '2800k', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0', '-bf', '0',
         '-x264-params', 'open-gop=0', '-forced-idr', '1', '-movflags', '+faststart']

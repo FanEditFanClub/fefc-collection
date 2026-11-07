@@ -48,45 +48,63 @@ window.SFX = (() => {
       return null;
     }
   }
-  let ambFile = null, ambFileP = null;
-  function loadAmbFile() {
-    if (ambFile) return Promise.resolve(ambFile);
-    if (ambFileP) return ambFileP;
-    ambFileP = fetch("assets/home-amb.m4a").then((r) => r.ok ? r.arrayBuffer() : Promise.reject(r.status)).then((a) => new Promise((ok, no) => ctx.decodeAudioData(a, ok, no))).then((b) => ambFile = b).catch((e) => {
-      ambFileP = null;
-      return null;
-    });
-    return ambFileP;
-  }
   function ambStart() {
     if (!ctx || amb || ctx.state !== "running") return;
-    const g = ctx.createGain();
-    g.gain.value = 0;
-    g.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 3);
+    const t = ctx.currentTime, g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.085, t + 3);
     const lp = ctx.createBiquadFilter();
     lp.type = "lowpass";
-    lp.frequency.value = 900;
+    lp.frequency.value = 850;
+    lp.Q.value = 0.5;
     lp.connect(g);
     g.connect(master);
+    const os = [];
+    const ab = S._ib && getAmbBuf(S._ib);
+    if (ab) {
+      const src = ctx.createBufferSource();
+      src.buffer = ab;
+      src.loop = true;
+      src.connect(lp);
+      src.start(t);
+      os.push(src);
+    } else {
+      S.loadIntro().then((b) => {
+        if (b && ambWant && amb && !amb.hasBuf) {
+          const ab2 = getAmbBuf(b);
+          if (ab2) {
+            const src = ctx.createBufferSource();
+            src.buffer = ab2;
+            src.loop = true;
+            src.connect(lp);
+            src.start();
+            amb.os.push(src);
+            amb.hasBuf = true;
+          }
+        }
+      });
+    }
     const lfo = ctx.createOscillator(), lg = ctx.createGain();
-    lfo.frequency.value = 0.07;
-    lg.gain.value = 400;
+    lfo.frequency.value = 0.04;
+    lg.gain.value = 180;
     lfo.connect(lg);
     lg.connect(lp.frequency);
     lfo.start();
-    const os = [55, 82.4, 110, 164.8, 220.5].map((f, i) => {
-      const o = ctx.createOscillator();
-      o.type = i % 2 ? "triangle" : "sawtooth";
-      o.frequency.value = f;
-      o.detune.value = (i - 2) * 6;
-      const v = ctx.createGain();
-      v.gain.value = i > 2 ? 0.25 : 0.5;
-      o.connect(v);
-      v.connect(lp);
-      o.start();
-      return o;
+    [[55, "sine", 0.4], [164.81, "triangle", 0.2], [329.63, "sine", 0.16], [415.3, "sine", 0.12], [493.88, "sine", 0.09], [659.25, "sine", 0.06], [987.77, "sine", 0.03]].forEach(([f, ty, v], i) => {
+      [-4, 4].forEach((dt) => {
+        const o = ctx.createOscillator();
+        o.type = ty;
+        o.frequency.value = f;
+        o.detune.value = dt + (i % 2 ? 1.5 : -1.5);
+        const vg = ctx.createGain();
+        vg.gain.value = v / 2.5;
+        o.connect(vg);
+        vg.connect(lp);
+        o.start();
+        os.push(o);
+      });
     });
-    amb = { g, os: os.concat([lfo]) };
+    amb = { g, os: [...os, lfo], hasBuf: !!ab };
   }
   function ambStop() {
     if (!amb) return;

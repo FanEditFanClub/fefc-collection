@@ -427,6 +427,10 @@ document.addEventListener('click',e=>{const st=e.target.closest('[data-star]');i
 function starFocused(){const a=document.activeElement,t=a&&a.closest&&a.closest('.ol-tile');const id=t?t.dataset.id:(!$('#details').hidden?$('#details').dataset.id:null);if(id&&(t?t.querySelector('[data-star]'):(!$('#details').hidden&&($('#details').dataset.id===id)))){toggleStarFor(id);return true}return false}
 document.addEventListener('keydown',e=>{if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.keyCode===83||e.keyCode===405||e.key==='ColorF2Yellow'){if(starFocused())e.preventDefault()}});
 function _x(){}
+const CONTACT_EMAIL='faneditfanclub@gmail.com';
+const FEEDBACK_FORM_URL='https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform';
+const FEEDBACK_HTML=`<div class="fb-block" style="grid-column:1/-1;background:#10151d;border:1px solid #232c3a;border-radius:14px;padding:18px 20px;margin-top:8px"><h3 style="margin:0 0 8px;font-size:1.15em">App feedback</h3><p style="margin:0 0 8px;line-height:1.5">Questions about the app, or something not working? Email us at <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p><p style="margin:0 0 12px;line-height:1.5">Or tell us what you think &mdash; scan the code with your phone, or <a href="${FEEDBACK_FORM_URL}" target="_blank" rel="noopener">open the feedback form</a>.</p><div id="fbqr" style="background:#fff;border-radius:10px;padding:12px;display:inline-block;line-height:0" aria-label="QR code for the feedback form"></div></div>`;
+function renderFeedbackQR(){const c=document.getElementById('fbqr');if(!c)return;const draw=()=>{try{if(!window.qrcode)return;const qr=qrcode(0,'M');qr.addData(FEEDBACK_FORM_URL);qr.make();c.innerHTML=qr.createSvgTag(5,8);}catch(e){c.innerHTML='<a href="'+FEEDBACK_FORM_URL+'" target="_blank" rel="noopener">Open the feedback form</a>';}};if(window.qrcode){draw();return;}const sc=document.createElement('script');sc.src='qrgen.js';sc.onload=draw;sc.onerror=()=>{c.innerHTML='<a href="'+FEEDBACK_FORM_URL+'" target="_blank" rel="noopener">Open the feedback form</a>';};document.head.appendChild(sc);}
 function hubGo(k){S.click();
  if(k==='main')return hideHome(),open(ROOT,'all');
  if(k==='arena'||k==='collections')return hideHome(),open(ROOT,k);
@@ -437,7 +441,7 @@ function hubGo(k){S.click();
  if(k==='search'){openSpot('');return}
  if(k==='genres'){showHome(true);if(!Object.keys(genreMap).length&&window.loadGenres)window.loadGenres();if(window.FEFCGenres&&FEFCGenres.hub)FEFCGenres.hub({get genreMap(){return genreMap},order:GORDER,items,isVid,esc});return}
  if(k==='support'){hideHome();cur='virtual';view='folder';$('#crumb').textContent='Support Us';$('#arena').innerHTML='';$('#sec2').textContent='Thank you for supporting the collection';
-  $('#grid').className='support-grid';$('#grid').innerHTML=SUPPORT.map(s=>`<a class="ol-tile link sup sup-${s.name.toLowerCase()}" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} (opens in a new tab)"><span class="sup-logo">${s.logo}</span><span class="sup-nm">${s.name}</span><small>${s.sub}</small></a>`).join('');status('');menu()}}
+  $('#grid').className='support-grid';$('#grid').innerHTML=SUPPORT.map(s=>`<a class="ol-tile link sup sup-${s.name.toLowerCase()}" href="${s.url}" target="_blank" rel="noopener" aria-label="${s.name} (opens in a new tab)"><span class="sup-logo">${s.logo}</span><span class="sup-nm">${s.name}</span><small>${s.sub}</small></a>`).join('')+FEEDBACK_HTML;status('');menu();renderFeedbackQR()}}
 const HUBH={main:'#/all',arena:'#/newarrivals',readfirst:'#/readfirst',genres:'#/genres',support:'#/supportus',people:'#/people',mylist:'#/mylist',search:'#/search'};
 document.addEventListener('click',e=>{const h=e.target.closest('[data-hub]');if(!h)return;S.click();const k=h.dataset.hub;go(k.indexOf('folder:')===0?'#/folder/'+k.slice(7):HUBH[k]||'#/')});
 document.addEventListener('pointerover',e=>{const h=e.target.closest('.hb');if(h&&h!==lastHub){lastHub=h;S.move()}});let lastHub=null;
@@ -1141,6 +1145,21 @@ const _warm={};function warmStream(f){const nb=window.FEFCNative;if(!f||!nb||!nb
 function nativeMime(name){const n=String(name||'').toLowerCase();if(n.endsWith('.mkv'))return 'video/x-matroska';if(n.endsWith('.webm'))return 'video/webm';if(n.endsWith('.mov'))return 'video/quicktime';if(n.endsWith('.avi'))return 'video/x-msvideo';return 'video/mp4'}
 function nativePlay(f){const nb=window.FEFCNative;if(!f||!nb)return false;const id=target(f),title=parse(f.name).raw||f.name||'Fan edit',file=f.name||'video.mp4';let sub='';try{const s=findSidecarSub(f);if(s)sub='/api/stream/'+encodeURIComponent(s.id)}catch(e){}
  quietForExternal();try{if(typeof nb.playVideoWithFile==='function'){nb.playVideoWithFile(id,title,file,sub);return true}if(typeof nb.playVideoWithOptions==='function'){nb.playVideoWithOptions(id,title,nativeMime(file),sub);return true}if(typeof nb.playVideo==='function'){nb.playVideo(id,title);return true}}catch(e){}return false}
+function playDirect(url,title){
+ S.ambience(false);S.click();
+ document.body.classList.remove('shuf-player');$('#player').classList.remove('floating');
+ $('#player').dataset.pid='';$('#player').dataset.file=title||'';$('#ptitle').textContent=title||'Verified file';
+ delete $('#player').dataset.sub;delete $('#player').dataset.submime;
+ $('#player').hidden=false;killVideo();
+ const w=$('#player .pwrap');if(!w)return;
+ const v=document.createElement('video');
+ v.id='pvideo';v.controls=false;v.autoplay=true;v.playsInline=true;v.preload='auto';
+ v.setAttribute('playsinline','');v.tabIndex=-1;v.style.objectFit=playerScaleMode();
+ v.dataset.stream=url;v.src=url;w.classList.add('vid');w.appendChild(v);
+ v.addEventListener('error',()=>{$('#ptitle').textContent=(title||'Verified file')+' — did not start in this browser'});
+ const pp=v.play&&v.play();if(pp&&pp.catch)pp.catch(()=>{});
+ ensurePlayerExtras();setPlayerScale(playerScaleMode());
+}
 function play(f){
  const E=episodes(f),pn=$('#pprev'),nx=$('#pnext');if(pn&&nx){const p0=E&&E.idx>0?E.eps[E.idx-1].f:null,n0=E&&E.idx>=0&&E.idx<E.eps.length-1?E.eps[E.idx+1].f:null;pn.hidden=!p0;nx.hidden=!n0;pn.dataset.to=p0?p0.id:'';nx.dataset.to=n0?n0.id:''}
  const id=target(f);try{window.UD&&UD.opened(f.id,f.name)}catch(e){}S.ambience(false);S.click();
@@ -1150,7 +1169,7 @@ function play(f){
 }
 /* ---------- EVENTS ---------- */
 document.addEventListener('click',e=>{const br=e.target.closest('#brand');if(br){e.preventDefault();S.click();if(location.hash===''||location.hash==='#/home'||location.hash==='#'){showHome()}else{location.hash=''}return}const pe=e.target.closest('#pprev,#pnext');if(pe&&pe.dataset.to){S.click();history.replaceState({fefc:1},'','#/play/'+pe.dataset.to);route();return}const nav=e.target.closest('[data-nav]');if(nav){const k=nav.dataset.nav;if(k==='up')return back(parentHash());S.click();return go(k==='home'?'#/':'#/'+k)}
- const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='back')return goBack();if(act.dataset.act==='vlc'){S.chirp(1);try{quietForExternal();const nb=window.FEFCNative;if(nb&&nb.openInVlc&&f)nb.openInVlc(target(f),parse(f.name).raw,f.name||'video.mp4')}catch(err){}return;}if(act.dataset.act==='drive'){S.chirp(1);try{const nb=window.FEFCNative;const did=target(f);if(nb&&typeof nb.openInDrive==='function'&&did){nb.openInDrive(did,parse(f.name).raw||f.name||'')}else{window.open('https://drive.google.com/file/d/'+did+'/view','_blank')}}catch(err){}return;}S.chirp(1);go('#/play/'+f.id);return}
+ const act=e.target.closest('[data-act]');if(act){const f=items.get($('#details').dataset.id);if(act.dataset.act==='ptplay'&&act.dataset.url){playDirect(act.dataset.url,$('#details .lc-title')?$('#details .lc-title').textContent:'Verified file');return}if(act.dataset.act==='back')return goBack();if(act.dataset.act==='vlc'){S.chirp(1);try{quietForExternal();const nb=window.FEFCNative;if(nb&&nb.openInVlc&&f)nb.openInVlc(target(f),parse(f.name).raw,f.name||'video.mp4')}catch(err){}return;}if(act.dataset.act==='drive'){S.chirp(1);try{const nb=window.FEFCNative;const did=target(f);if(nb&&typeof nb.openInDrive==='function'&&did){nb.openInDrive(did,parse(f.name).raw||f.name||'')}else{window.open('https://drive.google.com/file/d/'+did+'/view','_blank')}}catch(err){}return;}S.chirp(1);go('#/play/'+f.id);return}
  const t=e.target.closest('.ol-tile');if(t&&!t.dataset.genre&&!t.classList.contains('link')){if(t.dataset.rfhome){S.click();readFirst();return}if(t.dataset.sup){S.click();go('#/supportus');return}if(t.dataset.mainc){S.click();go(HUBH.main);return}const f=items.get(t.dataset.id);if(!f)return;if(f.pt){S.click();if(isFolder(f))go('#/folder/'+f.id);else{const d=$('#details');d.hidden=false;d.classList.remove('leaving');document.body.classList.add('details-open');d.innerHTML=(window.FEFCTesting&&FEFCTesting.detailsHTML(f,esc))||'';}return}if(isFolder(f)){S.click();go('#/folder/'+target(f))}else if(rfKind(f)){openDocTile(f)}else if(!isMedia(f)){S.click();window.open('https://drive.google.com/file/d/'+target(f)+'/view','_blank')}else go('#/edit/'+f.id)}});
 let lastHover=null;document.addEventListener('pointerover',e=>{const t=e.target.closest('.ol-tile,.mi');if(t&&t!==lastHover){lastHover=t;S.move()}});
 let _moveT=0;document.addEventListener('focusin',e=>{if(!e.target.matches('.ol-tile,.mi,#brand,.hb,.hint-btn,[data-nav],.gnr,.sortpill,.ml-btn,.ml-hist-tog,.sync-go,#ml-sync .mi'+(isTvEnv()?'':',.tk-i:not(.tk-dup)')))return;const tv=isTvEnv()||document.body.classList.contains('tv')||document.body.classList.contains('firetv');if(!tv){S.move();return}const now=Date.now();if(now-_moveT<90)return;_moveT=now;S.move()});
@@ -1264,7 +1283,7 @@ async function aiSearch(q){q=(q||'').trim();if(!q)return;const my=++aiSeq;pageSh
  try{const r=await fetch('/api/ai-search',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q:q.slice(0,200)})});if(!r.ok)throw 0;const j=await r.json();if(my!==aiSeq)return;
   const res=(j.results||[]).map(x=>({f:items.get(x.id),why:x.reason})).filter(x=>x.f);if(!res.length)throw 0;
   const intro=j.intro||`I found ${res.length} fan edit${res.length===1?'':'s'} for you!`;showOptimus(res,intro)}
- catch(e){if(my!==aiSeq)return;const sem=semanticSearch(q);if(sem.length){const picks=sem.slice(0,36).map(x=>({f:x.item,why:x.why}));showOptimus(picks,`I searched the vault for “${q}” and picked ${picks.length} fan edits for you!`)}else{$('#sec2').textContent='Text match only. Optimus (Gemini) did not answer.';searchPage(q)}}}
+ catch(e){if(my!==aiSeq)return;const sem=semanticSearch(q);if(sem.length){const picks=sem.slice(0,36).map(x=>({f:x.item,why:x.why}));showOptimus(picks,`I searched the vault for “${q}” and picked ${picks.length} fan edits for you! Text match only. Optimus (Gemini) did not answer this request.`)}else{$('#sec2').textContent='Text match only. Optimus (Gemini) did not answer.';searchPage(q)}}}
 const looksLikeQuestion=q=>/\?$/.test(q)||q.trim().split(/\s+/).length>=3;
 let qt;$('#q').readOnly=true;['focus','click'].forEach(ev=>$('#q').addEventListener(ev,e=>{if(spOpen())return;e.preventDefault();$('#q').blur();openSpot('')}));
 setTimeout(sm2,0);

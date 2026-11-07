@@ -28,20 +28,30 @@ function getAmbBuf(ib){
   return ambBuf=b;
  }catch(e){return null}
 }
-/* 0.8.28: Home ambience = the OLD Fire TV app ambience (intro tail loop + A pad through the LFO-swept 850 Hz lowpass), rendered sample-exact by tools/render_old_ambience.py into assets/home-amb.m4a; gain .17 = old level. Was 0.8.27: = the original recorded intro.mp3 tail, pre-rendered as a seamless loop (assets/home-amb.m4a,
-   ~-20 LUFS / TP -5.9 dBTP, same 75 s length as the Home wall video). No synthetic oscillators. */
-let ambFile=null,ambFileP=null;
-function loadAmbFile(){if(ambFile)return Promise.resolve(ambFile);if(ambFileP)return ambFileP;
- ambFileP=fetch('assets/home-amb.m4a').then(r=>r.ok?r.arrayBuffer():Promise.reject(r.status)).then(a=>new Promise((ok,no)=>ctx.decodeAudioData(a,ok,no))).then(b=>ambFile=b).catch(e=>{ambFileP=null;return null});return ambFileP}
-/* Exact home bed from the first Fire TV app (commit acac138 src/audio.js), not the 0.4.0 rendered file.
-   Five oscillators, lowpass 900 Hz, LFO 0.07 Hz ±400 Hz, bed gain 0.05 into master 0.6. No intro-tail loop. */
+/* Fire TV wrapper b5026dc loads the live site and has no native ambience synth.
+   The site source in that commit (and 036e2e2) is this graph: intro.mp3 tail 24.65–26.12s,
+   E-major pad, lowpass 850 Hz Q 0.5, LFO 0.04 Hz ±180 Hz, bed gain 0.085, master 0.6.
+   Commit acac138 is an earlier website bed (five oscillators, 900 Hz) and is not the Fire TV app. */
 function ambStart(){
  if(!ctx||amb||ctx.state!=='running')return;
- const g=ctx.createGain();g.gain.value=0;g.gain.linearRampToValueAtTime(.05,ctx.currentTime+3);
- const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;lp.connect(g);g.connect(master);
- const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.07;lg.gain.value=400;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
- const os=[55,82.4,110,164.8,220.5].map((f,i)=>{const o=ctx.createOscillator();o.type=i%2?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=(i-2)*6;const v=ctx.createGain();v.gain.value=i>2?.25:.5;o.connect(v);v.connect(lp);o.start();return o});
- amb={g,os:[...os,lfo]};
+ const t=ctx.currentTime,g=ctx.createGain();
+ g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.085,t+3);
+ const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=850;lp.Q.value=.5;lp.connect(g);g.connect(master);
+ const os=[];
+ const ab=S._ib&&getAmbBuf(S._ib);
+ if(ab){
+  const src=ctx.createBufferSource();src.buffer=ab;src.loop=true;src.connect(lp);src.start(t);os.push(src);
+ }else{
+  S.loadIntro().then(b=>{if(b&&ambWant&&amb&&!amb.hasBuf){const ab2=getAmbBuf(b);if(ab2){const src=ctx.createBufferSource();src.buffer=ab2;src.loop=true;src.connect(lp);src.start();amb.os.push(src);amb.hasBuf=true}}});
+ }
+ const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.04;lg.gain.value=180;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
+ [[55,'sine',.4],[164.81,'triangle',.2],[329.63,'sine',.16],[415.30,'sine',.12],[493.88,'sine',.09],[659.25,'sine',.06],[987.77,'sine',.03]].forEach(([f,ty,v],i)=>{
+  [-4,4].forEach(dt=>{
+   const o=ctx.createOscillator();o.type=ty;o.frequency.value=f;o.detune.value=dt+(i%2?1.5:-1.5);
+   const vg=ctx.createGain();vg.gain.value=v/2.5;o.connect(vg);vg.connect(lp);o.start();os.push(o);
+  });
+ });
+ amb={g,os:[...os,lfo],hasBuf:!!ab};
 }
 function ambStop(){if(!amb)return;const a=amb;amb=null;const t=ctx.currentTime;a.g.gain.cancelScheduledValues(t);a.g.gain.setValueAtTime(a.g.gain.value,t);a.g.gain.linearRampToValueAtTime(0,t+.8);setTimeout(()=>a.os.forEach(o=>{try{o.stop()}catch(e){}}),900)}
 /* The intro has exactly one sound: Carson's assets/intro.mp3. No synthesized intro, drone, bells or stings. */

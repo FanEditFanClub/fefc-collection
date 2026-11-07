@@ -15,6 +15,8 @@ from . import mylist as mylist_mod
 
 ADDON = xbmcaddon.Addon()
 PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
+CONTACT_EMAIL = 'faneditfanclub@gmail.com'
+FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform'
 
 
 
@@ -378,7 +380,7 @@ class Router:
         nf = nv = 0
         if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
             tile = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
-            self.add_folder('01 - Testing', tile, 'App-only provider links. Not verified playable films. 0 verified videos.', landscape=tile, action='folder', id='pt:testing')
+            self.add_folder('01 - Testing', tile, 'App-only provider links. 2 verified videos.', landscape=tile, action='folder', id='pt:testing')
         if not page:   # Support Us / Read First docs in this folder, like the web app's tiles
             seen_kind = set()
             for did, dname, kind in (m.get('docs') or {}).get((m['items'].get(fid) or [0, 0, 0, ''])[3] or fid, []):
@@ -489,8 +491,10 @@ class Router:
     def search(self):
         q = self.params.get('q')
         if q is None:
-            from . import osinput
-            q = (osinput.get_text('Fan Edit Optimus') or '').strip()
+            win = OptimusWindow()
+            win.doModal()
+            q = (win.query or '').strip()
+            del win
             if not q:
                 xbmcplugin.endOfDirectory(self.handle, succeeded=False)
                 return
@@ -499,9 +503,9 @@ class Router:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
             return
         m = _model()
-        self.add_tool('Fan Edit Optimus', 'The magnifying glass stays on Search. This row is the same guide as the web search overlay. Bot: https://x.ai/bot/DR18SV4AEeeNRcKT1U-0P',
-                      'https://fefc-collection.pages.dev/assets/optimus.png', folder=False,
-                      landscape='https://fefc-collection.pages.dev/assets/optimus.png', action='noop')
+        from . import optimusplan
+        self.add_tool(optimusplan.TITLE, optimusplan.CUE + '\n' + optimusplan.BOT_URL,
+                      _optimus_art(), folder=False, landscape=_optimus_art(), action='noop')
         res = catalog.search(m, q)
         nf = nv = 0
         for i in res:
@@ -518,8 +522,10 @@ class Router:
     def searchbox(self):
         """Home Search tile (RunPlugin, no directory handle): ask for the text first, then open the results list directly.
         Nothing is returned from a failed directory, so the keyboard cannot reappear over the results."""
-        from . import osinput
-        q = (osinput.get_text('Fan Edit Optimus') or '').strip()
+        win = OptimusWindow()
+        win.doModal()
+        q = (win.query or '').strip()
+        del win
         if q:
             xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(self.url, action='search', q=q))
         if self.handle >= 0:
@@ -723,9 +729,10 @@ class Router:
                 'This is the Kodi version of the FEFC app. The collection is free; support us from the Support Us tile.'
                 '\n\nFEFC is an unofficial community app built on Kodi (GPL-2.0-or-later). Not affiliated with the Kodi Foundation.'
                 % (label, xbmc.getInfoLabel('System.BuildVersion').split(' ')[0], ADDON.getAddonInfo('version'), _base()))
+        info += '\n\nQuestions or feedback? Email %s, or choose Give feedback below to scan a code.' % CONTACT_EMAIL
         while True:
-            k = dlg.select('About FEFC', ['Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Close'])
-            if k < 0 or k == 5:
+            k = dlg.select('About FEFC', ['Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Give feedback', 'Close'])
+            if k < 0 or k == 6:
                 break
             try:
                 if k == 0:
@@ -745,13 +752,25 @@ class Router:
                     dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
                 elif k == 3:
                     dlg.textviewer('Terms of Use', self._page_text('/terms.html'))
-                else:
+                elif k == 4:
                     with xbmcvfs.File('special://xbmc/FEFC-NOTICE.txt') as f:
                         dlg.textviewer('Open-source notices', f.read())
+                elif k == 5:
+                    self.feedback()
             except Exception as e:
                 dlg.notification('FEFC', 'Could not load: %s' % str(e)[:60], xbmcgui.NOTIFICATION_ERROR, 4000)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
+    def feedback(self):
+        """Feedback form QR (same remote-QR pattern as the Support and link windows)."""
+        qr_path = ('https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=24&format=png&color=000000&bgcolor=ffffff'
+                   '&data=%s&_=%d' % (quote_plus(FEEDBACK_FORM_URL), int(time.time() * 1000)))
+        lines = ['Give feedback on the FEFC app',
+                 'Scan the code with your phone to open the feedback form.',
+                 'Or email us: %s' % CONTACT_EMAIL,
+                 FEEDBACK_FORM_URL.replace('https://', '')]
+        LinkWindow(lines, qr_path).doModal()
 
     def mylist_toggle(self):
         m = _model()
@@ -983,11 +1002,13 @@ class Router:
             return
         tile = 'special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png'
         for r in providers.children(doc, fid):
-            plot = (r.get('status') or '') + '\nNot a verified film. In-app play is off.'
+            plot = r.get('status_line') or ((r.get('status') or '') + '\nNot checked. This is a catalog link, not a film.')
             if r.get('catalog'):
                 plot = 'Catalog: %s\n%s' % (r['catalog'], plot)
             if r.get('kind') == 'folder':
                 self.add_folder(r['name'], tile, plot, landscape=tile, action='folder', id=r['id'])
+            elif r.get('kodi_play') and r.get('play_url'):
+                self._add_external(r, plot)
             else:
                 self.add_tool(r['name'], plot, tile, folder=False, landscape=tile, action='open_link', id=r['id'])
         self.end('files', cache=False)
@@ -1001,13 +1022,47 @@ class Router:
             _log('open link: %s' % type(e).__name__)
         if not rec or not rec.get('url'):
             xbmcgui.Dialog().ok('FEFC', 'No link is stored for this item.')
+        elif rec.get('kodi_play') and rec.get('play_url'):
+            self.play_external()
+            return
         else:
             label = rec.get('open_label') or 'Open link'
-            xbmcgui.Dialog().ok(label, (rec.get('status') or 'Playback has not been verified.') + '\n\nIn-app Play is not available. Opening the provider page.')
+            xbmcgui.Dialog().ok(label, providers.status_line(rec) + '\n\nIn-app Play is off. Opening the provider page.')
             _log('open provider %s' % (rec.get('name') or '')[:80])
             xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,"%s")' % rec['url'].replace('"', '%22'))
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
+    def _add_external(self, rec, plot):
+        li = xbmcgui.ListItem(rec.get('name') or 'Verified file', offscreen=True)
+        tile = 'special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png'
+        li.setArt({'thumb': tile, 'icon': tile, 'poster': tile})
+        li.setProperty('IsPlayable', 'true')
+        tag = li.getVideoInfoTag()
+        tag.setTitle(rec.get('name') or 'Verified file')
+        tag.setPlot(plot)
+        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='play_external', id=rec['id']), li, False)
+
+    def play_external(self):
+        from . import providers
+        rec = None
+        try:
+            rec = providers.find(self._pt(), self.params.get('id') or '')
+        except Exception as e:
+            _log('external play: %s' % type(e).__name__)
+        url = (rec or {}).get('play_url') or ''
+        if not rec or not rec.get('kodi_play') or not url:
+            xbmcgui.Dialog().ok('FEFC', providers.status_line(rec or {}))
+            xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem())
+            return
+        li = xbmcgui.ListItem(path=url)
+        mime = rec.get('mime') or ''
+        if not mime:
+            low = url.lower().split('?', 1)[0]
+            mime = 'video/x-matroska' if low.endswith('.mkv') else 'video/mp4'
+        li.setMimeType(mime)
+        li.setContentLookup(False)
+        xbmcplugin.setResolvedUrl(self.handle, True, li)
 
     def play(self):
         m = _model()
@@ -1206,12 +1261,54 @@ class LinkWindow(xbmcgui.WindowDialog):
             self.close()
 
 
+def _optimus_art():
+    local = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media', 'optimus-watch.webp')
+    if os.path.exists(local):
+        return local
+    return _base() + '/assets/optimus-watch.webp'
+
+
+class OptimusWindow(xbmcgui.WindowDialog):
+    """Same search card as the web spotlight: watch image, cue line, magnifying-glass search."""
+
+    def __init__(self):
+        super().__init__()
+        from . import optimusplan
+        self.query = ''
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
+        self.addControl(xbmcgui.ControlImage(80, 70, 420, 420, _optimus_art(), aspectRatio=1))
+        self.addControl(xbmcgui.ControlLabel(540, 120, 660, 60, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
+        cue = xbmcgui.ControlTextBox(540, 200, 660, 160, font='font13', textColor='FFE8EEF6')
+        self.addControl(cue)
+        cue.setText(optimusplan.CUE)
+        self.btn = xbmcgui.ControlButton(540, 400, 420, 80, '⌕  ' + optimusplan.SEARCH_LABEL, font='font13_title', textColor='FFFFFFFF',
+                                          focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png', alignment=6)
+        self.addControl(self.btn)
+        self.addControl(xbmcgui.ControlLabel(540, 500, 660, 40, 'Back to close. The Search button on the bar keeps its magnifying glass.',
+                                             font='font12', textColor='FF7F8FA6'))
+        self.setFocus(self.btn)
+
+    def onControl(self, c):
+        if c != self.btn:
+            return
+        from . import osinput
+        from . import optimusplan
+        q = (osinput.get_text(optimusplan.TITLE) or '').strip()
+        if q:
+            self.query = q
+            self.close()
+
+    def onAction(self, action):
+        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+            self.close()
+
+
 ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'genre': 'genre', 'recent': 'recent',
           'search': 'search', 'searchbox': 'searchbox', 'play': 'play', 'update': 'update', 'mylist': 'mylist', 'mylist_toggle': 'mylist_toggle',
           'mylist_sync': 'mylist_sync', 'open_vlc': 'open_vlc', 'open_drive': 'open_drive', 'readme': 'readme', 'support': 'support',
           'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
-          'open_link': 'open_link',
+          'open_link': 'open_link', 'play_external': 'play_external',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop'}
 
 
