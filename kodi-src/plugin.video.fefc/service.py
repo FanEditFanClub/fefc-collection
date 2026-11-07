@@ -364,10 +364,14 @@ def _install_update(new):
     os.makedirs(ext, exist_ok=True)
     shutil.copyfile(dst, os.path.join(ext, 'FEFC-update.apk'))
     pkg = my_package()
-    log('opening updater activity for %s' % pkg)
-    # First argument is this app's package. Kodi calls Intent.setPackage with it, so an empty
-    # package cannot resolve the system installer and the screen only flashes black.
-    xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"fefcupdate://install",,,,,"com.fefc.kodi.FefcUpdateActivity")' % pkg)
+    plan = _plan()
+    # special://xbmc is the APK. Build 38 does not contain this marker or FefcUpdateActivity.
+    has_act = xbmcvfs.exists('special://xbmc/fefc-update-activity.txt')
+    calls = plan.launch_calls(pkg, has_act)
+    log('update handoff %s activity=%s calls=%d' % (pkg, has_act, len(calls)))
+    xbmcgui.Dialog().ok('FEFC update', plan.MESSAGES['confirm'].format(url=url))
+    for call in calls:
+        xbmc.executebuiltin(plan.builtin(call))
 
 
 def set_select_action():

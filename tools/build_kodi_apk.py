@@ -224,6 +224,8 @@ _b = _json.load(open(bj)); _vf = os.path.join(root, 'kodi-src', 'fefc-version.tx
 if os.path.exists(_vf): _b['version'] = open(_vf).read().strip()
 _b['pkg'] = PKG
 open(os.path.join(A, 'fefc-build.json'), 'w').write(_json.dumps(_b) + '\n')
+# Present only in APKs that also contain FefcUpdateActivity. Build 38 does not have this file.
+open(os.path.join(A, 'fefc-update-activity.txt'), 'w').write('com.fefc.kodi.FefcUpdateActivity\n')
 shutil.copy(os.path.join(root, 'kodi-src', 'FEFC-NOTICE.txt'), os.path.join(A, 'FEFC-NOTICE.txt'))
 # versionCode must rise with every FEFC build: with the stock code (2103000) on every update, Android/Fire OS treat each
 # install as the same version and the launcher keeps a stale cached icon/banner entry (the app tile shows no icon).

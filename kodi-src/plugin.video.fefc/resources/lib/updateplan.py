@@ -44,6 +44,74 @@ def content_uri(package, root_name, relative):
     return 'content://%s.fefcupdate/%s/%s' % (package, root_name, rel)
 
 
+def fileprovider_uri(package):
+    """Build 38 already declares this FileProvider. The relative file is external-files/FEFC-update.apk."""
+    return content_uri(package, 'ext', 'FEFC-update.apk')
+
+
+# System installers only. Kodi sets Intent.setPackage to this name, so it cannot be empty.
+# These open the platform confirmation screen. None of them is a silent install.
+INSTALLERS = (
+    ('com.google.android.packageinstaller', 'com.android.packageinstaller.InstallStart'),
+    ('com.android.packageinstaller', 'com.android.packageinstaller.InstallStart'),
+    ('com.android.packageinstaller', 'com.android.packageinstaller.PackageInstallerActivity'),
+)
+
+
+def launch_calls(package, has_update_activity):
+    """has_update_activity is true only when this APK contains FefcUpdateActivity.
+    Shipped build 38 does not. An empty package is never returned."""
+    if package not in PACKAGES:
+        raise ValueError('unknown package')
+    if has_update_activity:
+        return [{
+            'kind': 'in_app_activity',
+            'package': package,
+            'intent': 'android.intent.action.VIEW',
+            'mime': '',
+            'data': 'fefcupdate://install',
+            'flags': '',
+            'classname': 'com.fefc.kodi.FefcUpdateActivity',
+        }]
+    uri = fileprovider_uri(package)
+    return [{
+        'kind': 'system_confirmation',
+        'package': inst,
+        'intent': 'android.intent.action.VIEW',
+        'mime': 'application/vnd.android.package-archive',
+        'data': uri,
+        'flags': '1',
+        'classname': cls,
+    } for inst, cls in INSTALLERS]
+
+
+def builtin(call):
+    pkg = call.get('package') or ''
+    if not pkg:
+        raise ValueError('empty package')
+    fields = [
+        pkg,
+        call.get('intent') or '',
+        call.get('mime') or '',
+        call.get('data') or '',
+        call.get('flags') or '',
+        '',
+        '',
+        '',
+        call.get('classname') or '',
+    ]
+    return 'StartAndroidActivity(' + ','.join(fields) + ')'
+
+
+def can_replace(installed_version_code, published_version_code):
+    """Android/Fire OS replaces the same package in place only when versionCode increases.
+    The signing certificate must also match; this function cannot see the certificate."""
+    try:
+        return int(published_version_code) > int(installed_version_code)
+    except (TypeError, ValueError):
+        return False
+
+
 MESSAGES = {
     'not_fefc_build': 'This is not the FEFC app build, so there is no app update to check. Add-on updates arrive automatically.',
     'check_failed': 'Could not check for updates right now. Your list and settings were not changed.',
@@ -53,4 +121,5 @@ MESSAGES = {
     'checksum': 'The download did not match the published file, so it was not installed. Your list and settings were not changed.',
     'no_folder': 'The update downloaded, but this app folder could not be found, so the installer was not opened. Your list and settings were not changed.',
     'handed_off': 'Opening the app installer.',
+    'confirm': 'The update is ready. Android will ask you to confirm the install. This replaces the same app in place. It does not uninstall FEFC and it does not clear My List or settings. If no install screen appears, download {url} and open that file. Do not uninstall first.',
 }

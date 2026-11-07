@@ -36,6 +36,23 @@ assert updateplan.download_status(10, 10, 'bad', 'abc') == 'checksum'
 assert updateplan.download_status(10, 10, 'abc', 'abc') == 'ok'
 assert 'org.xbmc.kodi.fefcupdate' in updateplan.content_uri('org.xbmc.kodi', 'ext', 'FEFC-update.apk')
 assert 'com.fefc.kodi.fefcupdate' in updateplan.content_uri('com.fefc.kodi', 'ext', 'FEFC-update.apk')
+for pkg in ('org.xbmc.kodi', 'com.fefc.kodi'):
+    old = updateplan.launch_calls(pkg, False)
+    assert old and all(c['package'] and c['kind']=='system_confirmation' for c in old)
+    assert all(c['flags']=='1' for c in old)
+    assert all(pkg+'.fefcupdate/ext/FEFC-update.apk' in c['data'] for c in old)
+    assert all('StartAndroidActivity(,' not in updateplan.builtin(c) for c in old)
+    new = updateplan.launch_calls(pkg, True)
+    assert len(new)==1 and new[0]['classname']=='com.fefc.kodi.FefcUpdateActivity'
+    assert new[0]['package']==pkg and new[0]['data']=='fefcupdate://install'
+    assert 'does not uninstall' in updateplan.MESSAGES['confirm']
+assert updateplan.can_replace(2103038, 2103038) is False
+assert updateplan.can_replace(2103038, 2103039) is True
+try:
+    updateplan.builtin({'package':'','intent':'x'})
+    raise SystemExit('empty package was accepted')
+except ValueError:
+    pass
 assert 'No newer app is published' in updateplan.MESSAGES['up_to_date']
 assert 'not changed' in updateplan.MESSAGES['download_failed']
 print('ok')
@@ -46,8 +63,11 @@ test('updater does not blank the screen or launch the installer with an empty pa
   const svc = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
   assert.doesNotMatch(svc, /Dialog\.Close\(all/);
   assert.doesNotMatch(svc, /StartAndroidActivity\(,/);
-  assert.match(svc, /FefcUpdateActivity/);
-  assert.match(svc, /fefcupdate:\/\/install/);
+  assert.match(svc, /launch_calls\(pkg, has_act\)/);
+  assert.match(svc, /fefc-update-activity\.txt/);
+  const plan = fs.readFileSync(path.join(lib, 'updateplan.py'), 'utf8');
+  assert.match(plan, /fefcupdate:\/\/install/);
+  assert.match(plan, /FefcUpdateActivity/);
   const smali = fs.readFileSync(path.join(root, 'tools/fefc_update/smali/com/fefc/kodi/FefcUpdateActivity.smali'), 'utf8');
   assert.match(smali, /android.intent.action.INSTALL_PACKAGE/);
   assert.match(smali, /android.settings.MANAGE_UNKNOWN_APP_SOURCES/);
