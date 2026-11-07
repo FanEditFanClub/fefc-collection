@@ -74,7 +74,28 @@ if True:
                 '<category android:name="android.intent.category.DEFAULT"/>'
                 '<data android:scheme="fefcnotify"/></intent-filter></activity>\n    </application>', 1)
         open(mf, 'w', encoding='utf-8').write(s)
-        print('injected FefcNotifyActivity for com.fefc.kodi')
+        print('injected FefcNotifyActivity for %s' % PKG)
+# Updater activity for both package ids. Kodi's StartAndroidActivity sets the intent package to its
+# first argument, so the installer must be opened from inside this app, not with an empty package.
+_up_smali = os.path.join(root, 'tools', 'fefc_update', 'smali', 'com', 'fefc', 'kodi', 'FefcUpdateActivity.smali')
+if os.path.isfile(_up_smali):
+    _dest_dir = None
+    for sd in sorted(glob.glob(os.path.join(dec, 'smali*'))):
+        _dest_dir = os.path.join(sd, 'com', 'fefc', 'kodi')
+    if _dest_dir:
+        os.makedirs(_dest_dir, exist_ok=True)
+        shutil.copy(_up_smali, os.path.join(_dest_dir, 'FefcUpdateActivity.smali'))
+        s = open(mf, encoding='utf-8').read()
+        if 'FefcUpdateActivity' not in s:
+            s = s.replace('</application>',
+                '<activity android:name="com.fefc.kodi.FefcUpdateActivity" android:exported="false" '
+                'android:excludeFromRecents="true" '
+                'android:theme="@android:style/Theme.Translucent.NoTitleBar">'
+                '<intent-filter><action android:name="android.intent.action.VIEW"/>'
+                '<category android:name="android.intent.category.DEFAULT"/>'
+                '<data android:scheme="fefcupdate"/></intent-filter></activity>\n    </application>', 1)
+            open(mf, 'w', encoding='utf-8').write(s)
+        print('injected FefcUpdateActivity for %s' % PKG)
 # Both packages: system-keyboard text entry (Android / Fire TV IME, Gboard voice typing) for Search and every
 # FEFC text field; Python falls back to Kodi's keyboard if this activity does not open.
 _in_dir = os.path.join(root, 'tools', 'fefc_input', 'smali', 'com', 'fefc', 'kodi')
@@ -203,6 +224,8 @@ _b = _json.load(open(bj)); _vf = os.path.join(root, 'kodi-src', 'fefc-version.tx
 if os.path.exists(_vf): _b['version'] = open(_vf).read().strip()
 _b['pkg'] = PKG
 open(os.path.join(A, 'fefc-build.json'), 'w').write(_json.dumps(_b) + '\n')
+# Present only in APKs that also contain FefcUpdateActivity. Build 38 does not have this file.
+open(os.path.join(A, 'fefc-update-activity.txt'), 'w').write('com.fefc.kodi.FefcUpdateActivity\n')
 shutil.copy(os.path.join(root, 'kodi-src', 'FEFC-NOTICE.txt'), os.path.join(A, 'FEFC-NOTICE.txt'))
 # versionCode must rise with every FEFC build: with the stock code (2103000) on every update, Android/Fire OS treat each
 # install as the same version and the launcher keeps a stale cached icon/banner entry (the app tile shows no icon).
