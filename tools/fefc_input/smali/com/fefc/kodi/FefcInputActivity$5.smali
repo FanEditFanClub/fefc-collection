@@ -63,7 +63,7 @@
 
     iget-object v1, p0, Lcom/fefc/kodi/FefcInputActivity$5;->val$et:Landroid/widget/EditText;
 
-    const/4 v2, 0x1
+    const/4 v2, 0x2
 
     invoke-virtual {v0, v1, v2}, Landroid/view/inputmethod/InputMethodManager;->showSoftInput(Landroid/view/View;I)Z
 

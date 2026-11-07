@@ -133,7 +133,7 @@ function intro(){requestAnimationFrame(placeHeader);const wmi=document.getElemen
  /* Skip arming: with video, sndOn starts as 'vid' so the old sndOn?250 path armed skip in 250ms —
     Fire TV D-pad/OK then cut the intro short (owner: "intro doesn't play in full"). Arm skip only after a real grace. */
  let skipArmed=false;const skipGrace=vid?Math.max(4000,(tEnd*1000*0.35)|0):(sndOn?2500:0);
- setTimeout(()=>{skipArmed=true},skipGrace);
+ setTimeout(()=>{skipArmed=true;try{if(hint)hint.focus()}catch(e){}},skipGrace);
  const sk=e=>{if(e.type==='keydown'&&e.repeat)return;if(!skipArmed||(!sndOn&&!short&&!done)){/* first press / pre-arm: unlock sound only, never skip */S.unlock();tryEl().then(ok=>{if(!ok)go()});setTimeout(go,60);e.stopPropagation&&e.stopPropagation();return}e.preventDefault&&e.preventDefault();e.stopPropagation&&e.stopPropagation();removeEventListener('keydown',sk,true);el.removeEventListener('pointerdown',sk);S.unlock();end(true)};
  setTimeout(()=>{if(!done){addEventListener('keydown',sk,true);el.addEventListener('pointerdown',sk)}},vid?100:(sndOn?250:0))}
 // first interaction anywhere unlocks audio (autoplay rules)
@@ -1166,6 +1166,26 @@ const SEMANTIC_MAP = {
 };
 
 function semanticSearch(q) {
+  if (window.FEFCAttrs) {
+    const recs = [];
+    items.forEach(f => {
+      if (isFolder(f) || !isVid(f)) return;
+      const mm = (meta.map && meta.films && meta.films[meta.map[f.id] || meta.map[target(f)]]) || {};
+      const people = []
+        .concat(mm.director || [], (mm.cast || []).map(c => c && (c.name || c)), mm.editor || [])
+        .filter(Boolean).join(' ');
+      let path = (f.name || '');
+      let c = f, n = 0;
+      while (c && c.parent && n++ < 8) { c = items.get(c.parent); if (c && c.name) path += ' ' + c.name; }
+      const notes = (mm.description || '') + ' ' + (mm.plot || '');
+      recs.push({ id: f.id, blob: path + ' ' + notes, people: people + ' ' + path });
+    });
+    const hit = FEFCAttrs.search(q, recs);
+    if (hit && hit.handled) {
+      const by = new Map(recs.map(r => [r.id, r]));
+      return hit.results.map(r => ({ item: items.get(r.id), why: r.why })).filter(x => x.item);
+    }
+  }
   const norm = (q || '').toLowerCase();
   const matchedKeywords = new Set();
   for (const [key, targets] of Object.entries(SEMANTIC_MAP)) {
@@ -1552,7 +1572,7 @@ const _details=details;details=async function(){await _details.apply(this,argume
 const _play=play;play=function(f){S.ambience(false);_play(f);(()=>{let b=$('#pshuf');if(!b){b=document.createElement('button');b.id='pshuf';b.className='pill p6 shuf-again';b.innerHTML=SHUF_ICON+'Shuffle again';b.onclick=()=>shuffle(sessionStorage.fefcShufScope||'all');$('#popen').before(b)}let sc='';try{sc=sessionStorage.fefcShufScope||''}catch(e){}if(!window.__shufPlay){try{sessionStorage.removeItem('fefcShufScope')}catch(e){}sc=''}window.__shufPlay=0;b.hidden=!sc})();setTimeout(()=>{if($('#player').hidden)return;const pt=$('#ptap');if(document.body.classList.contains('tv')&&pt&&pt.offsetParent)focusEl(pt);else focusEl($('#back'))},50)};
 if(isTvEnv())document.body.classList.add('tv');
 /* Home version badge: Fire TV uses FEFCNative.version() (versionName); web uses /firetv/version.json (same SoT as the updater). */
-const HOME_VER_FALLBACK='0.4.0';
+const HOME_VER_FALLBACK='0.4.1';
 function formatHomeVer(name){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/\s*beta$/i,'').trim();return 'v'+base+' beta'}
 
 function formatMlUpdVer(name,code){const n=String(name||'').trim();if(!n)return '';const base=n.replace(/^v/i,'').replace(/\s*beta$/i,'').trim();return 'v'+base}

@@ -237,11 +237,12 @@
 
 			</control>
 			<control type="group">
-				<width>190</width><height>60</height>
+				<width>168</width><height>60</height>
 				<control type="button" id="9031">
-					<left>0</left><top>0</top><width>154</width><height>60</height>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
-					<textoffsetx>50</textoffsetx><align>left</align>
+					<left>0</left><top>0</top><width>168</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
+					<textoffsetx>46</textoffsetx><align>left</align>
 					<label>SEARCH</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
@@ -249,11 +250,12 @@
 				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 			</control>
 			<control type="group">
-				<width>230</width><height>60</height>
+				<width>200</width><height>60</height>
 				<control type="button" id="9032">
-					<left>0</left><top>0</top><width>196</width><height>60</height>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
-					<textoffsetx>50</textoffsetx><align>left</align>
+					<left>0</left><top>0</top><width>200</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
+					<textoffsetx>46</textoffsetx><align>left</align>
 					<label>$VAR[FefcSoundLabel]</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
@@ -262,11 +264,12 @@
 				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 			</control>
 			<control type="group">
-				<width>230</width><height>60</height>
+				<width>180</width><height>60</height>
 				<control type="button" id="9033">
-					<left>0</left><top>0</top><width>174</width><height>60</height>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
-					<textoffsetx>50</textoffsetx><align>left</align>
+					<left>0</left><top>0</top><width>180</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
+					<textoffsetx>46</textoffsetx><align>left</align>
 					<label>SETTINGS</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
@@ -274,11 +277,11 @@
 				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 			<control type="group">
-				<width>170</width><height>60</height>
+				<width>120</width><height>60</height>
 				<control type="button" id="9034">
-					<left>0</left><top>0</top><width>104</width><height>60</height>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
-					
+					<left>0</left><top>0</top><width>120</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
 					<label>ABOUT</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
@@ -286,11 +289,11 @@
 
 			</control>
 			<control type="group">
-				<width>440</width><height>60</height>
+				<width>200</width><height>60</height>
 				<control type="button" id="9023">
-					<left>0</left><top>0</top><width>160</width><height>60</height>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
-					
+					<left>0</left><top>0</top><width>200</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
 					<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
@@ -306,14 +309,7 @@
 			<label>[COLOR FFFF9C00][B][ OK ][/B][/COLOR] Select     [COLOR FFFF9C00][B][ BACK ][/B][/COLOR] Return     [COLOR FFFF9C00][B][ MENU ][/B][/COLOR] Options</label>
 		</control>
 		<include>FefcTicker</include>
-		<!-- notices -->
-		<control type="label">
-			<left>96</left><top>1030</top><width>1728</width><height>24</height>
-			<align>center</align><aligny>center</aligny>
-			<font>font10</font>
-			<textcolor>FF7F8FA6</textcolor>
-			<label>FEFC is an unofficial community app built on Kodi (GPL-2.0-or-later). Not affiliated with the Kodi Foundation.</label>
-		</control>
+		<!-- Kodi Foundation notice is in About only, not under the ticker. -->
 		<!-- black splash: hides the home screen until the FEFC intro has played (service sets FEFC.Ready) -->
 		<control type="image">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>

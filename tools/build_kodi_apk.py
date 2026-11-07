@@ -91,7 +91,7 @@ if os.path.isdir(_in_dir):
     if 'FefcInputActivity' not in s:
         s = s.replace('</application>',
             '<activity android:name="com.fefc.kodi.FefcInputActivity" android:exported="false" '
-            'android:excludeFromRecents="true" android:noHistory="true" '
+            'android:excludeFromRecents="true" '
             'android:windowSoftInputMode="stateAlwaysVisible|adjustResize" '
             'android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|navigation" '
             'android:theme="@android:style/Theme.Translucent.NoTitleBar">'

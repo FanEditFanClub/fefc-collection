@@ -417,7 +417,8 @@ class Router:
         return dst
 
     def _maybe_sfx(self, rel):
-        if ADDON.getSetting('play_sfx') != 'true' or not rel:
+        from .sfxpref import sfx_enabled
+        if not sfx_enabled(ADDON.getSetting('play_sfx')) or not rel:
             return
         files = rel if isinstance(rel, list) else [rel]
         # Kodi plays wav natively: the site serves a wav copy of every clip under kodi-sfx/ (same 6 s / -16 LUFS clip)
@@ -668,7 +669,8 @@ class Router:
 
     def sound_toggle(self):
         """Top-bar sound on/off (saved in the add-on settings, so it survives restarts and app updates)."""
-        on = ADDON.getSetting('play_sfx') != 'true'
+        from .sfxpref import sfx_enabled
+        on = not sfx_enabled(ADDON.getSetting('play_sfx'))
         ADDON.setSetting('play_sfx', 'true' if on else 'false')
         xbmcgui.Window(10000).setProperty('FEFC.SoundOff', '' if on else '1')
         xbmcgui.Dialog().notification('FEFC', 'Sound on' if on else 'Sound off', time=1500, sound=False)
