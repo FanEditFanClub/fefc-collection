@@ -1,0 +1,170 @@
+{
+  "v": 1,
+  "status": "ai-edited-candidate; parent visually checked; not user-approved; not a clean-source still",
+  "incorporated": 6,
+  "unprocessedExcludingManualOverrides": 172,
+  "manualOverridesExcluded": 3,
+  "note": "Original trailer-frame inputs remain at assets/covers/<folderId>.jpg. The app pointer is the AI edit. No Drive files were changed.",
+  "publicCleanSourceCheck": [
+    {
+      "url": "http://www.impawards.com/1984/nightmare_on_elm_street_xlg.html",
+      "result": "HTTP 500 on both HTTP and HTTPS; no artwork retrieved/verified"
+    },
+    {
+      "url": "http://www.impawards.com/tv/arrow.html",
+      "result": "HTTP 500 on both HTTP and HTTPS; no artwork retrieved/verified"
+    },
+    {
+      "url": "http://www.impawards.com/tv/ash_vs_evil_dead_ver2.html",
+      "result": "HTTP 500 on both HTTP and HTTPS; no artwork retrieved/verified"
+    },
+    {
+      "url": "http://www.impawards.com/tv/battlestar_galactica_new_ver2.html",
+      "result": "HTTP 500 on both HTTP and HTTPS; no artwork retrieved/verified"
+    },
+    {
+      "url": "https://en.wikipedia.org/wiki/All_of_Us_Are_Dead",
+      "result": "HTTP 403; no artwork retrieved"
+    },
+    {
+      "url": "https://www.jamesminchin.com/scroll/15315/black-sails",
+      "result": "Public key-art page available, but its lazy image placeholders did not provide a visually verified same-composition replacement; not used."
+    }
+  ],
+  "existingEvidenceCheck": "Prior Drive frame candidates were inspected: newspaper insert, static, DC logo, absent frame, blue blur and STARZ ident; none suitable as clean same-title artwork.",
+  "limitations": [
+    "Only first six visibly promotional covers selected, not every first-six manifest item.",
+    "172 unprocessed inputs are not asserted clean.",
+    "No fan-edit-specific cover titles were replaced with generic theatrical poster titles.",
+    "AI edited images are candidates and may have subtle detail changes; compare before-after before accepting.",
+    "No repository, Drive, sharing or source evidence overwritten."
+  ],
+  "items": [
+    {
+      "folderId": "1UAlpXdFkWSVo4mp16cZnjpeIXC3tgK_s",
+      "title": "A Nightmare on Elm Street",
+      "trailerInput": "assets/covers/1UAlpXdFkWSVo4mp16cZnjpeIXC3tgK_s.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1UAlpXdFkWSVo4mp16cZnjpeIXC3tgK_s.jpg",
+      "sha256": "5918a81900773253e974c1ca947c8942aed4712c241e60303a11d57a47dcadd0",
+      "requestedRemoval": "4K TRAILER upper-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Freddy silhouette, blue gate scene and red film title/Wes Craven credit remain visible.",
+        "aspectRatio": "16:9; output 1024x576",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/cursor/stores/user/grok-bot/agents/f999ac4a-b74d-459f-84bf-bf0d945ed62d/assets/5918a81900773253e974c1ca947c8942aed4712c241e60303a11d57a47dcadd0.jpg"
+      }
+    },
+    {
+      "folderId": "1bdPWtnFs0Y636tAAw6i9ESUMX5k2lPto",
+      "title": "All of Us Are Dead",
+      "trailerInput": "assets/covers/1bdPWtnFs0Y636tAAw6i9ESUMX5k2lPto.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1bdPWtnFs0Y636tAAw6i9ESUMX5k2lPto.jpg",
+      "sha256": "a603abdf16b5e53f0cd69ce727c30534fc2a4d6aaae4733d1fbee36fbd5908f0",
+      "requestedRemoval": "OFFICIAL TRAILER plus accent stripe lower-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Zombie crowd, central character, bus and NETFLIX branding remain visible; no new title added.",
+        "aspectRatio": "16:9; output 1024x576",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/cursor/stores/user/grok-bot/agents/f999ac4a-b74d-459f-84bf-bf0d945ed62d/assets/a603abdf16b5e53f0cd69ce727c30534fc2a4d6aaae4733d1fbee36fbd5908f0.jpg"
+      }
+    },
+    {
+      "folderId": "1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d",
+      "title": "Arrow",
+      "trailerInput": "assets/covers/1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d.jpg",
+      "sha256": "dd14a5f3b5ea3a91a71db3e03734138882a6b1c10aaef8846b11d996b88905d6",
+      "requestedRemoval": "TV trailer badge and TRAILER lower-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Archer, bow, pose and green lighting remain recognizable; no new title added.",
+        "aspectRatio": "16:9; output 1024x576",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/cursor/stores/user/grok-bot/agents/f999ac4a-b74d-459f-84bf-bf0d945ed62d/assets/dd14a5f3b5ea3a91a71db3e03734138882a6b1c10aaef8846b11d996b88905d6.jpg"
+      }
+    },
+    {
+      "folderId": "1gC0wp2g7FZ-FeYj91VSofOy9lhYhdHVD",
+      "title": "Ash vs Evil Dead",
+      "trailerInput": "assets/covers/1gC0wp2g7FZ-FeYj91VSofOy9lhYhdHVD.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1gC0wp2g7FZ-FeYj91VSofOy9lhYhdHVD.jpg",
+      "sha256": "9e7366316c08928fa3505ca6005218cad5d92abfc6345808ab103f52e548b608",
+      "requestedRemoval": "TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Ash/chainsaw scene, ASH vs EVIL DEAD title, STARZ and border remain visible.",
+        "aspectRatio": "16:9; output 1024x576",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/cursor/stores/user/grok-bot/agents/f999ac4a-b74d-459f-84bf-bf0d945ed62d/assets/9e7366316c08928fa3505ca6005218cad5d92abfc6345808ab103f52e548b608.jpg"
+      }
+    },
+    {
+      "folderId": "1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R",
+      "title": "Battlestar Galactica",
+      "trailerInput": "assets/covers/1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R.jpg",
+      "sha256": "97147124616837efb98591b73d2adf322cf062d621a0ecd79d3718740d79c842",
+      "requestedRemoval": "MODERN TRAILER below title",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Two leads, grey-blue scene and BATTLESTAR GALACTICA title remain visible.",
+        "aspectRatio": "16:9; output 1024x576",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/cursor/stores/user/grok-bot/agents/f999ac4a-b74d-459f-84bf-bf0d945ed62d/assets/97147124616837efb98591b73d2adf322cf062d621a0ecd79d3718740d79c842.jpg"
+      }
+    },
+    {
+      "folderId": "1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb",
+      "title": "Black Sails",
+      "trailerInput": "assets/covers/1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb.jpg",
+      "sha256": "5cdce91e92139deb0dc69a099e187ba406af0f4dc4a571bbcd82cc1c0c380be1",
+      "requestedRemoval": "TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Pirate/ship scene, BLACK SAILS title, STARZ logo and border remain visible.",
+        "aspectRatio": "16:9; output 1024x576",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/cursor/stores/user/grok-bot/agents/f999ac4a-b74d-459f-84bf-bf0d945ed62d/assets/5cdce91e92139deb0dc69a099e187ba406af0f4dc4a571bbcd82cc1c0c380be1.jpg"
+      }
+    }
+  ]
+}

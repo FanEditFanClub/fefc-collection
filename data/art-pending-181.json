@@ -1,7 +1,7 @@
 {
   "v": 1,
   "count": 181,
-  "purpose": "Exact inputs for parent GenerateImage. Not applied art. Candidate Drive frames are not approved clean stills.",
+  "purpose": "181 folder covers. 3 have manual clean overrides and were excluded. 6 AI-edited candidates replace trailer-badge text and are not approved clean stills. 172 inputs are still unprocessed.",
   "items": [
     {
       "folderId": "11mTK_piAwHaTAePeNA5rRoI3MsgOzD8p",
@@ -25,7 +25,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1WJ2MubPB10Hsc1cYKRrFz8ZqemYCpgiB",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1UAlpXdFkWSVo4mp16cZnjpeIXC3tgK_s.jpg",
+      "trailerInputPreserved": "assets/covers/1UAlpXdFkWSVo4mp16cZnjpeIXC3tgK_s.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "4K TRAILER upper-left",
+        "sha256": "5918a81900773253e974c1ca947c8942aed4712c241e60303a11d57a47dcadd0",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Freddy silhouette, blue gate scene and red film title/Wes Craven credit remain visible.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "15rUF6xKW3dECsvYTB27dHUdHrod09S0w",
@@ -49,7 +59,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1EMSccT5nbY6kxvUDvGHI8nZIyw_lwcXI",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1bdPWtnFs0Y636tAAw6i9ESUMX5k2lPto.jpg",
+      "trailerInputPreserved": "assets/covers/1bdPWtnFs0Y636tAAw6i9ESUMX5k2lPto.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER plus accent stripe lower-left",
+        "sha256": "a603abdf16b5e53f0cd69ce727c30534fc2a4d6aaae4733d1fbee36fbd5908f0",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Zombie crowd, central character, bus and NETFLIX branding remain visible; no new title added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d",
@@ -61,7 +81,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Psm95pt61IPQGIYoYujVpElScDNwtE3P",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d.jpg",
+      "trailerInputPreserved": "assets/covers/1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TV trailer badge and TRAILER lower-left",
+        "sha256": "dd14a5f3b5ea3a91a71db3e03734138882a6b1c10aaef8846b11d996b88905d6",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Archer, bow, pose and green lighting remain recognizable; no new title added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1WSZBvpZlhwt3CtslHini2QOEq6e-whbP",
@@ -85,7 +115,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1gC0wp2g7FZ-FeYj91VSofOy9lhYhdHVD.jpg",
+      "trailerInputPreserved": "assets/covers/1gC0wp2g7FZ-FeYj91VSofOy9lhYhdHVD.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER bottom-left",
+        "sha256": "9e7366316c08928fa3505ca6005218cad5d92abfc6345808ab103f52e548b608",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Ash/chainsaw scene, ASH vs EVIL DEAD title, STARZ and border remain visible.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R",
@@ -97,7 +137,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Xq9m7w868WA1D17BxhMVUK93AZYdKOPG",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R.jpg",
+      "trailerInputPreserved": "assets/covers/1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "MODERN TRAILER below title",
+        "sha256": "97147124616837efb98591b73d2adf322cf062d621a0ecd79d3718740d79c842",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Two leads, grey-blue scene and BATTLESTAR GALACTICA title remain visible.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb",
@@ -109,7 +159,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1L5CB2ulaMBeRj633s11P3Q36jUwRumce",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb.jpg",
+      "trailerInputPreserved": "assets/covers/1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER bottom-left",
+        "sha256": "5cdce91e92139deb0dc69a099e187ba406af0f4dc4a571bbcd82cc1c0c380be1",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Pirate/ship scene, BLACK SAILS title, STARZ logo and border remain visible.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1gPjy1a9SHu1wCHd9LyGdLB21jeOilh5f",
@@ -2175,5 +2235,8 @@
       "originalArtUrl": null,
       "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
     }
-  ]
+  ],
+  "aiEditedCandidates": 6,
+  "unprocessedExcludingManualOverrides": 172,
+  "manualOverridesExcluded": 3
 }

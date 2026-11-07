@@ -1100,6 +1100,14 @@ COVER_MANUAL={
 "16xekfpYMsmH23Ny6CUUlRzgOzOspI0b8":"assets/covers/alan-wake.jpg",
 # Stephen King: local Comicon/title cover (cache-bust Drive Castle Rock frame)
 "1GK7SeVADkGKr-cia9DdXuT0FIH5I8_W3":"assets/covers/stephen-king.jpg",
+# AI-edited trailer-text removals. Not clean-source stills. Keep these paths so --force
+# does not point the folder back at the YouTube trailer frame.
+"1UAlpXdFkWSVo4mp16cZnjpeIXC3tgK_s":"assets/covers/ai-edited/1UAlpXdFkWSVo4mp16cZnjpeIXC3tgK_s.jpg",
+"1bdPWtnFs0Y636tAAw6i9ESUMX5k2lPto":"assets/covers/ai-edited/1bdPWtnFs0Y636tAAw6i9ESUMX5k2lPto.jpg",
+"1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d":"assets/covers/ai-edited/1wAG4asuSjNRcRyK1osSUKfizH4mWLv8d.jpg",
+"1gC0wp2g7FZ-FeYj91VSofOy9lhYhdHVD":"assets/covers/ai-edited/1gC0wp2g7FZ-FeYj91VSofOy9lhYhdHVD.jpg",
+"1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R":"assets/covers/ai-edited/1U_u23WQkk8FqqgrQ8-rqXNNTZaKJ6s8R.jpg",
+"1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb":"assets/covers/ai-edited/1LudsjnLU6agYpplhbPvNsOEI3QPTTRwb.jpg",
 }
 def covers(force=False):
     os.makedirs(os.path.join(D,'..','assets','covers'),exist_ok=True)
