@@ -1,51 +1,79 @@
 {
-  "v": 1,
-  "status": "URLs only. No posts read. Do not treat as edit notes.",
+  "v": 2,
+  "status": "pending_qualifying_accessible_source",
+  "integrated_change_lists": 0,
+  "coverage": {
+    "groups_listed": 9,
+    "sampled": 6,
+    "public_sampled": 4,
+    "private_not_joined": 2,
+    "not_searched": 3,
+    "qualifying_completed_edit_change_lists": 0,
+    "note": "Six of the nine groups were sampled. Four public groups were searched and two private groups were not joined. Three groups were not searched. No completed-edit change list was found. File-add notices and unfinished ideas from that pass are not change notes and are not shown in the app."
+  },
   "groups": [
     {
       "name": "COUNCIL OF K-FANEDITS",
       "url": "https://www.facebook.com/groups/2729395880677639/",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "public",
+      "sampled": true,
+      "status": "Searched. No qualifying completed-edit change list."
     },
     {
       "name": "Fan Edit Fan Club",
       "url": "https://www.facebook.com/groups/faneditfanclub",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "public",
+      "sampled": true,
+      "status": "Searched. No qualifying completed-edit change list."
     },
     {
       "name": "Fanedit tidbits",
       "url": "https://www.facebook.com/groups/fanedit",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "public",
+      "sampled": true,
+      "status": "Searched. No qualifying completed-edit change list."
     },
     {
-      "name": "Movie FanEdit\u2019s Group Lets Find These Great Movies",
+      "name": "Movie FanEdit’s Group Lets Find These Great Movies",
       "url": "https://www.facebook.com/groups/1114745849539951",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "public",
+      "sampled": true,
+      "status": "Searched. No qualifying completed-edit change list."
     },
     {
       "name": "Movies Remastered Chat Room",
       "url": "https://www.facebook.com/groups/MRChatRoom/",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "private",
+      "sampled": true,
+      "status": "Visited. Private. Not joined. Posts not read."
     },
     {
       "name": "The 'Official' Workprint Channel",
       "url": "https://www.facebook.com/groups/285239246721271/",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "private",
+      "sampled": true,
+      "status": "Visited. Private. Not joined. Posts not read."
     },
     {
       "name": "The Fan Edit / Hard To Find Media Group #1",
       "url": "https://www.facebook.com/groups/1466216162354367/",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "unknown",
+      "sampled": false,
+      "status": "Not searched in this pass."
     },
     {
-      "name": "The FanEdit & Workprint Hub \ud83c\udfa5\ud83c\udf7f\ud83d\udc80\ud83d\udda4",
+      "name": "The FanEdit & Workprint Hub 🎬🍿💀🖤",
       "url": "https://www.facebook.com/groups/1480670097295925/",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "unknown",
+      "sampled": false,
+      "status": "Not searched in this pass."
     },
     {
       "name": "The Workprint Fan Edit And Format Appreciation Society Backup",
       "url": "https://www.facebook.com/groups/1658296262451713/",
-      "status": "URL verified in master; group contents/access/edit notes not read; browser handoff"
+      "access": "unknown",
+      "sampled": false,
+      "status": "Not searched in this pass."
     }
   ]
 }
