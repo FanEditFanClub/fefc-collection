@@ -122,11 +122,18 @@ def my_package():
     return str((installed_build() or {}).get('pkg') or 'org.xbmc.kodi')
 
 
+def _plan():
+    try:
+        from resources.lib import updateplan
+    except ImportError:
+        import updateplan
+    return updateplan
+
+
 def _for_my_package(new):
-    """version.json lists one APK per package id; download the one matching this install (legacy org.xbmc.kodi
-    installs fall back to the top-level url/sha256, which always stay the org.xbmc.kodi APK)."""
-    p = ((new.get('packages') or {}).get(my_package())) or {}
-    return p.get('url') or new.get('url', ''), int(p.get('size') or new.get('size') or 0), p.get('sha256') or new.get('sha256') or ''
+    """version.json lists one APK per package id. org.xbmc.kodi may use the top-level file.
+    com.fefc.kodi never does: that file is the other package."""
+    return _plan().select_apk(new, my_package())
 
 
 NEW_FILES_FEED = 'https://fefc-collection.pages.dev/kodi-app/new-files.json'
@@ -278,10 +285,11 @@ def poll_new_files_feed():
 def _install_update(new):
     import hashlib
     url, want, sha = _for_my_package(new)
+    if not url or not sha:
+        xbmcgui.Dialog().ok('FEFC update', _plan().MESSAGES['no_apk'].format(package=my_package()))
+        return
     dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
     part = dst + '.part'
-    xbmc.executebuiltin('Dialog.Close(all,true)')
-    xbmc.sleep(300)
     ok = False
     # already downloaded and verified earlier?
     if os.path.exists(dst) and sha:
@@ -338,27 +346,28 @@ def _install_update(new):
                 ok = True
             except Exception as e:
                 log('update download attempt %d failed: %s' % (tries, e))
+                if 'checksum mismatch' in str(e):
+                    prog.close()
+                    xbmcgui.Dialog().ok('FEFC update', _plan().MESSAGES['checksum'])
+                    return
                 prog.update(0, 'FEFC update', 'Connection problem, retrying (%d/8)...' % tries)
                 xbmc.sleep(min(30, 3 * tries) * 1000)
         prog.close()
     if not ok:
-        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again; it will continue where it stopped.')
+        xbmcgui.Dialog().ok('FEFC update', _plan().MESSAGES['download_failed'])
         return
-    xbmc.executebuiltin('Dialog.Close(all,true)')
-    uri = None
+    ext = _android_ext_files_dir()
+    if not ext:
+        xbmcgui.Dialog().ok('FEFC update', _plan().MESSAGES['no_folder'])
+        return
+    import shutil
+    os.makedirs(ext, exist_ok=True)
+    shutil.copyfile(dst, os.path.join(ext, 'FEFC-update.apk'))
     pkg = my_package()
-    for marker, name in (('/files/', 'ext'), ('/cache/', 'extcache')):
-        if '/Android/data/' in dst and marker in dst:
-            uri = 'content://%s.fefcupdate/%s/%s' % (pkg, name, dst.split(marker, 1)[1]); break
-    if uri is None:
-        for marker, name in (('/files/', 'int'), ('/cache/', 'cache')):
-            if '/%s/' % pkg in dst and marker in dst:
-                uri = 'content://%s.fefcupdate/%s/%s' % (pkg, name, dst.split(marker, 1)[1]); break
-    if uri is None:  # unknown location: Kodi's own exported file provider
-        uri = 'content://%s.file/#' % pkg + dst
-    log('launching installer: %s' % uri)
-    # 5th argument 1 = FLAG_GRANT_READ_URI_PERMISSION so the installer can read our FileProvider URI
-    xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)' % uri)
+    log('opening updater activity for %s' % pkg)
+    # First argument is this app's package. Kodi calls Intent.setPackage with it, so an empty
+    # package cannot resolve the system installer and the screen only flashes black.
+    xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"fefcupdate://install",,,,,"com.fefc.kodi.FefcUpdateActivity")' % pkg)
 
 
 def set_select_action():
@@ -394,9 +403,10 @@ def check_update(manual=False, prompt=True):
     """Compare the installed FEFC app build with the latest published one (the GitHub Action publishes version.json).
     Always refreshes the home Update tile; shows the what's-new + Install / Later popup when prompt is true."""
     cur = installed_build()
+    plan = _plan()
     if not cur:
         if manual:
-            xbmcgui.Dialog().ok('FEFC', 'This is not the FEFC app build, so there is no app update to check. Add-on updates arrive automatically.')
+            xbmcgui.Dialog().ok('FEFC', plan.MESSAGES['not_fefc_build'])
         return
     try:
         req = urllib.request.Request(VERSION_URL + '?t=%d' % int(time.time()), headers={'User-Agent': 'FEFC-Kodi'})
@@ -404,7 +414,7 @@ def check_update(manual=False, prompt=True):
     except Exception as e:
         log('update check failed: %s' % e)
         if manual:
-            xbmcgui.Dialog().ok('FEFC', 'Could not check for updates right now.')
+            xbmcgui.Dialog().ok('FEFC', plan.MESSAGES['check_failed'])
         return
     avail = int(new.get('build', 0)) > int(cur.get('build', 0))
     set_update_state(cur, new, avail)
@@ -440,7 +450,7 @@ def check_update(manual=False, prompt=True):
             install_update(new)
         return
     if manual:
-        xbmcgui.Dialog().notification('FEFC', 'Up to date', time=2000, sound=False)
+        xbmcgui.Dialog().ok('FEFC', plan.MESSAGES['up_to_date'].format(installed=version_label(cur)))
 
 
 def _prompt(new, cur):

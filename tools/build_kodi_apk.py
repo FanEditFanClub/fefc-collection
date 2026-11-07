@@ -74,7 +74,28 @@ if True:
                 '<category android:name="android.intent.category.DEFAULT"/>'
                 '<data android:scheme="fefcnotify"/></intent-filter></activity>\n    </application>', 1)
         open(mf, 'w', encoding='utf-8').write(s)
-        print('injected FefcNotifyActivity for com.fefc.kodi')
+        print('injected FefcNotifyActivity for %s' % PKG)
+# Updater activity for both package ids. Kodi's StartAndroidActivity sets the intent package to its
+# first argument, so the installer must be opened from inside this app, not with an empty package.
+_up_smali = os.path.join(root, 'tools', 'fefc_update', 'smali', 'com', 'fefc', 'kodi', 'FefcUpdateActivity.smali')
+if os.path.isfile(_up_smali):
+    _dest_dir = None
+    for sd in sorted(glob.glob(os.path.join(dec, 'smali*'))):
+        _dest_dir = os.path.join(sd, 'com', 'fefc', 'kodi')
+    if _dest_dir:
+        os.makedirs(_dest_dir, exist_ok=True)
+        shutil.copy(_up_smali, os.path.join(_dest_dir, 'FefcUpdateActivity.smali'))
+        s = open(mf, encoding='utf-8').read()
+        if 'FefcUpdateActivity' not in s:
+            s = s.replace('</application>',
+                '<activity android:name="com.fefc.kodi.FefcUpdateActivity" android:exported="false" '
+                'android:excludeFromRecents="true" '
+                'android:theme="@android:style/Theme.Translucent.NoTitleBar">'
+                '<intent-filter><action android:name="android.intent.action.VIEW"/>'
+                '<category android:name="android.intent.category.DEFAULT"/>'
+                '<data android:scheme="fefcupdate"/></intent-filter></activity>\n    </application>', 1)
+            open(mf, 'w', encoding='utf-8').write(s)
+        print('injected FefcUpdateActivity for %s' % PKG)
 # Both packages: system-keyboard text entry (Android / Fire TV IME, Gboard voice typing) for Search and every
 # FEFC text field; Python falls back to Kodi's keyboard if this activity does not open.
 _in_dir = os.path.join(root, 'tools', 'fefc_input', 'smali', 'com', 'fefc', 'kodi')
