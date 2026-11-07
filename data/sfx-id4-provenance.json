@@ -59,59 +59,68 @@
           "file": "assets/sfx/id4-not-vanish-without-fight.mp3"
         }
       ]
-    }
-  ],
-  "held": [
-    {
-      "name": "diehard-coast-few-laughs",
-      "source_file": "/home/box/Downloads/Die Hard Edited For Content.mp4",
-      "source_start_seconds": 3034.65,
-      "source_end_seconds": 3038.45,
-      "audio_stream": "0:a:0",
-      "quote_or_music": "Come out to the coast, we\u2019ll get together, have a few laughs.",
-      "verification_status": "quote_candidate",
-      "verification_note": "Quote location supported by two small.en ASR passes; they disagree on some words. Requested quotation is a proposed identification, not a human-verified exact transcript.",
-      "outputs": [
-        {
-          "duration_seconds": 3.8,
-          "integrated_lufs": -16.06,
-          "true_peak_dbtp": -2.48,
-          "sha256": "80e9887636c0d7435c4cf86eda923381fe663cb43fc15bd6cce0775b31496bda"
-        },
-        {
-          "duration_seconds": 3.84,
-          "integrated_lufs": -16.0,
-          "true_peak_dbtp": -2.59,
-          "sha256": "841bd5cc5ab6445d3e5675ca6ba343e7a647ece31c8ede87c78588ba79dd08a9"
-        }
-      ],
-      "integrated": false
     },
     {
-      "name": "diehard-vault-music-candidate",
-      "source_file": "/home/box/Downloads/Die Hard Edited For Content.mp4",
-      "source_start_seconds": 6097.0,
-      "source_end_seconds": 6102.9,
+      "name": "diehard-coast-few-laughs",
+      "source_file": "https://www.youtube.com/watch?v=Muol4Lh9HX8 (Die Hard - Come to the coast)",
+      "source_start_seconds": 0.6,
+      "source_end_seconds": 4.25,
       "audio_stream": "0:a:0",
-      "quote_or_music": null,
-      "verification_status": "unverified_music_candidate",
-      "verification_note": "Candidate instrumental passage near FBI power-cut/vault sequence; Ode to Joy musical identity NOT verified. Old 6074.5s scratch candidate contains speech and was rejected. Require human listening before use.",
+      "quote_or_music": "Come out to the coast, we'll get together, have a few laughs.",
+      "verification_status": "asr_supported_quote",
+      "verification_note": "Words/timing supported by word-level small.en ASR on the YouTube clip (0.82-4.02s) and on the final encoded .m4a; matches the Die Hard shooting script (stockq.org) and multiple quote sources. Resolves the earlier two-pass ASR disagreement.",
+      "outputs": [
+        {
+          "duration_seconds": 3.65,
+          "integrated_lufs": -16.05,
+          "true_peak_dbtp": -4.25,
+          "spec_pass": true,
+          "size_bytes": 60394,
+          "sha256": "6623df907746c764d5d3c6f998128bae2db4533f4a41b65cb7d69cd4bbf50dea",
+          "file": "assets/sfx/diehard-coast-few-laughs.m4a"
+        },
+        {
+          "duration_seconds": 3.65,
+          "integrated_lufs": -16.44,
+          "true_peak_dbtp": -4.62,
+          "spec_pass": true,
+          "size_bytes": 59565,
+          "sha256": "9715b81449069567e5f0b97d8b3aa8b5ffdaaa83f4b3654d5819cbde1bf5bfab",
+          "file": "assets/sfx/diehard-coast-few-laughs.mp3"
+        }
+      ]
+    },
+    {
+      "name": "diehard-vault-music",
+      "source_file": "https://www.youtube.com/watch?v=DDArjBv-TCY (Die Hard - Vault Opening (Ode To Joy))",
+      "source_start_seconds": 10.0,
+      "source_end_seconds": 15.9,
+      "audio_stream": "0:a:0",
+      "quote_or_music": "Ode to Joy (Beethoven Symphony No. 9), Michael Kamen Die Hard film version — music when Theo opens the vault.",
+      "verification_status": "documented_music_identity",
+      "verification_note": "Ode to Joy identity confirmed by the source video title ('Die Hard - Vault Opening (Ode To Joy)'), villainsong fandom ('the music when Theo opens the vault'), and the Michael Kamen Die Hard soundtrack listing ('Ode To Joy - Die Hard Film Version'). No human listening performed; identity is documented, not aurally verified.",
       "outputs": [
         {
           "duration_seconds": 5.9,
-          "integrated_lufs": -16.02,
-          "true_peak_dbtp": -2.48,
-          "sha256": "8ceb0d46bd85bc6cd5dd625f5b7bef02e6c3b283df0a51d9c00246e0fa4d8ade"
+          "integrated_lufs": -16.03,
+          "true_peak_dbtp": -5.92,
+          "spec_pass": true,
+          "size_bytes": 96859,
+          "sha256": "872e675afe4a13815faa58f8102a8f5e078b8ba5422cb215e158636602a5bbd9",
+          "file": "assets/sfx/diehard-vault-music.m4a"
         },
         {
-          "duration_seconds": 5.928,
-          "integrated_lufs": -16.01,
-          "true_peak_dbtp": -2.89,
-          "sha256": "5183036cf1148e6c9a4d2b576186e509f5b6ca4f73173ba56348125f93367e9f"
+          "duration_seconds": 5.9,
+          "integrated_lufs": -16.45,
+          "true_peak_dbtp": -6.28,
+          "spec_pass": true,
+          "size_bytes": 95277,
+          "sha256": "a84a1a949d79211c66d3e8df13bc70db8bfe20355299716f4a99faff13eca03a",
+          "file": "assets/sfx/diehard-vault-music.mp3"
         }
-      ],
-      "integrated": false
+      ]
     }
   ],
-  "note": "Held clips were measured but not added to folder-sfx and their audio files are not in the repo."
+  "held": [],
+  "note": "Both formerly held Die Hard clips are now integrated (2026-11-07, sourced from YouTube clips per the user's direction). Held list is empty."
 }
