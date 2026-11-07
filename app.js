@@ -1745,6 +1745,35 @@ var __spreadValues = (a, b) => {
   });
   function _x() {
   }
+  const CONTACT_EMAIL = "faneditfanclub@gmail.com";
+  const FEEDBACK_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform";
+  const FEEDBACK_HTML = '<div class="fb-block" style="grid-column:1/-1;background:#10151d;border:1px solid #232c3a;border-radius:14px;padding:18px 20px;margin-top:8px"><h3 style="margin:0 0 8px;font-size:1.15em">App feedback</h3><p style="margin:0 0 8px;line-height:1.5">Questions about the app, or something not working? Email us at <a href="mailto:'.concat(CONTACT_EMAIL, '">').concat(CONTACT_EMAIL, '</a>.</p><p style="margin:0 0 12px;line-height:1.5">Or tell us what you think &mdash; scan the code with your phone, or <a href="').concat(FEEDBACK_FORM_URL, '" target="_blank" rel="noopener">open the feedback form</a>.</p><div id="fbqr" style="background:#fff;border-radius:10px;padding:12px;display:inline-block;line-height:0" aria-label="QR code for the feedback form"></div></div>');
+  function renderFeedbackQR() {
+    const c = document.getElementById("fbqr");
+    if (!c) return;
+    const draw = () => {
+      try {
+        if (!window.qrcode) return;
+        const qr = qrcode(0, "M");
+        qr.addData(FEEDBACK_FORM_URL);
+        qr.make();
+        c.innerHTML = qr.createSvgTag(5, 8);
+      } catch (e) {
+        c.innerHTML = '<a href="' + FEEDBACK_FORM_URL + '" target="_blank" rel="noopener">Open the feedback form</a>';
+      }
+    };
+    if (window.qrcode) {
+      draw();
+      return;
+    }
+    const sc = document.createElement("script");
+    sc.src = "qrgen.js";
+    sc.onload = draw;
+    sc.onerror = () => {
+      c.innerHTML = '<a href="' + FEEDBACK_FORM_URL + '" target="_blank" rel="noopener">Open the feedback form</a>';
+    };
+    document.head.appendChild(sc);
+  }
   function hubGo(k) {
     S.click();
     if (k === "main") return hideHome(), open(ROOT, "all");
@@ -1773,9 +1802,10 @@ var __spreadValues = (a, b) => {
       $("#arena").innerHTML = "";
       $("#sec2").textContent = "Thank you for supporting the collection";
       $("#grid").className = "support-grid";
-      $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link sup sup-'.concat(s.name.toLowerCase(), '" href="').concat(s.url, '" target="_blank" rel="noopener" aria-label="').concat(s.name, ' (opens in a new tab)"><span class="sup-logo">').concat(s.logo, '</span><span class="sup-nm">').concat(s.name, "</span><small>").concat(s.sub, "</small></a>")).join("");
+      $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link sup sup-'.concat(s.name.toLowerCase(), '" href="').concat(s.url, '" target="_blank" rel="noopener" aria-label="').concat(s.name, ' (opens in a new tab)"><span class="sup-logo">').concat(s.logo, '</span><span class="sup-nm">').concat(s.name, "</span><small>").concat(s.sub, "</small></a>")).join("") + FEEDBACK_HTML;
       status("");
       menu2();
+      renderFeedbackQR();
     }
   }
   const HUBH = { main: "#/all", arena: "#/newarrivals", readfirst: "#/readfirst", genres: "#/genres", support: "#/supportus", people: "#/people", mylist: "#/mylist", search: "#/search" };
@@ -4684,7 +4714,7 @@ var __spreadValues = (a, b) => {
       const sem = semanticSearch(q);
       if (sem.length) {
         const picks = sem.slice(0, 36).map((x) => ({ f: x.item, why: x.why }));
-        showOptimus(picks, "I searched the vault for \u201C".concat(q, "\u201D and picked ").concat(picks.length, " fan edits for you!"));
+        showOptimus(picks, "I searched the vault for \u201C".concat(q, "\u201D and picked ").concat(picks.length, " fan edits for you! Text match only. Optimus (Gemini) did not answer this request."));
       } else {
         $("#sec2").textContent = "Text match only. Optimus (Gemini) did not answer.";
         searchPage(q);

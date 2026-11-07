@@ -56,12 +56,12 @@
       "source_url": "https://dai.ly/k7oTN5YRyQ43MLweFpb"
     },
     "pt:i:a76a2182c121": {
-      "state": "playable",
-      "detail": "Metadata lists EP01 - Night of the Sentinels.mp4 (video/mp4). Range request HTTP 206.",
-      "browser_play": true,
-      "kodi_play": true,
-      "play_url": "https://archive.org/download/x-men-the-animated-series-1080p-ai-upscale_202204/EP01%20-%20Night%20of%20the%20Sentinels.mp4",
-      "mime": "video/mp4",
+      "state": "page_only",
+      "detail": "Not the catalogued title: the linked archive item is X-Men EP01 Night of the Sentinels, not the What If episodes named here. Kept as a page link only; no Play.",
+      "browser_play": false,
+      "kodi_play": false,
+      "play_url": "",
+      "mime": "",
       "http": 206,
       "checked_via": "archive.org metadata API + Range GET",
       "id": "pt:i:a76a2182c121",

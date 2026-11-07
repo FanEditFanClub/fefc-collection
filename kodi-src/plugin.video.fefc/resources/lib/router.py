@@ -15,6 +15,8 @@ from . import mylist as mylist_mod
 
 ADDON = xbmcaddon.Addon()
 PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
+CONTACT_EMAIL = 'faneditfanclub@gmail.com'
+FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform'
 
 
 
@@ -378,7 +380,7 @@ class Router:
         nf = nv = 0
         if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
             tile = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
-            self.add_folder('01 - Testing', tile, 'App-only provider links. Not verified playable films. 0 verified videos.', landscape=tile, action='folder', id='pt:testing')
+            self.add_folder('01 - Testing', tile, 'App-only provider links. 2 verified videos.', landscape=tile, action='folder', id='pt:testing')
         if not page:   # Support Us / Read First docs in this folder, like the web app's tiles
             seen_kind = set()
             for did, dname, kind in (m.get('docs') or {}).get((m['items'].get(fid) or [0, 0, 0, ''])[3] or fid, []):
@@ -727,9 +729,10 @@ class Router:
                 'This is the Kodi version of the FEFC app. The collection is free; support us from the Support Us tile.'
                 '\n\nFEFC is an unofficial community app built on Kodi (GPL-2.0-or-later). Not affiliated with the Kodi Foundation.'
                 % (label, xbmc.getInfoLabel('System.BuildVersion').split(' ')[0], ADDON.getAddonInfo('version'), _base()))
+        info += '\n\nQuestions or feedback? Email %s, or choose Give feedback below to scan a code.' % CONTACT_EMAIL
         while True:
-            k = dlg.select('About FEFC', ['Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Close'])
-            if k < 0 or k == 5:
+            k = dlg.select('About FEFC', ['Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Give feedback', 'Close'])
+            if k < 0 or k == 6:
                 break
             try:
                 if k == 0:
@@ -749,13 +752,25 @@ class Router:
                     dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
                 elif k == 3:
                     dlg.textviewer('Terms of Use', self._page_text('/terms.html'))
-                else:
+                elif k == 4:
                     with xbmcvfs.File('special://xbmc/FEFC-NOTICE.txt') as f:
                         dlg.textviewer('Open-source notices', f.read())
+                elif k == 5:
+                    self.feedback()
             except Exception as e:
                 dlg.notification('FEFC', 'Could not load: %s' % str(e)[:60], xbmcgui.NOTIFICATION_ERROR, 4000)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
+    def feedback(self):
+        """Feedback form QR (same remote-QR pattern as the Support and link windows)."""
+        qr_path = ('https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=24&format=png&color=000000&bgcolor=ffffff'
+                   '&data=%s&_=%d' % (quote_plus(FEEDBACK_FORM_URL), int(time.time() * 1000)))
+        lines = ['Give feedback on the FEFC app',
+                 'Scan the code with your phone to open the feedback form.',
+                 'Or email us: %s' % CONTACT_EMAIL,
+                 FEEDBACK_FORM_URL.replace('https://', '')]
+        LinkWindow(lines, qr_path).doModal()
 
     def mylist_toggle(self):
         m = _model()
