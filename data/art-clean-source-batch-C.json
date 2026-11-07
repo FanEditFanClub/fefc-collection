@@ -1,0 +1,168 @@
+{
+  "v": 1,
+  "batch": "C",
+  "method": "clean_source_still",
+  "items": [
+    {
+      "folderId": "1bUoDRYrk342eDUq7PN1AN7TSklUFhpZk",
+      "title": "The Planet of The Apes",
+      "method": "clean_source_still",
+      "source_page_url": "https://picmasa.com/explore/marc-singer-planet-of-the-apes",
+      "media_url": "https://www.heyuguys.com/images/2014/06/dawn-apes-still-2.jpg",
+      "sha256": "73626a7de8758d331062452853d81d934a839b92a4189aa1782812587ed37764",
+      "dimensions": "1280x720",
+      "inspection": "Caesar standing in the ape village (Dawn of the Planet of the Apes still); clean, no text, no watermark, no logo. Source 2202x1152."
+    },
+    {
+      "folderId": "1GBpKbZQZJjaZLbLFkFl4t-UcosDxKnMy",
+      "title": "The Twilight Zone",
+      "method": "clean_source_still",
+      "source_page_url": "https://screenrant.com/the-twilight-zone-reboot-new-series-explained",
+      "media_url": "https://static0.srcdn.com/wordpress/wp-content/uploads/2025/12/rod-serling-in-front-of-the-swirling-twilight-zone-vortex.jpg?w=1600&h=900&fit=crop",
+      "sha256": "77729bfde8c10b4a705f282e92ea38faf108a1a6b3015706ce0c8e69789a6d35",
+      "dimensions": "1280x720",
+      "inspection": "Rod Serling close-up against the iconic black-and-white spiral; clean, no text, no watermark. Refined-query pick after the first candidate turned out to be a Back to the Future still. Source 1600x900."
+    },
+    {
+      "folderId": "1OBe2y6Ic36Enz01WKa9E1c8cRWXbkmNn",
+      "title": "The Witcher",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.kinonews.ru/shot166296/",
+      "media_url": "https://www.kinonews.ru/insimgs/2019/shotimg/shotimg90850_28.jpg",
+      "sha256": "aa4b305d8a5c9cf5e27603f6576b016371577bf8b1905fa4524a1c51d2eea5bc",
+      "dimensions": "1280x720",
+      "inspection": "Geralt standing in a misty medieval town street; clean, no text, no watermark. Source 1500x1000."
+    },
+    {
+      "folderId": "1exX9K-gpzUJm2p3lX5q8tkAxGdlD881M",
+      "title": "Twisted Metal",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.cbr.com/twisted-metal-release-window-new-trailer/?pubDate=20250214",
+      "media_url": "https://static0.cbrimages.com/wordpress/wp-content/uploads/2025/02/twisted-metal-on-peacock-1.jpg?q=49&fit=contain&w=825&h=440&dpr=2",
+      "sha256": "5c7bb9c38c020176557e57b0b26d33aa984b373248e64a4d29da367566ccd0dd",
+      "dimensions": "1280x720",
+      "inspection": "Key art: John Doe and Quiet in front of Sweet Tooth in his ice-cream truck under pink smoke; clean, no text, no watermark. Source 1650x825."
+    },
+    {
+      "folderId": "1OV2EjfA17__o1Dg8T4f6Qkpq2mzSme4F",
+      "title": "Vikings",
+      "method": "clean_source_still",
+      "source_page_url": "https://ifilmthings.com/where-was-vikings-filmed/",
+      "media_url": "https://ifilmthings.com/wp-content/uploads/2023/10/Where-Was-Vikings-Filmed-Backdrop-1200x675.jpeg",
+      "sha256": "248915ff8db73c65c1a380cdd32be37bc898ea7d3184b1e8cea0722b7f81b315",
+      "dimensions": "1280x720",
+      "inspection": "Ragnar, Lagertha and warriors wading ashore through blood-red water; clean, no text, no watermark. Fallback after the first candidate carried a large VIKINGS title logo. Source 1200x675."
+    },
+    {
+      "folderId": "1fdQEPQotiPn6XfE3SmIIBJzuhW9TA2Il",
+      "title": "Wipeout",
+      "method": "clean_source_still",
+      "source_page_url": "https://press.wbd.com/na/image/wipeout-11?language_content_entity=en",
+      "media_url": "https://static.cdn.turner.com/styles/scale_792/s3/2022-01/wipeout_9.jpg?itok=v01LtBx8",
+      "sha256": "16fff39dcf6126cd9233bac477060f8048d67538472098096a4ef576db990bcb",
+      "dimensions": "1280x720",
+      "inspection": "Official press still: hosts and two contestants celebrating on the winner's platform on the course; no overlaid text or watermark. Note: giant yellow W letters are in-scene set dressing, and a small WIPEOUT wordmark is on one contestant's vest. Source 1584x1056."
+    },
+    {
+      "folderId": "1u6Qqt4LGi07EMOiqpJtCJ7TYQQyNHI4j",
+      "title": "X-Men",
+      "method": "clean_source_still",
+      "source_page_url": "https://tuimdb.com/movies/title/backdrops/?uid=385&imageLanguage=xxxx",
+      "media_url": "https://tuimdb.com/movies/backdrops/69c6f8815350ccd49c71e7ba.jpg",
+      "sha256": "3a917305f636bb8cf0ce5a271f2dc9cc7f33466af4cda09c932e120c845e80e8",
+      "dimensions": "1280x720",
+      "inspection": "Wolverine, Jean Grey and Mystique amid a ruined bridge battle; clean, no text, no watermark. Source 2560x1440."
+    },
+    {
+      "folderId": "1-ElARRrrbG2K0IcHJvvErCkjU-y6Bwpw",
+      "title": "Marvel",
+      "method": "clean_source_still",
+      "source_page_url": "https://movieweb.com/",
+      "media_url": "https://static0.moviewebimages.com/wordpress/wp-content/uploads/2024/05/avengers-endgame-4.jpg?q=49&fit=contain&w=1920&h=1080&dpr=2",
+      "sha256": "60482d3589707b60ca079af0abf0eab2498820482dffac6b41d0e50c59188162",
+      "dimensions": "1280x720",
+      "inspection": "Avengers: Endgame final-battle still \u2014 armies pouring through Doctor Strange's portals; clean, no text, no watermark. Chose the portals battle rather than the obvious Avengers group shot. Source 1920x1080."
+    },
+    {
+      "folderId": "13EXMjh2IT68CZ6ji2vl2Hudeb8-R9QKW",
+      "title": "Solar Opposites and Rick and Morty",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.disappointmentmedia.com/reviews/solar-opposites-a-funny-sitcom-parody-from-the-people-behind-rick-and-morty",
+      "media_url": "https://www.disappointmentmedia.com/uploads/4/7/9/1/47919861/so-104-still-05-2_orig.jpg",
+      "sha256": "c7ac64a9d744c332bc066b94163f8d8fd1c015a5b7c437e259374b9ecc796093",
+      "dimensions": "1280x720",
+      "inspection": "Solar Opposites alien family (Korvo, Terry, Yumyulack, Jesse) together at sunset in the neighbourhood; clean, no text, no watermark. Fallback after the first candidate had SOLD/FOR SALE signs and a TV MA badge. Source 1100x619."
+    },
+    {
+      "folderId": "1GFaMD67zid0soscK924SiUlAuku1Bhn-",
+      "title": "A Nightmare on Elm Street - The Baliscon Cuts",
+      "method": "clean_source_still",
+      "source_page_url": "https://alphacoders.com/a-nightmare-on-elm-street-(1984)-wallpapers",
+      "media_url": "https://images8.alphacoders.com/635/thumbbig-635800.webp",
+      "sha256": "aa884aeb560f4e387b2fd074a906997b8ecc7eb3d4a4348f074bcb85bd6c192d",
+      "dimensions": "1280x720",
+      "inspection": "Freddy Krueger silhouetted with arms outstretched in a dark blue alley (1984 film); clean, no text, no watermark. NOTE: source is only 600x375, so the 1280x720 output is a ~2.1x upscale and will look softer than the others. Source 600x375."
+    },
+    {
+      "folderId": "1ayPbduMJplJjgIWXkLxN9q9qqBrBFkKJ",
+      "title": "Alien Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.inzion.com/item/alien",
+      "media_url": "https://image.tmdb.org/t/p/w1920/9kDqbA4mhC0Mw17x9dThZDaOwBX.jpg",
+      "sha256": "3a596668f300a05f6a6b92c844926daecfa51eff9834eaa677008a84d59302ba",
+      "dimensions": "1280x720",
+      "inspection": "Alien (1979): the Nostromo crew in spacesuits discovering the derelict ship and the Space Jockey; clean, no text, no watermark. Fallback after the first candidate had a green ALIEN title logo. Source 1920x1080."
+    },
+    {
+      "folderId": "1cxH01iCkqccOGYHnJ2Yee9NYH6BPQuMC",
+      "title": "Ash vs Evil Dead",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.neogaf.com/threads/bruce-campbell-won%E2%80%99t-be-back-for-the-new-evil-dead-movie-evil-dead-now-new-film-might-focus-on-female-protagonist.1546410/",
+      "media_url": "https://cdn.vox-cdn.com/thumbor/uzaSNd4lHZbXssmqZcsObt8CJM8=/0x0:1920x1080/920x613/filters:focal(760x216:1066x522):format(webp)/cdn.vox-cdn.com/uploads/chorus_image/image/66908990/ash_vs_evil_dead_season_2_shows_background_01.0.jpg",
+      "sha256": "13daa5c13176af62dce83dc0d6398dfbe42920cb991e7fd1b41bfb3598a408d3",
+      "dimensions": "1280x720",
+      "inspection": "Ash with his chainsaw at a night fairground; no overlaid text or watermark. Note: SMASH/M lettering on the shipping containers behind him is in-scene set painting, not an overlay. Source 920x613."
+    },
+    {
+      "folderId": "1qOV2zM-fgsTd43-co9OPqNlaU4qkDDsP",
+      "title": "Backrooms",
+      "method": "clean_source_still",
+      "source_page_url": "https://clarkaudio.com/backrooms-vst",
+      "media_url": "https://clarkaudio.com/wp-content/uploads/2026/08/Backrooms-Background-scaled.webp",
+      "sha256": "9865b7275ee94568a407d16a5e65f07a1fad744b6e07b6e7729916c75a88bd71",
+      "dimensions": "1280x720",
+      "inspection": "Classic Backrooms liminal space: empty yellow-wallpapered rooms, fluorescent ceiling lights, yellow carpet; clean, no text, no watermark. Source 2560x1440."
+    },
+    {
+      "folderId": "18dQ5-zypr8oyqm1dNTCqtlT0D5E6AmB_",
+      "title": "Batman Noir",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.fancaps.net/",
+      "media_url": "https://cdni.fancaps.net/file/fancaps-movieimages/8001633.jpg",
+      "sha256": "e2efddf0d2b84253a3108cb53b154fee3d02d82a67aad89676ccf33dfe62cca6",
+      "dimensions": "1280x720",
+      "inspection": "The Batman (2022): Batman silhouetted in profile against a dusk Gotham skyline; clean, no text, no watermark. NOTE: source had baked-in black letterbox bars; bars were trimmed before the 16:9 center-crop so the output is full-frame. Source 3840x2160; letterbox bars trimmed (276-1884 of 2160px)"
+    },
+    {
+      "folderId": "1Se9u8fANVswJGZTIjpr-E9RuWlgjC18-",
+      "title": "Neon Genesis Evangelion",
+      "method": "clean_source_still",
+      "source_page_url": "https://geekculture.co/spice-up-your-video-calls-with-anime-backgrounds-from-evangelion-shonen-jump-and-more/",
+      "media_url": "https://geekculture.co/wp-content/uploads/2020/04/evangelion-background.jpg",
+      "sha256": "66feb47d658fac87fd4e8e5b03ba3f9283bc2a14b0cd00bd4b9440fc3fa2a072",
+      "dimensions": "1280x720",
+      "inspection": "Genuine anime still: EVA-01 looming in its cage above Shinji, Ritsuko and Misato on the gantry; clean, no legible text (tiny in-scene Japanese signs only). Fallback chosen over a painted fan-art wallpaper; 2.4:1 source, center crop keeps EVA-01. Source 1200x500."
+    },
+    {
+      "folderId": "1zLke6v5I8K2ppbWO1sqv7YPZYTA1AGAa",
+      "title": "Robocop Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.listal.com/viewimage/19705178",
+      "media_url": "https://ilarge.lisimg.com/image/19705178/1118full-robocop-screenshot.jpg",
+      "sha256": "c9da414b6d524e1b8d16e460c03c9d961ece234029321c6b9f6f76986f43abfe",
+      "dimensions": "1280x720",
+      "inspection": "Real RoboCop (1987) film screenshot: RoboCop walking through water at the steel mill, gun raised; clean, no text, no watermark. Fallback chosen over the first candidate, which was a painted illustration rather than a still. Source 1118x603."
+    }
+  ],
+  "failed": []
+}

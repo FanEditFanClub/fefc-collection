@@ -1,0 +1,168 @@
+{
+  "v": 1,
+  "batch": "A",
+  "method": "clean_source_still",
+  "items": [
+    {
+      "folderId": "15rUF6xKW3dECsvYTB27dHUdHrod09S0w",
+      "title": "Agents of S.H.I.E.L.D.",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.serializd.com/review/29588192",
+      "media_url": "https://serializd-tmdb-images.b-cdn.net/t/p/original/5NkmOGIPFemBVzAMiznvhNPBROO.jpg",
+      "sha256": "9d3bbe2e774e162ec217f0385465665e0c155a350822d1617c56dfe80b2b341a",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Coulson and the team standing aboard the Bus. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1bxXHjG7jHios-J4P22-eYS8X0vBC0Lkr",
+      "title": "Buffy The Vampire Slayer",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.serializd.com/review/60469352",
+      "media_url": "https://serializd-tmdb-images.b-cdn.net/t/p/original/yRaLZCHG2wvagDY6hPDo6mXqITc.jpg",
+      "sha256": "b4c005eae322b21cee4476780cfaf43b016a6b4f07586817e05544f4f85c2239",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Buffy centre frame with Spike and the potentials in the Summers house. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1ukNhvKnqG3zbFVaCM7nScQbx1ppBHKXG",
+      "title": "Deadpool",
+      "method": "clean_source_still",
+      "source_page_url": "https://dailysuperheroes.com/movies/deadpool-3-brings-in-new-writers/",
+      "media_url": "https://dailysuperheroes.com/wp-content/uploads/2020/11/Deadpool2DS-Cropped.jpg",
+      "sha256": "7d7b4a39bfb3285e51f6d839bfe748d4bace80e25195918e7847bf9b5ffd2464",
+      "dimensions": "1280x720",
+      "inspection": "Clean close-up still: Deadpool (Deadpool 2) looking up at camera beside a marquee, katanas on back. No text, no logos, no watermark. High-res 3050px source; full head in frame after 16:9 crop."
+    },
+    {
+      "folderId": "1puED6mjB_70tfk9tbgjFGkUSnaOvgw7m",
+      "title": "Demon Slayer",
+      "method": "clean_source_still",
+      "source_page_url": "https://movietvpro.vercel.app/movie/1490213-demon-slayer-kimetsu-no-yaiba-entertainment-district-decisive-battle-arc",
+      "media_url": "https://image.tmdb.org/t/p/original//gtQaq8HNSJByLXqs8vwDHabnP4p.jpg",
+      "sha256": "108d43c474b13511f4ca48e7ab79184314b1ddc85a7c960e7ad974a9ec681d05",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Tanjiro carrying Nezuko through a burning street at night. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1Ktg1s35vkuamHLcxAeU4NNyKTb45cgo_",
+      "title": "Fallout",
+      "method": "clean_source_still",
+      "source_page_url": "https://videostape.com/am/tv/106379/fallout",
+      "media_url": "https://image.tmdb.org/t/p/original/svTJXiA0AQ0zHlzlcrnYVXttA4U.jpg",
+      "sha256": "193f18a81bae360bcd517b87e078de4ba11dbf904fd263f16be3c0986e25ce04",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Maximus and Lucy in Vault 33 suits on a wasteland street. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1_aE37s2YSRGl0WjA-x05pKDKrAkB3cxI",
+      "title": "Flash Gordon",
+      "method": "clean_source_still",
+      "source_page_url": "https://hpph.co.uk/films/flash-gordon",
+      "media_url": "https://hpph.ams3.cdn.digitaloceanspaces.com/4578/conversions/Flash02-wide.webp",
+      "sha256": "41f38ec76d418026646dbda397032637da7b96a5c6092e05db65cea09a835e9d",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Flash in red singlet with Dale and Vultan in Ming's throne room. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1jcME2Ds7oGGbkhzMIyfxAYXrcHdtMS-b",
+      "title": "Godzilla (2014) & Godzilla: King of The Monsters",
+      "method": "clean_source_still",
+      "source_page_url": "https://postcredit.tv/collection/535313",
+      "media_url": "https://image.tmdb.org/t/p/w1280//psZ5CETZoaq2VRnxk95HuxOnI5D.jpg",
+      "sha256": "af2e144eab66a1c6aa50499864af116aa0bd4a287b7b6f7da6cc129c5418e1d4",
+      "dimensions": "1280x720",
+      "inspection": "Clean 2014 key-art backdrop: Godzilla towering over the burning San Francisco skyline (Transamerica Pyramid visible). No text, no logos, no watermark. Covers both 2014 and King of the Monsters folder."
+    },
+    {
+      "folderId": "1Ouxy2bzfVzoI6DVmrJ99rRrHz9LZhdkh",
+      "title": "Godzilla Kong - Brave New World",
+      "method": "clean_source_still",
+      "source_page_url": "https://wallpapers.com/godzilla-vs-kong-background",
+      "media_url": "https://wallpapers.com/images/hd/godzilla-vs-kong-2560-x-1440-background-wcakztoksb14z82u.jpg",
+      "sha256": "f7736ad0028ae6452ebff243281b77f591716fc6f1f81913379a570d88612208",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Godzilla firing atomic breath at Kong in a ruined city at night. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "19_hB-nYF1B4SUKrU-60p9nNLbpzaPHeV",
+      "title": "Halloween (1978)",
+      "method": "clean_source_still",
+      "source_page_url": "http://io9.com/#!5760493/taste-test-love-potions-from-the-internet",
+      "media_url": "https://gizmodo.com/app/uploads/2025/09/halloween-myers-1600x1067.jpg",
+      "sha256": "4b41da1d7caa2d1b1607165c76d6b955629bfe7cfec47d6694e16fb985bb1713",
+      "dimensions": "1280x720",
+      "inspection": "Iconic black-and-white still: Michael Myers silhouetted at the top of the stairs. No text, no logos, no watermark. Note: 16:9 centre crop trims the very bottom of his boots; figure otherwise fully in frame."
+    },
+    {
+      "folderId": "1fVg-OeUuaBLiSz7meqiff_jhbN4rwZvN",
+      "title": "Harry Potter",
+      "method": "clean_source_still",
+      "source_page_url": "https://picmasa.com/post/B4E99B361169C822EEEE6C5487328DE8A1FAD84C/Harry-Potter-And-The-Goblet-Of-Fire-Character",
+      "media_url": "https://image.tmdb.org/t/p/original/sCb8oIYzJQbRxSBWHhilDcNpe0W.jpg",
+      "sha256": "ae992a122de9eee71bde28ab15ce2f0f37317f151ecd718c73bf69e4804f3a2a",
+      "dimensions": "1280x720",
+      "inspection": "Clean Goblet of Fire key-art backdrop: Harry, Hermione and Ron with Fleur, Cedric and Viktor at the lake, Hogwarts behind. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1_1nV4MSnyPICHIsb2jswOSLkkkevAvUa",
+      "title": "Indiana Jones",
+      "method": "clean_source_still",
+      "source_page_url": "https://theiptvreseller.com/magnumott/movies/vod-netherland-587/nl-indiana-jones-and-the-raiders-of-the-lost-ark-1981-744140/",
+      "media_url": "https://image.tmdb.org/t/p/w1280_and_h720_multi_faces/c7Mjuip0jfHLY7x8ZSEriRj45cu.jpg",
+      "sha256": "9682c243ed065603bca2fa719bb0256dc67d293864f8b6686e8b3d2511f56446",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Indy swapping the sandbag for the golden idol in Raiders of the Lost Ark. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1WaZDoZbtziAFWGoCGPGn_fmm8ka0hA8s",
+      "title": "Iron Fist",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.comingsoon.net/movies/news/975531-iron-fist-images-released-by-netflix",
+      "media_url": "https://www.comingsoon.net/wp-content/uploads/sites/3/gallery/iron-fist-season-2/203_kick_203_unit_04433r.jpg",
+      "sha256": "d2b32ef79491fdb888724d657e8b1afddb88c9a9824d6e2b91d5d729e7f9fe13",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Danny Rand in hoodie and mask in a warehouse. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "11X9Ra52Y2Wgn88Cd70_Ph3OinE02WarD",
+      "title": "It: Welcome to Derry",
+      "method": "clean_source_still",
+      "source_page_url": "",
+      "media_url": "https://static0.srcdn.com/wordpress/wp-content/uploads/2019/09/it-chapter-two-Cropped.jpg?q=49&fit=contain&w=825&h=440&dpr=2",
+      "sha256": "3932d51e84535d373c2869aa2806efba0ac86dbb4b4fd51331f41ec86e5e6009",
+      "dimensions": "1280x720",
+      "inspection": "Clean still from It Chapter Two (same Pennywise universe; no text-free Welcome to Derry stills found - all backdrops were the HBO key art with title text): the adult Losers Club in the woods. No text, no logos, no watermark. Search result carried no page URL."
+    },
+    {
+      "folderId": "1o0AOf7gbOCqIOqILMzLbkVvLNamFxKNy",
+      "title": "Love, Death & Robots",
+      "method": "clean_source_still",
+      "source_page_url": "",
+      "media_url": "https://images.justwatch.com/backdrop/119494965/s1440/love-death-and-robots",
+      "sha256": "f73ddda1922a4c80272bd5e0212d0ddabfee6e720ccea5cca95dbef4f8e14730",
+      "dimensions": "1280x720",
+      "inspection": "Clean still from the Three Robots episode: XBOT 4000 and K-VRC at a diner table. No promo text, no logos, no watermark (tiny XBOT 4000 label on the robot chest is in-world detail). Search result carried no page URL."
+    },
+    {
+      "folderId": "1Y4aJiq4ONR2qScEjyquMbzO4uC9oP3C2",
+      "title": "Marvel",
+      "method": "clean_source_still",
+      "source_page_url": "",
+      "media_url": "https://static0.cbrimages.com/wordpress/wp-content/uploads/2023/02/avengers-endgame-portal-scene.jpg",
+      "sha256": "ea89bda777bcda0901f9b0fced1382d146f70f3777571ec6a843a759f50fd697",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Avengers Endgame portals scene - armies charging through sling-ring portals, Giant-Man at right, Scarlet Witch at left. No text, no logos, no watermark. Search result carried no page URL."
+    },
+    {
+      "folderId": "1hXtNwD1D-OmQxXIEnOFDSWhPRdypzCMd",
+      "title": "Naruto",
+      "method": "clean_source_still",
+      "source_page_url": "https://moviewiser.com/us/movie/118406",
+      "media_url": "https://image.tmdb.org/t/p/w780//sKh3GJ7eMStObW5BsgkztTmpg5H.jpg",
+      "sha256": "fe2bc39d18ac0ce94b122a6278852d3476f40b27cd6c12b4f946481933909abe",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Hokage Naruto with shadow clones mid-battle. No text, no logos, no watermark. Source is 780px wide so the 1280 output is a mild upscale, slightly soft."
+    }
+  ],
+  "failed": []
+}

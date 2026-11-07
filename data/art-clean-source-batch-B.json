@@ -1,0 +1,168 @@
+{
+  "v": 1,
+  "batch": "B",
+  "method": "clean_source_still",
+  "items": [
+    {
+      "folderId": "1HNITwajPadGoFRDMgJ_NCM-BbCZl0WRz",
+      "title": "Neon Genesis Evangelion",
+      "method": "clean_source_still",
+      "source_page_url": "https://cathleen.cauliflower.eu.org/neon-genesis-evangelion-series-vs-movies.html",
+      "media_url": "https://image.tmdb.org/t/p/original/iJK9oirAnsA7MMANLyFTnQdbv1Y.jpg",
+      "sha256": "031b13c1255b15e0062e19ab48ca563614906ae415f35abdeb1479ef13a93738",
+      "dimensions": "1280x720",
+      "inspection": "End of Evangelion still: Shinji kneeling over Asuka on the red LCL sea under a starry sky, two Evas crucified in the distance. Clean, no text/logos. TMDB original 1920x1080."
+    },
+    {
+      "folderId": "18py1chaPLhHa-8M3PoqXxu4Y6D6qSoeZ",
+      "title": "Parasyte: The Grey",
+      "method": "clean_source_still",
+      "source_page_url": "https://1428elm.com/screams-you-slept-on-horror-series-worth-the-binge-part-1",
+      "media_url": "https://images2.minutemediacdn.com/image/upload/c_crop,x_0,y_0,w_2945,h_1656/c_fill,w_1440,ar_1440:810,f_auto,q_auto,g_auto/images/ImageExchange/mmsport/304/01k1ke9jmezenqva0nbj.jpg",
+      "sha256": "1ca8dfb06640eb5503dbd18d644a234e04a66877b4295fd1696ea01b75a6e8df",
+      "dimensions": "1280x720",
+      "inspection": "Moody still: suited Grey-team man standing before a crowd in a lamplit hall, blood-red parasyte symbol on the wall behind. Clean, no text/logos. Note: dark/atmospheric shot, no lead character visible."
+    },
+    {
+      "folderId": "1yQvTgfl9HYA-85gzqkIDIxSboRM_7Yqt",
+      "title": "Predator",
+      "method": "clean_source_still",
+      "source_page_url": "https://soyuz.ru/articles/hischnik-s-arnoldom-shvartseneggerom-spetsoperatsiya-po-gollivudski",
+      "media_url": "https://soyuz.ru/public/uploads/files/5/7484894/1100x610_2022072720401750f1900fca.jpg",
+      "sha256": "de7970d8ad2cfcc5be3cb66ae367c21e6af63a6ebdf1adf86f333c7401cd6355",
+      "dimensions": "1280x720",
+      "inspection": "Clean jungle still: Dutch (Schwarzenegger) holding his weapon, two team members behind. No text/logos. 1100x610."
+    },
+    {
+      "folderId": "1IWb5XYTikkZlhNzSWXIL3mM_vaYzp3Gv",
+      "title": "Rick & Morty",
+      "method": "clean_source_still",
+      "source_page_url": "https://wallpapers.com/rick-and-morty-zoom-background",
+      "media_url": "https://wallpapers.com/images/featured/rick-and-morty-zoom-background-4eeuh4ix8mu9j9hv.jpg",
+      "sha256": "ff9260ebb6fe2c942f4c45585f7d48aed98a9b83691cb7018a94903c0ccd6b56",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Rick lounging in a hover chair eating while Morty climbs a rock face on an alien planet. Both leads, no text/logos. Source 900x600, mild upscale."
+    },
+    {
+      "folderId": "1sDaruqyPmafHhI7LiPWoxPqeIpp8wXNH",
+      "title": "RoboCop",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.listal.com/viewimage/19705178",
+      "media_url": "https://ilarge.lisimg.com/image/19705178/1118full-robocop-screenshot.jpg",
+      "sha256": "c9da414b6d524e1b8d16e460c03c9d961ece234029321c6b9f6f76986f43abfe",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: RoboCop walking through shallow water at the steel mill, gun raised. No text/logos. 1118x603."
+    },
+    {
+      "folderId": "1H_yQ-y0wg3aAmRXWq8esvBSLLrJnyKQJ",
+      "title": "Rocky",
+      "method": "clean_source_still",
+      "source_page_url": "https://image.pmgstatic.com/cache/resized/w1080/files/images/film/photos/160/424/160424626_f484ca.jpg",
+      "media_url": "https://image.pmgstatic.com/cache/resized/w1080/files/images/film/photos/160/424/160424626_f484ca.jpg",
+      "sha256": "965de2fec8a761796d7035db94bfde6763d9d375ca973b581c4ef464f3019294",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Stallone as Rocky standing in the ring under a spotlight in US-flag shorts. No text/logos. Portrait 1080x1620 source, center-cropped to 16:9 (head/torso band). Note: search result carried no linking page; media URL recorded as source."
+    },
+    {
+      "folderId": "10Tobpc-1IOfmI-OysRC9aWJeM3IZjYWK",
+      "title": "Smallville",
+      "method": "clean_source_still",
+      "source_page_url": "https://allpeliculas.top/serie/smallville/temporada/8/capitulo/14",
+      "media_url": "https://image.tmdb.org/t/p/original/wFZEOlg6uELygrCCCa2j8zqFNQ1.jpg",
+      "sha256": "1293f4e591935849223205aef1589f95ffaca7f73d45beabdd325886d98df4fb",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Lois and Clark examining a Metropolis model in a toy shop. No text/logos. TMDB original 3000x1688."
+    },
+    {
+      "folderId": "1rfNRi5OpYmisrWdniYNCpIA9ZSynt9Cl",
+      "title": "Star Trek",
+      "method": "clean_source_still",
+      "source_page_url": "https://letterboxd.com/francis_h/film/star-trek/",
+      "media_url": "https://a.ltrbxd.com/resized/alternative-backdrop/4/3/8/6/0/tmdb/5RSJLvjCOUBrgdpKa9B8ksGU9QU-1200-1200-675-675-crop-000000.jpg?v=f6e35f1b3e",
+      "sha256": "d4f4b13ffb4cd772c54999d3fcca40ce2260662fe815b504c20291e9c335ad26",
+      "dimensions": "1280x720",
+      "inspection": "Clean still (2009 film): Spock and Kirk on the Enterprise bridge. No text/logos. 1200x675."
+    },
+    {
+      "folderId": "1EawyIt_A5UtV6AoilFD8M09ayzdWt3RZ",
+      "title": "Star Trek: Discovery",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.paramountplus.com/shows/star-trek-discovery/news/1007580/get-a-behind-the-scenes-look-at-star-trek-discovery-s-artful-production/",
+      "media_url": "https://wwwimage-us.pplusstatic.com/base/files/blog/474d3dfe0a3e1c56_dsc_production_1920.jpg?format=webp",
+      "sha256": "71a0e855c31a3ef4992cb277c4f48aa0c152a900698c1045a57bcf4df6f94b3e",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Burnham standing in the Discovery's spore-drive chamber. No text/logos. 1920x1080. Note: subject small/distant, set-heavy shot."
+    },
+    {
+      "folderId": "1CVIcE2m4dgmLQ8W5oCRyWZTXjgc7LOn4",
+      "title": "Star Trek: Picard",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.themarysue.com/star-trek-picard-reignited-my-childhood-love-of-william-riker/",
+      "media_url": "https://www.themarysue.com/wp-content/uploads/2023/04/Picard_308_TP_0124_01697_RT.jpg",
+      "sha256": "29eeab7deb708d71c8fec327ebedc8fdd4e54adf6f11eeafc9cb1befa592ce75",
+      "dimensions": "1280x720",
+      "inspection": "Clean still (S3E8): Riker seated inside a Borg lattice structure, light streaming through. No text/logos. Note: features Riker, not Picard himself."
+    },
+    {
+      "folderId": "1jZI-8uF_Zd6WsuBtl_YfNXlBbu48PjHS",
+      "title": "Star Trek: TOS (The Original Series)",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.mensjournal.com/entertainment/william-shatner-health-battle-star-trek",
+      "media_url": "https://www.mensjournal.com/.image/MjE1Mjg5MDg3MjIzOTMyMjcx/star-trek-the-original-series.jpg?profile=w828&x=50&y=50",
+      "sha256": "ccc2aeb7170dd15e5fa27105879b44775387261b28152df3ef11ba6e341c0f38",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Kirk holding a phaser rifle beside Yeoman Rand on a rocky planet surface. No text/logos. Source 828x621 (4:3), center-cropped to 16:9, mild upscale."
+    },
+    {
+      "folderId": "1LIPlim9yH2Oaeig-vu3sF86xlUo_9N_m",
+      "title": "Star Wars - Andor",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.starwars.com/andor-stills-gallery?page=4",
+      "media_url": "https://lumiere-a.akamaihd.net/v1/images/andor-episode-11-stills-14_dbb85b12.jpeg",
+      "sha256": "910b57d9cc80b3c68b27c87f8adbefcb4d450b338663b3cb8d72b3e9a1d985d0",
+      "dimensions": "1280x720",
+      "inspection": "Clean official still: Imperial Star Destroyer bridge, stormtroopers flanking officers at the viewport. No text/logos. 1920x804, sides cropped to 16:9."
+    },
+    {
+      "folderId": "1CAM87va1wgP_AOsVUVFWZDV3jnrTeUBg",
+      "title": "Star Wars - Obi-Wan Kenobi",
+      "method": "clean_source_still",
+      "source_page_url": "https://whatsondisneyplus.com/new-star-wars-obi-wan-kenobi-trailer-released/",
+      "media_url": "https://whatsondisneyplus.b-cdn.net/wp-content/uploads/2022/05/obi-wan-.jpg",
+      "sha256": "51a2203079f0964148666b2798f31576c9f48a3021b0a551ad506b90908b24d0",
+      "dimensions": "1280x720",
+      "inspection": "Clean 2022 series key art: hooded Ewan McGregor as Obi-Wan on Tatooine with the twin suns. No text/logos. 1668x981. Note: series key art, not a frame still; first candidate was Alec Guinness from A New Hope (wrong production) and was rejected."
+    },
+    {
+      "folderId": "1tExaXYuAGuoIx9Nbkownl1uVaHEkOtNi",
+      "title": "The Flash",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.serializd.com/review/15379666",
+      "media_url": "https://serializd-tmdb-images.b-cdn.net/t/p/original/HFr1zkORvKzYOKEaKdkmF1GKna.jpg",
+      "sha256": "de5edae3e7a834eb21f34ecaaedc7de4ed1f660527703027b19134964d132773",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Barry Allen in the Flash suit standing in an alley with another man. No text/logos. TMDB original 3000x1688."
+    },
+    {
+      "folderId": "1f61yaGwkNj7URPjYe6LcvAbIrvg55RnB",
+      "title": "The Man in The High Castle",
+      "method": "clean_source_still",
+      "source_page_url": "https://syfyprod.versantwebapps.com/syfy-wire/man-in-the-high-castle-season-4-trailer",
+      "media_url": "https://syfyprod.versantwebapps.com/sites/syfy/files/2019/10/the-man-in-the-high-castle-season-4-mithc_402_06851.v1_rgb.jpg",
+      "sha256": "a5b9a82c95229dde9596d0d89d43f65fae87e8d9e2d1cdbb906565c16bd225d7",
+      "dimensions": "1280x720",
+      "inspection": "Clean S4 still: Smith (Rufus Sewell) in Nazi uniform facing a scientist in the mirrored Nebenwelt chamber. No text/logos. 6000x4000 source."
+    },
+    {
+      "folderId": "1ZgZ0GQAFkH2ME1icLTUtI6Y5R7e2lUzY",
+      "title": "The Monsterverse (Godzilla/Kong franchise backdrop)",
+      "method": "clean_source_still",
+      "source_page_url": "http://probalt.co.uk/?p=739454212",
+      "media_url": "https://d32qys9a6wm9no.cloudfront.net/images/movies/backdrop/a6/b9d7b89e1bf41c4adfd844fe62ec2845_1280x720.jpg",
+      "sha256": "9ce87727890b7091e6bd791732af01cd82256e1f408fb6a4de8e88673007c871",
+      "dimensions": "1280x720",
+      "inspection": "Clean still (Godzilla: King of the Monsters): Godzilla firing his atomic breath skyward in a stormy sea. No text/logos. Already 1280x720."
+    }
+  ],
+  "failed": []
+}

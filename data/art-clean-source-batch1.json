@@ -1,0 +1,662 @@
+{
+  "v": 1,
+  "status": "clean-source-candidate; parent visually checked; not user-approved; not an AI edit",
+  "incorporated": 64,
+  "unprocessedExcludingManualOverrides": 64,
+  "manualOverridesExcluded": 3,
+  "note": "64 clean-source stills/backdrops for the folder covers whose AI edit was declined (policy). Sourced from public image search (TMDB, fanart, review sites, studio/distributor pages), preflighted, downloaded, visually verified clean (no trailer/promo text, no watermark), standardized to 1280x720 JPEG q92. Original trailer thumbnails remain at assets/covers/<folderId>.jpg. Candidates only — not user-approved.",
+  "limitations": [
+    "All 64 are clean-source stills/backdrops, not AI edits and not clean-source-verified film frames in every case; some are key art/backdrops rather than literal film stills. Compare before-after before accepting.",
+    "It: Welcome to Derry still is from It Chapter Two (same Pennywise universe) — no text-free Welcome to Derry backdrop was found; it is a stand-in, not a true Derry still.",
+    "Nightmare on Elm Street source was 600x375, so the 1280x720 output is a ~2.1x upscale and will look softer than the rest.",
+    "Star Trek: Picard still features Riker (S3E8), not Picard; Star Trek: Discovery still has Burnham small/distant; Parasyte: The Grey still is dark with no lead character visible.",
+    "Star Trek: TOS source was 828x621 (4:3) and Rick & Morty source 900x600, so mild upscale after the 16:9 crop; acceptable but the softest live-action files.",
+    "Sinners still is key-art style (posed against a giant orange sun) rather than a literal film frame; Office Space has small in-scene prop text on Milton's badge; Ash vs The Evil Dead still reads as Evil Dead II-era rather than specifically the TV series.",
+    "Batman Noir source had baked-in letterbox bars, trimmed before the standard 16:9 crop; Wipeout has in-scene set banners/wordmark; Ash vs Evil Dead has in-scene 'SMASH'/'M' set painting; Twisted Metal and X-Men are clean key art/backdrops rather than literal film frames.",
+    "Godzilla (2014) and Harry Potter stills are clean key-art backdrops rather than pure film stills.",
+    "No repository, Drive, sharing or source evidence overwritten. Originals preserved."
+  ],
+  "items": [
+    {
+      "folderId": "15rUF6xKW3dECsvYTB27dHUdHrod09S0w",
+      "title": "Agents of S.H.I.E.L.D.",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.serializd.com/review/29588192",
+      "media_url": "https://serializd-tmdb-images.b-cdn.net/t/p/original/5NkmOGIPFemBVzAMiznvhNPBROO.jpg",
+      "sha256": "9d3bbe2e774e162ec217f0385465665e0c155a350822d1617c56dfe80b2b341a",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Coulson and the team standing aboard the Bus. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1bxXHjG7jHios-J4P22-eYS8X0vBC0Lkr",
+      "title": "Buffy The Vampire Slayer",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.serializd.com/review/60469352",
+      "media_url": "https://serializd-tmdb-images.b-cdn.net/t/p/original/yRaLZCHG2wvagDY6hPDo6mXqITc.jpg",
+      "sha256": "b4c005eae322b21cee4476780cfaf43b016a6b4f07586817e05544f4f85c2239",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Buffy centre frame with Spike and the potentials in the Summers house. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1ukNhvKnqG3zbFVaCM7nScQbx1ppBHKXG",
+      "title": "Deadpool",
+      "method": "clean_source_still",
+      "source_page_url": "https://dailysuperheroes.com/movies/deadpool-3-brings-in-new-writers/",
+      "media_url": "https://dailysuperheroes.com/wp-content/uploads/2020/11/Deadpool2DS-Cropped.jpg",
+      "sha256": "7d7b4a39bfb3285e51f6d839bfe748d4bace80e25195918e7847bf9b5ffd2464",
+      "dimensions": "1280x720",
+      "inspection": "Clean close-up still: Deadpool (Deadpool 2) looking up at camera beside a marquee, katanas on back. No text, no logos, no watermark. High-res 3050px source; full head in frame after 16:9 crop."
+    },
+    {
+      "folderId": "1puED6mjB_70tfk9tbgjFGkUSnaOvgw7m",
+      "title": "Demon Slayer",
+      "method": "clean_source_still",
+      "source_page_url": "https://movietvpro.vercel.app/movie/1490213-demon-slayer-kimetsu-no-yaiba-entertainment-district-decisive-battle-arc",
+      "media_url": "https://image.tmdb.org/t/p/original//gtQaq8HNSJByLXqs8vwDHabnP4p.jpg",
+      "sha256": "108d43c474b13511f4ca48e7ab79184314b1ddc85a7c960e7ad974a9ec681d05",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Tanjiro carrying Nezuko through a burning street at night. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1Ktg1s35vkuamHLcxAeU4NNyKTb45cgo_",
+      "title": "Fallout",
+      "method": "clean_source_still",
+      "source_page_url": "https://videostape.com/am/tv/106379/fallout",
+      "media_url": "https://image.tmdb.org/t/p/original/svTJXiA0AQ0zHlzlcrnYVXttA4U.jpg",
+      "sha256": "193f18a81bae360bcd517b87e078de4ba11dbf904fd263f16be3c0986e25ce04",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Maximus and Lucy in Vault 33 suits on a wasteland street. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1_aE37s2YSRGl0WjA-x05pKDKrAkB3cxI",
+      "title": "Flash Gordon",
+      "method": "clean_source_still",
+      "source_page_url": "https://hpph.co.uk/films/flash-gordon",
+      "media_url": "https://hpph.ams3.cdn.digitaloceanspaces.com/4578/conversions/Flash02-wide.webp",
+      "sha256": "41f38ec76d418026646dbda397032637da7b96a5c6092e05db65cea09a835e9d",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Flash in red singlet with Dale and Vultan in Ming's throne room. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1jcME2Ds7oGGbkhzMIyfxAYXrcHdtMS-b",
+      "title": "Godzilla (2014) & Godzilla: King of The Monsters",
+      "method": "clean_source_still",
+      "source_page_url": "https://postcredit.tv/collection/535313",
+      "media_url": "https://image.tmdb.org/t/p/w1280//psZ5CETZoaq2VRnxk95HuxOnI5D.jpg",
+      "sha256": "af2e144eab66a1c6aa50499864af116aa0bd4a287b7b6f7da6cc129c5418e1d4",
+      "dimensions": "1280x720",
+      "inspection": "Clean 2014 key-art backdrop: Godzilla towering over the burning San Francisco skyline (Transamerica Pyramid visible). No text, no logos, no watermark. Covers both 2014 and King of the Monsters folder."
+    },
+    {
+      "folderId": "1Ouxy2bzfVzoI6DVmrJ99rRrHz9LZhdkh",
+      "title": "Godzilla Kong - Brave New World",
+      "method": "clean_source_still",
+      "source_page_url": "https://wallpapers.com/godzilla-vs-kong-background",
+      "media_url": "https://wallpapers.com/images/hd/godzilla-vs-kong-2560-x-1440-background-wcakztoksb14z82u.jpg",
+      "sha256": "f7736ad0028ae6452ebff243281b77f591716fc6f1f81913379a570d88612208",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Godzilla firing atomic breath at Kong in a ruined city at night. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "19_hB-nYF1B4SUKrU-60p9nNLbpzaPHeV",
+      "title": "Halloween (1978)",
+      "method": "clean_source_still",
+      "source_page_url": "http://io9.com/#!5760493/taste-test-love-potions-from-the-internet",
+      "media_url": "https://gizmodo.com/app/uploads/2025/09/halloween-myers-1600x1067.jpg",
+      "sha256": "4b41da1d7caa2d1b1607165c76d6b955629bfe7cfec47d6694e16fb985bb1713",
+      "dimensions": "1280x720",
+      "inspection": "Iconic black-and-white still: Michael Myers silhouetted at the top of the stairs. No text, no logos, no watermark. Note: 16:9 centre crop trims the very bottom of his boots; figure otherwise fully in frame."
+    },
+    {
+      "folderId": "1fVg-OeUuaBLiSz7meqiff_jhbN4rwZvN",
+      "title": "Harry Potter",
+      "method": "clean_source_still",
+      "source_page_url": "https://picmasa.com/post/B4E99B361169C822EEEE6C5487328DE8A1FAD84C/Harry-Potter-And-The-Goblet-Of-Fire-Character",
+      "media_url": "https://image.tmdb.org/t/p/original/sCb8oIYzJQbRxSBWHhilDcNpe0W.jpg",
+      "sha256": "ae992a122de9eee71bde28ab15ce2f0f37317f151ecd718c73bf69e4804f3a2a",
+      "dimensions": "1280x720",
+      "inspection": "Clean Goblet of Fire key-art backdrop: Harry, Hermione and Ron with Fleur, Cedric and Viktor at the lake, Hogwarts behind. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1_1nV4MSnyPICHIsb2jswOSLkkkevAvUa",
+      "title": "Indiana Jones",
+      "method": "clean_source_still",
+      "source_page_url": "https://theiptvreseller.com/magnumott/movies/vod-netherland-587/nl-indiana-jones-and-the-raiders-of-the-lost-ark-1981-744140/",
+      "media_url": "https://image.tmdb.org/t/p/w1280_and_h720_multi_faces/c7Mjuip0jfHLY7x8ZSEriRj45cu.jpg",
+      "sha256": "9682c243ed065603bca2fa719bb0256dc67d293864f8b6686e8b3d2511f56446",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Indy swapping the sandbag for the golden idol in Raiders of the Lost Ark. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "1WaZDoZbtziAFWGoCGPGn_fmm8ka0hA8s",
+      "title": "Iron Fist",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.comingsoon.net/movies/news/975531-iron-fist-images-released-by-netflix",
+      "media_url": "https://www.comingsoon.net/wp-content/uploads/sites/3/gallery/iron-fist-season-2/203_kick_203_unit_04433r.jpg",
+      "sha256": "d2b32ef79491fdb888724d657e8b1afddb88c9a9824d6e2b91d5d729e7f9fe13",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Danny Rand in hoodie and mask in a warehouse. No text, no logos, no watermark."
+    },
+    {
+      "folderId": "11X9Ra52Y2Wgn88Cd70_Ph3OinE02WarD",
+      "title": "It: Welcome to Derry",
+      "method": "clean_source_still",
+      "source_page_url": "",
+      "media_url": "https://static0.srcdn.com/wordpress/wp-content/uploads/2019/09/it-chapter-two-Cropped.jpg?q=49&fit=contain&w=825&h=440&dpr=2",
+      "sha256": "3932d51e84535d373c2869aa2806efba0ac86dbb4b4fd51331f41ec86e5e6009",
+      "dimensions": "1280x720",
+      "inspection": "Clean still from It Chapter Two (same Pennywise universe; no text-free Welcome to Derry stills found - all backdrops were the HBO key art with title text): the adult Losers Club in the woods. No text, no logos, no watermark. Search result carried no page URL."
+    },
+    {
+      "folderId": "1o0AOf7gbOCqIOqILMzLbkVvLNamFxKNy",
+      "title": "Love, Death & Robots",
+      "method": "clean_source_still",
+      "source_page_url": "",
+      "media_url": "https://images.justwatch.com/backdrop/119494965/s1440/love-death-and-robots",
+      "sha256": "f73ddda1922a4c80272bd5e0212d0ddabfee6e720ccea5cca95dbef4f8e14730",
+      "dimensions": "1280x720",
+      "inspection": "Clean still from the Three Robots episode: XBOT 4000 and K-VRC at a diner table. No promo text, no logos, no watermark (tiny XBOT 4000 label on the robot chest is in-world detail). Search result carried no page URL."
+    },
+    {
+      "folderId": "1Y4aJiq4ONR2qScEjyquMbzO4uC9oP3C2",
+      "title": "Marvel",
+      "method": "clean_source_still",
+      "source_page_url": "",
+      "media_url": "https://static0.cbrimages.com/wordpress/wp-content/uploads/2023/02/avengers-endgame-portal-scene.jpg",
+      "sha256": "ea89bda777bcda0901f9b0fced1382d146f70f3777571ec6a843a759f50fd697",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Avengers Endgame portals scene - armies charging through sling-ring portals, Giant-Man at right, Scarlet Witch at left. No text, no logos, no watermark. Search result carried no page URL."
+    },
+    {
+      "folderId": "1hXtNwD1D-OmQxXIEnOFDSWhPRdypzCMd",
+      "title": "Naruto",
+      "method": "clean_source_still",
+      "source_page_url": "https://moviewiser.com/us/movie/118406",
+      "media_url": "https://image.tmdb.org/t/p/w780//sKh3GJ7eMStObW5BsgkztTmpg5H.jpg",
+      "sha256": "fe2bc39d18ac0ce94b122a6278852d3476f40b27cd6c12b4f946481933909abe",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Hokage Naruto with shadow clones mid-battle. No text, no logos, no watermark. Source is 780px wide so the 1280 output is a mild upscale, slightly soft."
+    },
+    {
+      "folderId": "1HNITwajPadGoFRDMgJ_NCM-BbCZl0WRz",
+      "title": "Neon Genesis Evangelion",
+      "method": "clean_source_still",
+      "source_page_url": "https://cathleen.cauliflower.eu.org/neon-genesis-evangelion-series-vs-movies.html",
+      "media_url": "https://image.tmdb.org/t/p/original/iJK9oirAnsA7MMANLyFTnQdbv1Y.jpg",
+      "sha256": "031b13c1255b15e0062e19ab48ca563614906ae415f35abdeb1479ef13a93738",
+      "dimensions": "1280x720",
+      "inspection": "End of Evangelion still: Shinji kneeling over Asuka on the red LCL sea under a starry sky, two Evas crucified in the distance. Clean, no text/logos. TMDB original 1920x1080."
+    },
+    {
+      "folderId": "18py1chaPLhHa-8M3PoqXxu4Y6D6qSoeZ",
+      "title": "Parasyte: The Grey",
+      "method": "clean_source_still",
+      "source_page_url": "https://1428elm.com/screams-you-slept-on-horror-series-worth-the-binge-part-1",
+      "media_url": "https://images2.minutemediacdn.com/image/upload/c_crop,x_0,y_0,w_2945,h_1656/c_fill,w_1440,ar_1440:810,f_auto,q_auto,g_auto/images/ImageExchange/mmsport/304/01k1ke9jmezenqva0nbj.jpg",
+      "sha256": "1ca8dfb06640eb5503dbd18d644a234e04a66877b4295fd1696ea01b75a6e8df",
+      "dimensions": "1280x720",
+      "inspection": "Moody still: suited Grey-team man standing before a crowd in a lamplit hall, blood-red parasyte symbol on the wall behind. Clean, no text/logos. Note: dark/atmospheric shot, no lead character visible."
+    },
+    {
+      "folderId": "1yQvTgfl9HYA-85gzqkIDIxSboRM_7Yqt",
+      "title": "Predator",
+      "method": "clean_source_still",
+      "source_page_url": "https://soyuz.ru/articles/hischnik-s-arnoldom-shvartseneggerom-spetsoperatsiya-po-gollivudski",
+      "media_url": "https://soyuz.ru/public/uploads/files/5/7484894/1100x610_2022072720401750f1900fca.jpg",
+      "sha256": "de7970d8ad2cfcc5be3cb66ae367c21e6af63a6ebdf1adf86f333c7401cd6355",
+      "dimensions": "1280x720",
+      "inspection": "Clean jungle still: Dutch (Schwarzenegger) holding his weapon, two team members behind. No text/logos. 1100x610."
+    },
+    {
+      "folderId": "1IWb5XYTikkZlhNzSWXIL3mM_vaYzp3Gv",
+      "title": "Rick & Morty",
+      "method": "clean_source_still",
+      "source_page_url": "https://wallpapers.com/rick-and-morty-zoom-background",
+      "media_url": "https://wallpapers.com/images/featured/rick-and-morty-zoom-background-4eeuh4ix8mu9j9hv.jpg",
+      "sha256": "ff9260ebb6fe2c942f4c45585f7d48aed98a9b83691cb7018a94903c0ccd6b56",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Rick lounging in a hover chair eating while Morty climbs a rock face on an alien planet. Both leads, no text/logos. Source 900x600, mild upscale."
+    },
+    {
+      "folderId": "1sDaruqyPmafHhI7LiPWoxPqeIpp8wXNH",
+      "title": "RoboCop",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.listal.com/viewimage/19705178",
+      "media_url": "https://ilarge.lisimg.com/image/19705178/1118full-robocop-screenshot.jpg",
+      "sha256": "c9da414b6d524e1b8d16e460c03c9d961ece234029321c6b9f6f76986f43abfe",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: RoboCop walking through shallow water at the steel mill, gun raised. No text/logos. 1118x603."
+    },
+    {
+      "folderId": "1H_yQ-y0wg3aAmRXWq8esvBSLLrJnyKQJ",
+      "title": "Rocky",
+      "method": "clean_source_still",
+      "source_page_url": "https://image.pmgstatic.com/cache/resized/w1080/files/images/film/photos/160/424/160424626_f484ca.jpg",
+      "media_url": "https://image.pmgstatic.com/cache/resized/w1080/files/images/film/photos/160/424/160424626_f484ca.jpg",
+      "sha256": "965de2fec8a761796d7035db94bfde6763d9d375ca973b581c4ef464f3019294",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Stallone as Rocky standing in the ring under a spotlight in US-flag shorts. No text/logos. Portrait 1080x1620 source, center-cropped to 16:9 (head/torso band). Note: search result carried no linking page; media URL recorded as source."
+    },
+    {
+      "folderId": "10Tobpc-1IOfmI-OysRC9aWJeM3IZjYWK",
+      "title": "Smallville",
+      "method": "clean_source_still",
+      "source_page_url": "https://allpeliculas.top/serie/smallville/temporada/8/capitulo/14",
+      "media_url": "https://image.tmdb.org/t/p/original/wFZEOlg6uELygrCCCa2j8zqFNQ1.jpg",
+      "sha256": "1293f4e591935849223205aef1589f95ffaca7f73d45beabdd325886d98df4fb",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Lois and Clark examining a Metropolis model in a toy shop. No text/logos. TMDB original 3000x1688."
+    },
+    {
+      "folderId": "1rfNRi5OpYmisrWdniYNCpIA9ZSynt9Cl",
+      "title": "Star Trek",
+      "method": "clean_source_still",
+      "source_page_url": "https://letterboxd.com/francis_h/film/star-trek/",
+      "media_url": "https://a.ltrbxd.com/resized/alternative-backdrop/4/3/8/6/0/tmdb/5RSJLvjCOUBrgdpKa9B8ksGU9QU-1200-1200-675-675-crop-000000.jpg?v=f6e35f1b3e",
+      "sha256": "d4f4b13ffb4cd772c54999d3fcca40ce2260662fe815b504c20291e9c335ad26",
+      "dimensions": "1280x720",
+      "inspection": "Clean still (2009 film): Spock and Kirk on the Enterprise bridge. No text/logos. 1200x675."
+    },
+    {
+      "folderId": "1EawyIt_A5UtV6AoilFD8M09ayzdWt3RZ",
+      "title": "Star Trek: Discovery",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.paramountplus.com/shows/star-trek-discovery/news/1007580/get-a-behind-the-scenes-look-at-star-trek-discovery-s-artful-production/",
+      "media_url": "https://wwwimage-us.pplusstatic.com/base/files/blog/474d3dfe0a3e1c56_dsc_production_1920.jpg?format=webp",
+      "sha256": "71a0e855c31a3ef4992cb277c4f48aa0c152a900698c1045a57bcf4df6f94b3e",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Burnham standing in the Discovery's spore-drive chamber. No text/logos. 1920x1080. Note: subject small/distant, set-heavy shot."
+    },
+    {
+      "folderId": "1CVIcE2m4dgmLQ8W5oCRyWZTXjgc7LOn4",
+      "title": "Star Trek: Picard",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.themarysue.com/star-trek-picard-reignited-my-childhood-love-of-william-riker/",
+      "media_url": "https://www.themarysue.com/wp-content/uploads/2023/04/Picard_308_TP_0124_01697_RT.jpg",
+      "sha256": "29eeab7deb708d71c8fec327ebedc8fdd4e54adf6f11eeafc9cb1befa592ce75",
+      "dimensions": "1280x720",
+      "inspection": "Clean still (S3E8): Riker seated inside a Borg lattice structure, light streaming through. No text/logos. Note: features Riker, not Picard himself."
+    },
+    {
+      "folderId": "1jZI-8uF_Zd6WsuBtl_YfNXlBbu48PjHS",
+      "title": "Star Trek: TOS (The Original Series)",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.mensjournal.com/entertainment/william-shatner-health-battle-star-trek",
+      "media_url": "https://www.mensjournal.com/.image/MjE1Mjg5MDg3MjIzOTMyMjcx/star-trek-the-original-series.jpg?profile=w828&x=50&y=50",
+      "sha256": "ccc2aeb7170dd15e5fa27105879b44775387261b28152df3ef11ba6e341c0f38",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Kirk holding a phaser rifle beside Yeoman Rand on a rocky planet surface. No text/logos. Source 828x621 (4:3), center-cropped to 16:9, mild upscale."
+    },
+    {
+      "folderId": "1LIPlim9yH2Oaeig-vu3sF86xlUo_9N_m",
+      "title": "Star Wars - Andor",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.starwars.com/andor-stills-gallery?page=4",
+      "media_url": "https://lumiere-a.akamaihd.net/v1/images/andor-episode-11-stills-14_dbb85b12.jpeg",
+      "sha256": "910b57d9cc80b3c68b27c87f8adbefcb4d450b338663b3cb8d72b3e9a1d985d0",
+      "dimensions": "1280x720",
+      "inspection": "Clean official still: Imperial Star Destroyer bridge, stormtroopers flanking officers at the viewport. No text/logos. 1920x804, sides cropped to 16:9."
+    },
+    {
+      "folderId": "1CAM87va1wgP_AOsVUVFWZDV3jnrTeUBg",
+      "title": "Star Wars - Obi-Wan Kenobi",
+      "method": "clean_source_still",
+      "source_page_url": "https://whatsondisneyplus.com/new-star-wars-obi-wan-kenobi-trailer-released/",
+      "media_url": "https://whatsondisneyplus.b-cdn.net/wp-content/uploads/2022/05/obi-wan-.jpg",
+      "sha256": "51a2203079f0964148666b2798f31576c9f48a3021b0a551ad506b90908b24d0",
+      "dimensions": "1280x720",
+      "inspection": "Clean 2022 series key art: hooded Ewan McGregor as Obi-Wan on Tatooine with the twin suns. No text/logos. 1668x981. Note: series key art, not a frame still; first candidate was Alec Guinness from A New Hope (wrong production) and was rejected."
+    },
+    {
+      "folderId": "1tExaXYuAGuoIx9Nbkownl1uVaHEkOtNi",
+      "title": "The Flash",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.serializd.com/review/15379666",
+      "media_url": "https://serializd-tmdb-images.b-cdn.net/t/p/original/HFr1zkORvKzYOKEaKdkmF1GKna.jpg",
+      "sha256": "de5edae3e7a834eb21f34ecaaedc7de4ed1f660527703027b19134964d132773",
+      "dimensions": "1280x720",
+      "inspection": "Clean still: Barry Allen in the Flash suit standing in an alley with another man. No text/logos. TMDB original 3000x1688."
+    },
+    {
+      "folderId": "1f61yaGwkNj7URPjYe6LcvAbIrvg55RnB",
+      "title": "The Man in The High Castle",
+      "method": "clean_source_still",
+      "source_page_url": "https://syfyprod.versantwebapps.com/syfy-wire/man-in-the-high-castle-season-4-trailer",
+      "media_url": "https://syfyprod.versantwebapps.com/sites/syfy/files/2019/10/the-man-in-the-high-castle-season-4-mithc_402_06851.v1_rgb.jpg",
+      "sha256": "a5b9a82c95229dde9596d0d89d43f65fae87e8d9e2d1cdbb906565c16bd225d7",
+      "dimensions": "1280x720",
+      "inspection": "Clean S4 still: Smith (Rufus Sewell) in Nazi uniform facing a scientist in the mirrored Nebenwelt chamber. No text/logos. 6000x4000 source."
+    },
+    {
+      "folderId": "1ZgZ0GQAFkH2ME1icLTUtI6Y5R7e2lUzY",
+      "title": "The Monsterverse (Godzilla/Kong franchise backdrop)",
+      "method": "clean_source_still",
+      "source_page_url": "http://probalt.co.uk/?p=739454212",
+      "media_url": "https://d32qys9a6wm9no.cloudfront.net/images/movies/backdrop/a6/b9d7b89e1bf41c4adfd844fe62ec2845_1280x720.jpg",
+      "sha256": "9ce87727890b7091e6bd791732af01cd82256e1f408fb6a4de8e88673007c871",
+      "dimensions": "1280x720",
+      "inspection": "Clean still (Godzilla: King of the Monsters): Godzilla firing his atomic breath skyward in a stormy sea. No text/logos. Already 1280x720."
+    },
+    {
+      "folderId": "1bUoDRYrk342eDUq7PN1AN7TSklUFhpZk",
+      "title": "The Planet of The Apes",
+      "method": "clean_source_still",
+      "source_page_url": "https://picmasa.com/explore/marc-singer-planet-of-the-apes",
+      "media_url": "https://www.heyuguys.com/images/2014/06/dawn-apes-still-2.jpg",
+      "sha256": "73626a7de8758d331062452853d81d934a839b92a4189aa1782812587ed37764",
+      "dimensions": "1280x720",
+      "inspection": "Caesar standing in the ape village (Dawn of the Planet of the Apes still); clean, no text, no watermark, no logo. Source 2202x1152."
+    },
+    {
+      "folderId": "1GBpKbZQZJjaZLbLFkFl4t-UcosDxKnMy",
+      "title": "The Twilight Zone",
+      "method": "clean_source_still",
+      "source_page_url": "https://screenrant.com/the-twilight-zone-reboot-new-series-explained",
+      "media_url": "https://static0.srcdn.com/wordpress/wp-content/uploads/2025/12/rod-serling-in-front-of-the-swirling-twilight-zone-vortex.jpg?w=1600&h=900&fit=crop",
+      "sha256": "77729bfde8c10b4a705f282e92ea38faf108a1a6b3015706ce0c8e69789a6d35",
+      "dimensions": "1280x720",
+      "inspection": "Rod Serling close-up against the iconic black-and-white spiral; clean, no text, no watermark. Refined-query pick after the first candidate turned out to be a Back to the Future still. Source 1600x900."
+    },
+    {
+      "folderId": "1OBe2y6Ic36Enz01WKa9E1c8cRWXbkmNn",
+      "title": "The Witcher",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.kinonews.ru/shot166296/",
+      "media_url": "https://www.kinonews.ru/insimgs/2019/shotimg/shotimg90850_28.jpg",
+      "sha256": "aa4b305d8a5c9cf5e27603f6576b016371577bf8b1905fa4524a1c51d2eea5bc",
+      "dimensions": "1280x720",
+      "inspection": "Geralt standing in a misty medieval town street; clean, no text, no watermark. Source 1500x1000."
+    },
+    {
+      "folderId": "1exX9K-gpzUJm2p3lX5q8tkAxGdlD881M",
+      "title": "Twisted Metal",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.cbr.com/twisted-metal-release-window-new-trailer/?pubDate=20250214",
+      "media_url": "https://static0.cbrimages.com/wordpress/wp-content/uploads/2025/02/twisted-metal-on-peacock-1.jpg?q=49&fit=contain&w=825&h=440&dpr=2",
+      "sha256": "5c7bb9c38c020176557e57b0b26d33aa984b373248e64a4d29da367566ccd0dd",
+      "dimensions": "1280x720",
+      "inspection": "Key art: John Doe and Quiet in front of Sweet Tooth in his ice-cream truck under pink smoke; clean, no text, no watermark. Source 1650x825."
+    },
+    {
+      "folderId": "1OV2EjfA17__o1Dg8T4f6Qkpq2mzSme4F",
+      "title": "Vikings",
+      "method": "clean_source_still",
+      "source_page_url": "https://ifilmthings.com/where-was-vikings-filmed/",
+      "media_url": "https://ifilmthings.com/wp-content/uploads/2023/10/Where-Was-Vikings-Filmed-Backdrop-1200x675.jpeg",
+      "sha256": "248915ff8db73c65c1a380cdd32be37bc898ea7d3184b1e8cea0722b7f81b315",
+      "dimensions": "1280x720",
+      "inspection": "Ragnar, Lagertha and warriors wading ashore through blood-red water; clean, no text, no watermark. Fallback after the first candidate carried a large VIKINGS title logo. Source 1200x675."
+    },
+    {
+      "folderId": "1fdQEPQotiPn6XfE3SmIIBJzuhW9TA2Il",
+      "title": "Wipeout",
+      "method": "clean_source_still",
+      "source_page_url": "https://press.wbd.com/na/image/wipeout-11?language_content_entity=en",
+      "media_url": "https://static.cdn.turner.com/styles/scale_792/s3/2022-01/wipeout_9.jpg?itok=v01LtBx8",
+      "sha256": "16fff39dcf6126cd9233bac477060f8048d67538472098096a4ef576db990bcb",
+      "dimensions": "1280x720",
+      "inspection": "Official press still: hosts and two contestants celebrating on the winner's platform on the course; no overlaid text or watermark. Note: giant yellow W letters are in-scene set dressing, and a small WIPEOUT wordmark is on one contestant's vest. Source 1584x1056."
+    },
+    {
+      "folderId": "1u6Qqt4LGi07EMOiqpJtCJ7TYQQyNHI4j",
+      "title": "X-Men",
+      "method": "clean_source_still",
+      "source_page_url": "https://tuimdb.com/movies/title/backdrops/?uid=385&imageLanguage=xxxx",
+      "media_url": "https://tuimdb.com/movies/backdrops/69c6f8815350ccd49c71e7ba.jpg",
+      "sha256": "3a917305f636bb8cf0ce5a271f2dc9cc7f33466af4cda09c932e120c845e80e8",
+      "dimensions": "1280x720",
+      "inspection": "Wolverine, Jean Grey and Mystique amid a ruined bridge battle; clean, no text, no watermark. Source 2560x1440."
+    },
+    {
+      "folderId": "1-ElARRrrbG2K0IcHJvvErCkjU-y6Bwpw",
+      "title": "Marvel",
+      "method": "clean_source_still",
+      "source_page_url": "https://movieweb.com/",
+      "media_url": "https://static0.moviewebimages.com/wordpress/wp-content/uploads/2024/05/avengers-endgame-4.jpg?q=49&fit=contain&w=1920&h=1080&dpr=2",
+      "sha256": "60482d3589707b60ca079af0abf0eab2498820482dffac6b41d0e50c59188162",
+      "dimensions": "1280x720",
+      "inspection": "Avengers: Endgame final-battle still — armies pouring through Doctor Strange's portals; clean, no text, no watermark. Chose the portals battle rather than the obvious Avengers group shot. Source 1920x1080."
+    },
+    {
+      "folderId": "13EXMjh2IT68CZ6ji2vl2Hudeb8-R9QKW",
+      "title": "Solar Opposites and Rick and Morty",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.disappointmentmedia.com/reviews/solar-opposites-a-funny-sitcom-parody-from-the-people-behind-rick-and-morty",
+      "media_url": "https://www.disappointmentmedia.com/uploads/4/7/9/1/47919861/so-104-still-05-2_orig.jpg",
+      "sha256": "c7ac64a9d744c332bc066b94163f8d8fd1c015a5b7c437e259374b9ecc796093",
+      "dimensions": "1280x720",
+      "inspection": "Solar Opposites alien family (Korvo, Terry, Yumyulack, Jesse) together at sunset in the neighbourhood; clean, no text, no watermark. Fallback after the first candidate had SOLD/FOR SALE signs and a TV MA badge. Source 1100x619."
+    },
+    {
+      "folderId": "1GFaMD67zid0soscK924SiUlAuku1Bhn-",
+      "title": "A Nightmare on Elm Street - The Baliscon Cuts",
+      "method": "clean_source_still",
+      "source_page_url": "https://alphacoders.com/a-nightmare-on-elm-street-(1984)-wallpapers",
+      "media_url": "https://images8.alphacoders.com/635/thumbbig-635800.webp",
+      "sha256": "aa884aeb560f4e387b2fd074a906997b8ecc7eb3d4a4348f074bcb85bd6c192d",
+      "dimensions": "1280x720",
+      "inspection": "Freddy Krueger silhouetted with arms outstretched in a dark blue alley (1984 film); clean, no text, no watermark. NOTE: source is only 600x375, so the 1280x720 output is a ~2.1x upscale and will look softer than the others. Source 600x375."
+    },
+    {
+      "folderId": "1ayPbduMJplJjgIWXkLxN9q9qqBrBFkKJ",
+      "title": "Alien Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.inzion.com/item/alien",
+      "media_url": "https://image.tmdb.org/t/p/w1920/9kDqbA4mhC0Mw17x9dThZDaOwBX.jpg",
+      "sha256": "3a596668f300a05f6a6b92c844926daecfa51eff9834eaa677008a84d59302ba",
+      "dimensions": "1280x720",
+      "inspection": "Alien (1979): the Nostromo crew in spacesuits discovering the derelict ship and the Space Jockey; clean, no text, no watermark. Fallback after the first candidate had a green ALIEN title logo. Source 1920x1080."
+    },
+    {
+      "folderId": "1cxH01iCkqccOGYHnJ2Yee9NYH6BPQuMC",
+      "title": "Ash vs Evil Dead",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.neogaf.com/threads/bruce-campbell-won%E2%80%99t-be-back-for-the-new-evil-dead-movie-evil-dead-now-new-film-might-focus-on-female-protagonist.1546410/",
+      "media_url": "https://cdn.vox-cdn.com/thumbor/uzaSNd4lHZbXssmqZcsObt8CJM8=/0x0:1920x1080/920x613/filters:focal(760x216:1066x522):format(webp)/cdn.vox-cdn.com/uploads/chorus_image/image/66908990/ash_vs_evil_dead_season_2_shows_background_01.0.jpg",
+      "sha256": "13daa5c13176af62dce83dc0d6398dfbe42920cb991e7fd1b41bfb3598a408d3",
+      "dimensions": "1280x720",
+      "inspection": "Ash with his chainsaw at a night fairground; no overlaid text or watermark. Note: SMASH/M lettering on the shipping containers behind him is in-scene set painting, not an overlay. Source 920x613."
+    },
+    {
+      "folderId": "1qOV2zM-fgsTd43-co9OPqNlaU4qkDDsP",
+      "title": "Backrooms",
+      "method": "clean_source_still",
+      "source_page_url": "https://clarkaudio.com/backrooms-vst",
+      "media_url": "https://clarkaudio.com/wp-content/uploads/2026/08/Backrooms-Background-scaled.webp",
+      "sha256": "9865b7275ee94568a407d16a5e65f07a1fad744b6e07b6e7729916c75a88bd71",
+      "dimensions": "1280x720",
+      "inspection": "Classic Backrooms liminal space: empty yellow-wallpapered rooms, fluorescent ceiling lights, yellow carpet; clean, no text, no watermark. Source 2560x1440."
+    },
+    {
+      "folderId": "18dQ5-zypr8oyqm1dNTCqtlT0D5E6AmB_",
+      "title": "Batman Noir",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.fancaps.net/",
+      "media_url": "https://cdni.fancaps.net/file/fancaps-movieimages/8001633.jpg",
+      "sha256": "e2efddf0d2b84253a3108cb53b154fee3d02d82a67aad89676ccf33dfe62cca6",
+      "dimensions": "1280x720",
+      "inspection": "The Batman (2022): Batman silhouetted in profile against a dusk Gotham skyline; clean, no text, no watermark. NOTE: source had baked-in black letterbox bars; bars were trimmed before the 16:9 center-crop so the output is full-frame. Source 3840x2160; letterbox bars trimmed (276-1884 of 2160px)"
+    },
+    {
+      "folderId": "1Se9u8fANVswJGZTIjpr-E9RuWlgjC18-",
+      "title": "Neon Genesis Evangelion",
+      "method": "clean_source_still",
+      "source_page_url": "https://geekculture.co/spice-up-your-video-calls-with-anime-backgrounds-from-evangelion-shonen-jump-and-more/",
+      "media_url": "https://geekculture.co/wp-content/uploads/2020/04/evangelion-background.jpg",
+      "sha256": "66feb47d658fac87fd4e8e5b03ba3f9283bc2a14b0cd00bd4b9440fc3fa2a072",
+      "dimensions": "1280x720",
+      "inspection": "Genuine anime still: EVA-01 looming in its cage above Shinji, Ritsuko and Misato on the gantry; clean, no legible text (tiny in-scene Japanese signs only). Fallback chosen over a painted fan-art wallpaper; 2.4:1 source, center crop keeps EVA-01. Source 1200x500."
+    },
+    {
+      "folderId": "1zLke6v5I8K2ppbWO1sqv7YPZYTA1AGAa",
+      "title": "Robocop Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.listal.com/viewimage/19705178",
+      "media_url": "https://ilarge.lisimg.com/image/19705178/1118full-robocop-screenshot.jpg",
+      "sha256": "c9da414b6d524e1b8d16e460c03c9d961ece234029321c6b9f6f76986f43abfe",
+      "dimensions": "1280x720",
+      "inspection": "Real RoboCop (1987) film screenshot: RoboCop walking through water at the steel mill, gun raised; clean, no text, no watermark. Fallback chosen over the first candidate, which was a painted illustration rather than a still. Source 1118x603."
+    },
+    {
+      "folderId": "10DXfB-j0M9MVbT3slaNXaVW9PHIwRUHh",
+      "title": "Superman",
+      "method": "clean_source_still",
+      "source_page_url": "https://worldbizjournals.com/titles/493343/superman",
+      "media_url": "https://image.tmdb.org/t/p/original/lDXao1LDNKroHcUtJUDaOE1ZeJz.jpg",
+      "sha256": "0a27d06209a1031f8bc33a790e9c39a5fb6e017905f2095fe441702839d0f19a",
+      "dimensions": "1280x720",
+      "inspection": "David Corenswet as Superman in a sunlit Metropolis street, cape in foreground; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1T9sHBahjpAjSx80klEZoY0BsMfaPukDc",
+      "title": "Sinners",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.comingsoon.net/guides/news/1958739-sinners-digital-release-date-streaming-hbo-max",
+      "media_url": "https://www.comingsoon.net/wp-content/uploads/sites/3/2025/04/Sinners.jpg?resize=1024,576",
+      "sha256": "ccebc4aa1bf273a20d87c98c4255d2f8ce4bafd58e12ba023ca67841d9419a05",
+      "dimensions": "1280x720",
+      "inspection": "Michael B. Jordan before a huge orange sun with silhouetted figures in a fiery sky; key-art style still, no text or watermark."
+    },
+    {
+      "folderId": "1-KIZrb6ZOvvDVuixuoq7wF3n2WmLn-YY",
+      "title": "JFK",
+      "method": "clean_source_still",
+      "source_page_url": "https://inzion.com/item/jfk",
+      "media_url": "https://image.tmdb.org/t/p/original/eXBLAo3HQIhlrh1SWSGiLmjsVE6.jpg",
+      "sha256": "31e41ba34333ce353b12602e2f8a79ae9c44a5d3fac4a749b9d4a205b169edb1",
+      "dimensions": "1280x720",
+      "inspection": "Kevin Costner as Jim Garrison in a courtroom with three men at a table behind him; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1oDU7n6nxlv5GVqPAMsXTTbFEiKbjsOoR",
+      "title": "The Mask",
+      "method": "clean_source_still",
+      "source_page_url": "https://thetvdb.com/movies/the-mask",
+      "media_url": "https://artworks.thetvdb.com/banners/v4/movie/229/backgrounds/6604249d09404.jpg",
+      "sha256": "2ac236b4c801192b85ae16c857934a56944c00d0889a122d883ebc930492b1cc",
+      "dimensions": "1280x720",
+      "inspection": "Jim Carrey as The Mask in yellow suit and hat tipping his hat, black background; clean TVDB background, no text or watermark."
+    },
+    {
+      "folderId": "1LpC4CdRUQQAeYge4oSTY7XzwubaaKjZ5",
+      "title": "Ash vs The Evil Dead",
+      "method": "clean_source_still",
+      "source_page_url": "https://mavink.com/post/8789EEB655B7488B7F47B61CB75BD69E73AM863A30/evil-dead-ash",
+      "media_url": "https://images2.alphacoders.com/576/thumb-1920-576904.jpg",
+      "sha256": "765d16b886375fa4af88f58f455098b98edb0100deaefc1200641338a6b186e2",
+      "dimensions": "1280x720",
+      "inspection": "Bruce Campbell as Ash, bloodied, holding a shotgun in a cabin interior; clean film still, no text or watermark."
+    },
+    {
+      "folderId": "1Pm38nRB_VdThNe0idD_JT5MqtbTDyBpD",
+      "title": "DCU Cuts",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.superherohype.com/gallery/justice-league",
+      "media_url": "https://www.superherohype.com/wp-content/uploads/sites/4/gallery/justice-league/jl-fp-0018r.jpg",
+      "sha256": "364028159139125c1c54e443a7cf9cdf5984399573ccfb7c709781bbf75704a6",
+      "dimensions": "1280x720",
+      "inspection": "Justice League (Wonder Woman, Cyborg, Batman, Flash) with Commissioner Gordon on a Gotham rooftop at night; clean WB still, no text or watermark."
+    },
+    {
+      "folderId": "1g4lX3EbuNKs9vmXLWIg9xuNG3zGS5HoI",
+      "title": "Star Wars Edits",
+      "method": "clean_source_still",
+      "source_page_url": "https://movieweb.com/death-star-location-planet-the-rise-of-skywalker/",
+      "media_url": "https://static0.moviewebimages.com/wordpress/wp-content/uploads/article/I4lYInErlNBA0mbKpFJinpVipAbs8d.jpg?w=1600&h=900&fit=crop",
+      "sha256": "dae1e96ef7634f02b9b0c59ff8dd16394b9ae4ee5ad3d58e2559a450e43a5dbd",
+      "dimensions": "1280x720",
+      "inspection": "Rey with blue lightsaber facing Kylo Ren in the Death Star II wreckage; clean film still, no text or watermark."
+    },
+    {
+      "folderId": "11UXTTCBXFgZETX3YBq0pkgnzxFZxygpF",
+      "title": "Marvel Knights Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://spoiler.mx/noticia/daredvil-netflix-marvel-fecha-estreno-tercera-tempora",
+      "media_url": "https://spoiler.mx/wp-content/uploads/2017/07/dare2.jpg",
+      "sha256": "eac46c065806f503d218f09c1552bde9f09777f98ba0de01c72c9abf636f7ad5",
+      "dimensions": "1280x720",
+      "inspection": "Daredevil chained to a rooftop chimney in the rain over a night city skyline; dark street-level Marvel still, no text or watermark."
+    },
+    {
+      "folderId": "1YYmNYR6zJLC4jn964KOF4sUDrzyyicrF",
+      "title": "Teenage Mutant Ninja Turtles: The Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.yidio.com/show/teenage-mutant-ninja-turtles-1987/season-4/episode-40",
+      "media_url": "https://cfm.yidio.com/images/tv/4732/backdrop-1280x720.jpg",
+      "sha256": "54916203ce60cdb391bca50079fde33fd78864518f5fc39f67f12d8d32acff4d",
+      "dimensions": "1280x720",
+      "inspection": "1987 animated series frame: Leonardo, Donatello and Raphael with April O'Neil on a city street; clean still, no text or watermark."
+    },
+    {
+      "folderId": "1QHmpXtmORB1vcOaui_bRxjcvQ8SNrz79",
+      "title": "House of Dragon",
+      "method": "clean_source_still",
+      "source_page_url": "https://duitmovie.com:443/tv/94997-0-56/house-of-the-dragon.html",
+      "media_url": "https://image.tmdb.org/t/p/original/rz6jj4JduRrRcugyQfgg2AENiwu.jpg",
+      "sha256": "c721820ddc8dce8a57672fb538e9524930231584a4bb12abcb229f8dca4dad50",
+      "dimensions": "1280x720",
+      "inspection": "Rhaenyra and Daemon before Balerion's skull in a candlelit crypt; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1jPZKidDmk2C8DWGByGDaXveKyMvq-Xnx",
+      "title": "Office Space",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.inzion.com/item/office-space",
+      "media_url": "https://image.tmdb.org/t/p/original/mSkcnpIzEA3HGnxlQHSzvIRlhIi.jpg",
+      "sha256": "c613f2466091e6fd5c9db8bd1a084ee643954810eeb54cf7741adaa09f92127c",
+      "dimensions": "1280x720",
+      "inspection": "Milton Waddams on the phone in his Initech cubicle; clean TMDB backdrop, no promo text (only in-scene prop text on his ID badge and box labels)."
+    },
+    {
+      "folderId": "17ERTIn5UegbRMvKvZK2gZoophNoHBy21",
+      "title": "Wheel of Time",
+      "method": "clean_source_still",
+      "source_page_url": "https://fandomwire.com/brandon-sanderson-not-mistborn-most-challenging-book-he-w",
+      "media_url": "https://fwmedia.fandomwire.com/wp-content/uploads/2025/05/27095410/Screenshotter-PrimeVideoTheWheelofTime-Season1-5755-1.avif?width=1920&height=1080&quality=85&sharpen=true&format=webp&fit=contain",
+      "sha256": "1fec8c0616bd342aca97412bf877e37f405c59992bb5210d0805240c3158e470",
+      "dimensions": "1280x720",
+      "inspection": "Moiraine channeling on a stone balcony, arms outstretched with weaves visible; clean show still, no text or watermark."
+    },
+    {
+      "folderId": "1UEZwEu9khGAo-UCUEJcrX_5bXaMOMXCy",
+      "title": "Demon Slayer",
+      "method": "clean_source_still",
+      "source_page_url": "https://movietvpro.vercel.app/movie/1490213-demon-slayer-kimetsu-no-yaiba-entert",
+      "media_url": "https://image.tmdb.org/t/p/original//gtQaq8HNSJByLXqs8vwDHabnP4p.jpg",
+      "sha256": "108d43c474b13511f4ca48e7ab79184314b1ddc85a7c960e7ad974a9ec681d05",
+      "dimensions": "1280x720",
+      "inspection": "Tanjiro carrying Nezuko at night amid smoke outside a Japanese building; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1uWHxNysa1syEW71feFr-dDJs7uLpqJaZ",
+      "title": "Naruto",
+      "method": "clean_source_still",
+      "source_page_url": "https://telegra.ph/Naruto-03-01-4",
+      "media_url": "https://de.web.img3.acsta.net/pictures/15/04/09/12/39/265694.jpg",
+      "sha256": "00eb52e7b92052cdcfaa96b61aa9f12b7daa11353c7d713525ddfe9e2455b9c8",
+      "dimensions": "1280x720",
+      "inspection": "Naruto Uzumaki before a sunlit village at golden hour; clean anime film still, no text or watermark. (First two candidates rejected: official-site URL unreachable, second was a chibi fan-art collage.)"
+    },
+    {
+      "folderId": "1PBSsCgG_uztgJ90ynjfugrHsIwlnk0-3",
+      "title": "Star Wars Womp Rat Edits",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.starwars.com/rogue-one-a-star-wars-story-gallery",
+      "media_url": "https://lumiere-a.akamaihd.net/v1/images/rogue-one-gallery03_56f77d2a.jpeg?region=0%2C0%2C1536%2C1024",
+      "sha256": "3056c855585d46ae17a1884ad6c57bccff7b24ccf2ed6441dde5416adccdffee",
+      "dimensions": "1280x720",
+      "inspection": "Jyn Erso from behind on the Yavin IV base with soldiers and temple spires; clean official Star Wars still, no text or watermark. Different scene from the Star Wars Edits item."
+    },
+    {
+      "folderId": "1UpmLf94FGNCdAvv_bjOf3rh1ftDZ_KJy",
+      "title": "Lanterns",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.darkiworld.al/379457-lanterns",
+      "media_url": "https://artworks.thetvdb.com/banners/v4/series/376098/backgrounds/6a62626721099.jpg",
+      "sha256": "20a0b581bf594663abd9a203b87989f7ed40e6229a2028e22952cbfc65c96579",
+      "dimensions": "1280x720",
+      "inspection": "John Stewart and Hal Jordan in a small-town street under a green storm sky, Hal's ring glowing green; actual Lanterns (2026) series backdrop from TVDB, no text or watermark. (First candidate rejected: Green Lantern Corps logo graphic, 600x375, not a still.)"
+    }
+  ],
+  "failed": []
+}

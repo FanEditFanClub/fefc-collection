@@ -1,0 +1,168 @@
+{
+  "v": 1,
+  "batch": "D",
+  "method": "clean_source_still",
+  "items": [
+    {
+      "folderId": "10DXfB-j0M9MVbT3slaNXaVW9PHIwRUHh",
+      "title": "Superman",
+      "method": "clean_source_still",
+      "source_page_url": "https://worldbizjournals.com/titles/493343/superman",
+      "media_url": "https://image.tmdb.org/t/p/original/lDXao1LDNKroHcUtJUDaOE1ZeJz.jpg",
+      "sha256": "0a27d06209a1031f8bc33a790e9c39a5fb6e017905f2095fe441702839d0f19a",
+      "dimensions": "1280x720",
+      "inspection": "David Corenswet as Superman in a sunlit Metropolis street, cape in foreground; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1T9sHBahjpAjSx80klEZoY0BsMfaPukDc",
+      "title": "Sinners",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.comingsoon.net/guides/news/1958739-sinners-digital-release-date-streaming-hbo-max",
+      "media_url": "https://www.comingsoon.net/wp-content/uploads/sites/3/2025/04/Sinners.jpg?resize=1024,576",
+      "sha256": "ccebc4aa1bf273a20d87c98c4255d2f8ce4bafd58e12ba023ca67841d9419a05",
+      "dimensions": "1280x720",
+      "inspection": "Michael B. Jordan before a huge orange sun with silhouetted figures in a fiery sky; key-art style still, no text or watermark."
+    },
+    {
+      "folderId": "1-KIZrb6ZOvvDVuixuoq7wF3n2WmLn-YY",
+      "title": "JFK",
+      "method": "clean_source_still",
+      "source_page_url": "https://inzion.com/item/jfk",
+      "media_url": "https://image.tmdb.org/t/p/original/eXBLAo3HQIhlrh1SWSGiLmjsVE6.jpg",
+      "sha256": "31e41ba34333ce353b12602e2f8a79ae9c44a5d3fac4a749b9d4a205b169edb1",
+      "dimensions": "1280x720",
+      "inspection": "Kevin Costner as Jim Garrison in a courtroom with three men at a table behind him; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1oDU7n6nxlv5GVqPAMsXTTbFEiKbjsOoR",
+      "title": "The Mask",
+      "method": "clean_source_still",
+      "source_page_url": "https://thetvdb.com/movies/the-mask",
+      "media_url": "https://artworks.thetvdb.com/banners/v4/movie/229/backgrounds/6604249d09404.jpg",
+      "sha256": "2ac236b4c801192b85ae16c857934a56944c00d0889a122d883ebc930492b1cc",
+      "dimensions": "1280x720",
+      "inspection": "Jim Carrey as The Mask in yellow suit and hat tipping his hat, black background; clean TVDB background, no text or watermark."
+    },
+    {
+      "folderId": "1LpC4CdRUQQAeYge4oSTY7XzwubaaKjZ5",
+      "title": "Ash vs The Evil Dead",
+      "method": "clean_source_still",
+      "source_page_url": "https://mavink.com/post/8789EEB655B7488B7F47B61CB75BD69E73AM863A30/evil-dead-ash",
+      "media_url": "https://images2.alphacoders.com/576/thumb-1920-576904.jpg",
+      "sha256": "765d16b886375fa4af88f58f455098b98edb0100deaefc1200641338a6b186e2",
+      "dimensions": "1280x720",
+      "inspection": "Bruce Campbell as Ash, bloodied, holding a shotgun in a cabin interior; clean film still, no text or watermark."
+    },
+    {
+      "folderId": "1Pm38nRB_VdThNe0idD_JT5MqtbTDyBpD",
+      "title": "DCU Cuts",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.superherohype.com/gallery/justice-league",
+      "media_url": "https://www.superherohype.com/wp-content/uploads/sites/4/gallery/justice-league/jl-fp-0018r.jpg",
+      "sha256": "364028159139125c1c54e443a7cf9cdf5984399573ccfb7c709781bbf75704a6",
+      "dimensions": "1280x720",
+      "inspection": "Justice League (Wonder Woman, Cyborg, Batman, Flash) with Commissioner Gordon on a Gotham rooftop at night; clean WB still, no text or watermark."
+    },
+    {
+      "folderId": "1g4lX3EbuNKs9vmXLWIg9xuNG3zGS5HoI",
+      "title": "Star Wars Edits",
+      "method": "clean_source_still",
+      "source_page_url": "https://movieweb.com/death-star-location-planet-the-rise-of-skywalker/",
+      "media_url": "https://static0.moviewebimages.com/wordpress/wp-content/uploads/article/I4lYInErlNBA0mbKpFJinpVipAbs8d.jpg?w=1600&h=900&fit=crop",
+      "sha256": "dae1e96ef7634f02b9b0c59ff8dd16394b9ae4ee5ad3d58e2559a450e43a5dbd",
+      "dimensions": "1280x720",
+      "inspection": "Rey with blue lightsaber facing Kylo Ren in the Death Star II wreckage; clean film still, no text or watermark."
+    },
+    {
+      "folderId": "11UXTTCBXFgZETX3YBq0pkgnzxFZxygpF",
+      "title": "Marvel Knights Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://spoiler.mx/noticia/daredvil-netflix-marvel-fecha-estreno-tercera-tempora",
+      "media_url": "https://spoiler.mx/wp-content/uploads/2017/07/dare2.jpg",
+      "sha256": "eac46c065806f503d218f09c1552bde9f09777f98ba0de01c72c9abf636f7ad5",
+      "dimensions": "1280x720",
+      "inspection": "Daredevil chained to a rooftop chimney in the rain over a night city skyline; dark street-level Marvel still, no text or watermark."
+    },
+    {
+      "folderId": "1YYmNYR6zJLC4jn964KOF4sUDrzyyicrF",
+      "title": "Teenage Mutant Ninja Turtles: The Series",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.yidio.com/show/teenage-mutant-ninja-turtles-1987/season-4/episode-40",
+      "media_url": "https://cfm.yidio.com/images/tv/4732/backdrop-1280x720.jpg",
+      "sha256": "54916203ce60cdb391bca50079fde33fd78864518f5fc39f67f12d8d32acff4d",
+      "dimensions": "1280x720",
+      "inspection": "1987 animated series frame: Leonardo, Donatello and Raphael with April O'Neil on a city street; clean still, no text or watermark."
+    },
+    {
+      "folderId": "1QHmpXtmORB1vcOaui_bRxjcvQ8SNrz79",
+      "title": "House of Dragon",
+      "method": "clean_source_still",
+      "source_page_url": "https://duitmovie.com:443/tv/94997-0-56/house-of-the-dragon.html",
+      "media_url": "https://image.tmdb.org/t/p/original/rz6jj4JduRrRcugyQfgg2AENiwu.jpg",
+      "sha256": "c721820ddc8dce8a57672fb538e9524930231584a4bb12abcb229f8dca4dad50",
+      "dimensions": "1280x720",
+      "inspection": "Rhaenyra and Daemon before Balerion's skull in a candlelit crypt; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1jPZKidDmk2C8DWGByGDaXveKyMvq-Xnx",
+      "title": "Office Space",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.inzion.com/item/office-space",
+      "media_url": "https://image.tmdb.org/t/p/original/mSkcnpIzEA3HGnxlQHSzvIRlhIi.jpg",
+      "sha256": "c613f2466091e6fd5c9db8bd1a084ee643954810eeb54cf7741adaa09f92127c",
+      "dimensions": "1280x720",
+      "inspection": "Milton Waddams on the phone in his Initech cubicle; clean TMDB backdrop, no promo text (only in-scene prop text on his ID badge and box labels)."
+    },
+    {
+      "folderId": "17ERTIn5UegbRMvKvZK2gZoophNoHBy21",
+      "title": "Wheel of Time",
+      "method": "clean_source_still",
+      "source_page_url": "https://fandomwire.com/brandon-sanderson-not-mistborn-most-challenging-book-he-w",
+      "media_url": "https://fwmedia.fandomwire.com/wp-content/uploads/2025/05/27095410/Screenshotter-PrimeVideoTheWheelofTime-Season1-5755-1.avif?width=1920&height=1080&quality=85&sharpen=true&format=webp&fit=contain",
+      "sha256": "1fec8c0616bd342aca97412bf877e37f405c59992bb5210d0805240c3158e470",
+      "dimensions": "1280x720",
+      "inspection": "Moiraine channeling on a stone balcony, arms outstretched with weaves visible; clean show still, no text or watermark."
+    },
+    {
+      "folderId": "1UEZwEu9khGAo-UCUEJcrX_5bXaMOMXCy",
+      "title": "Demon Slayer",
+      "method": "clean_source_still",
+      "source_page_url": "https://movietvpro.vercel.app/movie/1490213-demon-slayer-kimetsu-no-yaiba-entert",
+      "media_url": "https://image.tmdb.org/t/p/original//gtQaq8HNSJByLXqs8vwDHabnP4p.jpg",
+      "sha256": "108d43c474b13511f4ca48e7ab79184314b1ddc85a7c960e7ad974a9ec681d05",
+      "dimensions": "1280x720",
+      "inspection": "Tanjiro carrying Nezuko at night amid smoke outside a Japanese building; clean TMDB backdrop, no text or watermark."
+    },
+    {
+      "folderId": "1uWHxNysa1syEW71feFr-dDJs7uLpqJaZ",
+      "title": "Naruto",
+      "method": "clean_source_still",
+      "source_page_url": "https://telegra.ph/Naruto-03-01-4",
+      "media_url": "https://de.web.img3.acsta.net/pictures/15/04/09/12/39/265694.jpg",
+      "sha256": "00eb52e7b92052cdcfaa96b61aa9f12b7daa11353c7d713525ddfe9e2455b9c8",
+      "dimensions": "1280x720",
+      "inspection": "Naruto Uzumaki before a sunlit village at golden hour; clean anime film still, no text or watermark. (First two candidates rejected: official-site URL unreachable, second was a chibi fan-art collage.)"
+    },
+    {
+      "folderId": "1PBSsCgG_uztgJ90ynjfugrHsIwlnk0-3",
+      "title": "Star Wars Womp Rat Edits",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.starwars.com/rogue-one-a-star-wars-story-gallery",
+      "media_url": "https://lumiere-a.akamaihd.net/v1/images/rogue-one-gallery03_56f77d2a.jpeg?region=0%2C0%2C1536%2C1024",
+      "sha256": "3056c855585d46ae17a1884ad6c57bccff7b24ccf2ed6441dde5416adccdffee",
+      "dimensions": "1280x720",
+      "inspection": "Jyn Erso from behind on the Yavin IV base with soldiers and temple spires; clean official Star Wars still, no text or watermark. Different scene from the Star Wars Edits item."
+    },
+    {
+      "folderId": "1UpmLf94FGNCdAvv_bjOf3rh1ftDZ_KJy",
+      "title": "Lanterns",
+      "method": "clean_source_still",
+      "source_page_url": "https://www.darkiworld.al/379457-lanterns",
+      "media_url": "https://artworks.thetvdb.com/banners/v4/series/376098/backgrounds/6a62626721099.jpg",
+      "sha256": "20a0b581bf594663abd9a203b87989f7ed40e6229a2028e22952cbfc65c96579",
+      "dimensions": "1280x720",
+      "inspection": "John Stewart and Hal Jordan in a small-town street under a green storm sky, Hal's ring glowing green; actual Lanterns (2026) series backdrop from TVDB, no text or watermark. (First candidate rejected: Green Lantern Corps logo graphic, 600x375, not a still.)"
+    }
+  ],
+  "failed": []
+}
