@@ -2308,6 +2308,7 @@ var __spreadValues = (a, b) => {
   function sfxResolve(id, nf) {
     const f = items.get(id);
     let L = FSFX[id] || f && FSFX[f.name];
+    if (L && !Array.isArray(L) && typeof L === "object" && (L.file || L.files)) L = sfxPickPool(L.file || L.files);
     if (L && Array.isArray(L) && Array.isArray(L[0])) {
       L = sfxPickPool(L, FSFX);
     }
@@ -4622,7 +4623,7 @@ var __spreadValues = (a, b) => {
       const sem = semanticSearch(q);
       if (sem.length) {
         const picks = sem.slice(0, 36).map((x) => ({ f: x.item, why: x.why }));
-        showOptimus(picks, "I searched the vault for \u201C".concat(q, "\u201D and picked ").concat(picks.length, " fan edits for you!"));
+        showOptimus(picks, "Text match only. Optimus (Gemini) did not answer this request.");
       } else {
         searchPage(q);
       }

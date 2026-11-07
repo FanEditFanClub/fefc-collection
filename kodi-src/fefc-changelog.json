@@ -13,7 +13,8 @@
     "Ticker text is capped so a long feed cannot blank the bar. A failed fetch keeps the previous line.",
     "Attribute search requires black-and-white wording and recorded names to match. It does not guess a genre.",
     "181 folder covers are listed in data/art-pending-181.json for a later clean-source pass. No generated art is applied.",
-    "Nine Facebook group URLs are recorded as unread. No group posts were added as edit notes."
+    "Nine Facebook group URLs are recorded as unread. No group posts were added as edit notes.",
+    "Emmerich / Independence Day rotation adds two ASR-supported lines: We will not go quietly into the night, and We will not vanish without a fight. Die Hard coast and vault-music candidates were not added."
    ]
   },
   {

@@ -146,10 +146,11 @@ def _android_ext_files_dir():
             t = ''
         if not t:
             continue
-        marker = '/Android/data/com.fefc.kodi/files'
-        i = t.find(marker)
-        if i >= 0:
-            return t[:i + len(marker)]
+        for pkg in (my_package(), 'com.fefc.kodi', 'org.xbmc.kodi'):
+            marker = '/Android/data/%s/files' % pkg
+            i = t.find(marker)
+            if i >= 0:
+                return t[:i + len(marker)]
     return ''
 
 
@@ -211,7 +212,7 @@ def maybe_ask_notify_perm(asked):
         return
     if ADDON.getSetting('notify_app_update') != 'true' and ADDON.getSetting('notify_new_files') != 'true':
         return
-    xbmc.executebuiltin('StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,fefcnotify://perm,,,,com.fefc.kodi.FefcNotifyActivity)')
+    xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"fefcnotify://perm",,,,,"com.fefc.kodi.FefcNotifyActivity")' % my_package())
 
 
 def consume_pending_nav():

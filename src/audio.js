@@ -33,13 +33,15 @@ function getAmbBuf(ib){
 let ambFile=null,ambFileP=null;
 function loadAmbFile(){if(ambFile)return Promise.resolve(ambFile);if(ambFileP)return ambFileP;
  ambFileP=fetch('assets/home-amb.m4a').then(r=>r.ok?r.arrayBuffer():Promise.reject(r.status)).then(a=>new Promise((ok,no)=>ctx.decodeAudioData(a,ok,no))).then(b=>ambFile=b).catch(e=>{ambFileP=null;return null});return ambFileP}
+/* Exact home bed from the first Fire TV app (commit acac138 src/audio.js), not the 0.4.0 rendered file.
+   Five oscillators, lowpass 900 Hz, LFO 0.07 Hz ±400 Hz, bed gain 0.05 into master 0.6. No intro-tail loop. */
 function ambStart(){
  if(!ctx||amb||ctx.state!=='running')return;
- const t=ctx.currentTime,g=ctx.createGain();
- g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.17,t+3);g.connect(master);
- amb={g,os:[],hasBuf:false};const me=amb;
- const play=b=>{if(!b||amb!==me||me.hasBuf)return;const src=ctx.createBufferSource();src.buffer=b;src.loop=true;src.connect(g);src.start();me.os.push(src);me.hasBuf=true};
- if(ambFile)play(ambFile);else loadAmbFile().then(b=>{if(b)play(b);else{const ab=S._ib&&getAmbBuf(S._ib);if(ab){g.gain.value=.085;play(ab)}}});
+ const g=ctx.createGain();g.gain.value=0;g.gain.linearRampToValueAtTime(.05,ctx.currentTime+3);
+ const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;lp.connect(g);g.connect(master);
+ const lfo=ctx.createOscillator(),lg=ctx.createGain();lfo.frequency.value=.07;lg.gain.value=400;lfo.connect(lg);lg.connect(lp.frequency);lfo.start();
+ const os=[55,82.4,110,164.8,220.5].map((f,i)=>{const o=ctx.createOscillator();o.type=i%2?'triangle':'sawtooth';o.frequency.value=f;o.detune.value=(i-2)*6;const v=ctx.createGain();v.gain.value=i>2?.25:.5;o.connect(v);v.connect(lp);o.start();return o});
+ amb={g,os:[...os,lfo]};
 }
 function ambStop(){if(!amb)return;const a=amb;amb=null;const t=ctx.currentTime;a.g.gain.cancelScheduledValues(t);a.g.gain.setValueAtTime(a.g.gain.value,t);a.g.gain.linearRampToValueAtTime(0,t+.8);setTimeout(()=>a.os.forEach(o=>{try{o.stop()}catch(e){}}),900)}
 /* The intro has exactly one sound: Carson's assets/intro.mp3. No synthesized intro, drone, bells or stings. */

@@ -319,7 +319,7 @@ class Router:
             return {'root': 'Fan Edit Fan Club', 'genres': 'Genres', 'recent': 'New Arrivals', 'history': 'Recently Opened', 'people': 'Actors & Directors'}.get(a) or {
                 'genre': self.params.get('genre', 'Genre'),
                 'mylist': 'My List',
-                'search': 'Search: %s' % self.params.get('q', '')}.get(a, 'Fan Edit Fan Club')
+                'search': 'Fan Edit Optimus'}.get(a, 'Fan Edit Fan Club')
         except Exception:
             return 'Fan Edit Fan Club'
 
@@ -358,6 +358,8 @@ class Router:
     def folder(self):
         m = _model()
         fid = self.params.get('id') or m['root']
+        if str(fid).startswith('pt:'):
+            return self.testing_folder(fid)
         page = int(self.params.get('page') or 0)
         ks = _kids(m, fid)
         # drop empty folders
@@ -374,6 +376,9 @@ class Router:
                 if any(not m['items'][k][2] for k in ks) or any(m['items'][k][2] for k in ks):
                     self.add_tool('Shuffle Play', 'Play a random mix of edits from this collection.', 'DefaultMusicPlaylists.png', action='shuffle', id=fid)
         nf = nv = 0
+        if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
+            tile = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
+            self.add_folder('01 - Testing', tile, 'App-only provider links. Not verified playable films. 0 verified videos.', landscape=tile, action='folder', id='pt:testing')
         if not page:   # Support Us / Read First docs in this folder, like the web app's tiles
             seen_kind = set()
             for did, dname, kind in (m.get('docs') or {}).get((m['items'].get(fid) or [0, 0, 0, ''])[3] or fid, []):
@@ -485,7 +490,7 @@ class Router:
         q = self.params.get('q')
         if q is None:
             from . import osinput
-            q = (osinput.get_text('Search the FEFC collection') or '').strip()
+            q = (osinput.get_text('Fan Edit Optimus') or '').strip()
             if not q:
                 xbmcplugin.endOfDirectory(self.handle, succeeded=False)
                 return
@@ -494,6 +499,9 @@ class Router:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
             return
         m = _model()
+        self.add_tool('Fan Edit Optimus', 'The magnifying glass stays on Search. This row is the same guide as the web search overlay. Bot: https://x.ai/bot/DR18SV4AEeeNRcKT1U-0P',
+                      'https://fefc-collection.pages.dev/assets/optimus.png', folder=False,
+                      landscape='https://fefc-collection.pages.dev/assets/optimus.png', action='noop')
         res = catalog.search(m, q)
         nf = nv = 0
         for i in res:
@@ -511,7 +519,7 @@ class Router:
         """Home Search tile (RunPlugin, no directory handle): ask for the text first, then open the results list directly.
         Nothing is returned from a failed directory, so the keyboard cannot reappear over the results."""
         from . import osinput
-        q = (osinput.get_text('Search the FEFC collection') or '').strip()
+        q = (osinput.get_text('Fan Edit Optimus') or '').strip()
         if q:
             xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(self.url, action='search', q=q))
         if self.handle >= 0:
@@ -665,7 +673,32 @@ class Router:
         xbmc.executebuiltin('ActivateWindow(Settings)')
 
     def notify_perm(self):
-        xbmc.executebuiltin('StartAndroidActivity(com.fefc.kodi,android.intent.action.VIEW,,fefcnotify://perm,,,,com.fefc.kodi.FefcNotifyActivity)')
+        import service
+        from .notifyplan import MESSAGES
+        pkg = service.my_package()
+        d = service._android_ext_files_dir() or ''
+        path = os.path.join(d, 'fefc-notify-perm.txt') if d else ''
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"fefcnotify://perm",,,,,"com.fefc.kodi.FefcNotifyActivity")' % pkg)
+        status = ''
+        for _ in range(16):
+            if path and os.path.exists(path):
+                try:
+                    status = open(path, encoding='utf-8', errors='ignore').read().strip()
+                except Exception:
+                    status = ''
+                if status and status != 'prompt':
+                    break
+            xbmc.sleep(200)
+        msg = MESSAGES.get(status) or ('No permission result came back from Android package %s. If no popup appeared, open this app in the system notification settings.' % pkg)
+        if status in ('not_required', 'granted', 'already_granted', 'open_settings', 'denied', 'denied_settings', ''):
+            xbmcgui.Dialog().ok('Notifications', msg)
+        else:
+            xbmcgui.Dialog().notification('Notifications', msg[:90], xbmcgui.NOTIFICATION_INFO, 5000)
 
     def sound_toggle(self):
         """Top-bar sound on/off (saved in the add-on settings, so it survives restarts and app updates)."""
@@ -932,6 +965,50 @@ class Router:
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
+    def _pt(self):
+        if getattr(self, '_ptdoc', None) is None:
+            from . import providers
+            self._ptdoc = providers.fetch(_base())
+        return self._ptdoc
+
+    def testing_folder(self, fid=None):
+        from . import providers
+        fid = fid or self.params.get('id') or 'pt:testing'
+        try:
+            doc = self._pt()
+        except Exception as e:
+            _log('testing list: %s' % e)
+            xbmcgui.Dialog().notification('FEFC', 'Testing list unavailable', xbmcgui.NOTIFICATION_ERROR, 4000)
+            self.end('files', cache=False)
+            return
+        tile = 'special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png'
+        for r in providers.children(doc, fid):
+            plot = (r.get('status') or '') + '\nNot a verified film. In-app play is off.'
+            if r.get('catalog'):
+                plot = 'Catalog: %s\n%s' % (r['catalog'], plot)
+            if r.get('kind') == 'folder':
+                self.add_folder(r['name'], tile, plot, landscape=tile, action='folder', id=r['id'])
+            else:
+                self.add_tool(r['name'], plot, tile, folder=False, landscape=tile, action='open_link', id=r['id'])
+        self.end('files', cache=False)
+
+    def open_link(self):
+        from . import providers
+        rec = None
+        try:
+            rec = providers.find(self._pt(), self.params.get('id') or '')
+        except Exception as e:
+            _log('open link: %s' % type(e).__name__)
+        if not rec or not rec.get('url'):
+            xbmcgui.Dialog().ok('FEFC', 'No link is stored for this item.')
+        else:
+            label = rec.get('open_label') or 'Open link'
+            xbmcgui.Dialog().ok(label, (rec.get('status') or 'Playback has not been verified.') + '\n\nIn-app Play is not available. Opening the provider page.')
+            _log('open provider %s' % (rec.get('name') or '')[:80])
+            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,"%s")' % rec['url'].replace('"', '%22'))
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     def play(self):
         m = _model()
         vid = self.params['id']
@@ -1134,6 +1211,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'mylist_sync': 'mylist_sync', 'open_vlc': 'open_vlc', 'open_drive': 'open_drive', 'readme': 'readme', 'support': 'support',
           'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
+          'open_link': 'open_link',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop'}
 
 
