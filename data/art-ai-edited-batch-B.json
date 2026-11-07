@@ -1,0 +1,306 @@
+{
+  "v": 1,
+  "status": "ai-edited-candidate; parent visually checked; not user-approved; not a clean-source still",
+  "incorporated": 7,
+  "unprocessedExcludingManualOverrides": 0,
+  "manualOverridesExcluded": 0,
+  "note": "Original trailer-frame inputs remain at assets/covers/<folderId>.jpg. The app pointer is the AI edit. No Drive files were changed.",
+  "items": [
+    {
+      "folderId": "131PJ19BQ71Ho5CFiWpHo8_H9Hll7Npqt",
+      "title": "Jaws: The Revenge (1987) - BBC TV Cut - Fan Edit",
+      "trailerInput": "assets/covers/131PJ19BQ71Ho5CFiWpHo8_H9Hll7Npqt.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/131PJ19BQ71Ho5CFiWpHo8_H9Hll7Npqt.jpg",
+      "sha256": "db10fd85b458d4ad0eb308defcf124b44e291a3b76f3f7f2fbf6b924d5dbc756",
+      "requestedRemoval": "CLASSIC TRAILER center",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Shark attacking white boat on blue ocean; CLASSIC TRAILER box gone, no new text added.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1hTQP2fz64xKYPfMT8GLDBr4bDGk8CU6B",
+      "title": "Jurassic Park",
+      "trailerInput": "assets/covers/1hTQP2fz64xKYPfMT8GLDBr4bDGk8CU6B.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1hTQP2fz64xKYPfMT8GLDBr4bDGk8CU6B.jpg",
+      "sha256": "0d9f59350b9eb5c8225305fd8c1d1cd1600f2592604483395eee30e48a951fb9",
+      "requestedRemoval": "CLASSIC TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "T. rex skeleton in visitor center with 'WHEN DINOSAURS RULED THE EARTH' banner; CLASSIC TRAILER box gone, no new text added.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1SA44G96agST5h8wiw7puPgC9dkZwGK7t",
+      "title": "Kill Bill",
+      "trailerInput": "assets/covers/1SA44G96agST5h8wiw7puPgC9dkZwGK7t.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1SA44G96agST5h8wiw7puPgC9dkZwGK7t.jpg",
+      "sha256": "4881d8b78819c9b8b5634fb743ca5a53f124a212ca29d1d34eb2e2debbac1479",
+      "requestedRemoval": "OFFICIAL TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Woman in yellow holding katana; KILL BILL / THE WHOLE BLOODY AFFAIR title remains; OFFICIAL TRAILER gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1nl8r9OwsByvdHTiWsA2T4Y1JwcGCh9vj",
+      "title": "No Country for Old Men",
+      "trailerInput": "assets/covers/1nl8r9OwsByvdHTiWsA2T4Y1JwcGCh9vj.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1nl8r9OwsByvdHTiWsA2T4Y1JwcGCh9vj.jpg",
+      "sha256": "986a8892131d7a47ed63063b1dc5f489ea8416d74eeeca52515f37b08720ef7f",
+      "requestedRemoval": "CLASSIC TRAILER top-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Man with wet hair holding a pistol by a river; CLASSIC TRAILER text gone; no trailer text remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "19xYtBpwF_qnL_vTUuepo74WX6DxYnINr",
+      "title": "Ocean's",
+      "trailerInput": "assets/covers/19xYtBpwF_qnL_vTUuepo74WX6DxYnINr.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/19xYtBpwF_qnL_vTUuepo74WX6DxYnINr.jpg",
+      "sha256": "265d74ca0378a3d28358db2cc3bd800f22609d6b9db51b67494875a3076d7254",
+      "requestedRemoval": "OFFICIAL 1ST TRAILER bottom-right",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Two women in sunglasses on a park bench; OCEAN'S 8 title remains bottom-right; OFFICIAL 1ST TRAILER gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "13hoPs9sBtSbSpU2fwPL4Zi3Sp_QLKK5t",
+      "title": "Rambo",
+      "trailerInput": "assets/covers/13hoPs9sBtSbSpU2fwPL4Zi3Sp_QLKK5t.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/13hoPs9sBtSbSpU2fwPL4Zi3Sp_QLKK5t.jpg",
+      "sha256": "8606c9039f5c13aca4908347cace11e757918b22c077883abc826a932eec22f9",
+      "requestedRemoval": "CLASSIC TRAILER center-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Man with red headband drawing a bow; CLASSIC TRAILER text gone; no trailer text remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1n_qjXWwJ05Ezz69Y5k9Lh96qPsG5jFqq",
+      "title": "Rush Hour",
+      "trailerInput": "assets/covers/1n_qjXWwJ05Ezz69Y5k9Lh96qPsG5jFqq.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1n_qjXWwJ05Ezz69Y5k9Lh96qPsG5jFqq.jpg",
+      "sha256": "c400c6fa49e06824982178682f2db9de5c0216a2da3f507a0bf370d40df8d4de",
+      "requestedRemoval": "CLASSIC TRAILER top-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Two laughing men; CLASSIC TRAILER text gone; orange Fandango F logo remains bottom-left.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "folderId": "1dFF80_P5FAtXPR7bYxJQi57f8W4zBU7b",
+      "title": "Jessica Jones",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1xYb-yMcgXSTY7f2_ODvXyb6W9zF2aQdq",
+      "title": "Jurassic Park: The Game",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1BVggYPbdjeBsX6nyCZP9SQIX_znYZfYL",
+      "title": "Key and Peele",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1S1PafxVpluPaBNfDtH5n-4cVfIbDVkp7",
+      "title": "L.A. Noire Series",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1uxGLb58ZcmzUoyWTmvit5JFT-eooKkBD",
+      "title": "Mad Max",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1_-URWh2uJsyaAE7i6AIWgpe7wsQuZCjB",
+      "title": "Paranormal Activity",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1UFrXE4XTmK0xIpc2OooMF2HlWXB4a2De",
+      "title": "Parks and Recreation",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "12XlOlKk8yQvwtXVODWAh_xOETZ6VPEAR",
+      "title": "Preacher",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1cYa7mX03M2P432Ick--9qAk2L9eTaAvM",
+      "title": "Revenge",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1MkQPRWwNrMq3jdM09a0SJAT9iLqQLIMu",
+      "title": "Severance",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1vl9fARDzWbBgI658ZIqTzgQsibZd_ggc",
+      "title": "Star vs. The Forces of Evil",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1RV29lGvh3kqrBoUA5sQBe5LHceB7XoiF",
+      "title": "Star Wars",
+      "reason": "no promotional overlay found; left unprocessed"
+    }
+  ],
+  "failed": [
+    {
+      "folderId": "11X9Ra52Y2Wgn88Cd70_Ph3OinE02WarD",
+      "title": "It: Welcome to Derry - Derry Cut",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1o0AOf7gbOCqIOqILMzLbkVvLNamFxKNy",
+      "title": "Love, Death & Robots",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1Y4aJiq4ONR2qScEjyquMbzO4uC9oP3C2",
+      "title": "Marvel",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1hXtNwD1D-OmQxXIEnOFDSWhPRdypzCMd",
+      "title": "Naruto",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1HNITwajPadGoFRDMgJ_NCM-BbCZl0WRz",
+      "title": "Neon Genesis Evangelion",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "18py1chaPLhHa-8M3PoqXxu4Y6D6qSoeZ",
+      "title": "Parasyte: The Grey",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1yQvTgfl9HYA-85gzqkIDIxSboRM_7Yqt",
+      "title": "Predator",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1IWb5XYTikkZlhNzSWXIL3mM_vaYzp3Gv",
+      "title": "Rick & Morty",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1sDaruqyPmafHhI7LiPWoxPqeIpp8wXNH",
+      "title": "RoboCop",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1H_yQ-y0wg3aAmRXWq8esvBSLLrJnyKQJ",
+      "title": "Rocky",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "10Tobpc-1IOfmI-OysRC9aWJeM3IZjYWK",
+      "title": "Smallville",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1rfNRi5OpYmisrWdniYNCpIA9ZSynt9Cl",
+      "title": "Star Trek",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1EawyIt_A5UtV6AoilFD8M09ayzdWt3RZ",
+      "title": "Star Trek: Discovery",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1CVIcE2m4dgmLQ8W5oCRyWZTXjgc7LOn4",
+      "title": "Star Trek: Picard",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1jZI-8uF_Zd6WsuBtl_YfNXlBbu48PjHS",
+      "title": "Star Trek: TOS",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1LIPlim9yH2Oaeig-vu3sF86xlUo_9N_m",
+      "title": "Star Wars - Andor",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1CAM87va1wgP_AOsVUVFWZDV3jnrTeUBg",
+      "title": "Star Wars - Obi-Wan Kenobi",
+      "reason": "image edit declined by the media tool (policy)"
+    }
+  ]
+}

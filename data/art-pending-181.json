@@ -181,7 +181,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Oo3riUr76N-jvEXCdBmf_m-QQc3Szn28",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1gPjy1a9SHu1wCHd9LyGdLB21jeOilh5f.jpg",
+      "trailerInputPreserved": "assets/covers/1gPjy1a9SHu1wCHd9LyGdLB21jeOilh5f.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "HD badge lower-left",
+        "sha256": "bc5f6e0e76f2c5afd5644d3c4503d5bc16fa95426598276a889ba45af0572b05",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Wesley Snipes as Blade, leather outfit and straps remain visible; no new title added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1I9JOJiVuPXxxvRHwngrieI5FkyZjda8A",
@@ -205,7 +215,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1qrivNq7AAj_tMG8CTcMBIJopFwRHJKuT.jpg",
+      "trailerInputPreserved": "assets/covers/1qrivNq7AAj_tMG8CTcMBIJopFwRHJKuT.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER + F HD badge lower-left",
+        "sha256": "a43d604cdec7bff59039870d6ef32f26fb642dde097df6bfcabcf927c31d3450",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Matt Damon close-up, building background and jacket remain visible; no new title added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1bxXHjG7jHios-J4P22-eYS8X0vBC0Lkr",
@@ -265,7 +285,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Ob5x9m5yPm4_XcTOEmjXEVrDGKxkL58M",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1jkVF0SVUx9XSGJvx-rOegQRNTkKufuh4.jpg",
+      "trailerInputPreserved": "assets/covers/1jkVF0SVUx9XSGJvx-rOegQRNTkKufuh4.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER top",
+        "sha256": "ab60022a533e3083fbdcd2ae07f70a8bdb80373685ec0a1271a6970f2dad311e",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Blue creature, reaching hands and interior scene remain visible; SF logo remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1ukNhvKnqG3zbFVaCM7nScQbx1ppBHKXG",
@@ -313,7 +343,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1aLQFqjAcp0D_soxsH_nW1bqWYF9tC3_A",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1hq-G36fEDT51X18vYEt0thuLEV9QTGDc.jpg",
+      "trailerInputPreserved": "assets/covers/1hq-G36fEDT51X18vYEt0thuLEV9QTGDc.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER HD lower-left",
+        "sha256": "39d85f59f6d014b48959ae3b9bfd12c789979dfe0c7ab6ad708d395a51955ae7",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Bruce Willis close-up, plaid shirt and blurred background remain visible; no new title added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1wouhO_TQ_Q6lG-JGM5ibnGBLx0-MXQ_F",
@@ -337,7 +377,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/13RgVqu0ANNw3n2V7llfq6xlmJS4AhkQ7.jpg",
+      "trailerInputPreserved": "assets/covers/13RgVqu0ANNw3n2V7llfq6xlmJS4AhkQ7.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER top",
+        "sha256": "c78b8b31747c6058ccd478b928fbd5a2c681b5d110a47950835c70bac856f162",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Girl in the woods, wet hair and dark forest remain visible; SF logo remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1Ktg1s35vkuamHLcxAeU4NNyKTb45cgo_",
@@ -397,7 +447,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1WJ2MubPB10Hsc1cYKRrFz8ZqemYCpgiB",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1HJ73OHxMySs65--JtZuogBBr1E1d8oNj.jpg",
+      "trailerInputPreserved": "assets/covers/1HJ73OHxMySs65--JtZuogBBr1E1d8oNj.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER top",
+        "sha256": "d8f2fa7321b8accce9e9734e9d35fabc3d2df5d7321da946d0035fc729d4d8f4",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Man lying in bed, candle, nightstand and striped pillow remain visible; SF logo remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1NCpoO4mP5XQrO7IL-pDcbbzlz9jfvgS7",
@@ -529,7 +589,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1n5KfqPe3xBb8T9MdTxnfwWgK4wArX1wh",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1YqiwFgLB6pp69cSWY3bavO55omDZrlqv.jpg",
+      "trailerInputPreserved": "assets/covers/1YqiwFgLB6pp69cSWY3bavO55omDZrlqv.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left",
+        "sha256": "ee6709b88544f02de9214ae8300f3fd03647e4a273694d008089b8b968cb24cd",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Two men, rocky shore and HIGHLANDER title remain visible.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1_1nV4MSnyPICHIsb2jswOSLkkkevAvUa",
@@ -553,7 +623,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1l2SrAdCnUX1anBDpNeP-P0jwwAToF5rE",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1Q247Wyg1dIwgknXnsN2esA6ROUywJd5u.jpg",
+      "trailerInputPreserved": "assets/covers/1Q247Wyg1dIwgknXnsN2esA6ROUywJd5u.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER left",
+        "sha256": "014bbcb478f897997d6952478c3ede12c2fa2328381bde8717d4f05d5be37fef",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Woman's face, clawed hands and INSIDIOUS OUT OF THE FURTHER title remain visible.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1WaZDoZbtziAFWGoCGPGn_fmm8ka0hA8s",
@@ -625,7 +705,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/131PJ19BQ71Ho5CFiWpHo8_H9Hll7Npqt.jpg",
+      "trailerInputPreserved": "assets/covers/131PJ19BQ71Ho5CFiWpHo8_H9Hll7Npqt.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER center",
+        "sha256": "db10fd85b458d4ad0eb308defcf124b44e291a3b76f3f7f2fbf6b924d5dbc756",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Shark attacking white boat on blue ocean; CLASSIC TRAILER box gone, no new text added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1dFF80_P5FAtXPR7bYxJQi57f8W4zBU7b",
@@ -649,7 +739,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=179RdSgOmIlWfUtfTRM1tJKqvnXZcV3o5",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1hTQP2fz64xKYPfMT8GLDBr4bDGk8CU6B.jpg",
+      "trailerInputPreserved": "assets/covers/1hTQP2fz64xKYPfMT8GLDBr4bDGk8CU6B.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER bottom-left",
+        "sha256": "0d9f59350b9eb5c8225305fd8c1d1cd1600f2592604483395eee30e48a951fb9",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "T. rex skeleton in visitor center with 'WHEN DINOSAURS RULED THE EARTH' banner; CLASSIC TRAILER box gone, no new text added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1xYb-yMcgXSTY7f2_ODvXyb6W9zF2aQdq",
@@ -685,7 +785,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1_Nl3-6xCufsXa8Mqp4_8Q9R8VuiIWTrw",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1SA44G96agST5h8wiw7puPgC9dkZwGK7t.jpg",
+      "trailerInputPreserved": "assets/covers/1SA44G96agST5h8wiw7puPgC9dkZwGK7t.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left",
+        "sha256": "4881d8b78819c9b8b5634fb743ca5a53f124a212ca29d1d34eb2e2debbac1479",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Woman in yellow holding katana; KILL BILL / THE WHOLE BLOODY AFFAIR title remains; OFFICIAL TRAILER gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1S1PafxVpluPaBNfDtH5n-4cVfIbDVkp7",
@@ -769,7 +879,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1h-AqfOCkwOqWltI7nFC95WaDCFebqVZ4",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1nl8r9OwsByvdHTiWsA2T4Y1JwcGCh9vj.jpg",
+      "trailerInputPreserved": "assets/covers/1nl8r9OwsByvdHTiWsA2T4Y1JwcGCh9vj.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER top-left",
+        "sha256": "986a8892131d7a47ed63063b1dc5f489ea8416d74eeeca52515f37b08720ef7f",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Man with wet hair holding a pistol by a river; CLASSIC TRAILER text gone; no trailer text remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "19xYtBpwF_qnL_vTUuepo74WX6DxYnINr",
@@ -781,7 +901,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/19xYtBpwF_qnL_vTUuepo74WX6DxYnINr.jpg",
+      "trailerInputPreserved": "assets/covers/19xYtBpwF_qnL_vTUuepo74WX6DxYnINr.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL 1ST TRAILER bottom-right",
+        "sha256": "265d74ca0378a3d28358db2cc3bd800f22609d6b9db51b67494875a3076d7254",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Two women in sunglasses on a park bench; OCEAN'S 8 title remains bottom-right; OFFICIAL 1ST TRAILER gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1_-URWh2uJsyaAE7i6AIWgpe7wsQuZCjB",
@@ -853,7 +983,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1i3j7xg5ua7UGqvedZK_htbuxGMxrl01a",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/13hoPs9sBtSbSpU2fwPL4Zi3Sp_QLKK5t.jpg",
+      "trailerInputPreserved": "assets/covers/13hoPs9sBtSbSpU2fwPL4Zi3Sp_QLKK5t.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER center-left",
+        "sha256": "8606c9039f5c13aca4908347cace11e757918b22c077883abc826a932eec22f9",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Man with red headband drawing a bow; CLASSIC TRAILER text gone; no trailer text remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1cYa7mX03M2P432Ick--9qAk2L9eTaAvM",
@@ -913,7 +1053,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1WWzSmyjHwM8562RGQ38-0zORcOvO18uR",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1n_qjXWwJ05Ezz69Y5k9Lh96qPsG5jFqq.jpg",
+      "trailerInputPreserved": "assets/covers/1n_qjXWwJ05Ezz69Y5k9Lh96qPsG5jFqq.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER top-left",
+        "sha256": "c400c6fa49e06824982178682f2db9de5c0216a2da3f507a0bf370d40df8d4de",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Two laughing men; CLASSIC TRAILER text gone; orange Fandango F logo remains bottom-left.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1MkQPRWwNrMq3jdM09a0SJAT9iLqQLIMu",
@@ -1045,7 +1195,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1pTIVfkc7JntkfMAeIQjMMNHbeyiJ8zXb",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/17MVdy6grBMj3NkbO4UpcovzbEpooB-zZ.jpg",
+      "trailerInputPreserved": "assets/covers/17MVdy6grBMj3NkbO4UpcovzbEpooB-zZ.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "SUPERMAN OFFICIAL TRAILER bottom-left",
+        "sha256": "52363eee6e7f18702b5dbc75ce8aa431a5d93721012bf1f072a31037b4e2c7fa",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Two men in plaid shirts outdoors with house and greenery remain visible; no trailer text remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "16aLdl_xjdITGYXeRrQXaSB2yz8NESCjx",
@@ -1057,7 +1217,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/16aLdl_xjdITGYXeRrQXaSB2yz8NESCjx.jpg",
+      "trailerInputPreserved": "assets/covers/16aLdl_xjdITGYXeRrQXaSB2yz8NESCjx.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER HD middle-left",
+        "sha256": "ad6c9abff6da101baa15d40df2340d89671073dda89122611e954c04fd547423",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Blue-masked turtle in armor with smoky background remains visible; no trailer text or badge remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1Hsdc8xMQNsI8oF8vD12y_JeijUgICK9K",
@@ -1093,7 +1263,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1lbN2SmpH9NLUhn4QtcU3kT_XgoQp0GgV",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1jR3645MRiGEh3bQh8lh7xweuGiK5jpfw.jpg",
+      "trailerInputPreserved": "assets/covers/1jR3645MRiGEh3bQh8lh7xweuGiK5jpfw.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom",
+        "sha256": "63b6ae8eff59528991fb5e99b1e63146e7a40552a9d9c51b5f10434526ec297c",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Woman in dark scene, SCARLETT JOHANSSON and MIKE FLANAGAN credits and THE EXORCIST MARTYRS title remain visible; no trailer text remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1oU_KrdGAeA_SnIjNuBiGN2tnkFCc2wKw",
@@ -1129,7 +1309,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1XSfs4ZFJ5x67ek9fo-HUofeAYcL_ueX1",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1Cvd74Hq44gNHXAyXeZrjrQHdT4IKETiu.jpg",
+      "trailerInputPreserved": "assets/covers/1Cvd74Hq44gNHXAyXeZrjrQHdT4IKETiu.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "HD badge bottom-left",
+        "sha256": "cd458f99e5caeccfc79664b2320ad28be756e9e74fc84edc81c15974be99b98f",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Rider on white horse holding a glowing staff, grassland and mountains remain visible; no HD badge remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1f61yaGwkNj7URPjYe6LcvAbIrvg55RnB",
@@ -1177,7 +1367,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1D8wtdrlc5pNOQWHXVE0tp0SfKTEFrJ4h",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/13btNhUyaio2WsxWvB1Jc7xjwcMLjuABP.jpg",
+      "trailerInputPreserved": "assets/covers/13btNhUyaio2WsxWvB1Jc7xjwcMLjuABP.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "BUCKLE UP YOUTUBE top and NEW TRAILER bottom",
+        "sha256": "a9a0074a20328fd3277a8a1b5c54b8b2e84bf2b6229a3d2b870fa3283a05fc12",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "THE NAKED GUN pink title and man holding a police badge against blue sky remain visible; no promo text remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1uDt1ziVW6-YLUcvpM47X665GH5JD4yli",
@@ -1189,7 +1389,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Xq9m7w868WA1D17BxhMVUK93AZYdKOPG",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1uDt1ziVW6-YLUcvpM47X665GH5JD4yli.jpg",
+      "trailerInputPreserved": "assets/covers/1uDt1ziVW6-YLUcvpM47X665GH5JD4yli.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TV TRAILER bottom-left",
+        "sha256": "a490dea5d8308d54771433f758000a92036d792f223ffaca27a4c1352ec4c2ad",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Captain in blue uniform seated in chair and officer in red behind remain visible; no trailer text or TV badge remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1bUoDRYrk342eDUq7PN1AN7TSklUFhpZk",
@@ -1285,7 +1495,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1dQqes2Elzi42n43PhjWV19wfxL6SIQuQ",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1XVjZpxI832lvQ18JOZE7PC6T3_69AetH.jpg",
+      "trailerInputPreserved": "assets/covers/1XVjZpxI832lvQ18JOZE7PC6T3_69AetH.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER in title block",
+        "sha256": "d908d7ffb1488bbd4ed4ec1b49c2b52d9f809d6e593b2215dcf11b6cdb2114f6",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "TWILIGHT ZONE THE MOVIE title and airplane-window scene with eyeball and glowing door remain visible; no TRAILER word remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1exX9K-gpzUJm2p3lX5q8tkAxGdlD881M",
@@ -1321,7 +1541,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1vh7xmdyOCLhbxOYjCiRYCJnNf_5DS8WM",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1RPvTm5hzZJJd3XYLchJ4xgMSRThWbthl.jpg",
+      "trailerInputPreserved": "assets/covers/1RPvTm5hzZJJd3XYLchJ4xgMSRThWbthl.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left boxed",
+        "sha256": "43c3c48de16b8fa086e009e1eb076e4d6cf47ebb15ea1d45497ebc450a95094f",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "V/H/S/MIXTAPE title, faces and puppet remain visible; no OFFICIAL TRAILER box remains.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1OV2EjfA17__o1Dg8T4f6Qkpq2mzSme4F",
@@ -1405,7 +1635,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Rp2hamJz4meI2AMiNsdOZXeDEboqbR1t",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1CT-3hyqSDLp33AcP3IM0myYt6mafxLpm.jpg",
+      "trailerInputPreserved": "assets/covers/1CT-3hyqSDLp33AcP3IM0myYt6mafxLpm.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom",
+        "sha256": "ca9668ab60f31b51ed3d53bad92eb95d2fe3357024dddfe58317e12aa39c9854",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Crowned ape in centre with two apes flanking remain visible; no trailer text remains (the small title text was also removed in the AI output).",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "13EXMjh2IT68CZ6ji2vl2Hudeb8-R9QKW",
@@ -1525,7 +1765,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1gxEM_UJIfn5TmCCU8l-H0PPvwOodnBAq",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1C5Zyp1-k0Jg_LeIpxhcVj5kYcs2TlST5.jpg",
+      "trailerInputPreserved": "assets/covers/1C5Zyp1-k0Jg_LeIpxhcVj5kYcs2TlST5.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER top-left",
+        "sha256": "c7b9842b6eb44f92f0ebac8d0233519b59b06a5eb6eb1456bc11e3e2dc202833",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Man lying in bed by candlelight, striped pillow and SF logo remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1rjdvUshNzw7CssqqR48OyezlZ_2PAGsT",
@@ -1549,7 +1799,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1BuB6gAIZ1eUlyv9ht_bxFHqXj4nBWmIv",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1db3auHFg0q-eL04lRUSY4AiNzxv6vura.jpg",
+      "trailerInputPreserved": "assets/covers/1db3auHFg0q-eL04lRUSY4AiNzxv6vura.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER below HALLOWEEN title, bottom",
+        "sha256": "624ab1f1f90de50fb575569a5c418a44b83fa9ea9217b46981366e4dd2e6b1b4",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Michael Myers masked close-up and HALLOWEEN title remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1HQ4cGRB1k3mSHDOMoKrXRm2lz9Ttxefg",
@@ -1573,7 +1833,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1l2SrAdCnUX1anBDpNeP-P0jwwAToF5rE",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1w2tmHabMwQsMXLxSaqHQH_q90OlgpfPq.jpg",
+      "trailerInputPreserved": "assets/covers/1w2tmHabMwQsMXLxSaqHQH_q90OlgpfPq.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER lower-left below INSIDIOUS title",
+        "sha256": "079043459c7655ebbb9f38b385013e6ea3377514842d6cf27db20654621142ea",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Screaming woman gripped by clawed hands, INSIDIOUS and OUT OF THE FURTHER titles remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1cal67UuSdLCcSTaVjJhbRd7swAeOvZjm",
@@ -1597,7 +1867,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Mkri7uAmFBXi_qvWfMCZgZALaiDhnPbS",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1H6RGkemEWenhjEGnb5yClrJQb52OYjx-.jpg",
+      "trailerInputPreserved": "assets/covers/1H6RGkemEWenhjEGnb5yClrJQb52OYjx-.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left pill",
+        "sha256": "83c34f09ca79821b1f3e608fbe916195c168681d3f4d2e07b178c0514a3cb2d0",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Woman with katana, KILL BILL and THE WHOLE BLOODY AFFAIR titles remain visible; OFFICIAL TRAILER pill gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1Se9u8fANVswJGZTIjpr-E9RuWlgjC18-",
@@ -1681,7 +1961,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1vyo8s97l0Le7tZBi8j0ejaRI-nuuiQNU",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/10MSDIl69QZTAwO6RR6Yl7u7Bdpbh_tW_.jpg",
+      "trailerInputPreserved": "assets/covers/10MSDIl69QZTAwO6RR6Yl7u7Bdpbh_tW_.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER HD bottom-left",
+        "sha256": "c9eabf975e6f0118d8308c32ea3e0e3b789cb47b1ca1d364ee9f259593b40e04",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Gandalf bearded close-up with staff and stonework remain visible; TRAILER HD badge gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1rSJiRmTw0Dt5bCzjvc65pd7S2A6EMLGb",
@@ -1693,7 +1983,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1MQBJJKShZY6e-kApC0JS5rGHzilK0QnJ",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1rSJiRmTw0Dt5bCzjvc65pd7S2A6EMLGb.jpg",
+      "trailerInputPreserved": "assets/covers/1rSJiRmTw0Dt5bCzjvc65pd7S2A6EMLGb.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left",
+        "sha256": "a3422beb1d4b58f77e18f6580f7f662e99a67f25cb99a67a3cf63ae3c603d833",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Vampire face close-up and red 30 DAYS OF NIGHT title remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1fiCF1sbKTArhBI17aUGfSK8j-fCcn_4a",
@@ -1705,7 +2005,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=165Dk3tSOiadoUbJj0gHcE0OvZskC7sK3",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1fiCF1sbKTArhBI17aUGfSK8j-fCcn_4a.jpg",
+      "trailerInputPreserved": "assets/covers/1fiCF1sbKTArhBI17aUGfSK8j-fCcn_4a.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left pill",
+        "sha256": "5a7c17dfeba5a7fd12f7189ba96ab135a0a3b237ff37278603d91d231663a5e1",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Woman with katana, KILL BILL and THE WHOLE BLOODY AFFAIR titles remain visible; OFFICIAL TRAILER pill gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "10VT7YMfwcJviGN4tc25cJJ0hSeIQpSrt",
@@ -1741,7 +2051,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1k3p61SC1sduLB5PCm3Phmvmg_gS9CLkT",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/18ESYAHn-CUn7vO2_ZvXwXtrmJGxMXWe3.jpg",
+      "trailerInputPreserved": "assets/covers/18ESYAHn-CUn7vO2_ZvXwXtrmJGxMXWe3.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER left",
+        "sha256": "5dd28be0445fd042d7e6aaedf9d6a69490fb2dbd271992e50ccac10a03397d15",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "White-face-painted man close-up and orange F logo remain visible; CLASSIC TRAILER text gone on retry (first attempt left it visible).",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1oB4Kpu8S3jMyLzrCUchHqcTGgWmtiZMS",
@@ -1753,7 +2073,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1lhVnq7LwP6B0v2zhEOkspSKGtELtiHqw",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1oB4Kpu8S3jMyLzrCUchHqcTGgWmtiZMS.jpg",
+      "trailerInputPreserved": "assets/covers/1oB4Kpu8S3jMyLzrCUchHqcTGgWmtiZMS.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER HD bottom-left",
+        "sha256": "b1978ae5437e22011debd0d19e268416298517688b81551f202651ad7b05ff21",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Man in swim shorts emerging from the sea remains visible; TRAILER HD badge gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1MnmQAmRz47Wq9Wp5UwLZktpYK-z0uahX",
@@ -1801,7 +2131,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=139rRZJetc0Aq80oj4oZ6J_Hl1pI03L2D",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1rzzy7LlxqVjgkP91hDFqaO_A7xtc-HtQ.jpg",
+      "trailerInputPreserved": "assets/covers/1rzzy7LlxqVjgkP91hDFqaO_A7xtc-HtQ.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER left",
+        "sha256": "e3fc45a7ab30bfa736df9e6ed3a63110544abe8a9617c3618799ae5fb3da32c4",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Man in vest holding papers, raised hand, and orange F logo remain visible; CLASSIC TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1oDU7n6nxlv5GVqPAMsXTTbFEiKbjsOoR",
@@ -1825,7 +2165,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1-tdAAFxjipqaxZtKTKRxX46pXQ0swUq6",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1VKaBqloc4hVlhHcCnO-fq87IPvafJJOV.jpg",
+      "trailerInputPreserved": "assets/covers/1VKaBqloc4hVlhHcCnO-fq87IPvafJJOV.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left below THE MASK OF ZORRO title",
+        "sha256": "5e2a2546f2209ea4fed91c373f534de5be6271d8fe9641a71bcbb6b97b2bb845",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Horse and rider silhouette against the sun and THE MASK OF ZORRO title remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1eBriCU-jd4dAif2w_MueibpId-bWqkfY",
@@ -1837,7 +2187,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1D4m1AnNAyjoLtOXqRWuX0_F6f6870Rdd",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1eBriCU-jd4dAif2w_MueibpId-bWqkfY.jpg",
+      "trailerInputPreserved": "assets/covers/1eBriCU-jd4dAif2w_MueibpId-bWqkfY.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "HD badge bottom-left",
+        "sha256": "2b9cb001915552a0c7941c8e8ec21c3f41e690e6b5c65a282594e4587a433a59",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Gandalf long-hair close-up remains visible; HD badge gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1HcKTFg3OGyDl7l9QgIydT0dI-ZkuiIXO",
@@ -1873,7 +2233,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Ymo0Ul4wwLSgU4Z4dOwv2sNhAj4Y8VYZ",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1y9jMB2ve3rSlQ-zklXnuNwd-nQSdzkxS.jpg",
+      "trailerInputPreserved": "assets/covers/1y9jMB2ve3rSlQ-zklXnuNwd-nQSdzkxS.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER left",
+        "sha256": "7de5ef64626f88c3f3e6e80887168c89b30e3f6d502633f695956f1b74a9a261",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Man in white T-shirt with red sunglasses in diner and orange F logo remain visible; CLASSIC TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1LpC4CdRUQQAeYge4oSTY7XzwubaaKjZ5",
@@ -1981,7 +2351,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1lmZo8JG5SQskWOc79IAr64T2OsE66_w_",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/19Oy65CvFghVRspATLQQOjs3TM1TTb5xX.jpg",
+      "trailerInputPreserved": "assets/covers/19Oy65CvFghVRspATLQQOjs3TM1TTb5xX.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER HD bottom-left",
+        "sha256": "954011595f6a43c4f945608c82683f4034b89422554fc0b89f95e448cc2639f8",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Three kids looking down into an attic space, wooden beams and rope remain visible; TRAILER HD badge gone, no new text added.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1CA63V8iame8r4he6NPiyZzT53q5psLR_",
@@ -1993,7 +2373,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1BYjoJuJEGdDGiTmGce-jancuDLXPJvV8",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1CA63V8iame8r4he6NPiyZzT53q5psLR_.jpg",
+      "trailerInputPreserved": "assets/covers/1CA63V8iame8r4he6NPiyZzT53q5psLR_.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER top-left",
+        "sha256": "f1ca0af587a9de5fb6c05c0a877c09a415338fcf613eba506bb1c821f08a2014",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Tar-covered zombie face, coiled hoses and SF logo remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1r1b7gs9RVBLPzXHZFxRi5PLtZvoznJtR",
@@ -2005,7 +2395,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1OuW-GpAY3zKv4ME1Rwj37iH7xTc-wINa",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1r1b7gs9RVBLPzXHZFxRi5PLtZvoznJtR.jpg",
+      "trailerInputPreserved": "assets/covers/1r1b7gs9RVBLPzXHZFxRi5PLtZvoznJtR.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom",
+        "sha256": "014e7a8b400f75b93f44c5fad5a5c22aae231ef41063c081a374b22f75e48f97",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Screaming woman, yellow-lit scene and red EVIL DEAD BURN title remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1absJapV3GAEwdVm9PbwnCX-aMt9u_X3P",
@@ -2017,7 +2417,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1NtfBGA-9fmTmERuxEnq6UKChVjby_qmf",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1absJapV3GAEwdVm9PbwnCX-aMt9u_X3P.jpg",
+      "trailerInputPreserved": "assets/covers/1absJapV3GAEwdVm9PbwnCX-aMt9u_X3P.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "NEW TRAILER bottom-left plus BUCKLE UP YOUTUBE top",
+        "sha256": "9f5e07934ad9b6bf31c2995f7e97f8d10ec980206490f7b629c108ff35ff2fbc",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Liam Neeson holding police badge wallet and pink THE NAKED GUN title remain visible; NEW TRAILER and BUCKLE UP YOUTUBE text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1w0JA5U7W6V6nhAHE7o_ygshH3oigmWdz",
@@ -2053,7 +2463,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1zFoCqjM5Z52H2qlA_DimSMOKSOHt5dVe.jpg",
+      "trailerInputPreserved": "assets/covers/1zFoCqjM5Z52H2qlA_DimSMOKSOHt5dVe.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "TRAILER HD bottom-left",
+        "sha256": "792b50c60b76013dac1d81232cae4c1b717a5de134e8ef494a84c87c18ec6a4d",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Priest and woman in windswept coastal landscape remain visible; TRAILER HD badge gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1QWtyc97w07ZVavgdQY0WDfzxJDPixlXB",
@@ -2077,7 +2497,17 @@
       "candidateDriveFrameUrl": null,
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1Hyt4zYzKHuIjy2woVOlyFzmSe0KJhsCC.jpg",
+      "trailerInputPreserved": "assets/covers/1Hyt4zYzKHuIjy2woVOlyFzmSe0KJhsCC.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "OFFICIAL TRAILER bottom-left",
+        "sha256": "bdb12a225ff071d0ebe683fd0f53b8310969472de46395be305dbc43bbebc4a1",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Church interior, central figure and FATHER STU title remain visible; OFFICIAL TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1Y94jOqJf6ALO6-ywf9mwhb0_xETWZQwu",
@@ -2089,7 +2519,17 @@
       "candidateDriveFrameUrl": "https://drive.google.com/thumbnail?sz=w640&id=1Xq9m7w868WA1D17BxhMVUK93AZYdKOPG",
       "candidateApprovedClean": false,
       "originalArtUrl": null,
-      "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
+      "status": "ai-edited-candidate; parent visually checked trailer-text removal; not user-approved; not a clean-source still",
+      "aiEditedCandidate": "assets/covers/ai-edited/1Y94jOqJf6ALO6-ywf9mwhb0_xETWZQwu.jpg",
+      "trailerInputPreserved": "assets/covers/1Y94jOqJf6ALO6-ywf9mwhb0_xETWZQwu.jpg",
+      "aiEdit": {
+        "method": "AI edit of actual source image, promotional-text removal last resort",
+        "requestedRemoval": "CLASSIC TRAILER bottom-left",
+        "sha256": "00fc1c22895153046f433d7eace2424ea33b7c0af9588dd5b00d045783d9dcca",
+        "parentStatus": "visually_checked_candidate_not_user_approved",
+        "inspection": "Galaxy Quest cast in uniforms on the bridge remain visible; CLASSIC TRAILER text gone.",
+        "outputNotPixelIdentical": true
+      }
     },
     {
       "folderId": "1QHmpXtmORB1vcOaui_bRxjcvQ8SNrz79",
@@ -2236,7 +2676,7 @@
       "status": "pending-clean-source; GenerateImage last resort only; candidate frame not approved"
     }
   ],
-  "aiEditedCandidates": 6,
-  "unprocessedExcludingManualOverrides": 172,
+  "aiEditedCandidates": 50,
+  "unprocessedExcludingManualOverrides": 128,
   "manualOverridesExcluded": 3
 }

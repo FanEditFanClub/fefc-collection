@@ -1,0 +1,338 @@
+{
+  "v": 1,
+  "status": "ai-edited-candidate; parent visually checked; not user-approved; not a clean-source still",
+  "incorporated": 9,
+  "unprocessedExcludingManualOverrides": 0,
+  "manualOverridesExcluded": 0,
+  "note": "Original trailer-frame inputs remain at assets/covers/<folderId>.jpg. The app pointer is the AI edit. No Drive files were changed.",
+  "items": [
+    {
+      "folderId": "17MVdy6grBMj3NkbO4UpcovzbEpooB-zZ",
+      "title": "Superman",
+      "trailerInput": "assets/covers/17MVdy6grBMj3NkbO4UpcovzbEpooB-zZ.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/17MVdy6grBMj3NkbO4UpcovzbEpooB-zZ.jpg",
+      "sha256": "52363eee6e7f18702b5dbc75ce8aa431a5d93721012bf1f072a31037b4e2c7fa",
+      "requestedRemoval": "SUPERMAN OFFICIAL TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Two men in plaid shirts outdoors with house and greenery remain visible; no trailer text remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "16aLdl_xjdITGYXeRrQXaSB2yz8NESCjx",
+      "title": "Teenage Mutant Ninja Turtles",
+      "trailerInput": "assets/covers/16aLdl_xjdITGYXeRrQXaSB2yz8NESCjx.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/16aLdl_xjdITGYXeRrQXaSB2yz8NESCjx.jpg",
+      "sha256": "ad6c9abff6da101baa15d40df2340d89671073dda89122611e954c04fd547423",
+      "requestedRemoval": "TRAILER HD middle-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Blue-masked turtle in armor with smoky background remains visible; no trailer text or badge remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1jR3645MRiGEh3bQh8lh7xweuGiK5jpfw",
+      "title": "The Exorcist",
+      "trailerInput": "assets/covers/1jR3645MRiGEh3bQh8lh7xweuGiK5jpfw.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1jR3645MRiGEh3bQh8lh7xweuGiK5jpfw.jpg",
+      "sha256": "63b6ae8eff59528991fb5e99b1e63146e7a40552a9d9c51b5f10434526ec297c",
+      "requestedRemoval": "OFFICIAL TRAILER bottom",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Woman in dark scene, SCARLETT JOHANSSON and MIKE FLANAGAN credits and THE EXORCIST MARTYRS title remain visible; no trailer text remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1Cvd74Hq44gNHXAyXeZrjrQHdT4IKETiu",
+      "title": "The Lord of The Rings - The Reinvented Series",
+      "trailerInput": "assets/covers/1Cvd74Hq44gNHXAyXeZrjrQHdT4IKETiu.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1Cvd74Hq44gNHXAyXeZrjrQHdT4IKETiu.jpg",
+      "sha256": "cd458f99e5caeccfc79664b2320ad28be756e9e74fc84edc81c15974be99b98f",
+      "requestedRemoval": "HD badge bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Rider on white horse holding a glowing staff, grassland and mountains remain visible; no HD badge remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "13btNhUyaio2WsxWvB1Jc7xjwcMLjuABP",
+      "title": "The Naked Gun",
+      "trailerInput": "assets/covers/13btNhUyaio2WsxWvB1Jc7xjwcMLjuABP.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/13btNhUyaio2WsxWvB1Jc7xjwcMLjuABP.jpg",
+      "sha256": "a9a0074a20328fd3277a8a1b5c54b8b2e84bf2b6229a3d2b870fa3283a05fc12",
+      "requestedRemoval": "BUCKLE UP YOUTUBE top and NEW TRAILER bottom",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "THE NAKED GUN pink title and man holding a police badge against blue sky remain visible; no promo text remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1uDt1ziVW6-YLUcvpM47X665GH5JD4yli",
+      "title": "The Orville",
+      "trailerInput": "assets/covers/1uDt1ziVW6-YLUcvpM47X665GH5JD4yli.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1uDt1ziVW6-YLUcvpM47X665GH5JD4yli.jpg",
+      "sha256": "a490dea5d8308d54771433f758000a92036d792f223ffaca27a4c1352ec4c2ad",
+      "requestedRemoval": "TV TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Captain in blue uniform seated in chair and officer in red behind remain visible; no trailer text or TV badge remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1XVjZpxI832lvQ18JOZE7PC6T3_69AetH",
+      "title": "Twilight Zone: The Movie",
+      "trailerInput": "assets/covers/1XVjZpxI832lvQ18JOZE7PC6T3_69AetH.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1XVjZpxI832lvQ18JOZE7PC6T3_69AetH.jpg",
+      "sha256": "d908d7ffb1488bbd4ed4ec1b49c2b52d9f809d6e593b2215dcf11b6cdb2114f6",
+      "requestedRemoval": "TRAILER in title block",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "TWILIGHT ZONE THE MOVIE title and airplane-window scene with eyeball and glowing door remain visible; no TRAILER word remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1RPvTm5hzZJJd3XYLchJ4xgMSRThWbthl",
+      "title": "V/H/S",
+      "trailerInput": "assets/covers/1RPvTm5hzZJJd3XYLchJ4xgMSRThWbthl.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1RPvTm5hzZJJd3XYLchJ4xgMSRThWbthl.jpg",
+      "sha256": "43c3c48de16b8fa086e009e1eb076e4d6cf47ebb15ea1d45497ebc450a95094f",
+      "requestedRemoval": "OFFICIAL TRAILER bottom-left boxed",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "V/H/S/MIXTAPE title, faces and puppet remain visible; no OFFICIAL TRAILER box remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1CT-3hyqSDLp33AcP3IM0myYt6mafxLpm",
+      "title": "Planet of the apes",
+      "trailerInput": "assets/covers/1CT-3hyqSDLp33AcP3IM0myYt6mafxLpm.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1CT-3hyqSDLp33AcP3IM0myYt6mafxLpm.jpg",
+      "sha256": "ca9668ab60f31b51ed3d53bad92eb95d2fe3357024dddfe58317e12aa39c9854",
+      "requestedRemoval": "OFFICIAL TRAILER bottom",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Crowned ape in centre with two apes flanking remain visible; no trailer text remains (the small title text was also removed in the AI output).",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "folderId": "1Hsdc8xMQNsI8oF8vD12y_JeijUgICK9K",
+      "title": "Terminator",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1wgjrSmVkeMfi6yxLAbRphslQK2a5Zg0h",
+      "title": "Tetsuo",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1oU_KrdGAeA_SnIjNuBiGN2tnkFCc2wKw",
+      "title": "The Exorcist - The Reconsecrated Cut",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "17xiPoSxDlZOr4PYmWoeLvZ0bWbVuN5m-",
+      "title": "The Matrix",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1F1KYlPyWbyjnn_2_Q_S-nJVeEiIaVGS_",
+      "title": "The Sopranos",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1A5LBy32Fl8zz_jSqXklZSMMNrUXxQLUc",
+      "title": "The Suicide Squad",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1LETRRXE-N5a75MS61dQCqk5L8HxUsS9h",
+      "title": "The Thing",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1wY9t-JoF-Q91IyHYH8yyNZjO2cKh2fYF",
+      "title": "Tron",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1E2C2fibWCpukofZ9JAJba5wZefelj_oz",
+      "title": "Universal Monsters",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "14XsbwXovZ00-QJp96zONs5yoH1Csj9vt",
+      "title": "Whose Line Is It Anyway?",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1xubVBwzg113U866eZLhrAR1o_Jv-lEbA",
+      "title": "Dexter",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1p6lUL9qSOsJw-Na7o1Nyic4xqeRAkrNG",
+      "title": "South Park ",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "10n7of2kwlefFkn9Ny2zOCywgDUtua7lb",
+      "title": "Star Wars",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1PMFzTdn1BZZzgeNHXaCWdyz0a7QZuZ6_",
+      "title": "Star Wars Crawl",
+      "reason": "no promotional overlay found; left unprocessed"
+    }
+  ],
+  "failed": [
+    {
+      "folderId": "1tExaXYuAGuoIx9Nbkownl1uVaHEkOtNi",
+      "title": "The Flash",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1f61yaGwkNj7URPjYe6LcvAbIrvg55RnB",
+      "title": "The Man in The High Castle",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1ZgZ0GQAFkH2ME1icLTUtI6Y5R7e2lUzY",
+      "title": "The Monsterverse",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1bUoDRYrk342eDUq7PN1AN7TSklUFhpZk",
+      "title": "The Planet of The Apes",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1GBpKbZQZJjaZLbLFkFl4t-UcosDxKnMy",
+      "title": "The Twilight Zone",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1OBe2y6Ic36Enz01WKa9E1c8cRWXbkmNn",
+      "title": "The Witcher",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1exX9K-gpzUJm2p3lX5q8tkAxGdlD881M",
+      "title": "Twisted Metal",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1OV2EjfA17__o1Dg8T4f6Qkpq2mzSme4F",
+      "title": "Vikings",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1fdQEPQotiPn6XfE3SmIIBJzuhW9TA2Il",
+      "title": "Wipeout",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1u6Qqt4LGi07EMOiqpJtCJ7TYQQyNHI4j",
+      "title": "X-Men",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1-ElARRrrbG2K0IcHJvvErCkjU-y6Bwpw",
+      "title": "Marvel",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "13EXMjh2IT68CZ6ji2vl2Hudeb8-R9QKW",
+      "title": "Solar Opposites and Rick and Morty",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1GFaMD67zid0soscK924SiUlAuku1Bhn-",
+      "title": "A Nightmare on Elm Street - The Baliscon Cuts",
+      "reason": "image edit declined by the media tool (policy)"
+    }
+  ]
+}

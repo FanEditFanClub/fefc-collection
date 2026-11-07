@@ -1,0 +1,402 @@
+{
+  "v": 1,
+  "status": "ai-edited-candidate; parent visually checked; not user-approved; not a clean-source still",
+  "incorporated": 13,
+  "unprocessedExcludingManualOverrides": 0,
+  "manualOverridesExcluded": 0,
+  "note": "Original trailer-frame inputs remain at assets/covers/<folderId>.jpg. The app pointer is the AI edit. No Drive files were changed.",
+  "items": [
+    {
+      "folderId": "1C5Zyp1-k0Jg_LeIpxhcVj5kYcs2TlST5",
+      "title": "Friday the 13th",
+      "trailerInput": "assets/covers/1C5Zyp1-k0Jg_LeIpxhcVj5kYcs2TlST5.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1C5Zyp1-k0Jg_LeIpxhcVj5kYcs2TlST5.jpg",
+      "sha256": "c7b9842b6eb44f92f0ebac8d0233519b59b06a5eb6eb1456bc11e3e2dc202833",
+      "requestedRemoval": "OFFICIAL TRAILER top-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Man lying in bed by candlelight, striped pillow and SF logo remain visible; OFFICIAL TRAILER text gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1c5zyp1-k0jg-leipxhcvj5kycs2tl-0-58c84d7b-3b3d-43e4-ad6c-963169614d2a.jpg"
+      }
+    },
+    {
+      "folderId": "1db3auHFg0q-eL04lRUSY4AiNzxv6vura",
+      "title": "Halloween",
+      "trailerInput": "assets/covers/1db3auHFg0q-eL04lRUSY4AiNzxv6vura.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1db3auHFg0q-eL04lRUSY4AiNzxv6vura.jpg",
+      "sha256": "624ab1f1f90de50fb575569a5c418a44b83fa9ea9217b46981366e4dd2e6b1b4",
+      "requestedRemoval": "OFFICIAL TRAILER below HALLOWEEN title, bottom",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Michael Myers masked close-up and HALLOWEEN title remain visible; OFFICIAL TRAILER text gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1db3auhfg0q-el04lrusy4ainzxv6v-0-b4d9e74f-49ea-4156-b32d-884304a10edd.jpg"
+      }
+    },
+    {
+      "folderId": "1w2tmHabMwQsMXLxSaqHQH_q90OlgpfPq",
+      "title": "Insidious",
+      "trailerInput": "assets/covers/1w2tmHabMwQsMXLxSaqHQH_q90OlgpfPq.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1w2tmHabMwQsMXLxSaqHQH_q90OlgpfPq.jpg",
+      "sha256": "079043459c7655ebbb9f38b385013e6ea3377514842d6cf27db20654621142ea",
+      "requestedRemoval": "OFFICIAL TRAILER lower-left below INSIDIOUS title",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Screaming woman gripped by clawed hands, INSIDIOUS and OUT OF THE FURTHER titles remain visible; OFFICIAL TRAILER text gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1w2tmhabmwqsmxlxsaqhqh-q90olgp-0-862f223c-3e5f-4a96-ab58-fb4fc25b0853.jpg"
+      }
+    },
+    {
+      "folderId": "1H6RGkemEWenhjEGnb5yClrJQb52OYjx-",
+      "title": "Kill Bill",
+      "trailerInput": "assets/covers/1H6RGkemEWenhjEGnb5yClrJQb52OYjx-.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1H6RGkemEWenhjEGnb5yClrJQb52OYjx-.jpg",
+      "sha256": "83c34f09ca79821b1f3e608fbe916195c168681d3f4d2e07b178c0514a3cb2d0",
+      "requestedRemoval": "OFFICIAL TRAILER bottom-left pill",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Woman with katana, KILL BILL and THE WHOLE BLOODY AFFAIR titles remain visible; OFFICIAL TRAILER pill gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1h6rgkemewenhjegnb5yclrjqb52oy-0-d3ca711b-d318-473d-a60d-a74a65f8952e.jpg"
+      }
+    },
+    {
+      "folderId": "10MSDIl69QZTAwO6RR6Yl7u7Bdpbh_tW_",
+      "title": "The Hobbit",
+      "trailerInput": "assets/covers/10MSDIl69QZTAwO6RR6Yl7u7Bdpbh_tW_.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/10MSDIl69QZTAwO6RR6Yl7u7Bdpbh_tW_.jpg",
+      "sha256": "c9eabf975e6f0118d8308c32ea3e0e3b789cb47b1ca1d364ee9f259593b40e04",
+      "requestedRemoval": "TRAILER HD bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Gandalf bearded close-up with staff and stonework remain visible; TRAILER HD badge gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-10msdil69qztawo6rr6yl7u7bdpbh-0-d699554e-a95d-4cf6-887e-7e35d9803712.jpg"
+      }
+    },
+    {
+      "folderId": "1rSJiRmTw0Dt5bCzjvc65pd7S2A6EMLGb",
+      "title": "30 Days of Night (2007) Darkness Falls Edition 1080p",
+      "trailerInput": "assets/covers/1rSJiRmTw0Dt5bCzjvc65pd7S2A6EMLGb.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1rSJiRmTw0Dt5bCzjvc65pd7S2A6EMLGb.jpg",
+      "sha256": "a3422beb1d4b58f77e18f6580f7f662e99a67f25cb99a67a3cf63ae3c603d833",
+      "requestedRemoval": "OFFICIAL TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Vampire face close-up and red 30 DAYS OF NIGHT title remain visible; OFFICIAL TRAILER text gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1rsjirmtw0dt5bczjvc65pd7s2a6em-0-990a29ad-8507-42c2-8f1f-222bf6298dc5.jpg"
+      }
+    },
+    {
+      "folderId": "1fiCF1sbKTArhBI17aUGfSK8j-fCcn_4a",
+      "title": "Kill Bill - The Complete Bloody Affair (2160p)",
+      "trailerInput": "assets/covers/1fiCF1sbKTArhBI17aUGfSK8j-fCcn_4a.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1fiCF1sbKTArhBI17aUGfSK8j-fCcn_4a.jpg",
+      "sha256": "5a7c17dfeba5a7fd12f7189ba96ab135a0a3b237ff37278603d91d231663a5e1",
+      "requestedRemoval": "OFFICIAL TRAILER bottom-left pill",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Woman with katana, KILL BILL and THE WHOLE BLOODY AFFAIR titles remain visible; OFFICIAL TRAILER pill gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1ficf1sbktarhbi17augfsk8j-fccn-0-77e5ae9b-a6a0-495c-a712-62fa0b283c98.jpg"
+      }
+    },
+    {
+      "folderId": "18ESYAHn-CUn7vO2_ZvXwXtrmJGxMXWe3",
+      "title": "The Crow (1994) The Brandon Lee Project (2160p 60fps)",
+      "trailerInput": "assets/covers/18ESYAHn-CUn7vO2_ZvXwXtrmJGxMXWe3.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/18ESYAHn-CUn7vO2_ZvXwXtrmJGxMXWe3.jpg",
+      "sha256": "5dd28be0445fd042d7e6aaedf9d6a69490fb2dbd271992e50ccac10a03397d15",
+      "requestedRemoval": "CLASSIC TRAILER left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "White-face-painted man close-up and orange F logo remain visible; CLASSIC TRAILER text gone on retry (first attempt left it visible).",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-18esyahn-cun7vo2-zvxwxtrmjgxmx-0-8aece4d0-39e7-44dc-88ea-75a89b53803e.jpg"
+      }
+    },
+    {
+      "folderId": "1oB4Kpu8S3jMyLzrCUchHqcTGgWmtiZMS",
+      "title": "Casino Royale Extended Cut",
+      "trailerInput": "assets/covers/1oB4Kpu8S3jMyLzrCUchHqcTGgWmtiZMS.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1oB4Kpu8S3jMyLzrCUchHqcTGgWmtiZMS.jpg",
+      "sha256": "b1978ae5437e22011debd0d19e268416298517688b81551f202651ad7b05ff21",
+      "requestedRemoval": "TRAILER HD bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Man in swim shorts emerging from the sea remains visible; TRAILER HD badge gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1ob4kpu8s3jmylzrcuchhqctggwmti-0-b0e0dffe-c077-4e32-863a-0c6934edd25a.jpg"
+      }
+    },
+    {
+      "folderId": "1rzzy7LlxqVjgkP91hDFqaO_A7xtc-HtQ",
+      "title": "SE7EN Extended Cut",
+      "trailerInput": "assets/covers/1rzzy7LlxqVjgkP91hDFqaO_A7xtc-HtQ.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1rzzy7LlxqVjgkP91hDFqaO_A7xtc-HtQ.jpg",
+      "sha256": "e3fc45a7ab30bfa736df9e6ed3a63110544abe8a9617c3618799ae5fb3da32c4",
+      "requestedRemoval": "CLASSIC TRAILER left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Man in vest holding papers, raised hand, and orange F logo remain visible; CLASSIC TRAILER text gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1rzzy7llxqvjgkp91hdfqao-a7xtc-0-de94e743-1ddf-47f3-b644-7d77166fcf20.jpg"
+      }
+    },
+    {
+      "folderId": "1VKaBqloc4hVlhHcCnO-fq87IPvafJJOV",
+      "title": "The Mask of Zorro Extended Cut",
+      "trailerInput": "assets/covers/1VKaBqloc4hVlhHcCnO-fq87IPvafJJOV.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1VKaBqloc4hVlhHcCnO-fq87IPvafJJOV.jpg",
+      "sha256": "5e2a2546f2209ea4fed91c373f534de5be6271d8fe9641a71bcbb6b97b2bb845",
+      "requestedRemoval": "OFFICIAL TRAILER bottom-left below THE MASK OF ZORRO title",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Horse and rider silhouette against the sun and THE MASK OF ZORRO title remain visible; OFFICIAL TRAILER text gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1vkabqloc4hvlhhccno-fq87ipvafj-0-c871dd99-cf0f-4eff-8d41-6f43428be850.jpg"
+      }
+    },
+    {
+      "folderId": "1eBriCU-jd4dAif2w_MueibpId-bWqkfY",
+      "title": "Lord Of The Rings Stuff",
+      "trailerInput": "assets/covers/1eBriCU-jd4dAif2w_MueibpId-bWqkfY.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1eBriCU-jd4dAif2w_MueibpId-bWqkfY.jpg",
+      "sha256": "2b9cb001915552a0c7941c8e8ec21c3f41e690e6b5c65a282594e4587a433a59",
+      "requestedRemoval": "HD badge bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Gandalf long-hair close-up remains visible; HD badge gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1ebricu-jd4daif2w-mueibpid-bwq-0-af79e913-d041-4bc1-8807-7f7fb1fa3f5d.jpg"
+      }
+    },
+    {
+      "folderId": "1y9jMB2ve3rSlQ-zklXnuNwd-nQSdzkxS",
+      "title": "Natural Born Killers - The Tarantino Cut (2015)",
+      "trailerInput": "assets/covers/1y9jMB2ve3rSlQ-zklXnuNwd-nQSdzkxS.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1y9jMB2ve3rSlQ-zklXnuNwd-nQSdzkxS.jpg",
+      "sha256": "7de5ef64626f88c3f3e6e80887168c89b30e3f6d502633f695956f1b74a9a261",
+      "requestedRemoval": "CLASSIC TRAILER left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Man in white T-shirt with red sunglasses in diner and orange F logo remain visible; CLASSIC TRAILER text gone.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": "/tmp/ai-staging-D/media-generation-1y9jmb2ve3rslq-zklxnunwd-nqsdz-0-2cc3370a-db3e-45c2-a5d6-0d072d7aa1a3.jpg"
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "folderId": "1rjdvUshNzw7CssqqR48OyezlZ_2PAGsT",
+      "title": "Godzilla and Kong",
+      "reason": "no promotional overlay found; left unprocessed (title art only)"
+    },
+    {
+      "folderId": "1HQ4cGRB1k3mSHDOMoKrXRm2lz9Ttxefg",
+      "title": "Highlander Series",
+      "reason": "no promotional overlay found; left unprocessed (clean scene)"
+    },
+    {
+      "folderId": "1cal67UuSdLCcSTaVjJhbRd7swAeOvZjm",
+      "title": "IT",
+      "reason": "no promotional overlay found; left unprocessed (clean raincoat scene; verified against actual source file)"
+    },
+    {
+      "folderId": "1tqIWCdEsiulBSVBl7cdkzo0UX28BDFHJ",
+      "title": "Star Wars",
+      "reason": "no promotional overlay found; left unprocessed (poster title plus 'IN THEATERS DECEMBER 18' release line is part of poster art, not a trailer badge)"
+    },
+    {
+      "folderId": "1ihPytLBPdurOz_YOYjaDacGSAUcSoHbf",
+      "title": "Tetsuo",
+      "reason": "no promotional overlay found; left unprocessed (title art only)"
+    },
+    {
+      "folderId": "1jCd6my-X1Rd8B6yIhYGQjq7-LcLQ1eac",
+      "title": "The Exorcist Series - The Reconsecrated Cuts",
+      "reason": "no promotional overlay found; left unprocessed (clean scene)"
+    },
+    {
+      "folderId": "10VT7YMfwcJviGN4tc25cJJ0hSeIQpSrt",
+      "title": "Mad Max - Oil & Chrome Collection 2160p",
+      "reason": "no promotional overlay found; left unprocessed (BLACK AND CHROME edition banner and WB logo are title/studio art, not a trailer badge)"
+    },
+    {
+      "folderId": "1MnmQAmRz47Wq9Wp5UwLZktpYK-z0uahX",
+      "title": "Game of Death Story Edition",
+      "reason": "no promotional overlay found; left unprocessed (title art only)"
+    },
+    {
+      "folderId": "1A-NK_Nvjfgd_jfPE37I6b_wE8Yew7DqX",
+      "title": "Kingdom of Heaven Extended Cut",
+      "reason": "no promotional overlay found; left unprocessed (clean scene)"
+    },
+    {
+      "folderId": "1HcKTFg3OGyDl7l9QgIydT0dI-ZkuiIXO",
+      "title": "Toy Story 3 - Especially Espa\u00f1ol",
+      "reason": "no promotional overlay found; left unprocessed (clean scene)"
+    },
+    {
+      "folderId": "1T3HOdRqI7kL9785tCfxJ0zPsqWNsjt6c",
+      "title": "Independence Day - No Family Edition (2015)",
+      "reason": "no promotional overlay found; left unprocessed (clean scene)"
+    }
+  ],
+  "failed": [
+    {
+      "folderId": "1ayPbduMJplJjgIWXkLxN9q9qqBrBFkKJ",
+      "title": "Alien Series",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1cxH01iCkqccOGYHnJ2Yee9NYH6BPQuMC",
+      "title": "Ash vs Evil Dead",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1qOV2zM-fgsTd43-co9OPqNlaU4qkDDsP",
+      "title": "Backrooms",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "18dQ5-zypr8oyqm1dNTCqtlT0D5E6AmB_",
+      "title": "Batman Noir",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1Se9u8fANVswJGZTIjpr-E9RuWlgjC18-",
+      "title": "Neon Genesis Evangelion",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1zLke6v5I8K2ppbWO1sqv7YPZYTA1AGAa",
+      "title": "Robocop Series",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "10DXfB-j0M9MVbT3slaNXaVW9PHIwRUHh",
+      "title": "Superman",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1T9sHBahjpAjSx80klEZoY0BsMfaPukDc",
+      "title": "Sinners - Black & White Edition 2160p",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1-KIZrb6ZOvvDVuixuoq7wF3n2WmLn-YY",
+      "title": "JFK Extended Cut",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1oDU7n6nxlv5GVqPAMsXTTbFEiKbjsOoR",
+      "title": "The Mask Extended Cut",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1LpC4CdRUQQAeYge4oSTY7XzwubaaKjZ5",
+      "title": "Ash vs The Evil Dead",
+      "reason": "image edit declined by the media tool (policy)"
+    },
+    {
+      "folderId": "1Pm38nRB_VdThNe0idD_JT5MqtbTDyBpD",
+      "title": "DCU Cuts",
+      "reason": "image edit declined by the media tool (policy)"
+    }
+  ]
+}

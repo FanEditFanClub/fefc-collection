@@ -1,0 +1,322 @@
+{
+  "v": 1,
+  "status": "ai-edited-candidate; parent visually checked; not user-approved; not a clean-source still",
+  "incorporated": 8,
+  "unprocessedExcludingManualOverrides": 0,
+  "manualOverridesExcluded": 0,
+  "note": "Original trailer-frame inputs remain at assets/covers/<folderId>.jpg. The app pointer is the AI edit. No Drive files were changed.",
+  "items": [
+    {
+      "folderId": "1qrivNq7AAj_tMG8CTcMBIJopFwRHJKuT",
+      "title": "Bourne",
+      "trailerInput": "assets/covers/1qrivNq7AAj_tMG8CTcMBIJopFwRHJKuT.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1qrivNq7AAj_tMG8CTcMBIJopFwRHJKuT.jpg",
+      "sha256": "a43d604cdec7bff59039870d6ef32f26fb642dde097df6bfcabcf927c31d3450",
+      "requestedRemoval": "TRAILER + F HD badge lower-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Matt Damon close-up, building background and jacket remain visible; no new title added.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1gPjy1a9SHu1wCHd9LyGdLB21jeOilh5f",
+      "title": "Blade",
+      "trailerInput": "assets/covers/1gPjy1a9SHu1wCHd9LyGdLB21jeOilh5f.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1gPjy1a9SHu1wCHd9LyGdLB21jeOilh5f.jpg",
+      "sha256": "bc5f6e0e76f2c5afd5644d3c4503d5bc16fa95426598276a889ba45af0572b05",
+      "requestedRemoval": "HD badge lower-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Wesley Snipes as Blade, leather outfit and straps remain visible; no new title added.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1jkVF0SVUx9XSGJvx-rOegQRNTkKufuh4",
+      "title": "Creepshow",
+      "trailerInput": "assets/covers/1jkVF0SVUx9XSGJvx-rOegQRNTkKufuh4.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1jkVF0SVUx9XSGJvx-rOegQRNTkKufuh4.jpg",
+      "sha256": "ab60022a533e3083fbdcd2ae07f70a8bdb80373685ec0a1271a6970f2dad311e",
+      "requestedRemoval": "OFFICIAL TRAILER top",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Blue creature, reaching hands and interior scene remain visible; SF logo remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1hq-G36fEDT51X18vYEt0thuLEV9QTGDc",
+      "title": "Die Hard",
+      "trailerInput": "assets/covers/1hq-G36fEDT51X18vYEt0thuLEV9QTGDc.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1hq-G36fEDT51X18vYEt0thuLEV9QTGDc.jpg",
+      "sha256": "39d85f59f6d014b48959ae3b9bfd12c789979dfe0c7ab6ad708d395a51955ae7",
+      "requestedRemoval": "TRAILER HD lower-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Bruce Willis close-up, plaid shirt and blurred background remain visible; no new title added.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "13RgVqu0ANNw3n2V7llfq6xlmJS4AhkQ7",
+      "title": "Evil Dead",
+      "trailerInput": "assets/covers/13RgVqu0ANNw3n2V7llfq6xlmJS4AhkQ7.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/13RgVqu0ANNw3n2V7llfq6xlmJS4AhkQ7.jpg",
+      "sha256": "c78b8b31747c6058ccd478b928fbd5a2c681b5d110a47950835c70bac856f162",
+      "requestedRemoval": "OFFICIAL TRAILER top",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Girl in the woods, wet hair and dark forest remain visible; SF logo remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1HJ73OHxMySs65--JtZuogBBr1E1d8oNj",
+      "title": "Friday The 13th",
+      "trailerInput": "assets/covers/1HJ73OHxMySs65--JtZuogBBr1E1d8oNj.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1HJ73OHxMySs65--JtZuogBBr1E1d8oNj.jpg",
+      "sha256": "d8f2fa7321b8accce9e9734e9d35fabc3d2df5d7321da946d0035fc729d4d8f4",
+      "requestedRemoval": "OFFICIAL TRAILER top",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Man lying in bed, candle, nightstand and striped pillow remain visible; SF logo remains.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1YqiwFgLB6pp69cSWY3bavO55omDZrlqv",
+      "title": "Highlander",
+      "trailerInput": "assets/covers/1YqiwFgLB6pp69cSWY3bavO55omDZrlqv.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1YqiwFgLB6pp69cSWY3bavO55omDZrlqv.jpg",
+      "sha256": "ee6709b88544f02de9214ae8300f3fd03647e4a273694d008089b8b968cb24cd",
+      "requestedRemoval": "OFFICIAL TRAILER bottom-left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Two men, rocky shore and HIGHLANDER title remain visible.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    },
+    {
+      "folderId": "1Q247Wyg1dIwgknXnsN2esA6ROUywJd5u",
+      "title": "Insidious",
+      "trailerInput": "assets/covers/1Q247Wyg1dIwgknXnsN2esA6ROUywJd5u.jpg",
+      "aiEditedCover": "assets/covers/ai-edited/1Q247Wyg1dIwgknXnsN2esA6ROUywJd5u.jpg",
+      "sha256": "014bbcb478f897997d6952478c3ede12c2fa2328381bde8717d4f05d5be37fef",
+      "requestedRemoval": "OFFICIAL TRAILER left",
+      "method": "AI edit of actual source image, promotional-text removal last resort",
+      "parentStatus": "visually_checked_candidate_not_user_approved",
+      "actualVisualChecks": {
+        "input_offending_overlay_visible": true,
+        "output_offending_overlay_not_visible": true,
+        "inspection": "Woman's face, clawed hands and INSIDIOUS OUT OF THE FURTHER title remain visible.",
+        "aspectRatio": "16:9; output 1280x720",
+        "scope": "Viewed original contact sheet and generated outputs; no user approval implied. AI output is not pixel-identical outside removed text; subtle reconstructed details may differ."
+      },
+      "provenance": {
+        "source": "User-supplied 178-cover ZIP; actual source image passed as GenerateImage reference",
+        "generatedAsset": ""
+      }
+    }
+  ],
+  "skipped": [
+    {
+      "folderId": "1WSZBvpZlhwt3CtslHini2QOEq6e-whbP",
+      "title": "Arrow - Season 2 - The End Edition",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1I9JOJiVuPXxxvRHwngrieI5FkyZjda8A",
+      "title": "Blade Runner - Theatrical 35mm Cut - Fan Edit",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "13wg0JGoctzUoV6nHY79QOmlA8JsoVBui",
+      "title": "Californication",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1YyP1cnUNwl-cVpFnYI9mYJ7MrmeaTpJn",
+      "title": "Chernobyl",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1xfht3f2wVYJRAvcN1fP_U5GPE5s6E2c5",
+      "title": "Dexter",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1wouhO_TQ_Q6lG-JGM5ibnGBLx0-MXQ_F",
+      "title": "Dune",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1F7AsPLjT_NrsVCOnE6ARrrsZeYaU1DGX",
+      "title": "Firefly",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1cYZymEVHP-0bqPXmWpr71MFp4NVtYLUD",
+      "title": "For All Mankind",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1NCpoO4mP5XQrO7IL-pDcbbzlz9jfvgS7",
+      "title": "Game of Thrones: A Telltale Games Series",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1DThb-URJseJ5Iv1KtcdU7R_wZUddTR7s",
+      "title": "Godzilla Gods and Monsters",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1YxDF1mW6sgwaGaPWWl9v5lJ0lUoXcTyV",
+      "title": "Godzilla vs Kong Survival of The Fittest",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1kZiEf6rCqTz8n0LjidDFW7CM76_7EkKa",
+      "title": "Green Lantern",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1VXNtFiFBpgFD2BG3zO9YQ6VBAYuvxTE2",
+      "title": "Gremlins",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1M_URqym-QUdGmX4xK0o26sE2mCSJASff",
+      "title": "Halloween (2007) - Workprint Cut - Fan Edit",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1svXZQjf2I-GiHRsZkISDxM-mC5hWQcyX",
+      "title": "Iron Man",
+      "reason": "no promotional overlay found; left unprocessed"
+    },
+    {
+      "folderId": "1kKws1zweuNNV5TTHwh8m9lTxAyL1GtQF",
+      "title": "It",
+      "reason": "no promotional overlay found; left unprocessed"
+    }
+  ],
+  "failed": [
+    {
+      "folderId": "15rUF6xKW3dECsvYTB27dHUdHrod09S0w",
+      "title": "Agents of S.H.I.E.L.D.",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1bxXHjG7jHios-J4P22-eYS8X0vBC0Lkr",
+      "title": "Buffy The Vampire Slayer",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1ukNhvKnqG3zbFVaCM7nScQbx1ppBHKXG",
+      "title": "Deadpool",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1puED6mjB_70tfk9tbgjFGkUSnaOvgw7m",
+      "title": "Demon Slayer",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1Ktg1s35vkuamHLcxAeU4NNyKTb45cgo_",
+      "title": "Fallout",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1_aE37s2YSRGl0WjA-x05pKDKrAkB3cxI",
+      "title": "Flash Gordon",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1jcME2Ds7oGGbkhzMIyfxAYXrcHdtMS-b",
+      "title": "Godzilla (2014) & Godzilla: King of The Monsters - The King of The Titans - d3adconnection Cut - Mashup Fan Edit",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1Ouxy2bzfVzoI6DVmrJ99rRrHz9LZhdkh",
+      "title": "Godzilla Kong - Brave New World",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "19_hB-nYF1B4SUKrU-60p9nNLbpzaPHeV",
+      "title": "Halloween (1978) - 35mm Scan - Fan Edit",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1fVg-OeUuaBLiSz7meqiff_jhbN4rwZvN",
+      "title": "Harry Potter",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1_1nV4MSnyPICHIsb2jswOSLkkkevAvUa",
+      "title": "Indiana Jones",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    },
+    {
+      "folderId": "1WaZDoZbtziAFWGoCGPGn_fmm8ka0hA8s",
+      "title": "Iron Fist",
+      "reason": "image edit declined by the media tool (policy); not retried"
+    }
+  ]
+}
