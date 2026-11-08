@@ -690,11 +690,16 @@
   {
    "files": [
     "assets/sfx/alien-hiss.m4a",
-    "assets/sfx/alien-hiss.mp3"
+    "assets/sfx/alien-hiss.mp3",
+    [
+     "assets/sfx/aliens-get-away-from-her.m4a",
+     "assets/sfx/aliens-get-away-from-her.mp3"
+    ]
    ],
    "path": true,
-   "source": "myinstants xenomorph-screech.mp3",
-   "regex": "^(alien|aliens|alien 3|alien\u00b3|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)"
+   "source": "Alien: xenomorph hiss + Aliens \"Get away from her, you bitch\" (0.5.2)",
+   "regex": "^(alien|aliens|alien 3|alien\u00b3|alien:? resurrection|alien resurrection|prometheus|alien:? covenant|alien:? romulus|alien vs\\.? predator|avp\\b|alien:? isolation|alien:? blackout|alien quadrilogy|alien anthology)\\b|\\balien (franchise|saga|series|collection)\\b|^aliens?\\b(?! nation| from| abduction)",
+   "random": true
   },
   {
    "files": [
@@ -1007,10 +1012,14 @@
     ],
     [
      "assets/sfx/blade-runner-vangelis.mp3"
+    ],
+    [
+     "assets/sfx/blade-tears-in-rain.m4a",
+     "assets/sfx/blade-tears-in-rain.mp3"
     ]
    ],
    "random": true,
-   "source": "Blade Runner: Vangelis themes"
+   "source": "Blade Runner: Vangelis themes + Tears in Rain (0.5.2)"
   },
   {
    "path": true,
@@ -2108,10 +2117,30 @@
     [
      "assets/sfx/cameron-game-over.m4a",
      "assets/sfx/cameron-game-over.mp3"
+    ],
+    [
+     "assets/sfx/cameron-titanic-theme.m4a",
+     "assets/sfx/cameron-titanic-theme.mp3"
+    ],
+    [
+     "assets/sfx/cameron-one-thing.m4a",
+     "assets/sfx/cameron-one-thing.mp3"
+    ],
+    [
+     "assets/sfx/cameron-five-by-five.m4a",
+     "assets/sfx/cameron-five-by-five.mp3"
+    ],
+    [
+     "assets/sfx/cameron-youre-fired.m4a",
+     "assets/sfx/cameron-youre-fired.mp3"
+    ],
+    [
+     "assets/sfx/aliens-get-away-from-her.m4a",
+     "assets/sfx/aliens-get-away-from-her.mp3"
     ]
    ],
    "random": true,
-   "source": "Cameron themes + quotes",
+   "source": "Cameron set (0.5.2): Terminator + Aliens (Game over, Get away from her, five by five) + Avatar \"I see you\" + Titanic theme + \"king of the world\" + True Lies \"You're fired\" + \"one thing\"",
    "match": "cameron",
    "regex": "^cameron$|james cameron",
    "ids": [
@@ -2284,6 +2313,38 @@
    "ids": [
     "1gLgY8O4hL9bg3sal_nS2COvFJFULsW8t"
    ]
+  },
+  {
+   "path": true,
+   "regex": "gladiator",
+   "random": true,
+   "file": [
+    [
+     "assets/sfx/gladiator-theme.m4a",
+     "assets/sfx/gladiator-theme.mp3"
+    ],
+    [
+     "assets/sfx/gladiator-unleash-hell.m4a",
+     "assets/sfx/gladiator-unleash-hell.mp3"
+    ],
+    [
+     "assets/sfx/gladiator-my-name-is-maximus.m4a",
+     "assets/sfx/gladiator-my-name-is-maximus.mp3"
+    ],
+    [
+     "assets/sfx/gladiator-echoes-in-eternity.m4a",
+     "assets/sfx/gladiator-echoes-in-eternity.mp3"
+    ],
+    [
+     "assets/sfx/gladiator-strength-and-honor.m4a",
+     "assets/sfx/gladiator-strength-and-honor.mp3"
+    ],
+    [
+     "assets/sfx/scott-entertained.m4a",
+     "assets/sfx/scott-entertained.mp3"
+    ]
+   ],
+   "source": "Gladiator set (0.5.2)"
   }
  ],
  "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ": [
@@ -2360,8 +2421,40 @@
   "assets/sfx/ritchie-sherlock.mp3"
  ],
  "1Nrgv4vgoeqtBPiIt_7RZqVrvZeOQ7LjF": [
-  "assets/sfx/scott-entertained.m4a",
-  "assets/sfx/scott-entertained.mp3"
+  [
+   "assets/sfx/gladiator-theme.m4a",
+   "assets/sfx/gladiator-theme.mp3"
+  ],
+  [
+   "assets/sfx/gladiator-unleash-hell.m4a",
+   "assets/sfx/gladiator-unleash-hell.mp3"
+  ],
+  [
+   "assets/sfx/gladiator-my-name-is-maximus.m4a",
+   "assets/sfx/gladiator-my-name-is-maximus.mp3"
+  ],
+  [
+   "assets/sfx/gladiator-echoes-in-eternity.m4a",
+   "assets/sfx/gladiator-echoes-in-eternity.mp3"
+  ],
+  [
+   "assets/sfx/gladiator-strength-and-honor.m4a",
+   "assets/sfx/gladiator-strength-and-honor.mp3"
+  ],
+  [
+   "assets/sfx/scott-entertained.m4a",
+   "assets/sfx/scott-entertained.mp3"
+  ],
+  "assets/sfx/blade-runner-vangelis.mp3",
+  "assets/sfx/blade-runner-lonely.mp3",
+  [
+   "assets/sfx/blade-tears-in-rain.m4a",
+   "assets/sfx/blade-tears-in-rain.mp3"
+  ],
+  [
+   "assets/sfx/alien-hiss.m4a",
+   "assets/sfx/alien-hiss.mp3"
+  ]
  ],
  "1zzodzguDJ-9kbx6uGpDUlbgGdQvaC1el": [
   "assets/sfx/mos-theme.m4a",
