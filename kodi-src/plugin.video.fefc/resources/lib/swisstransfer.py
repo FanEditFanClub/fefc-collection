@@ -3,11 +3,14 @@
 The share URL is an HTML page. Kodi's player cannot open that page as a video.
 The page lists file names, sizes, and types. It does not include a media URL.
 
-Infomaniak's published download API is kDrive (GET /2/drive/{id}/files/{id}/download)
-and requires an account bearer token. Their SwissTransfer help calls the share URL
-itself the "direct download link". No published guest method turns that page into a
-fresh file address, so Play is not offered. A browser download button can create a
-link that expires in about an hour; that link is not stored.
+The official SwissTransfer library is GPL-3 and is a real library, not an impersonation
+by itself. Its public TransferManager.getTransferByUrl returns a TransferUi record
+(link id, title, expiry, file name, size, mime, local path). FileUi.localPath is a
+file already stored on the device. Downloads are tracked with an Android DownloadManager
+id. Neither type includes a remote media URL, and the library is Kotlin for Android and
+iOS, with no published Python binding. It therefore cannot hand Kodi a fresh HTTP file
+address. A browser download button can create a link that expires in about an hour; that
+link is not stored. Play is not offered.
 """
 import json
 import re
