@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.4.3 Beta",
+   "date": "2026-11-07",
+   "notes": [
+    "Non-Google provider files (Testing folder) no longer show as documents and no longer open to an empty list: playable files play in the app, and folder and page links open the provider page in the browser.",
+    "Testing folder items use a VIDEO tile instead of the DOCUMENT tile."
+   ]
+  },
+  {
    "version": "0.4.2 Beta",
    "date": "2026-11-07",
    "notes": [

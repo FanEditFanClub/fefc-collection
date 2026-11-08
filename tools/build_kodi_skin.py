@@ -248,6 +248,9 @@ def make_textures(media):
     # 0.4.2: distinct tile for the virtual 01 - Testing folder (the old tile said "TO BE CATALOGUED" and hid the label)
     land_tile(['01 - TESTING'], 'fefc-testing-tile.png')
     land_tile(['DOCUMENT'], 'fefc-doc-tile.png')
+    # 0.4.2: generic video tile for the non-Google provider items (Testing folder) — they are video
+    # files and links, not documents, so they no longer show the DOCUMENT tile.
+    land_tile(['VIDEO'], 'fefc-video-tile.png')
 
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')

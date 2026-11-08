@@ -1035,16 +1035,24 @@ class Router:
             xbmcgui.Dialog().notification('FEFC', 'Testing list unavailable', xbmcgui.NOTIFICATION_ERROR, 4000)
             self.end('files', cache=False)
             return
-        tile = 'special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png'
-        for r in providers.children(doc, fid):
+        idx = providers.index(doc)
+        has_kids = set(v.get('parent') for v in idx.values() if v.get('parent'))
+        # 0.4.2: video tile, not the DOCUMENT tile — these are video files and links, not documents.
+        tile = 'special://xbmc/addons/skin.fefc/media/fefc-video-tile.png'
+        rows = [v for v in idx.values() if v.get('parent') == fid]
+        rows.sort(key=lambda r: (0 if r.get('kind') == 'folder' else 1, (r.get('name') or '').lower()))
+        for r in rows:
             plot = r.get('status_line') or ((r.get('status') or '') + '\nNot checked. This is a catalog link, not a film.')
             if r.get('catalog'):
                 plot = 'Catalog: %s\n%s' % (r['catalog'], plot)
-            if r.get('kind') == 'folder':
+            if r.get('kind') == 'folder' and r['id'] in has_kids:
                 self.add_folder(r['name'], tile, plot, landscape=tile, action='folder', id=r['id'])
             elif r.get('kodi_play') and r.get('play_url'):
                 self._add_external(r, plot)
             else:
+                # 0.4.2: a folder with no children below it is a LINK to an external folder, not a
+                # container — navigating into it showed an empty list ("nothing happens"). Open the
+                # provider page instead. Same for file/page links.
                 self.add_tool(r['name'], plot, tile, folder=False, landscape=tile, action='open_link', id=r['id'])
         self.end('files', cache=False)
 
@@ -1070,7 +1078,8 @@ class Router:
 
     def _add_external(self, rec, plot):
         li = xbmcgui.ListItem(rec.get('name') or 'Verified file', offscreen=True)
-        tile = 'special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png'
+        # 0.4.2: video tile, not the DOCUMENT tile — this is a playable video file.
+        tile = 'special://xbmc/addons/skin.fefc/media/fefc-video-tile.png'
         li.setArt({'thumb': tile, 'icon': tile, 'poster': tile})
         li.setProperty('IsPlayable', 'true')
         tag = li.getVideoInfoTag()
