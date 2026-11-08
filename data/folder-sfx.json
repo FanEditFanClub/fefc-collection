@@ -512,13 +512,40 @@
    "match": "hobbit"
   },
   {
-   "files": [
-    "assets/sfx/im-batman.m4a",
-    "assets/sfx/im-batman.mp3"
-   ],
    "path": true,
-   "source": "myinstants im-batman.mp3",
-   "match": "batman"
+   "source": "Batman / Dark Knight set (0.5.2): Dark Knight theme, \"It's what I do that defines me\", \"Why so serious\", \"You either die a hero\", \"Some men just want to watch the world burn\", Bane \"darkness is your ally\", \"I'm Batman\"",
+   "match": "batman",
+   "file": [
+    [
+     "assets/sfx/nolan-dark-knight-theme.m4a",
+     "assets/sfx/nolan-dark-knight-theme.mp3"
+    ],
+    [
+     "assets/sfx/nolan-what-i-do-defines-me.m4a",
+     "assets/sfx/nolan-what-i-do-defines-me.mp3"
+    ],
+    [
+     "assets/sfx/nolan-why-so-serious.m4a",
+     "assets/sfx/nolan-why-so-serious.mp3"
+    ],
+    [
+     "assets/sfx/nolan-die-a-hero.m4a",
+     "assets/sfx/nolan-die-a-hero.mp3"
+    ],
+    [
+     "assets/sfx/nolan-watch-the-world-burn.m4a",
+     "assets/sfx/nolan-watch-the-world-burn.mp3"
+    ],
+    [
+     "assets/sfx/nolan-darkness-is-your-ally.m4a",
+     "assets/sfx/nolan-darkness-is-your-ally.mp3"
+    ],
+    [
+     "assets/sfx/im-batman.m4a",
+     "assets/sfx/im-batman.mp3"
+    ]
+   ],
+   "random": true
   },
   {
    "path": true,
@@ -2345,6 +2372,153 @@
     ]
    ],
    "source": "Gladiator set (0.5.2)"
+  },
+  {
+   "path": true,
+   "regex": "armageddon",
+   "random": true,
+   "file": [
+    [
+     "assets/sfx/armageddon-theme.m4a",
+     "assets/sfx/armageddon-theme.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-detonation.m4a",
+     "assets/sfx/armageddon-detonation.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-size-of-texas.m4a",
+     "assets/sfx/armageddon-size-of-texas.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-save-the-world.m4a",
+     "assets/sfx/armageddon-save-the-world.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-global-killer.m4a",
+     "assets/sfx/armageddon-global-killer.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-crew-demands.m4a",
+     "assets/sfx/armageddon-crew-demands.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-rockhound-brain-pans.m4a",
+     "assets/sfx/armageddon-rockhound-brain-pans.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-lowest-bidder.m4a",
+     "assets/sfx/armageddon-lowest-bidder.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-bravest-man.m4a",
+     "assets/sfx/armageddon-bravest-man.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-12-days.m4a",
+     "assets/sfx/armageddon-12-days.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-potato-gun.m4a",
+     "assets/sfx/armageddon-potato-gun.mp3"
+    ],
+    [
+     "assets/sfx/armageddon-made-in-taiwan.m4a",
+     "assets/sfx/armageddon-made-in-taiwan.mp3"
+    ]
+   ],
+   "source": "Armageddon set (0.5.2)"
+  },
+  {
+   "path": true,
+   "regex": "nolan|christopher nolan",
+   "ids": [
+    "1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg"
+   ],
+   "random": true,
+   "file": [
+    [
+     "assets/sfx/nolan-dark-knight-theme.m4a",
+     "assets/sfx/nolan-dark-knight-theme.mp3"
+    ],
+    [
+     "assets/sfx/nolan-what-i-do-defines-me.m4a",
+     "assets/sfx/nolan-what-i-do-defines-me.mp3"
+    ],
+    [
+     "assets/sfx/nolan-why-so-serious.m4a",
+     "assets/sfx/nolan-why-so-serious.mp3"
+    ],
+    [
+     "assets/sfx/nolan-die-a-hero.m4a",
+     "assets/sfx/nolan-die-a-hero.mp3"
+    ],
+    [
+     "assets/sfx/nolan-watch-the-world-burn.m4a",
+     "assets/sfx/nolan-watch-the-world-burn.mp3"
+    ],
+    [
+     "assets/sfx/nolan-darkness-is-your-ally.m4a",
+     "assets/sfx/nolan-darkness-is-your-ally.mp3"
+    ],
+    [
+     "assets/sfx/nolan-dream-collapsing.m4a",
+     "assets/sfx/nolan-dream-collapsing.mp3"
+    ],
+    [
+     "assets/sfx/nolan-waiting-for-a-train.m4a",
+     "assets/sfx/nolan-waiting-for-a-train.mp3"
+    ],
+    [
+     "assets/sfx/nolan-interstellar-mountains.m4a",
+     "assets/sfx/nolan-interstellar-mountains.mp3"
+    ],
+    [
+     "assets/sfx/nolan-now-i-am-become-death.m4a",
+     "assets/sfx/nolan-now-i-am-become-death.mp3"
+    ],
+    [
+     "assets/sfx/nolan-51-years.m4a",
+     "assets/sfx/nolan-51-years.mp3"
+    ],
+    [
+     "assets/sfx/nolan-very-poor-choice.m4a",
+     "assets/sfx/nolan-very-poor-choice.mp3"
+    ],
+    [
+     "assets/sfx/nolan-where-are-they.m4a",
+     "assets/sfx/nolan-where-are-they.mp3"
+    ],
+    [
+     "assets/sfx/nolan-braaam.m4a",
+     "assets/sfx/nolan-braaam.mp3"
+    ],
+    [
+     "assets/sfx/dunkirk-theme.m4a",
+     "assets/sfx/dunkirk-theme.mp3"
+    ]
+   ],
+   "source": "Nolan set (0.5.2)"
+  },
+  {
+   "path": true,
+   "regex": "inception",
+   "random": true,
+   "file": [
+    [
+     "assets/sfx/nolan-dream-collapsing.m4a",
+     "assets/sfx/nolan-dream-collapsing.mp3"
+    ],
+    [
+     "assets/sfx/nolan-waiting-for-a-train.m4a",
+     "assets/sfx/nolan-waiting-for-a-train.mp3"
+    ],
+    [
+     "assets/sfx/nolan-braaam.m4a",
+     "assets/sfx/nolan-braaam.mp3"
+    ]
+   ],
+   "source": "Inception set (0.5.2)"
   }
  ],
  "10AA5RFZKOrtyeALpY891WpIKTiqASZbZ": [

@@ -232,7 +232,9 @@ class Router:
 
     def add_dir_item(self, m, fid):
         v = m['items'][fid]
-        n = m['cnt'].get(fid, 0)
+        # 0.5.2: same count the listing filter used (recursive total) — a folder whose videos all sit in
+        # subfolders has a DIRECT count of 0 but a recursive count > 0, so the old label showed "(0)".
+        n = (m.get('rcnt') or m['cnt']).get(fid, 0)
         art = catalog.folder_art(m, _base(), fid)
         gs = m['vgenres'].get(fid) or []
         if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' or v[3] == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk':
@@ -355,6 +357,18 @@ class Router:
         except Exception:
             return 'Fan Edit Fan Club'
 
+    def _loc(self):
+        """Location signature for back-navigation detection (folder id, or the action for top-level views)."""
+        a = self.params.get('action') or 'root'
+        if a == 'folder':
+            try:
+                return 'folder:' + (self.params.get('id') or _model()['root'])
+            except Exception:
+                return 'folder:' + (self.params.get('id') or '')
+        if a == 'genre':
+            return 'genre:' + self.params.get('genre', '')
+        return a
+
     def end(self, content='files', cache=True):
         xbmcplugin.setPluginCategory(self.handle, self._title())
                 # 0.3.22: video files are ALWAYS portrait posters; folders / tools / docs are landscape cards. Any list with a
@@ -363,6 +377,11 @@ class Router:
         xbmcplugin.setContent(self.handle, content)
         xbmcplugin.addSortMethod(self.handle, xbmcplugin.SORT_METHOD_UNSORTED)
         xbmcplugin.endOfDirectory(self.handle, cacheToDisc=cache)
+        # 0.5.2: remember where we are so run() can tell a ".." (parent) navigation from a fresh one.
+        try:
+            xbmcgui.Window(10000).setProperty('FEFC.LastLoc', self._loc())
+        except Exception:
+            pass
         # FEFC skin: view 500 = landscape grid (collections / tools), 501 = portrait poster grid (video files)
         if xbmc.getSkinDir() == 'skin.fefc':
             xbmc.executebuiltin('Container.SetViewMode(%d)' % (501 if content == 'movies' else 500))
@@ -701,7 +720,10 @@ class Router:
             while parts and parts[-1].rstrip('.').lower() in ('jr', 'sr', 'ii', 'iii', 'iv'):
                 parts.pop()
             last = parts[-1] if parts else (meta[k][0] or '')
-            self.add_folder('%s  (%d)' % (last, m['cnt'].get(k, 0)), art, action='folder', id=k,
+            # 0.5.2: show the same count the filter used (recursive total) — a director whose videos all sit in
+            # subfolders has a DIRECT count of 0 but a recursive count > 0, so the old label showed "(0)".
+            n = (m.get('rcnt') or m['cnt']).get(k, 0)
+            self.add_folder('%s  (%d)' % (last, n), art, action='folder', id=k,
                             props={'fefc_people': '1'})
         self.end()
 
@@ -1535,8 +1557,61 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop'}
 
 
+def _play_back_sfx():
+    """Play the FEFC back sound (the uisounds add-on's back.wav) for a '..' / parent-folder tap."""
+    try:
+        p = xbmcvfs.translatePath('special://home/addons/resource.uisounds.fefc/resources/back.wav')
+        if os.path.exists(p):
+            xbmc.playSFX(p, False)
+    except Exception:
+        pass
+
+
+def _is_back_nav(prev, new):
+    """True when `new` is the parent of `prev` (a '..' tap): folder:<child> -> folder:<parent>, or any folder -> root."""
+    if not prev or not new or prev == new:
+        return False
+    try:
+        m = _model()
+    except Exception:
+        return False
+    if new == 'root':
+        return prev.startswith('folder:')
+    if not (prev.startswith('folder:') and new.startswith('folder:')):
+        return False
+    child, parent = prev[7:], new[7:]
+    it = (m.get('items') or {}).get(child)
+    if not it:
+        return False
+    # parent id of the child folder (items[][1]); a shortcut's target is followed like everywhere else
+    p = it[1] or ''
+    if it[2] and it[3]:
+        p = it[3]
+    # walk up: the new folder is a back step if it is the child's parent (or the child's own target parent)
+    seen = set()
+    cur = child
+    for _ in range(30):
+        par = (m.get('items') or {}).get(cur, [None, ''])[1] or ''
+        if not par or par in seen:
+            break
+        if par == parent:
+            return True
+        seen.add(par)
+        cur = par
+    return False
+
+
 def run(argv):
     r = Router(argv)
+    # 0.5.2: the Android back gesture plays the back UI sound, but tapping the ".." back-folder row did not —
+    # Kodi's parentdir UI-sound mapping does not fire for plugin ".." navigation. Detect the parent step here
+    # (new location is the parent of the previous one) and play the back sound ourselves.
+    try:
+        prev = xbmcgui.Window(10000).getProperty('FEFC.LastLoc')
+        if _is_back_nav(prev, r._loc()):
+            _play_back_sfx()
+    except Exception:
+        pass
     action = r.params.get('action', '')
     fn = ROUTES.get(action)
     try:

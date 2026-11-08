@@ -569,7 +569,13 @@ def sfx_wav(rel):
 
 
 def sfx_up(m, vid):
-    """Clip set of the nearest ancestor folder with clips (e.g. any Terminator file -> the Terminator folder's clips)."""
+    """Clip set of the nearest ancestor folder with clips (e.g. any Terminator file -> the Terminator folder's clips).
+    0.5.2: also match the video's OWN name first — a file like "Armageddon - Revisited" sitting in the root has no
+    Armageddon ancestor folder, so without this it would never get the Armageddon clips. sfx_for() already checks
+    the name plus ancestors (for path rules), so trying it on the video itself covers both."""
+    r = sfx_for(m, vid)
+    if r:
+        return r
     it = m['items'].get(vid)
     p = it[1] if it else ''
     n = 0

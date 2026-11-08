@@ -1,6 +1,19 @@
 {
  "versions": [
   {
+   "version": "0.5.2 Beta",
+   "date": "2026-11-08",
+   "notes": [
+    "Back sound now plays when you tap the \"..\" back-folder row, not just the Android back gesture.",
+    "Directors and folders no longer show a (0) count when their videos live in subfolders \u2014 the count is the real total.",
+    "Sound clips now match the file itself, not just its folder \u2014 an Armageddon file in the root plays Armageddon clips, a Die Hard file plays Die Hard quotes.",
+    "New sound sets: Costner (11 \u2014 Yellowstone, Dunbar and Robin Hood themes plus quotes), Stallone (Rocky theme plus 4 new quotes), Armageddon (12, including the full 93-second detonation sequence), Ridley Scott (Gladiator theme and quotes, Blade Runner Tears in Rain, Alien), Cameron (13), Nolan (Dark Knight theme and quotes, Inception, Interstellar, Oppenheimer).",
+    "Avengers Assemble rotation no longer cuts off before \"Assemble\" \u2014 the short 2.6-second cut is gone.",
+    "Austin Powers Mustafa clip plays in full \u2014 the whole burn and \"you shot me\" sequence, 71 seconds.",
+    "Willis pounce sound effect removed \u2014 it was a bass thump, not a Willis quote."
+   ]
+  },
+  {
    "version": "0.5.1 Beta",
    "date": "2026-11-07",
    "notes": [
