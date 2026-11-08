@@ -20,15 +20,21 @@ L, F, FPS = 75.0, 1.5, 24
 T = L + F
 W, H = 1920, 1080
 # 0.4.0: tiles are EXACTLY the Home 3x3 menu tiles (400x200, 12 px gap; grid at x 348/760/1172, y 212/424/636).
-# Left + right columns of 5 (rows y 0/212/424/636/848; three line up with the menu rows) and 3 bottom tiles
-# (y 848, under the menu columns, behind the bottom bar + ticker). Nothing behind the title or the 3x3.
-TW, TH, GP = 400, 200, 12
+# 0.5.3: 3 equal tiles per side, lined up with the 3 menu rows (y 212/424/636), plus one equal tile in each of
+# the 4 corners. All 10 tiles are 324x200 — the side strips are 324px wide (0..324 and 1596..1920) and the menu
+# rows are 200px tall, so every tile is the same size and the side tiles sit exactly on the rows. (The old
+# layout had 5 per side + 3 across the bottom, which is why 5 tiles crowded into the space of 3 menu rows.)
+TW, TH = 324, 200
 cells = []
-for y in (0, 212, 424, 636, 848):
-    cells.append((348 - TW - GP, y, TW, TH))        # x -64 (left edge clipped by the screen)
-    cells.append((1172 + TW + GP, y, TW, TH))       # x 1584
-for x in (348, 760, 1172):
-    cells.append((x, 848, TW, TH))
+# 4 corners, all the same size
+cells.append((0, 0, TW, TH))          # top-left
+cells.append((1596, 0, TW, TH))       # top-right
+cells.append((0, 880, TW, TH))        # bottom-left (bottom strip is 856..1080; 880+200 = 1080, flush with the edge)
+cells.append((1596, 880, TW, TH))     # bottom-right
+# 3 per side, on the menu rows
+for y in (212, 424, 636):
+    cells.append((0, y, TW, TH))      # left
+    cells.append((1596, y, TW, TH))   # right
 random.seed(22)
 order = src[:]; random.shuffle(order)
 tmp = '/tmp/wall2'; os.makedirs(tmp, exist_ok=True)
@@ -62,12 +68,10 @@ subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', comp, '-filter_compl
     '[c]trim=0:%.3f,setpts=PTS-STARTPTS,fps=24,settb=1/24[head];[tail][head]xfade=transition=fade:duration=%.3f:offset=0[seam];'
     '[body][seam]concat=n=2:v=1:a=0,fps=%d,format=yuv420p[v]' % (F, L, L, T, F, F, FPS),
     '-map', '[v]', '-frames:v', str(int(L * FPS)), '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12', loopv])
-# Ambience is the Fire TV-era Web Audio graph rendered by tools/render_old_ambience.py
-# (intro tail + E pad, bed gain 0.085, master 0.6). No extra volume. The 0.4.0 +15.4 dB
-# step made the Kodi file about 15 dB louder than that graph.
+# ambience (0.4.0): the OLD Fire TV app ambience, rendered offline (tools/render_old_ambience.py), +15.4 dB (~-22 LUFS)
 raw = os.path.join(tmp, 'old.wav'); ambn = os.path.join(tmp, 'ambn.wav')
 subprocess.check_call([sys.executable, 'tools/render_old_ambience.py', raw])
-subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', raw, '-t', '%.4f' % L, ambn])
+subprocess.check_call(['ffmpeg', '-y', '-v', 'error', '-i', raw, '-af', 'volume=15.4dB', '-t', '%.4f' % L, ambn])
 venc = ['-c:v', 'libx264', '-profile:v', 'main', '-level', '4.0', '-pix_fmt', 'yuv420p', '-preset', 'slow', '-r', str(FPS),
         '-crf', '27', '-maxrate', '1400k', '-bufsize', '2800k', '-g', '48', '-keyint_min', '48', '-sc_threshold', '0', '-bf', '0',
         '-x264-params', 'open-gop=0', '-forced-idr', '1', '-movflags', '+faststart']

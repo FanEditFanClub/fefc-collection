@@ -15,6 +15,19 @@
 			<left>1600</left><top>858</top><width>224</width><height>126</height>
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
 		</control>
+		<!-- 0.5.3: tap guard — a tap on a videowindow in Kodi can flip the wall video to fullscreen (the
+		     "stutter and reset" when tapping outside the tiles). A near-transparent image over each window
+		     absorbs the tap and does nothing, while the video still shows through. -->
+		<control type="image">
+			<left>96</left><top>858</top><width>224</width><height>126</height>
+			<texture colordiffuse="01FFFFFF">fefc-white.png</texture>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
+		</control>
+		<control type="image">
+			<left>1600</left><top>858</top><width>224</width><height>126</height>
+			<texture colordiffuse="01FFFFFF">fefc-white.png</texture>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
+		</control>
 		<!-- 0.3.22: still frame covers the loop seam (service sets FEFC.WallSeam for ~0.4s around the restart) -->
 		<control type="image">
 			<left>96</left><top>858</top><width>224</width><height>126</height>

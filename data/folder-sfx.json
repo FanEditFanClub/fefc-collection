@@ -316,6 +316,22 @@
     [
      "assets/sfx/total-recall-kuato.m4a",
      "assets/sfx/total-recall-kuato.mp3"
+    ],
+    [
+     "assets/sfx/predator-theme.m4a",
+     "assets/sfx/predator-theme.mp3"
+    ],
+    [
+     "assets/sfx/schwarzenegger-rubber-baby-buggy-bumpers.m4a",
+     "assets/sfx/schwarzenegger-rubber-baby-buggy-bumpers.mp3"
+    ],
+    [
+     "assets/sfx/schwarzenegger-see-you-at-the-party.m4a",
+     "assets/sfx/schwarzenegger-see-you-at-the-party.mp3"
+    ],
+    [
+     "assets/sfx/schwarzenegger-two-weeks.m4a",
+     "assets/sfx/schwarzenegger-two-weeks.mp3"
     ]
    ],
    "random": true,
@@ -799,6 +815,10 @@
     [
      "assets/sfx/stallone-no-bell.m4a",
      "assets/sfx/stallone-no-bell.mp3"
+    ],
+    [
+     "assets/sfx/stallone-if-i-can-change.m4a",
+     "assets/sfx/stallone-if-i-can-change.mp3"
     ]
    ],
    "random": true,

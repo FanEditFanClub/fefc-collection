@@ -277,8 +277,8 @@
 				<aligny>center</aligny>
 				<font>fefc_ticker</font>
 				<textcolor>FFFFFFFF</textcolor>
-				<scroll>true</scroll>
-				<scrollspeed>70</scrollspeed>
+				<!-- 0.5.3: no native <scroll> — the service drives the marquee by rotating the text, so it
+				     keeps moving on every page (Home and folders). Native scroll stopped once you left Home. -->
 				<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
 				<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 			</control>

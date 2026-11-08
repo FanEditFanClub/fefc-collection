@@ -1,6 +1,7 @@
 """Kodi routes for plugin.video.fefc. All data comes from resources/lib/catalog.py (the live FEFC catalogue)."""
 import os
 import sys
+import threading
 import time
 from urllib.parse import parse_qsl, urlencode, quote_plus
 
@@ -1409,20 +1410,29 @@ def _short_url(u):
 
 
 class SupportWindow(xbmcgui.WindowDialog):
-    """Three tiles (Patreon, PayPal, Venmo): brand colour, QR code to scan with a phone, OK opens it on this device."""
+    """Three tiles (Patreon, PayPal, Venmo): brand colour, QR code to scan with a phone, OK opens it on this device.
+    0.5.3: redesigned — clean brand marks (no white-circle disc), and Fan Edit Optimus on the left holding out his
+    hat for change, bobbing gently like he's pleading. The bob runs on a helper thread and stops when the window closes."""
     COLORS = {'Patreon': 'FFF96854', 'PayPal': 'FF0070BA', 'Venmo': 'FF3D95CE'}
+    # Optimus art: fefc-optimus-begging.png (992x2361, dark background blends with the dialog).
+    OPT_X, OPT_Y, OPT_W, OPT_H = 24, 150, 210, 500
 
     def __init__(self, items):
         super().__init__()
         self.items = items
+        self._anim_stop = threading.Event()
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
         self.addControl(xbmcgui.ControlLabel(80, 40, 1120, 50, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=2))
-        self.addControl(xbmcgui.ControlLabel(80, 92, 1120, 60, 'Scan a code with your phone, or press OK to open it here. '
-                                             'It helps cover the cloud storage and our time adding new edits.', font='font12',
+        self.addControl(xbmcgui.ControlLabel(80, 92, 1120, 60, 'Optimus is holding out his hat — every bit helps cover the cloud storage and our time adding new edits. '
+                                             'Scan a code with your phone, or press OK to open it here.', font='font12',
                                              textColor='FFE8EEF6', alignment=2))
+        # Optimus begging with his hat (left side); the helper thread bobs him up and down.
+        self._optimus = xbmcgui.ControlImage(self.OPT_X, self.OPT_Y, self.OPT_W, self.OPT_H, 'fefc-optimus-begging.png', aspectRatio=1)
+        self.addControl(self._optimus)
+        threading.Thread(target=self._bob, daemon=True).start()
         self.btns = []
-        w, gap = 340, 30
-        x0 = (1280 - 3 * w - 2 * gap) // 2
+        w, gap = 320, 20
+        x0 = 260
         for k, (name, url, sub) in enumerate(items):
             x = x0 + k * (w + gap)
             col = self.COLORS.get(name, 'FFFF9C00')
@@ -1434,8 +1444,8 @@ class SupportWindow(xbmcgui.WindowDialog):
             self.addControl(xbmcgui.ControlImage(x + 20, 258, w - 40, 48, 'fefc-lc-pill.png', colorDiffuse=col))
             self.addControl(xbmcgui.ControlLabel(x + 20, 258, w - 40, 48, name.upper(), font='font13_title', textColor='FFFFFFFF', alignment=6))
             qr = ('https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=16&format=png&data=%s' % quote_plus(url))
-            self.addControl(xbmcgui.ControlImage(x + 55, 318, w - 110, w - 110, 'fefc-white.png'))
-            self.addControl(xbmcgui.ControlImage(x + 61, 324, w - 122, w - 122, qr, aspectRatio=1))
+            self.addControl(xbmcgui.ControlImage(x + 45, 318, w - 90, w - 90, 'fefc-white.png'))
+            self.addControl(xbmcgui.ControlImage(x + 51, 324, w - 102, w - 102, qr, aspectRatio=1))
             self.addControl(xbmcgui.ControlLabel(x + 10, 560, w - 20, 32, sub, font='font12_title', textColor='FFFFFFFF', alignment=6))
             self.addControl(xbmcgui.ControlLabel(x + 10, 590, w - 20, 40, _short_url(url), font='font10', textColor='FF99CCFF', alignment=6))
         for k, b in enumerate(self.btns):
@@ -1443,6 +1453,18 @@ class SupportWindow(xbmcgui.WindowDialog):
             b.controlRight(self.btns[(k + 1) % len(self.btns)])
         self.addControl(xbmcgui.ControlLabel(80, 650, 1120, 36, 'Back to close', font='font10', textColor='FF7F8FA6', alignment=2))
         self.setFocus(self.btns[0])
+
+    def _bob(self):
+        """Gentle pleading bob: Optimus dips ~10px and back, about once a second, until the window closes."""
+        import math
+        t0 = time.time()
+        while not self._anim_stop.is_set():
+            try:
+                bob = int(10 * (1 - math.cos((time.time() - t0) * 2 * math.pi / 1.1)) / 2)
+                self._optimus.setPosition(self.OPT_X, self.OPT_Y + bob)
+            except Exception:
+                break
+            self._anim_stop.wait(0.05)
 
     def onControl(self, c):
         for k, b in enumerate(self.btns):
@@ -1453,6 +1475,7 @@ class SupportWindow(xbmcgui.WindowDialog):
 
     def onAction(self, action):
         if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+            self._anim_stop.set()
             self.close()
 
 

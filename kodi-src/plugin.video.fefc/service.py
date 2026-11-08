@@ -542,6 +542,42 @@ def _ticker_mod():
     return ticker
 
 
+def _model_recent_items(limit=12):
+    """Most recently-added collection files from the live model (refreshes every 180 min = the 3h resync),
+    so the ticker's 'new files' items update on the same cycle as the database, not just the daily feed."""
+    try:
+        import sys
+        lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
+        if lib not in sys.path:
+            sys.path.insert(0, lib)
+        import catalog
+        base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
+        prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
+        try:
+            mins = int(ADDON.getSetting('refresh_minutes') or 180)
+        except ValueError:
+            mins = 180
+        m = catalog.load_model(base, os.path.join(prof, 'cache'), mins, log)
+        added = m.get('added') or {}
+        items = m.get('items') or {}
+        # newest first by added timestamp; skip folders and anything without a title
+        rows = sorted(added.items(), key=lambda kv: kv[1], reverse=True)
+        out = []
+        for fid, _ts in rows:
+            it = items.get(fid)
+            if not it or it[2]:
+                continue
+            t = ' '.join(str(it[0] or '').split())
+            if t:
+                out.append({'src': 'new', 'title': t})
+            if len(out) >= limit:
+                break
+        return out
+    except Exception as e:
+        log('model ticker: %s' % e)
+        return []
+
+
 def build_ticker():
     """Real posts only. '' means every fetch failed; caller keeps the previous line."""
     tk = _ticker_mod()
@@ -552,6 +588,22 @@ def build_ticker():
         any_ok = True
     except Exception as e:
         log('new-files ticker: %s' % e)
+    # 0.5.3: the daily feed only changes once a day — also pull the newest files from the live model,
+    # which resyncs every 3h, so the ticker updates on the same cycle as the database.
+    try:
+        model_items = _model_recent_items()
+        if model_items:
+            seen = set()
+            merged = []
+            for it in list(new_items) + model_items:
+                t = (it.get('title') or '').lower()
+                if t and t not in seen:
+                    seen.add(t)
+                    merged.append(it)
+            new_items = merged
+            any_ok = True
+    except Exception as e:
+        log('model ticker: %s' % e)
     try:
         community = tk.items_from_api(_get_json(base + '/api/feed', timeout=8))
         any_ok = True
@@ -980,6 +1032,25 @@ def main():
     next_feed = 0.0
     next_counts = 0.0
     next_new_files = 0.0
+    # 0.5.3: ticker marquee — Kodi's <scroll> on the ticker label does not keep scrolling once you leave
+    # Home (the label is not the focused control in folder windows), so the service drives the scroll itself:
+    # the base text is rotated a few characters at a time and the property is re-set, which moves the text on
+    # every page (Home and every folder window read the same Window(Home) property). Time-based offset, so the
+    # speed is steady (~6 chars/sec) regardless of the loop's 0.2s/0.5s cadence.
+    ticker_base = ['']
+    ticker_t0 = [0.0]
+    TICKER_CPS = 6.0
+
+    def ticker_frame(now):
+        base = ticker_base[0]
+        if not base:
+            return
+        n = len(base)
+        off = int((now - ticker_t0[0]) * TICKER_CPS) % n
+        if off:
+            home.setProperty('FEFC.Ticker', base[off:] + base[:off])
+        else:
+            home.setProperty('FEFC.Ticker', base)
     t_start = time.time()
     checked = False
     last_check = 0.0
@@ -1016,9 +1087,16 @@ def main():
                     log('ticker: %s' % e)
                     return
                 if text:
+                    ticker_base[0] = text
+                    ticker_t0[0] = time.time()
                     home.setProperty('FEFC.Ticker', text)
             threading.Thread(target=refresh, daemon=True).start()
             next_feed = now + 1200
+        # 0.5.3: marquee — keep the ticker moving on every page, not just Home.
+        try:
+            ticker_frame(now)
+        except Exception as e:
+            log('ticker frame: %s' % e)
         try:
             details_sfx()
         except Exception as e:

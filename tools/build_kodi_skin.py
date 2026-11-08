@@ -196,11 +196,12 @@ def make_textures(media):
         d.text(((256 - tw) / 2, (256 - th) / 2 - 10), letter, fill=W, font=font_b)
         im.resize((128, 128), Image.LANCZOS).save(media / name)
     # 0.4.0: official brand logos (Wikimedia Commons copies of the PayPal / Patreon / Venmo marks) in kodi-src/skin-fefc/brand
+    # 0.5.3: NO white circle behind the logo — the white disc is what made the Support Us page look terrible.
+    # Render the mark cleanly on transparency, sized to fill the 256px canvas (wide marks like PayPal/Venmo fit by width).
     def brand_logo(src, name):
         lg = Image.open(OVER / 'brand' / src).convert('RGBA'); lg = lg.crop(lg.getbbox())
-        im = Image.new('RGBA', (256, 256), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
-        d.ellipse((8, 8, 248, 248), fill=(255, 255, 255, 255))
-        lg.thumbnail((170, 150), Image.LANCZOS)
+        im = Image.new('RGBA', (256, 256), (0, 0, 0, 0))
+        lg.thumbnail((232, 232), Image.LANCZOS)
         im.alpha_composite(lg, ((256 - lg.width) // 2, (256 - lg.height) // 2))
         im.resize((128, 128), Image.LANCZOS).save(media / name)
         lg2 = Image.open(OVER / 'brand' / src).convert('RGBA'); lg2.save(media / ('fefc-logo-' + src))
@@ -294,6 +295,9 @@ def make_textures(media):
 
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')
+    # 0.5.3: Optimus begging with a hat for the Support Us page (generated art, dark background blends with the dialog).
+    if (ROOT / 'assets' / 'optimus-begging.png').exists():
+        shutil.copy(ROOT / 'assets' / 'optimus-begging.png', media / 'fefc-optimus-begging.png')
     if (ROOT / 'assets' / 'home-wall-still.jpg').exists():   # 0.3.22: instant Home background + loop-seam cover
         shutil.copy(ROOT / 'assets' / 'home-wall-still.jpg', media / 'fefc-wall-still.jpg')
     for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):

@@ -1,6 +1,18 @@
 {
  "versions": [
   {
+   "version": "0.5.3 Beta",
+   "date": "2026-11-08",
+   "notes": [
+    "News ticker now keeps scrolling on every page \u2014 it used to freeze once you opened a folder. It also pulls the newest files from the live database, so it updates with the 3-hour resync instead of only once a day.",
+    "Support Us page rebuilt: clean PayPal, Patreon and Venmo logos (no more white-circle discs), and Fan Edit Optimus on the left holding out his hat for change, bobbing away while he pleads. The three QR codes and links still open in your browser when tapped.",
+    "Tapping outside the home tiles no longer makes the screen stutter and reset \u2014 taps on the corner videos are ignored now.",
+    "Home mosaic video re-rendered: 3 equal tiles per side, lined up with the 3 home rows, plus one equal tile in each of the 4 corners.",
+    "Stallone set is complete \u2014 the Rocky IV 'If I can change' speech joins the rotation, 7 clips now.",
+    "Schwarzenegger set: Predator theme, 'See you at the party, Richter', 'Two weeks' and more join the rotation."
+   ]
+  },
+  {
    "version": "0.5.2 Beta",
    "date": "2026-11-08",
    "notes": [
