@@ -1,5 +1,7 @@
 """Search keyboard decision. Ack means the Android IME activity opened."""
-FAIL_AFTER = 1.5
+# 0.4.2: a cold Fire TV can take longer than 1.5 s to open the input activity; a late ack used to race
+# the Kodi-keyboard fallback and leave the user with no keyboard at all.
+FAIL_AFTER = 3.0
 
 
 def files_dirs(translated_paths, packages=('com.fefc.kodi', 'org.xbmc.kodi')):

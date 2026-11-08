@@ -162,7 +162,11 @@ def make_textures(media):
             d.arc((100, 60, 170, 164), -50, 50, fill=W, width=16); d.arc((110, 26, 210, 198), -50, 50, fill=W, width=16)
         else:
             d.line((145, 75, 205, 150), fill=W, width=20); d.line((205, 75, 145, 150), fill=W, width=20)
-    icon(mag, 'fefc-ic-search.png'); icon(gear, 'fefc-ic-gear.png')
+    def house(d):
+        d.rectangle((150, 28, 176, 82), fill=W)                      # chimney
+        d.polygon([(112, 16), (204, 104), (20, 104)], fill=W)        # roof
+        d.rectangle((40, 104, 184, 208), fill=W)                     # body
+    icon(mag, 'fefc-ic-search.png'); icon(gear, 'fefc-ic-gear.png'); icon(house, 'fefc-ic-home.png')
     icon(lambda d: spk(d, True), 'fefc-ic-sound.png'); icon(lambda d: spk(d, False), 'fefc-ic-mute.png')
     lpill = Image.new('RGBA', (96, 96), (0, 0, 0, 0)); d = ImageDraw.Draw(lpill)
     d.rounded_rectangle((0, 0, 95, 95), 47, fill=W); d.rectangle((48, 0, 95, 95), fill=W)
@@ -203,6 +207,18 @@ def make_textures(media):
     brand_logo('patreon.png', 'fefc-ic-patreon.png')
     brand_logo('paypal.png', 'fefc-ic-paypal.png')
     brand_logo('venmo.png', 'fefc-ic-venmo.png')
+    # 0.4.2: rating-source badges for the video details page (IMDb / FanEdit.org IFDb / Movies Remastered).
+    # Drawn at 256x128, shown at 64x32 next to the labelled rating.
+    def rating_badge(text, bg, fg, name):
+        im = Image.new('RGBA', (256, 128), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+        d.rounded_rectangle((4, 4, 251, 123), 22, fill=bg)
+        f = ImageFont.truetype(str(_jf), 62)
+        bb = d.textbbox((0, 0), text, font=f); tw, th = bb[2] - bb[0], bb[3] - bb[1]
+        d.text(((256 - tw) / 2 - bb[0], (128 - th) / 2 - bb[1]), text, fill=fg, font=f)
+        im.resize((128, 64), Image.LANCZOS).save(media / name)
+    rating_badge('IMDb', (245, 197, 24, 255), (0, 0, 0, 255), 'fefc-ic-imdb.png')
+    rating_badge('IFDb', (26, 58, 110, 255), (255, 255, 255, 255), 'fefc-ic-ifdb.png')
+    rating_badge('MRDb', (90, 40, 120, 255), (255, 255, 255, 255), 'fefc-ic-mrdb.png')
     def land_tile(lines, name):
         w, h, m = 640, 320, 24
         im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
@@ -229,6 +245,8 @@ def make_textures(media):
     land_tile(['SORT'], 'fefc-sort-tile.png')
     land_tile(['READ FIRST'], 'fefc-readfirst-tile.png')
     land_tile(['TO BE CATALOGUED'], 'fefc-tbc-tile.png')
+    # 0.4.2: distinct tile for the virtual 01 - Testing folder (the old tile said "TO BE CATALOGUED" and hid the label)
+    land_tile(['01 - TESTING'], 'fefc-testing-tile.png')
     land_tile(['DOCUMENT'], 'fefc-doc-tile.png')
 
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
@@ -250,11 +268,16 @@ def patch_fonts(xml_dir):
                        ('font_tile', 44), ('font11_tile', 34), ('font_title_big', 56)):
         extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
                   '\t\t\t<size>%d</size>\n\t\t</font>\n') % (name, size)
+    # 0.4.2: smaller tile-label font so long titles fit fully instead of clipping (poster + landscape tiles)
+    extra += ('\t\t<font>\n\t\t\t<name>font_tile_sm</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
+              '\t\t\t<size>17</size>\n\t\t</font>\n')
     # add to every fontset
     if not (xml_dir.parent / 'fonts' / 'NotoSans-Bold.ttf').exists():
         extra = extra.replace('NotoSans-Bold.ttf', 'NotoSans-Regular.ttf')
     # 0.3.22: Star Trek LCARS-style condensed font (Antonio Bold, SIL OFL 1.1) for the info/details screen
-    for name, size in (('lcars_title', 64), ('lcars_med', 34), ('lcars_small', 28), ('lcars_btn', 32)):
+    for name, size in (('lcars_title', 64), ('lcars_med', 34), ('lcars_small', 28), ('lcars_btn', 32),
+                       # 0.4.2: smaller LCARS title so a two-line details title fits its 112px box without scrolling
+                       ('lcars_title_sm', 44)):
         extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>Antonio-Bold.ttf</filename>\n'
                   '\t\t\t<size>%d</size>\n\t\t</font>\n') % (name, size)
     # 0.4.0: ticker keeps Jura (it carries the X/Discord/Facebook/Reddit brand glyphs U+E001-E004 that Noto lacks)

@@ -1,4 +1,6 @@
 """Ticker text from real feed items only. Capped so Kodi can draw it."""
+import re
+
 MAX_LEN = 900
 ICONS = {
     'discord': ('\ue001', 'FF5865F2'),
@@ -14,8 +16,13 @@ CTA = (
 )
 
 
+_URL_RE = re.compile(r'https?://\S+|www\.\S+', re.I)
+
+
 def _clean(text):
-    return ' '.join(str(text or '').split())
+    # 0.4.2: no raw URLs in the ticker (feed titles often carry a bare link); the Join CTAs keep
+    # their short discord.gg invite, which is a call to action, not a pasted link.
+    return ' '.join(_URL_RE.sub('', str(text or '')).split())
 
 
 def items_from_new_files(feed):

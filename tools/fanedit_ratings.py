@@ -476,6 +476,9 @@ def main():
                 "n": len(ch),
                 "label": f"{len(ch)} change" + ("s" if len(ch) != 1 else ""),
                 "src": "ifdb",
+                # 0.4.2: carry the actual change lines (not just the count) so the Kodi details page
+                # can show them inline instead of pointing at fanedit.org.
+                "lines": [str(c) for c in ch[:60] if c],
             }
             cov["changes"] += 1
 

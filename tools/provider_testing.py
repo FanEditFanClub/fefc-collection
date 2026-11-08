@@ -14,10 +14,14 @@ OPEN = {
     'Pixeldrain mirror (unverified)': 'Open in Pixeldrain', 'Koofr': 'Open in Koofr',
     'Dailymotion': 'Open in Dailymotion', 'Short link (unresolved)': 'Open short link',
     'Torrent magnet': 'Open magnet', 'Coverage limits': 'Open link',
+    # 0.4.2: SwissTransfer provider registered. NOTE: no SwissTransfer source links exist in the
+    # research exports yet, so the provider stays empty until links are supplied.
+    'SwissTransfer': 'Open in SwissTransfer',
 }
 ORDER = ['Dropbox', 'MEGA', 'GoFile', 'MediaFire', 'Yandex Disk', 'Open Matte HTTP',
          'Internet Archive', 'YouTube', 'TeraBox', 'Pixeldrain', 'Pixeldrain mirror (unverified)',
-         'Koofr', 'Dailymotion', 'Short link (unresolved)', 'Torrent magnet', 'Coverage limits']
+         'Koofr', 'Dailymotion', 'Short link (unresolved)', 'Torrent magnet', 'Coverage limits',
+         'SwissTransfer']
 
 
 def slug(name):

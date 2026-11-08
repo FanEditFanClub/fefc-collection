@@ -1,6 +1,32 @@
 {
  "versions": [
   {
+   "version": "0.4.2 Beta",
+   "date": "2026-11-07",
+   "notes": [
+    "Bottom bar buttons no longer clip when a video is paused (RESUME and STOP now fit the bar).",
+    "Skip intro appears sooner, about 3 seconds in.",
+    "The update prompt no longer repeats after installing until you quit and relaunch.",
+    "Search keyboard now accepts Enter on Fire TV, including keyboards that only send a key-down or no action id.",
+    "To Be Catalogued now lists 01 - Testing first, with its own tile. SwissTransfer is registered as a provider.",
+    "Main collection folders sit closer together, like the other lists.",
+    "Actor and director subfolders show landscape art (a frame from the video) instead of a portrait poster.",
+    "Resume only shows on a video you have played before and are more than 30 seconds into.",
+    "About and Up to Date no longer appear on video details pages.",
+    "The year is gone from the top right of poster tiles.",
+    "Tile titles are smaller so the full title always shows, on poster and landscape tiles.",
+    "The Home button has a house icon.",
+    "The bottom news ticker no longer shows raw URLs.",
+    "Ratings on video details always name their source (IMDb, FanEdit.org or Movies Remastered) with the source badge next to them.",
+    "Video details titles always show in full, with no scrolling needed.",
+    "The FEFC and year labels are gone from the left bar on video details pages.",
+    "Fan edit changes are shown right on the video details page (from FanEdit.org and Drive notes) instead of pointing to a website.",
+    "Uncategorized no longer appears as a genre on video details pages.",
+    "Open in VLC and Open in Drive are back on video details pages (they were hidden behind the bottom bar).",
+    "Downloads: a Download button on video details with a top-right progress bar that stays visible on every page (hiding only while a video plays), a Downloads section in My List, and the Home My List tile counts downloads."
+   ]
+  },
+  {
    "version": "0.4.1 Beta",
    "date": "2026-11-07",
    "notes": [
@@ -52,7 +78,7 @@
     "Home ambience is back (original FEFC recording), follows the Sound toggle, stops when you leave Home or play a file",
     "Search and every FEFC text box use the Android / Fire TV system keyboard",
     "Notifications: permission asked after the intro on Home (and again next launch until allowed); Settings now opens FEFC settings with the Notifications section, plus an 'Allow notifications' button",
-    "Actors & Directors: one A–Z list of everyone",
+    "Actors & Directors: one A\u2013Z list of everyone",
     "Genres: new art for Musical, Drama, Horror, Family and War; names centred at the bottom; Unsorted merged into Uncategorized",
     "Every page: same bottom menu bar as Home, no version in the corner; grids are 6 tiles wide",
     "Shuffle Play / Sort / Support Us tiles show their name once"
@@ -62,9 +88,9 @@
    "version": "0.3.21 Beta",
    "date": "2026-11-04",
    "notes": [
-    "Phone/tablet: Android notifications when new files are added (same time as the daily social posts) — tap opens New Arrivals",
-    "Phone/tablet: Android notification when an app update is available (Update Available · v…) — tap opens the updater",
-    "Settings → Notifications: separate toggles for App update notifications and New files notifications (both default ON, remembered across updates)",
+    "Phone/tablet: Android notifications when new files are added (same time as the daily social posts) \u2014 tap opens New Arrivals",
+    "Phone/tablet: Android notification when an app update is available (Update Available \u00b7 v\u2026) \u2014 tap opens the updater",
+    "Settings \u2192 Notifications: separate toggles for App update notifications and New files notifications (both default ON, remembered across updates)",
     "Fire TV update popup is unchanged",
     "News ticker (web + both Kodi packages): newly added collection files from the same daily feed as the social posts"
    ]
@@ -92,7 +118,7 @@
     "Sound on/off button with a speaker icon in the top menu, remembered across restarts and updates",
     "Search has a magnifying glass and Settings a gear icon",
     "Home: Exit button, bottom-left logo, top-left version text and the word Community removed",
-    "Update button reads 'Up To Date · v…' or 'Update Available · v…'; pressing it always checks fresh and installs if newer"
+    "Update button reads 'Up To Date \u00b7 v\u2026' or 'Update Available \u00b7 v\u2026'; pressing it always checks fresh and installs if newer"
    ]
   },
   {

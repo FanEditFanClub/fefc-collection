@@ -62,6 +62,11 @@
 
     if-eq p2, p1, :cond_1d
 
+    # 0.4.2: accept IME_ACTION_UNSPECIFIED (0) — Fire TV keyboards often send no action id at all.
+    const/4 p1, 0x0
+
+    if-eq p2, p1, :cond_1d
+
     if-eqz p3, :cond_1b
 
     .line 50
@@ -77,9 +82,12 @@
 
     move-result p1
 
-    if-ne p1, v0, :cond_1b
+    # 0.4.2: accept Enter on ACTION_UP (1) or ACTION_DOWN (0); Fire TV often sends DOWN only.
+    if-eq p1, v0, :goto_1d
 
-    goto :goto_1d
+    if-eqz p1, :goto_1d
+
+    goto :cond_1b
 
     .line 54
     :cond_1b

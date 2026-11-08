@@ -46,8 +46,13 @@ public class FefcInputActivity extends Activity {
         et.setInputType(num ? InputType.TYPE_CLASS_NUMBER : (InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS));
         et.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             public boolean onEditorAction(TextView v, int id, KeyEvent ev) {
+                // 0.4.2: Fire TV keyboards commonly send Enter as ACTION_DOWN only, or IME_ACTION_UNSPECIFIED (0);
+                // both used to fall through and leave the search dialog sitting with no keyboard. Accept them.
+                // finishWith is guarded by `done`, so an ACTION_DOWN + ACTION_UP pair cannot double-submit.
                 if (id == EditorInfo.IME_ACTION_GO || id == EditorInfo.IME_ACTION_DONE || id == EditorInfo.IME_ACTION_SEARCH
-                        || (ev != null && ev.getKeyCode() == KeyEvent.KEYCODE_ENTER && ev.getAction() == KeyEvent.ACTION_UP)) {
+                        || id == EditorInfo.IME_ACTION_UNSPECIFIED
+                        || (ev != null && ev.getKeyCode() == KeyEvent.KEYCODE_ENTER
+                                && (ev.getAction() == KeyEvent.ACTION_UP || ev.getAction() == KeyEvent.ACTION_DOWN))) {
                     finishWith("OK\n" + et.getText().toString());
                     return true;
                 }

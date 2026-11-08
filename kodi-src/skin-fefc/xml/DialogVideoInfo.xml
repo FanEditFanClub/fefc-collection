@@ -26,8 +26,7 @@
 		<control type="image"><left>96</left><top>846</top><width>170</width><height>54</height><texture colordiffuse="FF33CCBB">colors/white.png</texture></control>
 		<control type="image"><left>322</left><top>986</top><width>900</width><height>40</height><texture colordiffuse="FFFF9C00">colors/white.png</texture></control>
 		<control type="image"><left>1228</left><top>986</top><width>596</width><height>40</height><texture colordiffuse="FFFFCC66">colors/white.png</texture></control>
-		<control type="label"><left>110</left><top>190</top><width>150</width><height>40</height><font>lcars_med</font><textcolor>FF000000</textcolor><align>right</align><label>FEFC</label></control>
-		<control type="label"><left>110</left><top>236</top><width>150</width><height>40</height><font>lcars_med</font><textcolor>FF000000</textcolor><align>right</align><label>$INFO[ListItem.Year]</label></control>
+		<!-- 0.4.2: the FEFC + year labels that sat on the left purple bar are removed. -->
 		<!-- poster -->
 		<control type="image">
 			<left>300</left><top>120</top><width>330</width><height>495</height>
@@ -37,18 +36,37 @@
 		<!-- title: wraps over up to 2 lines instead of being cut off -->
 		<control type="textbox">
 			<left>660</left><top>84</top><width>1120</width><height>112</height>
-			<font>lcars_title</font>
+			<!-- 0.4.2: lcars_title (64px) needed ~154px for two lines, so line 2 only appeared via autoscroll;
+			     lcars_title_sm (44px) fits two lines (~106px) in the 112px box, so the full title always shows -->
+			<font>lcars_title_sm</font>
 			<textcolor>FFFFFFFF</textcolor>
 			<aligny>center</aligny>
 			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
 			<label>$INFO[ListItem.Title]</label>
 		</control>
 		<control type="label">
-			<left>660</left><top>200</top><width>1120</width><height>40</height>
+			<left>660</left><top>200</top><width>750</width><height>40</height>
 			<aligny>center</aligny>
 			<font>lcars_med</font>
 			<textcolor>FFFF9C00</textcolor>
-			<label>$INFO[ListItem.Year]$INFO[ListItem.Duration,   ,]$INFO[ListItem.Rating,   Rating: ]$INFO[ListItem.Genre,   ,]</label>
+			<label>$INFO[ListItem.Year]$INFO[ListItem.Duration,   ,]$INFO[ListItem.Genre,   ,]</label>
+		</control>
+		<!-- 0.4.2: rating with its source, always labelled, with the source badge icon next to it.
+		     (The old header showed a bare number with no source.) -->
+		<control type="group">
+			<left>1420</left><top>200</top><width>360</width><height>40</height>
+			<visible>!String.IsEmpty(ListItem.Property(fefc_rating_src))</visible>
+			<control type="image">
+				<left>0</left><top>4</top><width>64</width><height>32</height>
+				<texture>$INFO[ListItem.Property(fefc_rating_src),fefc-ic-,.png]</texture>
+			</control>
+			<control type="label">
+				<left>72</left><top>0</top><width>288</width><height>40</height>
+				<aligny>center</aligny>
+				<font>lcars_med</font>
+				<textcolor>FFFF9C00</textcolor>
+				<label>$INFO[ListItem.Property(fefc_rating_text)]</label>
+			</control>
 		</control>
 		<control type="label">
 			<left>660</left><top>242</top><width>1120</width><height>36</height>
@@ -58,8 +76,9 @@
 			<label>$INFO[ListItem.Director,Directed by: ]$INFO[ListItem.Studio,   Edited by: ]</label>
 		</control>
 		<!-- plot: fixed box, scrolls automatically and with up/down when longer -->
+		<!-- 0.4.2: plot shortened 370 -> 288 so both button rows sit above the bottom bar (they were hidden behind it) -->
 		<control type="textbox">
-			<left>660</left><top>290</top><width>1100</width><height>370</height>
+			<left>660</left><top>290</top><width>1100</width><height>288</height>
 			<font>font13</font>
 			<textcolor>FFE8EEF6</textcolor>
 			<pagecontrol>61</pagecontrol>
@@ -67,14 +86,14 @@
 			<label>$INFO[ListItem.Plot]</label>
 		</control>
 		<control type="scrollbar" id="61">
-			<left>1770</left><top>290</top><width>8</width><height>370</height>
+			<left>1770</left><top>290</top><width>8</width><height>288</height>
 			<onleft>8</onleft><onright>8</onright>
 			<showonepage>false</showonepage>
 			<orientation>vertical</orientation>
 		</control>
 		<!-- cast -->
 		<control type="label">
-			<left>660</left><top>668</top><width>600</width><height>30</height>
+			<left>660</left><top>586</top><width>600</width><height>30</height>
 			<aligny>center</aligny>
 			<font>lcars_med</font>
 			<textcolor>FFFF9C00</textcolor>
@@ -83,7 +102,7 @@
 		</control>
 		<!-- 0.3.22: full cast, no auto-scroll: 3 columns in the free space on the right, manual scroll (focus + up/down) if it overflows -->
 		<control type="list" id="62">
-			<left>660</left><top>702</top><width>1120</width><height>108</height>
+			<left>660</left><top>620</top><width>1120</width><height>108</height>
 			<scrolltime>200</scrolltime>
 			<onup>9290</onup><ondown>5000</ondown>
 			<itemlayout width="1120" height="36"><control type="label"><left>0</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FF99CCFF</textcolor><label>$INFO[ListItem.Label]</label></control><control type="label"><left>375</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FF99CCFF</textcolor><label>$INFO[ListItem.Label2]</label></control><control type="label"><left>750</left><width>365</width><height>36</height><font>lcars_small</font><textcolor>FF99CCFF</textcolor><label>$INFO[ListItem.Property(c3)]</label></control></itemlayout>
@@ -91,8 +110,9 @@
 			<content>plugin://plugin.video.fefc/?action=castrows&amp;id=$INFO[ListItem.Property(fefc_id)]</content>
 		</control>
 		<!-- buttons: row 1 (Play / Resume / My List / Trailer), row 2 (Open in VLC / Open in Drive / Close) -->
+		<!-- 0.4.2: rows moved up (818 -> 736, 906 -> 824) so row 2 is no longer hidden behind the bottom bar -->
 		<control type="grouplist" id="5000">
-			<left>660</left><top>818</top><width>1120</width><height>76</height>
+			<left>660</left><top>736</top><width>1120</width><height>76</height>
 			<orientation>horizontal</orientation>
 			<itemgap>16</itemgap>
 			<onleft>5000</onleft><onright>5000</onright><onup>62</onup><ondown>5001</ondown>
@@ -105,13 +125,17 @@
 				<width>190</width><height>76</height>
 				<label>$LOCALIZE[13404]</label>
 				<include>FefcDetailTile</include>
+				<!-- 0.4.2: Resume only shows when the video was played before (the addon only sets a resume
+				     point after 30s in); without this the button sat there greyed out on every new video. -->
+				<visible>!String.IsEmpty(ListItem.ResumeTime)</visible>
 			</control>
 			<!-- 0.4.0: same star icon as the Home 'My List' tile, left of the label -->
+			<!-- 0.4.2: widened 340 -> 380 so "Remove from My List" is not clipped at 27px + 40px offset -->
 			<control type="group">
-				<width>340</width><height>76</height>
+				<width>380</width><height>76</height>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
 				<control type="button" id="12">
-					<left>0</left><top>0</top><width>340</width><height>76</height>
+					<left>0</left><top>0</top><width>380</width><height>76</height>
 					<label>$VAR[FefcMyLabel]</label>
 					<include>FefcDetailTile</include>
 					<textoffsetx>40</textoffsetx>
@@ -129,7 +153,7 @@
 			</control>
 		</control>
 		<control type="grouplist" id="5001">
-			<left>660</left><top>906</top><width>1120</width><height>76</height>
+			<left>660</left><top>824</top><width>1120</width><height>76</height>
 			<orientation>horizontal</orientation>
 			<itemgap>16</itemgap>
 			<onleft>5001</onleft><onright>5001</onright><onup>5000</onup><ondown>5001</ondown>
@@ -145,6 +169,14 @@
 				<label>OPEN IN DRIVE</label>
 				<include>FefcDetailTile</include>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=open_drive&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
+				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
+			</control>
+			<!-- 0.4.2: Download — saves the video to the device with a progress bar; find it in My List > Downloads -->
+			<control type="button" id="15">
+				<width>300</width><height>76</height>
+				<label>$INFO[ListItem.Property(fefc_download_label),Download]</label>
+				<include>FefcDetailTile</include>
+				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=download&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
 			</control>
 		</control>

@@ -68,13 +68,14 @@
 			<preloaditems>2</preloaditems>
 			<orientation>vertical</orientation>
 			<!-- 0.3.22: folders / tools / docs inside a list that also has files keep their landscape card -->
-			<itemlayout width="283" height="430" condition="ListItem.IsFolder | !String.IsEqual(ListItem.Property(IsPlayable),true)">
+			<!-- 0.4.2: folder rows are 150px like view 500 (a 138px card in a 430px slot left ~292px of dead space between folder rows) -->
+			<itemlayout width="283" height="150" condition="ListItem.IsFolder | !String.IsEqual(ListItem.Property(IsPlayable),true)">
 				<control type="group">
 					<left>9</left><top>8</top>
 					<include content="FefcGridTile"></include>
 				</control>
 			</itemlayout>
-			<focusedlayout width="283" height="430" condition="ListItem.IsFolder | !String.IsEqual(ListItem.Property(IsPlayable),true)">
+			<focusedlayout width="283" height="150" condition="ListItem.IsFolder | !String.IsEqual(ListItem.Property(IsPlayable),true)">
 				<control type="group">
 					<left>9</left><top>8</top>
 					<depth>DepthContentPopout</depth>

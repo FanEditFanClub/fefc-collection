@@ -51,14 +51,47 @@ def ensure_source():
 
 VERSION_URL = 'https://fefc-collection.pages.dev/kodi-app/version.json'
 BUILD_FILE = 'special://xbmc/fefc-build.json'
+# 0.4.2: the running process keeps serving the OLD APK's fefc-build.json until it restarts, so an installed
+# update looks "not installed" and re-prompts. Record the just-installed build outside the APK (addon_data
+# survives APK updates) and prefer it in installed_build() until the new APK's own file agrees.
+RECORDED_BUILD_FILE = 'special://profile/addon_data/plugin.video.fefc/installed-build.json'
 
 
-def installed_build():
+def _recorded_build():
     try:
-        with xbmcvfs.File(BUILD_FILE) as f:
+        with xbmcvfs.File(RECORDED_BUILD_FILE) as f:
             return json.loads(f.read())
     except Exception:
         return None
+
+
+def _record_installed_build(new):
+    try:
+        d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/')
+        try:
+            os.makedirs(d, exist_ok=True)
+        except Exception:
+            pass
+        with xbmcvfs.File(RECORDED_BUILD_FILE, 'w') as f:
+            f.write(json.dumps({'build': int(new.get('build', 0)), 'version': str(new.get('version') or '')}))
+    except Exception as e:
+        log('record installed build: %s' % e)
+
+
+def installed_build():
+    cur = None
+    try:
+        with xbmcvfs.File(BUILD_FILE) as f:
+            cur = json.loads(f.read())
+    except Exception:
+        cur = None
+    rec = _recorded_build()
+    if rec and cur:
+        try:
+            return rec if int(rec.get('build', 0)) > int(cur.get('build', 0)) else cur
+        except Exception:
+            return cur
+    return rec or cur
 
 
 def version_label(b):
@@ -359,6 +392,9 @@ def _install_update(new):
     log('launching installer: %s' % uri)
     # 5th argument 1 = FLAG_GRANT_READ_URI_PERMISSION so the installer can read our FileProvider URI
     xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)' % uri)
+    # 0.4.2: record the new build outside the APK so the post-install check does not re-prompt for an
+    # update that is already installed (the old APK's fefc-build.json is still served until restart).
+    _record_installed_build(new)
 
 
 def set_select_action():
@@ -903,7 +939,7 @@ def main():
                     return
                 if not xbmc.Player().isPlaying():
                     break
-                if n == 6 and skip is None:
+                if n == 2 and skip is None:
                     try:
                         skip = SkipIntro()
                         skip.show()

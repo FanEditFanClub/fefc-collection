@@ -12,6 +12,7 @@ import xbmcvfs
 
 from . import catalog
 from . import mylist as mylist_mod
+from . import downloads as downloads_mod
 
 ADDON = xbmcaddon.Addon()
 PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
@@ -48,6 +49,11 @@ def _model():
 def _ml():
     prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
     return mylist_mod.MyList(os.path.join(prof, 'mylist'), _base())
+
+
+def _dl():
+    prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
+    return downloads_mod.Downloads(os.path.join(prof, 'downloads'))
 
 
 SORTS = [('az', 'Name A-Z'), ('za', 'Name Z-A'), ('added', 'Recently Added'), ('files', 'Most Files')]
@@ -169,9 +175,16 @@ def home_counts():
         stars = len(_ml().ids())
     except Exception:
         stars = 0
+    try:
+        dls = _dl().count()
+    except Exception:
+        dls = 0
+    mylist = 'History  \u00b7  %d Starred' % stars
+    if dls:
+        mylist += '  \u00b7  %d Download%s' % (dls, '' if dls == 1 else 's')
     return {'Main': line(m['root']), 'Collections': line(COLL_ID), 'TBC': line(TBC_ID),
             'People': _fmt(people, 'Collection', 'Collections'), 'Genres': _fmt(genres, 'Genre', 'Genres') if genres else '',
-            'MyList': 'History  \u00b7  %d Starred' % stars}
+            'MyList': mylist}
 
 
 def _url(handle_url, **kw):
@@ -261,6 +274,12 @@ class Router:
         if wav:
             li.setProperty('fefc_sfx', catalog.abs_url(base, wav))
         li.setProperty('fefc_mylabel', 'Remove from My List' if on else 'Add to My List')
+        # 0.4.2: details-page Download button label — "Downloaded" once the file is on the device.
+        try:
+            _dl_label = 'Downloaded' if _dl().has(vid) else 'Download'
+        except Exception:
+            _dl_label = 'Download'
+        li.setProperty('fefc_download_label', _dl_label)
         li.addContextMenuItems([('Remove from My List' if on else 'Add to My List',
                                  'RunPlugin(%s)' % _url(self.url, action='mylist_toggle', id=vid))])
         tag = li.getVideoInfoTag()
@@ -269,7 +288,7 @@ class Router:
         plot = info['plot']
         extra = []
         pb = self.mydb().playback(vid)
-        if pb and (pb.get('sec') or 0) >= 10:
+        if pb and (pb.get('sec') or 0) > 30:
             extra.append('Continue watching from %s' % pb.get('formatted'))
             try:
                 tag.setResumePoint(float(pb['sec']), float(pb.get('total') or (info['runtime'] or 0) * 60 or pb['sec'] * 4))
@@ -287,8 +306,8 @@ class Router:
             tag.setPlot(plot)
         if info['year']:
             tag.setYear(info['year'])
-        gs = m['vgenres'].get(vid) or []
-        if gs and gs != ['Uncategorized']:
+        gs = [g for g in (m['vgenres'].get(vid) or []) if g != 'Uncategorized']
+        if gs:
             tag.setGenres(gs)
         if info['director']:
             tag.setDirectors(info['director'])
@@ -302,6 +321,14 @@ class Router:
         for label, score, votes in info['ratings']:
             tag.setRating(score, votes, label, first)
             first = False
+        # 0.4.2: the details header shows the default (first) rating with its source, plus a source icon.
+        # The ratings list is ordered IFDb, MRDb, IMDb, so the first entry is the default.
+        if info['ratings']:
+            _disp = {'FEFC-IFDb': ('ifdb', 'FanEdit.org'), 'MRDb': ('mrdb', 'MRDb'), 'imdb': ('imdb', 'IMDb')}
+            _lab, _sc, _v = info['ratings'][0]
+            _src, _name = _disp.get(_lab, ('imdb', _lab))
+            li.setProperty('fefc_rating_src', _src)
+            li.setProperty('fefc_rating_text', '%s %s/10' % (_name, _sc))
         added = m['added'].get(vid)
         if added:
             tag.setDateAdded(added + ' 00:00:00')
@@ -370,6 +397,11 @@ class Router:
         if key != 'az':
             ks = _sorted_kids(m, ks, key)
         chunk = ks[page * PAGE:(page + 1) * PAGE]
+        if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
+            # 0.4.2: 01 - Testing is the first item in To Be Catalogued, with its own tile (the old
+            # fefc-tbc-tile art says "TO BE CATALOGUED" and hid the "01 - Testing" label entirely).
+            tile = 'special://xbmc/addons/skin.fefc/media/fefc-testing-tile.png'
+            self.add_folder('01 - Testing', tile, 'App-only provider links. 2 verified videos.', landscape=tile, action='folder', id='pt:testing')
         if not page:
             self._maybe_sfx(catalog.sfx_for(m, fid))
             if ks:
@@ -378,9 +410,6 @@ class Router:
                 if any(not m['items'][k][2] for k in ks) or any(m['items'][k][2] for k in ks):
                     self.add_tool('Shuffle Play', 'Play a random mix of edits from this collection.', 'DefaultMusicPlaylists.png', action='shuffle', id=fid)
         nf = nv = 0
-        if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
-            tile = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
-            self.add_folder('01 - Testing', tile, 'App-only provider links. 2 verified videos.', landscape=tile, action='folder', id='pt:testing')
         if not page:   # Support Us / Read First docs in this folder, like the web app's tiles
             seen_kind = set()
             for did, dname, kind in (m.get('docs') or {}).get((m['items'].get(fid) or [0, 0, 0, ''])[3] or fid, []):
@@ -561,6 +590,12 @@ class Router:
                       action='mylist_sortswitch', cur=sortk)
         self.add_tool('Recently opened', 'The last edits you opened or played (synced with the FEFC web app).', 'DefaultRecentlyAddedMovies.png',
                       folder=True, action='history')
+        # 0.4.2: Downloads — its own section inside My List (local copies, playable offline).
+        try:
+            ndl = _dl().count()
+        except Exception:
+            ndl = 0
+        self.add_folder('Downloads  (%d)' % ndl, '', 'Videos downloaded to this device. Play offline, no streaming.', action='downloads')
         cont = []
         for sid in ml.continue_ids():
             i = self._resolve(m, sid)
@@ -1106,6 +1141,107 @@ class Router:
         xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % url)
         xbmcgui.Dialog().notification('FEFC', 'Opening in Drive: ' + catalog.display_title(name), xbmcgui.NOTIFICATION_INFO, 4000)
 
+    # -- downloads (local copies; own section in My List) ---------------------------------------------------
+    def download(self):
+        """Download the video to the device, with a progress bar. Resumable; re-runs pick up where they stopped."""
+        import urllib.request
+        vid = self.params['id']
+        m = _model()
+        v = m['items'].get(vid)
+        name = v[0] if v else 'video.mp4'
+        dl = _dl()
+        if dl.has(vid):
+            xbmcgui.Dialog().notification('FEFC', 'Already downloaded — find it in My List > Downloads.', xbmcgui.NOTIFICATION_INFO, 4000)
+            return
+        tid, _nm = self._target(vid)
+        url = catalog.stream_url(_base(), tid, name)
+        dst = dl.file_path(vid, name)
+        part = dst + '.part'
+        prog = xbmcgui.DialogProgressBG()
+        prog.create('FEFC download', 'Downloading %s...' % catalog.display_title(name))
+        try:
+            have = os.path.getsize(part) if os.path.exists(part) else 0
+            hdr = {'User-Agent': 'FEFC-Kodi'}
+            if have:
+                hdr['Range'] = 'bytes=%d-' % have
+            with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
+                if have and r.status != 206:
+                    have = 0
+                total = have + int(r.headers.get('Content-Length') or 0)
+                with open(part, 'ab' if have else 'wb') as f:
+                    done = have
+                    while True:
+                        if prog.isFinished():
+                            prog.close()
+                            xbmcgui.Dialog().notification('FEFC', 'Download paused — pick Download again to resume.', xbmcgui.NOTIFICATION_INFO, 4000)
+                            return
+                        chunk = r.read(256 * 1024)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        done += len(chunk)
+                        # DialogProgressBG is the same top-right background bar the software updater uses:
+                        # it stays visible on every page, hides while a video plays fullscreen, and comes
+                        # back when you hit Back. Keep it updating even when the total size is unknown.
+                        if total:
+                            prog.update(min(99, int(done * 100 / total)), 'FEFC download',
+                                        '%s: %d / %d MB' % (catalog.display_title(name), done >> 20, total >> 20))
+                        else:
+                            prog.update(0, 'FEFC download', '%s: %d MB downloaded' % (catalog.display_title(name), done >> 20))
+            os.replace(part, dst)
+            dl.add(vid, name, dst, os.path.getsize(dst))
+            prog.close()
+            xbmcgui.Dialog().notification('FEFC', 'Download finished: ' + catalog.display_title(name), xbmcgui.NOTIFICATION_INFO, 5000)
+        except Exception as e:
+            prog.close()
+            _log('download failed: %s' % e)
+            xbmcgui.Dialog().ok('FEFC download', 'The download did not finish. Check the connection and pick Download again; it will continue where it stopped.')
+
+    def downloads(self):
+        """Downloads section: every local copy, newest first. Plays the file on the device (no streaming)."""
+        dl = _dl()
+        rows = dl.all()
+        if not rows:
+            xbmcgui.Dialog().notification('Downloads', 'Nothing downloaded yet. Open a video and pick Download.', xbmcgui.NOTIFICATION_INFO, 5000)
+            return
+        for r in rows:
+            li = xbmcgui.ListItem(catalog.display_title(r.get('name') or 'video.mp4'), offscreen=True)
+            li.setProperty('IsPlayable', 'true')
+            li.setProperty('fefc_download', 'true')
+            sz = r.get('size') or 0
+            if sz:
+                li.getVideoInfoTag().setPlot('Downloaded to this device  ·  %.2f GB' % (sz / 1073741824.0))
+            li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=r['id']))])
+            xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='play_download', id=r['id']), li, False)
+
+    def play_download(self):
+        vid = self.params['id']
+        r = _dl().get(vid)
+        if not r or not r.get('path') or not os.path.exists(r['path']):
+            xbmcgui.Dialog().notification('FEFC', 'That download is gone — pick Download again to re-download it.', xbmcgui.NOTIFICATION_INFO, 4000)
+            return
+        li = xbmcgui.ListItem(path=r['path'])
+        low = (r.get('name') or '').lower()
+        li.setMimeType('video/x-matroska' if low.endswith('.mkv') else 'video/mp4')
+        li.setContentLookup(False)
+        xbmcplugin.setResolvedUrl(self.handle, True, li)
+
+    def download_delete(self):
+        vid = self.params['id']
+        dl = _dl()
+        r = dl.remove(vid)
+        if r and r.get('path'):
+            try:
+                os.remove(r['path'])
+            except OSError:
+                pass
+            try:
+                os.remove(r['path'] + '.part')
+            except OSError:
+                pass
+        xbmcgui.Dialog().notification('FEFC', 'Download deleted.', xbmcgui.NOTIFICATION_INFO, 3000)
+        xbmc.executebuiltin('Container.Refresh')
+
 
 def _png_rgb(path, rows):
     """Plain 8-bit RGB PNG (Kodi decodes this everywhere; 1-bit PNGs show up black/blank)."""
@@ -1309,6 +1445,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
           'open_link': 'open_link', 'play_external': 'play_external',
+          'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop'}
 
 

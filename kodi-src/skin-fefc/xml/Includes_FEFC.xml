@@ -52,17 +52,18 @@
 			<control type="image">
 				<left>5</left><top>58</top><width>255</width><height>75</height>
 				<texture>fefc-shade.png</texture>
-				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile)</visible>
+				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
 			</control>
 			<control type="label">
 				<left>10</left><top>30</top><width>245</width><height>102</height>
 				<aligny>bottom</aligny>
-				<font>font10</font>
+				<font>font_tile_sm</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
 				<wrapmultiline>true</wrapmultiline>
-				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile)</visible>
+				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
 				<!-- 0.3.22: Shuffle / Sort / Support Us art already carries the big centred label; no small duplicate -->
+				<!-- 0.4.2: label font shrunk (font10 -> font_tile_sm 17px) so long folder names fit fully; testing tile hides its label too -->
 			</control>
 			<control type="image">
 				<width>265</width><height>138</height>
@@ -89,18 +90,11 @@
 				<texture border="20">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
-			<control type="label">
-				<right>10</right><top>10</top><width>130</width><height>30</height>
-				<align>right</align><aligny>center</aligny>
-				<font>font10_title</font>
-				<textcolor>FFFF9C00</textcolor>
-				<label>$INFO[ListItem.Year]</label>
-				<shadowcolor>FF000000</shadowcolor>
-			</control>
+			<!-- 0.4.2: year label removed from poster tiles -->
 			<control type="label">
 				<left>-6</left><top>337</top><width>234</width><height>92</height>
 				<aligny>top</aligny><align>center</align>
-				<font>font10</font>
+				<font>font_tile_sm</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
 				<wrapmultiline>true</wrapmultiline>
@@ -166,23 +160,31 @@
 				<onup condition="Control.IsVisible(501)">501</onup><onup>$PARAM[down]</onup><ondown condition="Control.IsVisible(501)">501</ondown><ondown>$PARAM[down]</ondown><onleft>9290</onleft><onright>9290</onright>
 				<control type="button" id="9295">
 					<width>120</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
 					<label>RESUME</label>
 					<onclick>ActivateWindow(fullscreenvideo)</onclick>
 				</control>
 				<control type="button" id="9296">
 					<width>86</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
 					<label>STOP</label>
 					<onclick>PlayerControl(Stop)</onclick>
 				</control>
 				<!-- 0.3.22: HOME on every page's menu bar (back to the live Home screen) -->
-				<control type="button" id="9298">
+				<!-- 0.4.2: house icon, same group pattern as SEARCH / SOUND / SETTINGS -->
+				<control type="group">
 					<width>110</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
-					<label>HOME</label>
-					<onclick>ActivateWindow(Home)</onclick>
+					<control type="button" id="9298">
+						<left>0</left><top>0</top><width>110</width><height>60</height>
+						<include>FefcSmallButton</include>
+						<font>fefc_bar</font>
+						<textoffsetx>46</textoffsetx><align>left</align>
+						<label>HOME</label>
+						<onclick>ActivateWindow(Home)</onclick>
+					</control>
+					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
 				</control>
 				<control type="group">
 					<width>168</width><height>60</height>
@@ -227,13 +229,18 @@
 					<font>fefc_bar</font>
 					<label>ABOUT</label>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
+					<!-- 0.4.2: About and Update do not show on video details pages -->
+					<visible>!Window.IsActive(movieinformation)</visible>
 				</control>
 				<control type="button" id="9297">
-					<width>200</width><height>60</height>
+					<width>182</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
+					<!-- 0.4.2: About and Update do not show on video details pages; width 200 -> 182 so the
+					     paused-state bar (RESUME + STOP shown) fits the 1224px pill instead of overflowing it -->
+					<visible>!Window.IsActive(movieinformation)</visible>
 				</control>
 			</control>
 		</control>

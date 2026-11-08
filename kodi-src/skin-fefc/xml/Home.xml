@@ -216,8 +216,8 @@
 				<width>190</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 				<control type="button" id="9021">
 					<left>0</left><top>0</top><width>120</width><height>60</height>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
-					
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
 					<label>RESUME</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>ActivateWindow(fullscreenvideo)</onclick>
@@ -228,8 +228,8 @@
 				<width>140</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 				<control type="button" id="9022">
 					<left>0</left><top>0</top><width>86</width><height>60</height>
-					<font>fefc_bar</font><include>FefcSmallButton</include>
-					
+					<include>FefcSmallButton</include>
+					<font>fefc_bar</font>
 					<label>STOP</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>PlayerControl(Stop)</onclick>
@@ -289,9 +289,10 @@
 
 			</control>
 			<control type="group">
-				<width>200</width><height>60</height>
+				<!-- 0.4.2: width 200 -> 176 so the paused-state bar fits the 1224px pill (it overflowed by 22px) -->
+				<width>176</width><height>60</height>
 				<control type="button" id="9023">
-					<left>0</left><top>0</top><width>200</width><height>60</height>
+					<left>0</left><top>0</top><width>176</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>

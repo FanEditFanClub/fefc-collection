@@ -228,6 +228,9 @@ def build_model(raw):
         ch = r.get('changes') if isinstance(r, dict) else None
         if isinstance(ch, dict) and ch.get('label'):
             out['changes'] = ch['label']
+            # 0.4.2: carry the actual IFDb change lines so the details page can show them inline
+            if isinstance(ch.get('lines'), list):
+                out['changes_lines'] = [str(c) for c in ch['lines'][:60] if c]
         for src in ('ifdb', 'mrdb'):
             s2 = r.get(src) if isinstance(r, dict) else None
             if isinstance(s2, dict) and s2.get('url'):
@@ -359,9 +362,11 @@ def folder_art(m, base, fid):
                     if m['items'][k][2]:
                         nq.append(k)
                     else:
-                        u2 = poster_for(m, base, k)
-                        if u2:
-                            return u2
+                        # 0.4.2: use the video file's own Drive thumbnail (a landscape frame from the video)
+                        # instead of its portrait poster, so folder cards stay landscape. (Only 369/1803
+                        # folders have a curated fthumb; the rest hit this fallback.)
+                        vk = (m['items'].get(k) or [0, 0, 0, ''])[3] or k
+                        return 'https://drive.google.com/thumbnail?sz=w500&id=' + vk
             q = nq[:40]
     if t:
         return abs_url(base, t) if t.startswith('assets/') else 'https://drive.google.com/thumbnail?sz=w500&id=' + t
@@ -403,8 +408,9 @@ def video_info(m, vid):
     ch = (m.get('changes') or {}).get(vid) or ((m.get('changes') or {}).get(tgt) if tgt else None) or (m.get('changes') or {}).get('folder:' + par)
     if ch:
         plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + c for c in ch))
-    elif r.get('changes'):
-        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + r['changes'] + ' (see FanEdit.org)')
+    elif r.get('changes_lines'):
+        # 0.4.2: IFDb change lines, shown inline. No "(see FanEdit.org)" pointer — the changes are right here.
+        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + c for c in r['changes_lines']))
     # 0.4.0: FILE INFO (web parity) from data/fileinfo.json - read-only Drive metadata (size, owner, length, resolution)
     fi = (m.get('fileinfo') or {}).get(tgt or vid) or (m.get('fileinfo') or {}).get(vid) or {}
     nm = (m['items'].get(tgt) or it or [''])[0] if (tgt or it) else ''
