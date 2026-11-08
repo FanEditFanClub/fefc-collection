@@ -13,6 +13,31 @@ SHARE_HOSTS = ('swisstransfer.com', 'www.swisstransfer.com')
 _ID_RE = re.compile(r'/d[l]?/([0-9a-f-]{16,})', re.I)
 
 
+def durable_file_url(candidate):
+    """A catalogue play URL has to keep working. A presigned S3 link expires and is not stored."""
+    if not candidate:
+        return ''
+    query = urlsplit(candidate).query.lower()
+    if 'x-amz-signature' in query or 'x-amz-expires' in query or 'x-amz-credential' in query:
+        return ''
+    return ''
+
+
+def progressive_mp4(probe):
+    """True when a bounded Range/ffprobe sample looks like a progressive MP4 Kodi can open.
+    This is container evidence only. It is not playback, and it does not supply a URL."""
+    if not isinstance(probe, dict):
+        return False
+    probes = probe.get('probes') or []
+    if len(probes) < 3:
+        return False
+    if not all(p.get('status') == 206 and (p.get('mime') or '').startswith('video/mp4') for p in probes):
+        return False
+    streams = probe.get('streams') or []
+    codecs = {s.get('codec_name') for s in streams if isinstance(s, dict)}
+    return 'h264' in codecs and 'aac' in codecs
+
+
 def share_id(url):
     parts = urlsplit(url or '')
     host = (parts.hostname or '').lower()
@@ -81,9 +106,9 @@ def inspect_page(html, now=None):
         msg = 'The SwissTransfer page "%s" lists %d file(s) that are not video. In-app Play is off. The link is available until %s.' % (title, len(files), when)
         state = 'unsupported'
     else:
-        msg = ('The SwissTransfer address is a web page, not a video file, so Kodi cannot play it. '
+        msg = ('The SwissTransfer address is a web page, not a video file. '
                '"%s" lists %d MP4 file(s), about %.1f GB, until %s. '
-               'There is no stable media address on the page. In-app Play is off.'
+               'The page does not include a file address. A download button in a browser can create a link that expires in about an hour; that link is not saved. In-app Play is off.'
                ) % (title, len(videos), gb, when)
         if others:
             msg += ' %d other file(s) are not video.' % len(others)

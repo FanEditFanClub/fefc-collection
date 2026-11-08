@@ -29,6 +29,12 @@ assert info['expires'] == '2026-11-22'
 assert [f['name'] for f in info['files']] == ['Avatar EP 101.mp4','Avatar EP 102.mp4','Avatar EP 103.mp4','Avatar EP 104.mp4']
 assert all(f['mime']=='video/mp4' for f in info['files'])
 assert 'web page' in info['message']
+assert 'not saved' in info['message']
+probe = {'probes':[{'status':206,'mime':'video/mp4'},{'status':206,'mime':'video/mp4'},{'status':206,'mime':'video/mp4'}],'streams':[{'codec_name':'h264'},{'codec_name':'aac'}]}
+assert swisstransfer.progressive_mp4(probe) is True
+assert swisstransfer.progressive_mp4({'probes':[{'status':200,'mime':'text/html'}]}) is False
+assert swisstransfer.durable_file_url('https://example.s3.amazonaws.com/a.mp4?X-Amz-Signature=abc&X-Amz-Expires=3600') == ''
+assert swisstransfer.durable_file_url('') == ''
 later = swisstransfer.inspect_page(html, datetime(2026, 11, 23, tzinfo=timezone.utc))
 assert later['state'] == 'expired' and later['kodi_play'] is False
 locked = swisstransfer.inspect_page('<script>{"component":"link/show","props":{"password":true}}</script>', now)
@@ -51,6 +57,9 @@ test('Testing lists the transfer files without marking them playable', () => {
   assert.equal(folder.name, 'Avatar | Season One');
   assert.equal(folder.url, SHARE);
   assert.equal(folder.playback_verified, false);
+  assert.match(folder.detail, /206 video\/mp4/);
+  assert.match(folder.detail, /not stored/);
+  assert.doesNotMatch(JSON.stringify(p), /X-Amz-|amazonaws/);
   assert.equal(folder.children.length, 4);
   for (const f of folder.children) {
     assert.equal(f.playback_verified, false);
