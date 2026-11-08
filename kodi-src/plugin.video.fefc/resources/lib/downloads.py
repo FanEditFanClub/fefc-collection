@@ -9,6 +9,18 @@ def _now():
     return int(time.time() * 1000)
 
 
+def fmt_size(n):
+    """Human-readable size, e.g. 12.3 GB, 456 MB, 800 KB. None -> 'unknown'."""
+    if n is None:
+        return 'unknown'
+    n = float(n)
+    for unit in ('B', 'KB', 'MB', 'GB', 'TB'):
+        if n < 1024.0 or unit == 'TB':
+            return ('%.1f %s' % (n, unit)) if unit != 'B' else ('%d B' % int(n))
+        n /= 1024.0
+    return '%.1f TB' % n
+
+
 class Downloads:
     def __init__(self, folder):
         self.dir = folder
@@ -43,6 +55,29 @@ class Downloads:
 
     def count(self):
         return len(self.all())
+
+    def free_bytes(self):
+        """Free space on the device volume holding the downloads folder (bytes), or None if unreadable."""
+        try:
+            st = os.statvfs(self.dir)
+            return st.f_bavail * st.f_frsize
+        except Exception:
+            return None
+
+    def total_bytes(self):
+        """Total space on the device volume holding the downloads folder (bytes), or None."""
+        try:
+            st = os.statvfs(self.dir)
+            return st.f_blocks * st.f_frsize
+        except Exception:
+            return None
+
+    def used_bytes(self):
+        """Bytes used by downloaded files on this device."""
+        total = 0
+        for r in self.all():
+            total += r.get('size') or 0
+        return total
 
     def add(self, vid, name, path, size=0):
         self.db['items'][vid] = {'id': vid, 'name': name, 'path': path, 'size': size, 'downloadedAt': _now()}

@@ -1192,11 +1192,14 @@ class Router:
                         # DialogProgressBG is the same top-right background bar the software updater uses:
                         # it stays visible on every page, hides while a video plays fullscreen, and comes
                         # back when you hit Back. Keep it updating even when the total size is unknown.
+                        # 0.4.4: show device storage left alongside the progress.
+                        free = dl.free_bytes()
+                        free_txt = ('  ·  %s free' % downloads_mod.fmt_size(free)) if free is not None else ''
                         if total:
                             prog.update(min(99, int(done * 100 / total)), 'FEFC download',
-                                        '%s: %d / %d MB' % (catalog.display_title(name), done >> 20, total >> 20))
+                                        '%s: %d / %d MB%s' % (catalog.display_title(name), done >> 20, total >> 20, free_txt))
                         else:
-                            prog.update(0, 'FEFC download', '%s: %d MB downloaded' % (catalog.display_title(name), done >> 20))
+                            prog.update(0, 'FEFC download', '%s: %d MB downloaded%s' % (catalog.display_title(name), done >> 20, free_txt))
             os.replace(part, dst)
             dl.add(vid, name, dst, os.path.getsize(dst))
             prog.close()
@@ -1207,11 +1210,25 @@ class Router:
             xbmcgui.Dialog().ok('FEFC download', 'The download did not finish. Check the connection and pick Download again; it will continue where it stopped.')
 
     def downloads(self):
-        """Downloads section: every local copy, newest first. Plays the file on the device (no streaming)."""
+        """Downloads section: every local copy, newest first. Plays the file on the device (no streaming).
+        0.4.4: a storage row at the top shows how much space is left on the device."""
         dl = _dl()
+        free = dl.free_bytes()
+        used = dl.used_bytes()
+        fmt = downloads_mod.fmt_size
+        if free is not None:
+            self.add_tool('Device storage free: %s' % fmt(free),
+                          'Downloads on this device use %s. Select for details.' % fmt(used),
+                          'DefaultHarddisk.png', action='download_storage')
+        else:
+            self.add_tool('Device storage',
+                          'Free space could not be read on this device. Select for details.',
+                          'DefaultHarddisk.png', action='download_storage')
         rows = dl.all()
         if not rows:
             xbmcgui.Dialog().notification('Downloads', 'Nothing downloaded yet. Open a video and pick Download.', xbmcgui.NOTIFICATION_INFO, 5000)
+            self._vid = True
+            self.end()
             return
         for r in rows:
             li = xbmcgui.ListItem(catalog.display_title(r.get('name') or 'video.mp4'), offscreen=True)
@@ -1222,6 +1239,29 @@ class Router:
                 li.getVideoInfoTag().setPlot('Downloaded to this device  ·  %.2f GB' % (sz / 1073741824.0))
             li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=r['id']))])
             xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='play_download', id=r['id']), li, False)
+        self._vid = True
+        self.end()
+
+    def download_storage(self):
+        """Storage details dialog (from the Downloads section's storage row)."""
+        dl = _dl()
+        free = dl.free_bytes()
+        total = dl.total_bytes()
+        used = dl.used_bytes()
+        n = dl.count()
+        fmt = downloads_mod.fmt_size
+        lines = []
+        if total is not None and free is not None:
+            lines.append('Device storage: %s free of %s' % (fmt(free), fmt(total)))
+        elif free is not None:
+            lines.append('Device storage free: %s' % fmt(free))
+        else:
+            lines.append('Device storage free: unknown on this device')
+        lines.append('Downloads on this device: %s in %d file%s' % (fmt(used), n, '' if n == 1 else 's'))
+        lines.append('')
+        lines.append('Delete a download from its context menu to free space.')
+        xbmcgui.Dialog().ok('FEFC downloads — storage', '\n'.join(lines))
+        xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def play_download(self):
         vid = self.params['id']
@@ -1455,6 +1495,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
           'open_link': 'open_link', 'play_external': 'play_external',
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
+          'download_storage': 'download_storage',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop'}
 
 

@@ -1,6 +1,14 @@
 {
  "versions": [
   {
+   "version": "0.4.4 Beta",
+   "date": "2026-11-07",
+   "notes": [
+    "Downloads now show how much device storage is left: the progress bar shows free space while a file downloads, and the Downloads section has a storage row at the top (select it for the full breakdown).",
+    "Downloads section now ends its listing properly, like the other sections."
+   ]
+  },
+  {
    "version": "0.4.3 Beta",
    "date": "2026-11-07",
    "notes": [
