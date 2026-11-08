@@ -2,7 +2,14 @@
 """Make Kodi-reliable copies of the folder sound clips: assets/sfx/*.(mp3|m4a|wav) -> <out>/<name>.wav
 (PCM 16-bit mono 22.05 kHz, max 6 s). Kodi's xbmc.playSFX plays wav natively; mp3/m4a are hit-and-miss on Android.
 Loudness is untouched (the clips are already -16 LUFS / <= -1.5 dBTP); only a safety limiter at -1.5 dBFS is applied.
-The web app keeps using the originals. Usage: kodi_sfx.py <sfx dir> <out dir>"""
+The web app keeps using the originals. Usage: kodi_sfx.py <sfx dir> <out dir>
+0.5.1: LONG_CLIPS are the only exception to the 6 s cap — they play in full (the Austin Powers Mustafa
+burn + "you shot me" sequence runs long and must not be cut)."""
+import os, subprocess, sys
+from concurrent.futures import ThreadPoolExecutor
+
+# clip base name -> max seconds (None = full length, no truncation)
+LONG_CLIPS = {'austin-mustafa-burned-full': None}
 import os, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 
@@ -22,8 +29,14 @@ def conv(item):
     dst = os.path.join(out, base + '.wav')
     if os.path.exists(dst) and os.path.getmtime(dst) >= os.path.getmtime(os.path.join(src, f)):
         return 0
-    r = subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', os.path.join(src, f), '-t', '6', '-vn', '-ac', '1', '-ar', '22050',
-                        '-af', 'alimiter=limit=0.84:level=disabled', '-c:a', 'pcm_s16le', dst])
+    # 0.5.1: LONG_CLIPS play in full — no -t cap (the Mustafa burn + "you shot me" sequence).
+    cap = LONG_CLIPS.get(base, '6')
+    cmd = ['ffmpeg', '-y', '-v', 'error', '-i', os.path.join(src, f)]
+    if cap is not None:
+        cmd += ['-t', str(cap)]
+    cmd += ['-vn', '-ac', '1', '-ar', '22050',
+            '-af', 'alimiter=limit=0.84:level=disabled', '-c:a', 'pcm_s16le', dst]
+    r = subprocess.run(cmd)
     return 0 if r.returncode == 0 else 1
 
 

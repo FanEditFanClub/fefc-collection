@@ -726,15 +726,11 @@
      "assets/sfx/avengers-assemble-full.mp3"
     ],
     [
-     "assets/sfx/avengers-assemble.m4a",
-     "assets/sfx/avengers-assemble.mp3"
-    ],
-    [
      "assets/sfx/avengers-assemble-short.mp3"
     ]
    ],
    "random": true,
-   "source": "Avengers assemble (full preferred in rotation)",
+   "source": "Avengers assemble (full 6s preferred in rotation) \u2014 0.5.1: dropped the 2.6s cut that ended before Assemble",
    "match": "avengers",
    "regex": "^marvel\\b|\\bavengers\\b"
   },
