@@ -740,13 +740,39 @@
    "regex": "\\bsuperman\\b"
   },
   {
-   "files": [
-    "assets/sfx/rocky-adrian.m4a",
-    "assets/sfx/rocky-adrian.mp3"
-   ],
    "path": true,
-   "source": "myinstants yo-adrian-i-did-it.mp3 (Rocky/Stallone: 'Yo Adrian')",
-   "regex": "^rocky( (ii|iii|iv|v|balboa))?\\b(?! horror)|^stallone$"
+   "source": "Stallone set (0.5.2): Rocky theme (Gonna Fly Now), Yo Adrian, \"It ain't about how hard you hit\", Rambo \"Nothing is over\", Rocky IV \"If he dies, he dies\", Rocky \"I didn't hear no bell\"",
+   "regex": "^rocky( (ii|iii|iv|v|balboa))?\\b(?! horror)|stallone",
+   "file": [
+    [
+     "assets/sfx/stallone-rocky-theme.m4a",
+     "assets/sfx/stallone-rocky-theme.mp3"
+    ],
+    [
+     "assets/sfx/rocky-adrian.m4a",
+     "assets/sfx/rocky-adrian.mp3"
+    ],
+    [
+     "assets/sfx/stallone-how-hard-you-hit.m4a",
+     "assets/sfx/stallone-how-hard-you-hit.mp3"
+    ],
+    [
+     "assets/sfx/stallone-nothing-is-over.m4a",
+     "assets/sfx/stallone-nothing-is-over.mp3"
+    ],
+    [
+     "assets/sfx/stallone-if-he-dies-he-dies.m4a",
+     "assets/sfx/stallone-if-he-dies-he-dies.mp3"
+    ],
+    [
+     "assets/sfx/stallone-no-bell.m4a",
+     "assets/sfx/stallone-no-bell.mp3"
+    ]
+   ],
+   "random": true,
+   "ids": [
+    "1ofrxewxyqYT_DfprG3iEmjnarIeWPJR-"
+   ]
   },
   {
    "files": [
@@ -1106,11 +1132,55 @@
   },
   {
    "path": true,
-   "regex": "^costner$",
-   "files": [
-    "assets/sfx/costner-build-it.mp3"
+   "regex": "costner",
+   "source": "Costner set (0.5.2): Yellowstone theme, John Dunbar theme (Dances with Wolves), Robin Hood theme, Field of Dreams \"If you build it\", JFK \"back and to the left\", Robin Hood quotes (Cancel Christmas, spoon, free man, had to try, take it back)",
+   "file": [
+    [
+     "assets/sfx/costner-yellowstone-theme.m4a",
+     "assets/sfx/costner-yellowstone-theme.mp3"
+    ],
+    [
+     "assets/sfx/costner-dunbar-theme.m4a",
+     "assets/sfx/costner-dunbar-theme.mp3"
+    ],
+    [
+     "assets/sfx/costner-robin-hood-theme.m4a",
+     "assets/sfx/costner-robin-hood-theme.mp3"
+    ],
+    "assets/sfx/costner-build-it.mp3",
+    [
+     "assets/sfx/costner-jfk-back-left.m4a",
+     "assets/sfx/costner-jfk-back-left.mp3"
+    ],
+    [
+     "assets/sfx/costner-robin-call-off-christmas.m4a",
+     "assets/sfx/costner-robin-call-off-christmas.mp3"
+    ],
+    [
+     "assets/sfx/costner-robin-cut-heart-spoon.m4a",
+     "assets/sfx/costner-robin-cut-heart-spoon.mp3"
+    ],
+    [
+     "assets/sfx/costner-robin-free-man.m4a",
+     "assets/sfx/costner-robin-free-man.mp3"
+    ],
+    [
+     "assets/sfx/costner-robin-had-to-try.m4a",
+     "assets/sfx/costner-robin-had-to-try.mp3"
+    ],
+    [
+     "assets/sfx/costner-robin-spoon.m4a",
+     "assets/sfx/costner-robin-spoon.mp3"
+    ],
+    [
+     "assets/sfx/costner-robin-take-it-back.m4a",
+     "assets/sfx/costner-robin-take-it-back.mp3"
+    ]
    ],
-   "source": "Costner: Field of Dreams \"If you build it\""
+   "random": true,
+   "ids": [
+    "1MPDDmK5CFqXsUOoFtoDzhP7Fnz6pDOPi"
+   ]
   },
   {
    "path": true,
@@ -1487,9 +1557,14 @@
    "path": true,
    "regex": "^rambo",
    "files": [
-    "assets/sfx/rambo-long-road.mp3"
+    "assets/sfx/rambo-long-road.mp3",
+    [
+     "assets/sfx/stallone-nothing-is-over.m4a",
+     "assets/sfx/stallone-nothing-is-over.mp3"
+    ]
    ],
-   "source": "Rambo: \"long road\""
+   "source": "Rambo: \"long road\" + \"Nothing is over\" (0.5.2)",
+   "random": true
   },
   {
    "path": true,
