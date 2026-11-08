@@ -1142,7 +1142,13 @@ class Router:
             return
         else:
             label = rec.get('open_label') or 'Open link'
-            xbmcgui.Dialog().ok(label, providers.status_line(rec) + '\n\nIn-app Play is off. Opening the provider page.')
+            message = providers.status_line(rec)
+            if 'swisstransfer.com' in (rec.get('url') or ''):
+                from . import swisstransfer
+                live = swisstransfer.fetch_page(rec['url'])
+                if live.get('message'):
+                    message = live['message']
+            xbmcgui.Dialog().ok(label, message + '\n\nIn-app Play is off. Opening the provider page.')
             _log('open provider %s' % (rec.get('name') or '')[:80])
             xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,"%s")' % rec['url'].replace('"', '%22'))
         if self.handle >= 0:
