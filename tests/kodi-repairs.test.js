@@ -101,6 +101,7 @@ print('ok')
   assert.doesNotMatch(svc, /_record_installed_build\(new\)/);
   assert.match(svc, /state='checking'/);
   assert.match(svc, /state='failed'/);
+  assert.match(svc, /Downloading %s: %d%% \(%d \/ %d MB\)/);
 });
 
 test('back cue respects mute and does not double', () => {

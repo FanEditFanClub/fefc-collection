@@ -319,8 +319,9 @@ def _install_update(new):
                             f.write(chunk)
                             done += len(chunk)
                             if total:
-                                prog.update(min(99, int(done * 100 / total)), 'FEFC update',
-                                            'Downloading %s: %d / %d MB' % (version_label(new), done >> 20, total >> 20))
+                                pct = min(99, int(done * 100 / total))
+                                prog.update(pct, 'FEFC update',
+                                            'Downloading %s: %d%% (%d / %d MB)' % (version_label(new), pct, done >> 20, total >> 20))
                 size = os.path.getsize(part)
                 if want and size < want:
                     raise RuntimeError('short download %d/%d' % (size, want))

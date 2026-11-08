@@ -1,6 +1,26 @@
 {
  "versions": [
   {
+   "version": "0.5.4 Beta",
+   "date": "2026-11-08",
+   "notes": [
+    "Home mosaic is the earlier layout again: five tiles down each side and three along the bottom, shown full-frame around the 3x3 menu.",
+    "SKIP is a Home-style button in the safe area and appears when the intro starts playing. The intro video is unchanged.",
+    "Bottom menu labels fit, including Checking for updates, Update available, Up to date and Unable to check.",
+    "The news ticker scrolls smoothly and does not jump back to the start when the feed refreshes. A failed fetch keeps the previous line.",
+    "Folder names are larger. Poster titles are unchanged.",
+    "Actors and Directors show the full name, in last-name order, with no count on the tile.",
+    "Search takes a title on the Optimus card. An empty search or a catalogue problem shows a message.",
+    "Support Us logos fit inside their tiles and Optimus stays still.",
+    "Cast names are one color. The focused row uses a border, not a different text color.",
+    "Back plays the navigation sound while ambience is playing. Sound Off stays silent.",
+    "The update tile says Checking for updates, with a progress bar, until the check finishes. A failed check says Unable to check, not Up to date.",
+    "About and the update control are only on Home.",
+    "The download progress shows percent and size. A short sound plays when a download starts, when the file checks out, and when it fails, unless Sound is off.",
+    "Installing does not mark the new build as installed before Android asks you to confirm. Fully close FEFC and open it again after Android finishes."
+   ]
+  },
+  {
    "version": "0.5.3 Beta",
    "date": "2026-11-08",
    "notes": [

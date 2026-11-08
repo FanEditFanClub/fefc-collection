@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addons>
-<addon id="plugin.video.fefc" name="Fan Edit Fan Club Collection" version="1.5.1" provider-name="Fan Edit Fan Club">
+<addon id="plugin.video.fefc" name="Fan Edit Fan Club Collection" version="1.5.6" provider-name="Fan Edit Fan Club">
   <requires>
     <import addon="xbmc.python" version="3.0.1"/>
   </requires>
@@ -15,7 +15,7 @@
     <platform>all</platform>
     <license>Fan project</license>
     <website>https://collection.faneditfanclub.com</website>
-    <news>1.5.1: update popup after the intro with what's-new notes, Update tile shows version + NEW badge, About > What's new. 1.5.0: intro plays with no menu flash, 4x3 home (To Be Catalogued, Actors &amp; Directors, About), Continue Watching and Recently Opened synced with the web app, collection sort and Shuffle Play, My List sort, file/rating info. 1.4.0: TV-safe margins, news ticker, pause when you press Back, landscape collection / portrait video artwork, Read Me and Support Us, My List with web sync, genre and main collection pages like the web app, FEFC navigation sounds, Open in VLC / Drive. 1.3.0: in-app update downloads the APK and opens the Android installer. 1.2.0: Kodi-friendly wav sound clips; FEFC skin home. 1.1.0: startup service for the branded FEFC app (opens FEFC on launch, adds the FEFC file source). 1.0.0: first release.</news>
+    <news>1.5.6: app 0.5.4 repairs — original home mosaic, visible SKIP, menu labels, surname order without counts, search field, still Support Us logos, one cast color, back sound with sound on, update tile stays on Checking until the check finishes. 1.5.3: Support Us brand icons + QR, phone edge-swipe Back pops history, landscape cards for folders/tools and portrait posters for files. 1.5.1: update popup after the intro with what's-new notes, Update tile shows version + NEW badge, About > What's new. 1.5.0: intro plays with no menu flash, 4x3 home (To Be Catalogued, Actors &amp; Directors, About), Continue Watching and Recently Opened synced with the web app, collection sort and Shuffle Play, My List sort, file/rating info. 1.4.0: TV-safe margins, news ticker, pause when you press Back, landscape collection / portrait video artwork, Read Me and Support Us, My List with web sync, genre and main collection pages like the web app, FEFC navigation sounds, Open in VLC / Drive. 1.3.0: in-app update downloads the APK and opens the Android installer. 1.2.0: Kodi-friendly wav sound clips; FEFC skin home. 1.1.0: startup service for the branded FEFC app (opens FEFC on launch, adds the FEFC file source). 1.0.0: first release.</news>
     <assets>
       <icon>resources/icon.png</icon>
       <fanart>resources/fanart.jpg</fanart>
