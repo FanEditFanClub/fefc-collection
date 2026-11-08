@@ -227,20 +227,33 @@ def make_textures(media):
         gl3 = Image.new('RGBA', (w, h), (0, 0, 0, 0))
         ImageDraw.Draw(gl3).rounded_rectangle((m + 4, m + 4, w - m - 5, h // 2), 14, fill=(255, 255, 255, 22))
         body = Image.alpha_composite(body, gl3); d = ImageDraw.Draw(body)
-        y = 110 if len(lines) == 1 else 95
-        for i, t in enumerate(lines):
-            f = font_tile if i == 0 else font_sub
-            col = (255, 255, 255, 255) if i == 0 else (200, 205, 215, 255)
-            bb = d.textbbox((0, 0), t, font=f); tw = bb[2] - bb[0]
-            d.text(((w - tw) / 2, y), t, fill=col, font=f); y += 60 if i == 0 else 40
+        # 0.5.1: auto-size the first line so the text fills the tile — the fixed 52px rendered ~21px
+        # on screen at the 255px display size (too small). Start at 96px, shrink until it fits.
+        def _fit_font(text, max_size=96, min_size=36):
+            max_w = w - 2 * m - 16
+            for sz in range(max_size, min_size - 1, -2):
+                f = ImageFont.truetype(str(_jf), sz)
+                bb = d.textbbox((0, 0), text, font=f)
+                if bb[2] - bb[0] <= max_w:
+                    return f
+            return ImageFont.truetype(str(_jf), min_size)
+        if len(lines) == 1:
+            # single line: centre it exactly (both axes) at the fitted size
+            t = lines[0]
+            f = _fit_font(t)
+            bb = d.textbbox((0, 0), t, font=f); tw, th = bb[2] - bb[0], bb[3] - bb[1]
+            d.text(((w - tw) / 2 - bb[0], (h - th) / 2 - bb[1]), t, fill=(255, 255, 255, 255), font=f)
+        else:
+            y = 95
+            for i, t in enumerate(lines):
+                f = _fit_font(t) if i == 0 else font_sub
+                col = (255, 255, 255, 255) if i == 0 else (200, 205, 215, 255)
+                bb = d.textbbox((0, 0), t, font=f); tw = bb[2] - bb[0]
+                d.text(((w - tw) / 2, y), t, fill=col, font=f); y += 60 if i == 0 else 40
         Image.alpha_composite(im, body).save(media / name)
-    land_tile(['SUPPORT US', 'Patreon  ·  PayPal  ·  Venmo'], 'fefc-support-tile.png')
-    _st = Image.open(media / 'fefc-support-tile.png').convert('RGBA')
-    _st.alpha_composite(Image.new('RGBA', (640, 200), (0, 0, 0, 0)), (0, 0))
-    for _i, _n in enumerate(('patreon', 'paypal', 'venmo')):
-        _ic = Image.open(media / ('fefc-ic-%s.png' % _n)).convert('RGBA').resize((64, 64), Image.LANCZOS)
-        _st.alpha_composite(_ic, (224 + _i * 72, 222))
-    _st.save(media / 'fefc-support-tile.png')
+    # 0.5.1: SUPPORT US tile is just the words — no Patreon/PayPal/Venmo subtitle, no brand icons
+    # composited on it (the support page itself lists the three ways to support).
+    land_tile(['SUPPORT US'], 'fefc-support-tile.png')
     land_tile(['SHUFFLE PLAY'], 'fefc-shuffle-tile.png')
     land_tile(['SORT'], 'fefc-sort-tile.png')
     land_tile(['READ FIRST'], 'fefc-readfirst-tile.png')
@@ -261,9 +274,18 @@ def make_textures(media):
         gl3 = Image.new('RGBA', (w, h), (0, 0, 0, 0))
         ImageDraw.Draw(gl3).rounded_rectangle((m + 4, m + 4, w - m - 5, h // 2), 14, fill=(255, 255, 255, 22))
         body = Image.alpha_composite(body, gl3); d = ImageDraw.Draw(body)
+        # 0.5.1: auto-size the first line like land_tile (was a fixed 52px).
+        def _fit_font_p(text, max_size=96, min_size=36):
+            max_w = w - 2 * m - 16
+            for sz in range(max_size, min_size - 1, -2):
+                f = ImageFont.truetype(str(_jf), sz)
+                bb = d.textbbox((0, 0), text, font=f)
+                if bb[2] - bb[0] <= max_w:
+                    return f
+            return ImageFont.truetype(str(_jf), min_size)
         y = (h // 2) - 40
         for i, t in enumerate(lines):
-            f = font_tile if i == 0 else font_sub
+            f = _fit_font_p(t) if i == 0 else font_sub
             col = (255, 255, 255, 255) if i == 0 else (200, 205, 215, 255)
             bb = d.textbbox((0, 0), t, font=f); tw = bb[2] - bb[0]
             d.text(((w - tw) / 2, y), t, fill=col, font=f); y += 60 if i == 0 else 40
@@ -292,6 +314,9 @@ def patch_fonts(xml_dir):
     # 0.4.2: smaller tile-label font so long titles fit fully instead of clipping (poster + landscape tiles)
     extra += ('\t\t<font>\n\t\t\t<name>font_tile_sm</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
               '\t\t\t<size>17</size>\n\t\t</font>\n')
+    # 0.5.1: even smaller poster-tile font (15px) — long file names were still clipping at 17px
+    extra += ('\t\t<font>\n\t\t\t<name>font_tile_xs</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
+              '\t\t\t<size>15</size>\n\t\t</font>\n')
     # add to every fontset
     if not (xml_dir.parent / 'fonts' / 'NotoSans-Bold.ttf').exists():
         extra = extra.replace('NotoSans-Bold.ttf', 'NotoSans-Regular.ttf')

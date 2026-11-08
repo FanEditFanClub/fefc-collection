@@ -17,7 +17,7 @@ from . import downloads as downloads_mod
 ADDON = xbmcaddon.Addon()
 PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
 CONTACT_EMAIL = 'faneditfanclub@gmail.com'
-FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform'
+FEEDBACK_FORM_URL = 'https://is.gd/UVko0K'  # 0.5.1: short link for the Google Form (redirects to the docs.google.com form); the QR code and the shown URL both use this.
 
 
 
@@ -478,7 +478,9 @@ class Router:
         for g in names:
             a = art.get(g) or {}
             img = catalog.abs_url(_base(), (a.get('img') or '').split('?')[0]) if a.get('img') else ''
-            self.add_folder('%s  (%d)' % (g, len(catalog.dedupe(m, m['genre_videos'].get(g, []))) + len(m['genre_folders'].get(g, []))), '', landscape=img, action='genre', genre=g)
+            # 0.5.1: dedupe the folders too — duplicate folder shortcuts were all being counted, so the
+            # genre totals ran high. Same one-entry-per-underlying-item logic as the home tile counts.
+            self.add_folder('%s  (%d)' % (g, len(catalog.dedupe(m, m['genre_videos'].get(g, []))) + len(catalog.dedupe(m, m['genre_folders'].get(g, [])))), '', landscape=img, action='genre', genre=g)
         self.end()
 
     def genre(self):
@@ -775,13 +777,16 @@ class Router:
                 % (label, xbmc.getInfoLabel('System.BuildVersion').split(' ')[0], ADDON.getAddonInfo('version'), _base()))
         info += '\n\nQuestions or feedback? Email %s, or choose Give feedback below to scan a code.' % CONTACT_EMAIL
         while True:
-            k = dlg.select('About FEFC', ['Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Give feedback', 'Close'])
+            # 0.5.1: Give feedback is first — it was buried at the bottom of the list.
+            k = dlg.select('About FEFC', ['Give feedback', 'Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Close'])
             if k < 0 or k == 6:
                 break
             try:
                 if k == 0:
-                    dlg.textviewer('About FEFC', info)
+                    self.feedback()
                 elif k == 1:
+                    dlg.textviewer('About FEFC', info)
+                elif k == 2:
                     import json
                     import urllib.request
                     req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json?t=%d' % time.time(), headers={'User-Agent': 'FEFC-Kodi'})
@@ -792,29 +797,28 @@ class Router:
                         out.extend(u'\u2022 ' + str(n) for n in v.get('notes') or [])
                         out.append('')
                     dlg.textviewer("What's new", '\n'.join(out).strip() or 'No release notes published yet.')
-                elif k == 2:
-                    dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
                 elif k == 3:
-                    dlg.textviewer('Terms of Use', self._page_text('/terms.html'))
+                    dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
                 elif k == 4:
+                    dlg.textviewer('Terms of Use', self._page_text('/terms.html'))
+                elif k == 5:
                     with xbmcvfs.File('special://xbmc/FEFC-NOTICE.txt') as f:
                         dlg.textviewer('Open-source notices', f.read())
-                elif k == 5:
-                    self.feedback()
             except Exception as e:
                 dlg.notification('FEFC', 'Could not load: %s' % str(e)[:60], xbmcgui.NOTIFICATION_ERROR, 4000)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def feedback(self):
-        """Feedback form QR (same remote-QR pattern as the Support and link windows)."""
+        """Feedback form QR (same remote-QR pattern as the Support and link windows).
+        0.5.1: the QR code and the short URL are tappable — either opens the form in the browser."""
         qr_path = ('https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=24&format=png&color=000000&bgcolor=ffffff'
                    '&data=%s&_=%d' % (quote_plus(FEEDBACK_FORM_URL), int(time.time() * 1000)))
         lines = ['Give feedback on the FEFC app',
-                 'Scan the code with your phone to open the feedback form.',
+                 'Scan the code with your phone, or tap it to open the feedback form in your browser.',
                  'Or email us: %s' % CONTACT_EMAIL,
                  FEEDBACK_FORM_URL.replace('https://', '')]
-        LinkWindow(lines, qr_path).doModal()
+        LinkWindow(lines, qr_path, open_url=FEEDBACK_FORM_URL).doModal()
 
     def mylist_toggle(self):
         m = _model()
@@ -1157,11 +1161,13 @@ class Router:
         xbmcgui.Dialog().notification('FEFC', 'Opening in VLC. If nothing happens, install VLC for Android.', xbmcgui.NOTIFICATION_INFO, 4000)
 
     def open_drive(self):
-        """Open the file's Google Drive page in the browser / Drive app."""
+        """Open the file's Google Drive page in the Drive app (no app chooser).
+        0.5.1: the Drive package is named explicitly — with no package Android showed an
+        'Open with' chooser first, and only opened Drive after it was dismissed."""
         tid, name = self._target(self.params['id'])
         url = 'https://drive.google.com/file/d/' + tid + '/view'
         _log('open in Drive: %s' % url)
-        xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % url)
+        xbmc.executebuiltin('StartAndroidActivity(com.google.android.apps.docs,android.intent.action.VIEW,,%s)' % url)
         xbmcgui.Dialog().notification('FEFC', 'Opening in Drive: ' + catalog.display_title(name), xbmcgui.NOTIFICATION_INFO, 4000)
 
     # -- downloads (local copies; own section in My List) ---------------------------------------------------
@@ -1429,16 +1435,24 @@ class SupportWindow(xbmcgui.WindowDialog):
 
 
 class LinkWindow(xbmcgui.WindowDialog):
-    """Full-screen card with a QR code / device code; Back closes it. Coordinates are 1280x720, inside the TV-safe area."""
+    """Full-screen card with a QR code / device code; Back closes it. Coordinates are 1280x720, inside the TV-safe area.
+    0.5.1: when open_url is given, the QR code and the URL line are tappable buttons that open it in the browser
+    (used by the feedback form — tapping the code or the link opens the form instead of only being scannable)."""
 
-    def __init__(self, lines, qr_path):
+    def __init__(self, lines, qr_path, open_url=''):
         super().__init__()
         self.closed = False
+        self.open_url = open_url
+        self.qr_btn = None
+        self.url_btn = None
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F0050A14'))
         self.addControl(xbmcgui.ControlLabel(96, 54, 1088, 50, lines[0], font='font14_title', textColor='FFFFFFFF'))
         y = 120
         if qr_path:
             self.addControl(xbmcgui.ControlImage(86, 120, 420, 420, 'fefc-white.png'))
+            if open_url:
+                self.qr_btn = xbmcgui.ControlButton(96, 130, 400, 400, '', focusTexture='fefc-ol-focus.png', noFocusTexture='')
+                self.addControl(self.qr_btn)
             self.addControl(xbmcgui.ControlImage(96, 130, 400, 400, qr_path, aspectRatio=1))
             x = 540
         else:
@@ -1451,8 +1465,16 @@ class LinkWindow(xbmcgui.WindowDialog):
             tb.setText(t)
             y += 84
         if qr_path:  # the full link on its own full-width line under the QR, so it can be typed on a phone
-            self.addControl(xbmcgui.ControlLabel(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF'))
-        self.addControl(xbmcgui.ControlLabel(96, 610, 1088, 40, 'Press Back to cancel.', font='font12', textColor='FFFF9C00'))
+            if open_url:
+                self.url_btn = xbmcgui.ControlButton(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF', focusTexture='fefc-ol-focus.png', noFocusTexture='')
+                self.addControl(self.url_btn)
+            else:
+                self.addControl(xbmcgui.ControlLabel(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF'))
+        self.addControl(xbmcgui.ControlLabel(96, 610, 1088, 40, 'Press Back to cancel.' + ('  Tap the code or the link to open it in your browser.' if open_url else ''), font='font12', textColor='FFFF9C00'))
+
+    def onControl(self, c):
+        if self.open_url and c in (self.qr_btn, self.url_btn):
+            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % self.open_url)
 
     def onAction(self, action):
         if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):

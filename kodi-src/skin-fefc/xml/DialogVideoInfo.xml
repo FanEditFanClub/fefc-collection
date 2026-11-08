@@ -30,19 +30,18 @@
 			<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
 			<aspectratio aligny="top">keep</aspectratio>
 		</control>
-		<!-- title: wraps over up to 2 lines instead of being cut off -->
+		<!-- title: wraps over up to 3 lines instead of being cut off or scrolled.
+		     0.5.1: no autoscroll — the full title must be visible at once. Box is 150px (3 lines
+		     at 44px); year / rating / director / plot all shift down to make room. -->
 		<control type="textbox">
-			<left>660</left><top>84</top><width>1120</width><height>112</height>
-			<!-- 0.4.2: lcars_title (64px) needed ~154px for two lines, so line 2 only appeared via autoscroll;
-			     lcars_title_sm (44px) fits two lines (~106px) in the 112px box, so the full title always shows -->
+			<left>660</left><top>84</top><width>1120</width><height>150</height>
 			<font>lcars_title_sm</font>
 			<textcolor>FFFFFFFF</textcolor>
 			<aligny>center</aligny>
-			<autoscroll delay="4000" time="2500" repeat="6000">true</autoscroll>
 			<label>$INFO[ListItem.Title]</label>
 		</control>
 		<control type="label">
-			<left>660</left><top>200</top><width>750</width><height>40</height>
+			<left>660</left><top>238</top><width>750</width><height>40</height>
 			<aligny>center</aligny>
 			<font>lcars_med</font>
 			<textcolor>FFFF9C00</textcolor>
@@ -51,7 +50,7 @@
 		<!-- 0.4.2: rating with its source, always labelled, with the source badge icon next to it.
 		     (The old header showed a bare number with no source.) -->
 		<control type="group">
-			<left>1420</left><top>200</top><width>360</width><height>40</height>
+			<left>1420</left><top>238</top><width>360</width><height>40</height>
 			<visible>!String.IsEmpty(ListItem.Property(fefc_rating_src))</visible>
 			<control type="image">
 				<left>0</left><top>4</top><width>64</width><height>32</height>
@@ -66,16 +65,16 @@
 			</control>
 		</control>
 		<control type="label">
-			<left>660</left><top>242</top><width>1120</width><height>36</height>
+			<left>660</left><top>280</top><width>1120</width><height>36</height>
 			<aligny>center</aligny>
 			<font>font12</font>
 			<textcolor>FF99CCFF</textcolor>
 			<label>$INFO[ListItem.Director,Directed by: ]$INFO[ListItem.Studio,   Edited by: ]</label>
 		</control>
 		<!-- plot: fixed box, scrolls automatically and with up/down when longer -->
-		<!-- 0.4.2: plot shortened 370 -> 288 so both button rows sit above the bottom bar (they were hidden behind it) -->
+		<!-- 0.5.1: plot moved down (290 -> 320) and shortened (288 -> 250) to make room for the 3-line title -->
 		<control type="textbox">
-			<left>660</left><top>290</top><width>1100</width><height>288</height>
+			<left>660</left><top>320</top><width>1100</width><height>250</height>
 			<font>font13</font>
 			<textcolor>FFE8EEF6</textcolor>
 			<pagecontrol>61</pagecontrol>
@@ -83,7 +82,7 @@
 			<label>$INFO[ListItem.Plot]</label>
 		</control>
 		<control type="scrollbar" id="61">
-			<left>1770</left><top>290</top><width>8</width><height>288</height>
+			<left>1770</left><top>320</top><width>8</width><height>250</height>
 			<onleft>8</onleft><onright>8</onright>
 			<showonepage>false</showonepage>
 			<orientation>vertical</orientation>
@@ -168,10 +167,11 @@
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=open_drive&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
 			</control>
-			<!-- 0.4.2: Download — saves the video to the device with a progress bar; find it in My List > Downloads -->
+			<!-- 0.5.1: no fallback — add_video() always sets fefc_download_label, and the ',Download'
+			     fallback was rendering a second "Download" next to it ("Download Download"). -->
 			<control type="button" id="15">
 				<width>300</width><height>76</height>
-				<label>$INFO[ListItem.Property(fefc_download_label),Download]</label>
+				<label>$INFO[ListItem.Property(fefc_download_label)]</label>
 				<include>FefcDetailTile</include>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=download&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>

@@ -40,8 +40,10 @@
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
 		</control>
+		<!-- 0.5.1: tagline moved down (134 -> 152) — it sat 4px under the wordmark with a 42px empty
+		     gap below it; now it sits centred in the gap between wordmark and tile grid. -->
 		<control type="label">
-			<left>96</left><top>134</top><width>1728</width><height>36</height>
+			<left>96</left><top>152</top><width>1728</width><height>36</height>
 			<align>center</align><aligny>center</aligny>
 			<font>font12_title</font>
 			<textcolor>FF99CCFF</textcolor>

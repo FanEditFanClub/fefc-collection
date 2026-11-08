@@ -1,6 +1,22 @@
 {
  "versions": [
   {
+   "version": "0.5.1 Beta",
+   "date": "2026-11-07",
+   "notes": [
+    "Download button on the details page no longer says the word twice.",
+    "Open in VLC and Open in Drive go straight to the app \u2014 no app-chooser menu first.",
+    "Video titles on the details page show in full over three lines, with no scrolling.",
+    "Downloads folder: videos stay portrait while the Sort and storage rows stay landscape \u2014 the view no longer flips everything to portrait.",
+    "Poster tile file names use a smaller label so long names fit instead of clipping.",
+    "Schwarzenegger folder now rotates eight clips \u2014 I'll Be Back, Hasta La Vista Baby, Come With Me, Terminator theme, Get to the Chopper, Total Recall theme, Consider It a Divorce and Kuato.",
+    "Support Us, Shuffle Play and Sort tiles have bigger text; the Support Us tile is just the words, no brand icons.",
+    "Home tagline sits lower, centred in the gap between the wordmark and the tile grid.",
+    "About: Give feedback is now the first option, with a short link (is.gd/UVko0K) \u2014 tap the QR code or the link to open the form in your browser.",
+    "Genre folders: counts no longer include duplicate shortcuts, and the names stay readable over bright artwork."
+   ]
+  },
+  {
    "version": "0.5.0 Beta",
    "date": "2026-11-07",
    "notes": [
