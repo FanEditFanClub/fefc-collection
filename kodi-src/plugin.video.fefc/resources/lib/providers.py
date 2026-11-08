@@ -43,6 +43,9 @@ def status_line(rec):
         'direct_file_not_browser': 'A public file answered. The browser cannot play this format. Kodi can open the file when a direct URL was confirmed.',
         'playable': 'A public media file answered and can be played.',
         'unresolved_short_link': 'Short link left unresolved. Not a verified film.',
+        'password': 'This transfer asks for a password. In-app Play is off.',
+        'expired': 'This transfer has expired. In-app Play is off.',
+        'unsupported': 'The listed files are not a video Kodi can open from this page. In-app Play is off.',
     }
     base = lines.get(state, lines['unchecked'])
     return (detail + '\n' + base).strip() if detail else base
@@ -70,7 +73,7 @@ def index(doc):
         }
         for parent, it in _walk(p.get('items') or [], p['id']):
             hit = ver.get(it['id']) or {}
-            state = hit.get('state') or 'unchecked'
+            state = hit.get('state') or it.get('state') or 'unchecked'
             kodi_play = bool(hit.get('kodi_play') and hit.get('play_url'))
             rec = {
                 'id': it['id'], 'name': it.get('name') or 'Link', 'kind': it.get('kind') or 'file',
@@ -78,7 +81,7 @@ def index(doc):
                 'open_label': p.get('open_label') or 'Open link', 'url': it.get('url') or '',
                 'catalog': it.get('catalog') or '', 'video': kodi_play,
                 'playback_verified': kodi_play,
-                'state': state, 'detail': hit.get('detail') or '',
+                'state': state, 'detail': hit.get('detail') or it.get('detail') or '',
                 'play_url': hit.get('play_url') or '' if kodi_play else '',
                 'kodi_play': kodi_play, 'mime': hit.get('mime') or '',
             }

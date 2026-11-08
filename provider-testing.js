@@ -34,7 +34,8 @@
       mimeType: folder ? FOLDER : 'application/octet-stream',
       pt: 1, ptKind: it.kind, ptLabel: it.label || (folder ? 'FOLDER' : 'LINK'),
       ptUrl: it.url || '', ptStatus: it.status || '', ptCatalog: it.catalog || '',
-      ptSource: it.source_url || '', ptOpen: openLabel || 'Open link', ptLine: it.line, kind: 'link'
+      ptSource: it.source_url || '', ptOpen: openLabel || 'Open link', ptLine: it.line, kind: 'link',
+      ptStateHint: it.state || '', ptDetailHint: it.detail || ''
     };
   }
   function flatten(doc) {
@@ -56,7 +57,10 @@
     unavailable: 'The public check did not find a file to play.',
     direct_file_not_browser: 'A public file answered. This browser cannot play that format.',
     playable: 'A public media file answered and can be played here.',
-    unresolved_short_link: 'Short link left unresolved. Not a verified film.'
+    unresolved_short_link: 'Short link left unresolved. Not a verified film.',
+    password: 'This transfer asks for a password. In-app play is off.',
+    expired: 'This transfer has expired. In-app play is off.',
+    unsupported: 'The listed files are not a video that can be played from this page.'
   };
   function mount(add) {
     if (mounted || !add) return Promise.resolve();
@@ -70,7 +74,7 @@
       var map = ver.items || {};
       rows.forEach(function (f) {
         var v = map[f.id];
-        if (!v) { f.ptState = 'unchecked'; return; }
+        if (!v) { f.ptState = f.ptStateHint || 'unchecked'; f.ptDetail = f.ptDetailHint || ''; return; }
         f.ptState = v.state || 'unchecked';
         f.ptDetail = v.detail || '';
         f.ptPlay = v.browser_play && v.play_url ? v.play_url : '';

@@ -169,7 +169,7 @@ def build(direct_path, delta_path):
         return out
 
     names = [n for n in ORDER if n in providers] + [n for n in providers if n not in ORDER]
-    return {
+    doc = {
         'v': 1, 'virtual': True, 'drive_write': False,
         'parent': '1503Wl56hzRppaIFcQisvQksOaeYOEjnk', 'title': '01 - Testing',
         'optimus_url': 'https://x.ai/bot/DR18SV4AEeeNRcKT1U-0P',
@@ -179,6 +179,21 @@ def build(direct_path, delta_path):
         'summary': delta.get('summary') or {},
         'browser_handoff': delta.get('browser_handoff') or [],
     }
+    return _merge_manual(doc)
+
+
+def _merge_manual(doc):
+    """Keep hand-checked public links that are not in the research exports."""
+    path = os.path.join(ROOT, 'data', 'provider-manual.json')
+    if not os.path.isfile(path):
+        return doc
+    extra = json.load(open(path, encoding='utf-8'))
+    have = {p.get('id') for p in doc.get('providers') or []}
+    for p in extra.get('providers') or []:
+        if p.get('id') and p['id'] not in have:
+            doc['providers'].append(p)
+            have.add(p['id'])
+    return doc
 
 
 if __name__ == '__main__':

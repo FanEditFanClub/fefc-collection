@@ -1,0 +1,93 @@
+{
+ "providers": [
+  {
+   "id": "pt:p:swisstransfer",
+   "name": "SwissTransfer",
+   "open_label": "Open in SwissTransfer",
+   "items": [
+    {
+     "id": "pt:i:65fbb9b6a090",
+     "name": "Avatar | Season One",
+     "url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+     "kind": "folder",
+     "label": "FOLDER",
+     "video": false,
+     "playback_verified": false,
+     "state": "page_only",
+     "catalog": "SwissTransfer public link",
+     "source_url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+     "status": "4 MP4 files, 21.1 GB, page says available until 2026-11-22. Not a direct video URL.",
+     "detail": "Public page https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52 returned HTTP 200 text/html on 2026-11-08. The page title is Avatar | Season One. It lists 4 video/mp4 files, 21132457181 bytes total, and expires 2026-11-22. No password was requested. The page has no media URL. Byte-range and ffprobe were not run. Kodi playback was not run.",
+     "artwork": null,
+     "description": "Enjoy!",
+     "children": [
+      {
+       "id": "pt:i:3cf944458687",
+       "name": "Avatar EP 101.mp4",
+       "url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "kind": "file",
+       "label": "UNVERIFIED FILE",
+       "video": false,
+       "playback_verified": false,
+       "state": "page_only",
+       "catalog": "SwissTransfer public link",
+       "source_url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "status": "Avatar EP 101.mp4 is video/mp4, 4737037757 bytes. The share link is the HTML page, not this file.",
+       "detail": "Public page https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52 returned HTTP 200 text/html on 2026-11-08. The page title is Avatar | Season One. It lists 4 video/mp4 files, 21132457181 bytes total, and expires 2026-11-22. No password was requested. The page has no media URL. Byte-range and ffprobe were not run. Kodi playback was not run.",
+       "artwork": null,
+       "description": null
+      },
+      {
+       "id": "pt:i:83609e3f55e3",
+       "name": "Avatar EP 102.mp4",
+       "url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "kind": "file",
+       "label": "UNVERIFIED FILE",
+       "video": false,
+       "playback_verified": false,
+       "state": "page_only",
+       "catalog": "SwissTransfer public link",
+       "source_url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "status": "Avatar EP 102.mp4 is video/mp4, 4624818513 bytes. The share link is the HTML page, not this file.",
+       "detail": "Public page https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52 returned HTTP 200 text/html on 2026-11-08. The page title is Avatar | Season One. It lists 4 video/mp4 files, 21132457181 bytes total, and expires 2026-11-22. No password was requested. The page has no media URL. Byte-range and ffprobe were not run. Kodi playback was not run.",
+       "artwork": null,
+       "description": null
+      },
+      {
+       "id": "pt:i:12560abb5bae",
+       "name": "Avatar EP 103.mp4",
+       "url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "kind": "file",
+       "label": "UNVERIFIED FILE",
+       "video": false,
+       "playback_verified": false,
+       "state": "page_only",
+       "catalog": "SwissTransfer public link",
+       "source_url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "status": "Avatar EP 103.mp4 is video/mp4, 5701759167 bytes. The share link is the HTML page, not this file.",
+       "detail": "Public page https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52 returned HTTP 200 text/html on 2026-11-08. The page title is Avatar | Season One. It lists 4 video/mp4 files, 21132457181 bytes total, and expires 2026-11-22. No password was requested. The page has no media URL. Byte-range and ffprobe were not run. Kodi playback was not run.",
+       "artwork": null,
+       "description": null
+      },
+      {
+       "id": "pt:i:8e9f390fa493",
+       "name": "Avatar EP 104.mp4",
+       "url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "kind": "file",
+       "label": "UNVERIFIED FILE",
+       "video": false,
+       "playback_verified": false,
+       "state": "page_only",
+       "catalog": "SwissTransfer public link",
+       "source_url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
+       "status": "Avatar EP 104.mp4 is video/mp4, 6068841744 bytes. The share link is the HTML page, not this file.",
+       "detail": "Public page https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52 returned HTTP 200 text/html on 2026-11-08. The page title is Avatar | Season One. It lists 4 video/mp4 files, 21132457181 bytes total, and expires 2026-11-22. No password was requested. The page has no media URL. Byte-range and ffprobe were not run. Kodi playback was not run.",
+       "artwork": null,
+       "description": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
