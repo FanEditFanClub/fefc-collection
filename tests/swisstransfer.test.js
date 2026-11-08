@@ -30,6 +30,7 @@ assert [f['name'] for f in info['files']] == ['Avatar EP 101.mp4','Avatar EP 102
 assert all(f['mime']=='video/mp4' for f in info['files'])
 assert 'web page' in info['message']
 assert 'not saved' in info['message']
+assert 'kDrive' in info['message']
 probe = {'probes':[{'status':206,'mime':'video/mp4'},{'status':206,'mime':'video/mp4'},{'status':206,'mime':'video/mp4'}],'streams':[{'codec_name':'h264'},{'codec_name':'aac'}]}
 assert swisstransfer.progressive_mp4(probe) is True
 assert swisstransfer.progressive_mp4({'probes':[{'status':200,'mime':'text/html'}]}) is False

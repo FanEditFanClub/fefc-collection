@@ -1,8 +1,13 @@
 """Public SwissTransfer share pages. No download tokens and no file bodies.
 
 The share URL is an HTML page. Kodi's player cannot open that page as a video.
-The page lists file names, sizes, and types. It does not include a stable media URL.
-A short-lived download token is not requested here.
+The page lists file names, sizes, and types. It does not include a media URL.
+
+Infomaniak's published download API is kDrive (GET /2/drive/{id}/files/{id}/download)
+and requires an account bearer token. Their SwissTransfer help calls the share URL
+itself the "direct download link". No published guest method turns that page into a
+fresh file address, so Play is not offered. A browser download button can create a
+link that expires in about an hour; that link is not stored.
 """
 import json
 import re
@@ -108,7 +113,7 @@ def inspect_page(html, now=None):
     else:
         msg = ('The SwissTransfer address is a web page, not a video file. '
                '"%s" lists %d MP4 file(s), about %.1f GB, until %s. '
-               'The page does not include a file address. A download button in a browser can create a link that expires in about an hour; that link is not saved. In-app Play is off.'
+               'The page does not include a file address. Infomaniak\'s published download API is for kDrive and needs an account token, so this app cannot create a fresh file address. A browser download button can create a link that expires in about an hour; that link is not saved. In-app Play is off.'
                ) % (title, len(videos), gb, when)
         if others:
             msg += ' %d other file(s) are not video.' % len(others)

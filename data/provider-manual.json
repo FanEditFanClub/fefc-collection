@@ -17,7 +17,7 @@
      "catalog": "SwissTransfer public link",
      "source_url": "https://www.swisstransfer.com/dl/01a1b362-3c35-7224-8b85-faf0101e8e52",
      "status": "4 MP4 files, 21.1 GB, page says available until 2026-11-22. The share page is not a video URL, so Play stays off.",
-     "detail": "Public page returned HTTP 200 text/html on 2026-11-08 and lists 4 video/mp4 files, 21132457181 bytes, until 2026-11-22. No password. The page has no file address. A browser download of EP 101 produced a one-hour link. Range reads at the start, middle, and end were HTTP 206 video/mp4, and a 12 MiB sample was H.264 High 1080p with AAC-LC stereo, 2336.938 seconds, about 16.2 Mbps. That link was not stored. Kodi was not run, so playback is not verified.",
+     "detail": "Public page returned HTTP 200 text/html on 2026-11-08 and lists 4 video/mp4 files, 21132457181 bytes, until 2026-11-22. No password. The page has no file address. Infomaniak's published download API is kDrive and needs an account token; it does not mint a file address for this share link. A browser download of EP 101 produced a one-hour link. Range reads at the start, middle, and end were HTTP 206 video/mp4, and a 12 MiB sample was H.264 High 1080p with AAC-LC stereo, 2336.938 seconds, about 16.2 Mbps. That link was not stored. Kodi was not run, so playback is not verified.",
      "artwork": null,
      "description": "Enjoy!",
      "children": [
