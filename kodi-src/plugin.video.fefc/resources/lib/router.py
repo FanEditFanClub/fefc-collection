@@ -14,6 +14,8 @@ import xbmcvfs
 from . import catalog
 from . import mylist as mylist_mod
 from . import downloads as downloads_mod
+from . import namesort
+from .webcounts import FOLD
 
 ADDON = xbmcaddon.Addon()
 PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
@@ -243,6 +245,11 @@ class Router:
             t = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
             self.add_folder('To Be Catalogued  (%d)' % n, t, ', '.join(gs), landscape=t, action='folder', id='1503Wl56hzRppaIFcQisvQksOaeYOEjnk')
             return
+        if fid in (m.get('people_meta') or {}) or v[1] in (FOLD['actors'], FOLD['directors']):
+            # Person tiles: natural name, no count badge. Drive folder names are not renamed.
+            self.add_folder(namesort.display_name(v[0]), art, ', '.join(gs), action='folder', id=fid,
+                            props={'fefc_people': '1'})
+            return
         self.add_folder('%s  (%d)' % (v[0], n), art, ', '.join(gs), action='folder', id=fid)
 
     def add_tool(self, label, plot, art='DefaultAddonService.png', folder=False, landscape='', **kw):
@@ -407,6 +414,26 @@ class Router:
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
+    def armback(self):
+        """Keymap runs this, then the normal Back. Marks the press so the plugin reload does not play a second cue.
+        When the sound skin is not set to always (wall video would mute it), play the wav here instead."""
+        from .sfxpref import sfx_enabled
+        from . import backcue
+        home = xbmcgui.Window(10000)
+        on = sfx_enabled(ADDON.getSetting('play_sfx'))
+        skin_always = on and home.getProperty('FEFC.GuiSound') == 'always'
+        try:
+            last = float(home.getProperty('FEFC.BackAt') or '0')
+        except ValueError:
+            last = 0.0
+        play, skip = backcue.arm_back(on, None, time.time(), last, skin_always)
+        if skip:
+            home.setProperty('FEFC.BackSkip', '1')
+        if play:
+            _play_back_sfx()
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     def folder(self):
         m = _model()
         fid = self.params.get('id') or m['root']
@@ -417,7 +444,12 @@ class Router:
         # drop empty folders
         ks = [k for k in ks if not m['items'][k][2] or (m.get('rcnt') or m['cnt']).get(k)]
         key = _sort_get(fid)
-        if key != 'az':
+        if fid in (FOLD['actors'], FOLD['directors']) and key in ('az', 'za'):
+            # Surname order, not the first name on the tile and not Drive's numeric prefixes.
+            ks = sorted(ks, key=lambda k: namesort.sort_key(m['items'][k][0]))
+            if key == 'za':
+                ks.reverse()
+        elif key != 'az':
             ks = _sorted_kids(m, ks, key)
         chunk = ks[page * PAGE:(page + 1) * PAGE]
         if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
@@ -479,10 +511,11 @@ class Router:
         from .sfxpref import sfx_enabled
         if not sfx_enabled(ADDON.getSetting('play_sfx')) or not rel:
             return
-        files = rel if isinstance(rel, list) else [rel]
-        # Kodi plays wav natively: the site serves a wav copy of every clip under kodi-sfx/ (same 6 s / -16 LUFS clip)
-        f = str(files[0])
-        wav = 'kodi-sfx/' + os.path.splitext(os.path.basename(f))[0] + '.wav'
+        # Same wav name the details page uses, including shuffle-bag rotations (m4a/mp3 pairs).
+        # playSFX does not stop the home-wall player, so ambience keeps going under the clip.
+        wav = catalog.sfx_wav(rel)
+        if not wav:
+            return
         try:
             path = self._sfx_local(catalog.abs_url(_base(), wav))
             if path:
@@ -543,6 +576,7 @@ class Router:
         self.end('movies', cache=False)
 
     def search(self):
+        from . import searchflow
         q = self.params.get('q')
         if q is None:
             win = OptimusWindow()
@@ -556,10 +590,13 @@ class Router:
             xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='search', q=q))
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
             return
-        m = _model()
-        from . import optimusplan
-        self.add_tool(optimusplan.TITLE, optimusplan.CUE + '\n' + optimusplan.BOT_URL,
-                      _optimus_art(), folder=False, landscape=_optimus_art(), action='noop')
+        try:
+            m = _model()
+        except Exception as e:
+            _log('search catalogue: %s' % e)
+            xbmcgui.Dialog().notification('FEFC', searchflow.result_message(q, 0, True), xbmcgui.NOTIFICATION_ERROR, 4000)
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            return
         res = catalog.search(m, q)
         nf = nv = 0
         for i in res:
@@ -569,13 +606,14 @@ class Router:
             else:
                 nv += 1
                 self.add_video(m, i)
-        if not res:
-            xbmcgui.Dialog().notification('FEFC', 'No results for "%s"' % q, xbmcgui.NOTIFICATION_INFO, 3000)
+        msg = searchflow.result_message(q, len(res), False)
+        if msg:
+            xbmcgui.Dialog().notification('FEFC', msg, xbmcgui.NOTIFICATION_INFO, 3000)
         self.end('movies' if nv > nf else 'files', cache=False)
 
     def searchbox(self):
-        """Home Search tile (RunPlugin, no directory handle): ask for the text first, then open the results list directly.
-        Nothing is returned from a failed directory, so the keyboard cannot reappear over the results."""
+        """Home Search tile (RunPlugin, no directory handle): the Optimus card collects the text, then the results list opens.
+        The keyboard is not opened underneath the still-open card."""
         win = OptimusWindow()
         win.doModal()
         q = (win.query or '').strip()
@@ -708,23 +746,16 @@ class Router:
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def people(self):
-        """0.3.22: one flat A-Z list of every actor and director folder (display only; Drive is untouched).
-        0.5.0: show just the last name, bigger — full names were long, small, and cut off on the tile."""
+        """Flat actor/director list. Natural names, surname A–Z. Drive folder names are not changed.
+        end() sets SORT_METHOD_UNSORTED so Kodi does not re-sort these labels by first name."""
         m = _model()
         meta = m.get('people_meta') or {}
         role = self.params.get('role')
         rows = [k for k, (n, r) in meta.items() if (not role or r == role) and k in m['items'] and (m.get('rcnt') or m['cnt']).get(k)]
-        rows.sort(key=lambda k: catalog.natkey(meta[k][0]))
+        rows.sort(key=lambda k: namesort.sort_key(meta[k][0]))
         for k in rows:
             art = catalog.folder_art(m, _base(), k)
-            parts = (meta[k][0] or '').strip().split()
-            while parts and parts[-1].rstrip('.').lower() in ('jr', 'sr', 'ii', 'iii', 'iv'):
-                parts.pop()
-            last = parts[-1] if parts else (meta[k][0] or '')
-            # 0.5.2: show the same count the filter used (recursive total) — a director whose videos all sit in
-            # subfolders has a DIRECT count of 0 but a recursive count > 0, so the old label showed "(0)".
-            n = (m.get('rcnt') or m['cnt']).get(k, 0)
-            self.add_folder('%s  (%d)' % (last, n), art, action='folder', id=k,
+            self.add_folder(namesort.display_name(meta[k][0]), art, action='folder', id=k,
                             props={'fefc_people': '1'})
         self.end()
 
@@ -781,6 +812,11 @@ class Router:
         on = not sfx_enabled(ADDON.getSetting('play_sfx'))
         ADDON.setSetting('play_sfx', 'true' if on else 'false')
         xbmcgui.Window(10000).setProperty('FEFC.SoundOff', '' if on else '1')
+        try:
+            import service
+            service.apply_nav_sound(on)
+        except Exception:
+            pass
         xbmcgui.Dialog().notification('FEFC', 'Sound on' if on else 'Sound off', time=1500, sound=False)
 
     def about(self):
@@ -1402,6 +1438,20 @@ def _white_png():
     return _png_rgb(path, [b'\xff\xff\xff' * 8] * 8)
 
 
+def _dialog_back(action):
+    """Close on Back. Play the back cue only when the sound skin will not (avoids a second click)."""
+    aid = action.getId()
+    if aid not in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+        return False
+    if aid != xbmcgui.ACTION_STOP:
+        home = xbmcgui.Window(10000)
+        if home.getProperty('FEFC.BackSkip') == '1':
+            home.clearProperty('FEFC.BackSkip')
+        elif home.getProperty('FEFC.GuiSound') != 'always':
+            _play_back_sfx()
+    return True
+
+
 def _short_url(u):
     """Display form of a link that fits on screen (the QR code carries the full address)."""
     import re
@@ -1411,60 +1461,43 @@ def _short_url(u):
 
 class SupportWindow(xbmcgui.WindowDialog):
     """Three tiles (Patreon, PayPal, Venmo): brand colour, QR code to scan with a phone, OK opens it on this device.
-    0.5.3: redesigned — clean brand marks (no white-circle disc), and Fan Edit Optimus on the left holding out his
-    hat for change, bobbing gently like he's pleading. The bob runs on a helper thread and stops when the window closes."""
+    Logos use aspect keep so the whole mark is visible. Optimus stays still."""
     COLORS = {'Patreon': 'FFF96854', 'PayPal': 'FF0070BA', 'Venmo': 'FF3D95CE'}
-    # Optimus art: fefc-optimus-begging.png (992x2361, dark background blends with the dialog).
-    OPT_X, OPT_Y, OPT_W, OPT_H = 24, 150, 210, 500
+    # aspectRatio 2 = keep (contain). 1 scales up and crops.
+    KEEP = 2
 
     def __init__(self, items):
         super().__init__()
         self.items = items
-        self._anim_stop = threading.Event()
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        self.addControl(xbmcgui.ControlLabel(80, 40, 1120, 50, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=2))
-        self.addControl(xbmcgui.ControlLabel(80, 92, 1120, 60, 'Optimus is holding out his hat — every bit helps cover the cloud storage and our time adding new edits. '
+        self.addControl(xbmcgui.ControlLabel(48, 28, 1184, 44, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(48, 76, 1184, 56, 'Every bit helps cover the cloud storage and our time adding new edits. '
                                              'Scan a code with your phone, or press OK to open it here.', font='font12',
                                              textColor='FFE8EEF6', alignment=2))
-        # Optimus begging with his hat (left side); the helper thread bobs him up and down.
-        self._optimus = xbmcgui.ControlImage(self.OPT_X, self.OPT_Y, self.OPT_W, self.OPT_H, 'fefc-optimus-begging.png', aspectRatio=1)
-        self.addControl(self._optimus)
-        threading.Thread(target=self._bob, daemon=True).start()
+        self.addControl(xbmcgui.ControlImage(36, 150, 200, 480, 'fefc-optimus-begging.png', aspectRatio=self.KEEP))
         self.btns = []
-        w, gap = 320, 20
-        x0 = 260
+        w, gap = 300, 24
+        x0 = 250
         for k, (name, url, sub) in enumerate(items):
             x = x0 + k * (w + gap)
             col = self.COLORS.get(name, 'FFFF9C00')
-            b = xbmcgui.ControlButton(x, 160, w, 470, '', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+            b = xbmcgui.ControlButton(x, 148, w, 480, '', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
             self.addControl(b)
             self.btns.append(b)
             icon = {'Patreon': 'fefc-ic-patreon.png', 'PayPal': 'fefc-ic-paypal.png', 'Venmo': 'fefc-ic-venmo.png'}.get(name, 'fefc-lc-pill.png')
-            self.addControl(xbmcgui.ControlImage(x + (w - 72) // 2, 176, 72, 72, icon, aspectRatio=1))
-            self.addControl(xbmcgui.ControlImage(x + 20, 258, w - 40, 48, 'fefc-lc-pill.png', colorDiffuse=col))
-            self.addControl(xbmcgui.ControlLabel(x + 20, 258, w - 40, 48, name.upper(), font='font13_title', textColor='FFFFFFFF', alignment=6))
+            self.addControl(xbmcgui.ControlImage(x + 70, 164, 160, 88, icon, aspectRatio=self.KEEP))
+            self.addControl(xbmcgui.ControlImage(x + 16, 264, w - 32, 48, 'fefc-lc-pill.png', colorDiffuse=col))
+            self.addControl(xbmcgui.ControlLabel(x + 16, 264, w - 32, 48, name.upper(), font='font13_title', textColor='FFFFFFFF', alignment=6))
             qr = ('https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=16&format=png&data=%s' % quote_plus(url))
-            self.addControl(xbmcgui.ControlImage(x + 45, 318, w - 90, w - 90, 'fefc-white.png'))
-            self.addControl(xbmcgui.ControlImage(x + 51, 324, w - 102, w - 102, qr, aspectRatio=1))
-            self.addControl(xbmcgui.ControlLabel(x + 10, 560, w - 20, 32, sub, font='font12_title', textColor='FFFFFFFF', alignment=6))
-            self.addControl(xbmcgui.ControlLabel(x + 10, 590, w - 20, 40, _short_url(url), font='font10', textColor='FF99CCFF', alignment=6))
+            self.addControl(xbmcgui.ControlImage(x + 50, 324, w - 100, w - 100, 'fefc-white.png'))
+            self.addControl(xbmcgui.ControlImage(x + 56, 330, w - 112, w - 112, qr, aspectRatio=self.KEEP))
+            self.addControl(xbmcgui.ControlLabel(x + 10, 548, w - 20, 32, sub, font='font12_title', textColor='FFFFFFFF', alignment=6))
+            self.addControl(xbmcgui.ControlLabel(x + 10, 580, w - 20, 36, _short_url(url), font='font10', textColor='FF99CCFF', alignment=6))
         for k, b in enumerate(self.btns):
             b.controlLeft(self.btns[k - 1])
             b.controlRight(self.btns[(k + 1) % len(self.btns)])
-        self.addControl(xbmcgui.ControlLabel(80, 650, 1120, 36, 'Back to close', font='font10', textColor='FF7F8FA6', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(48, 660, 1184, 32, 'Back to close', font='font10', textColor='FF7F8FA6', alignment=2))
         self.setFocus(self.btns[0])
-
-    def _bob(self):
-        """Gentle pleading bob: Optimus dips ~10px and back, about once a second, until the window closes."""
-        import math
-        t0 = time.time()
-        while not self._anim_stop.is_set():
-            try:
-                bob = int(10 * (1 - math.cos((time.time() - t0) * 2 * math.pi / 1.1)) / 2)
-                self._optimus.setPosition(self.OPT_X, self.OPT_Y + bob)
-            except Exception:
-                break
-            self._anim_stop.wait(0.05)
 
     def onControl(self, c):
         for k, b in enumerate(self.btns):
@@ -1474,8 +1507,7 @@ class SupportWindow(xbmcgui.WindowDialog):
                 xbmcgui.Dialog().notification('Support Us', 'If nothing opened, scan the code or visit %s' % _short_url(u), xbmcgui.NOTIFICATION_INFO, 6000)
 
     def onAction(self, action):
-        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
-            self._anim_stop.set()
+        if _dialog_back(action):
             self.close()
 
 
@@ -1522,7 +1554,7 @@ class LinkWindow(xbmcgui.WindowDialog):
             xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % self.open_url)
 
     def onAction(self, action):
-        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+        if _dialog_back(action):
             self.closed = True
             self.close()
 
@@ -1535,37 +1567,57 @@ def _optimus_art():
 
 
 class OptimusWindow(xbmcgui.WindowDialog):
-    """Same search card as the web spotlight: watch image, cue line, magnifying-glass search."""
+    """Search card: Optimus, an editable field, and a Search button. The field submits the catalogue query.
+    A second keyboard is not opened while this card is still on screen."""
 
     def __init__(self):
         super().__init__()
         from . import optimusplan
         self.query = ''
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        self.addControl(xbmcgui.ControlImage(80, 70, 420, 420, _optimus_art(), aspectRatio=1))
-        self.addControl(xbmcgui.ControlLabel(540, 120, 660, 60, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
-        cue = xbmcgui.ControlTextBox(540, 200, 660, 160, font='font13', textColor='FFE8EEF6')
+        self.addControl(xbmcgui.ControlImage(48, 80, 420, 420, _optimus_art(), aspectRatio=2))
+        self.addControl(xbmcgui.ControlLabel(500, 80, 720, 56, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
+        cue = xbmcgui.ControlTextBox(500, 146, 720, 100, font='font13', textColor='FFE8EEF6')
         self.addControl(cue)
         cue.setText(optimusplan.CUE)
-        self.btn = xbmcgui.ControlButton(540, 400, 420, 80, '⌕  ' + optimusplan.SEARCH_LABEL, font='font13_title', textColor='FFFFFFFF',
+        self.edit = xbmcgui.ControlEdit(500, 270, 720, 64, '', font='font13', textColor='FFFFFFFF',
+                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+        self.addControl(self.edit)
+        self.btn = xbmcgui.ControlButton(500, 360, 280, 72, optimusplan.SEARCH_LABEL, font='font13_title', textColor='FFFFFFFF',
                                           focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png', alignment=6)
         self.addControl(self.btn)
-        self.addControl(xbmcgui.ControlLabel(540, 500, 660, 40, 'Back to close. The Search button on the bar keeps its magnifying glass.',
-                                             font='font12', textColor='FF7F8FA6'))
-        self.setFocus(self.btn)
+        self.status = xbmcgui.ControlLabel(500, 450, 720, 40, 'Type a title, then press Search.', font='font12', textColor='FF99CCFF')
+        self.addControl(self.status)
+        self.addControl(xbmcgui.ControlLabel(500, 520, 720, 36, 'Back to close.', font='font12', textColor='FF7F8FA6'))
+        self.edit.controlDown(self.btn)
+        self.btn.controlUp(self.edit)
+        self.setFocus(self.edit)
+
+    def _submit(self):
+        from . import searchflow
+        try:
+            text = self.edit.getText()
+        except Exception:
+            text = ''
+        r = searchflow.submit(text)
+        if not r['ok']:
+            try:
+                self.status.setLabel(r['status'])
+            except Exception:
+                pass
+            return
+        self.query = r['query']
+        self.close()
 
     def onControl(self, c):
-        if c != self.btn:
-            return
-        from . import osinput
-        from . import optimusplan
-        q = (osinput.get_text(optimusplan.TITLE) or '').strip()
-        if q:
-            self.query = q
-            self.close()
+        if c == self.btn:
+            self._submit()
 
     def onAction(self, action):
-        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+        if action.getId() == xbmcgui.ACTION_SELECT_ITEM:
+            self._submit()
+            return
+        if _dialog_back(action):
             self.close()
 
 
@@ -1577,15 +1629,53 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'open_link': 'open_link', 'play_external': 'play_external',
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
-          'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop'}
+          'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop',
+          'armback': 'armback'}
 
 
 def _play_back_sfx():
-    """Play the FEFC back sound (the uisounds add-on's back.wav) for a '..' / parent-folder tap."""
+    """Play the packaged back wav. Does not stop or restart the home-wall player."""
+    from .sfxpref import sfx_enabled
+    from . import backcue
     try:
-        p = xbmcvfs.translatePath('special://home/addons/resource.uisounds.fefc/resources/back.wav')
-        if os.path.exists(p):
-            xbmc.playSFX(p, False)
+        if not sfx_enabled(ADDON.getSetting('play_sfx')):
+            return
+        vol = None
+        try:
+            import json
+            r = json.loads(xbmc.executeJSONRPC(json.dumps({
+                'jsonrpc': '2.0', 'id': 1, 'method': 'Application.GetProperties',
+                'params': {'properties': ['volume', 'muted']}})))
+            props = r.get('result') or {}
+            if props.get('muted'):
+                vol = 0
+            elif 'volume' in props:
+                vol = int(props['volume'])
+        except Exception:
+            vol = None
+        home = xbmcgui.Window(10000)
+        try:
+            last = float(home.getProperty('FEFC.BackAt') or '0')
+        except ValueError:
+            last = 0.0
+        now = time.time()
+        if not backcue.should_play(True, vol, now, last):
+            return
+        paths = []
+        try:
+            paths.append(os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'ui-back.wav'))
+        except Exception:
+            pass
+        for spec in backcue.WAV_CANDIDATES:
+            try:
+                paths.append(xbmcvfs.translatePath(spec))
+            except Exception:
+                pass
+        for p in paths:
+            if p and os.path.exists(p) and os.path.getsize(p) > 100:
+                xbmc.playSFX(p, False)
+                home.setProperty('FEFC.BackAt', str(now))
+                return
     except Exception:
         pass
 
@@ -1631,8 +1721,12 @@ def run(argv):
     # (new location is the parent of the previous one) and play the back sound ourselves.
     try:
         prev = xbmcgui.Window(10000).getProperty('FEFC.LastLoc')
+        home = xbmcgui.Window(10000)
         if _is_back_nav(prev, r._loc()):
-            _play_back_sfx()
+            if home.getProperty('FEFC.BackSkip') == '1':
+                home.clearProperty('FEFC.BackSkip')
+            else:
+                _play_back_sfx()
     except Exception:
         pass
     action = r.params.get('action', '')

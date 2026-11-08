@@ -318,6 +318,9 @@ def patch_fonts(xml_dir):
     # 0.4.2: smaller tile-label font so long titles fit fully instead of clipping (poster + landscape tiles)
     extra += ('\t\t<font>\n\t\t\t<name>font_tile_sm</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
               '\t\t\t<size>17</size>\n\t\t</font>\n')
+    # Folder grid labels (not poster titles). 26px wraps inside the 245x102 tile label box.
+    extra += ('\t\t<font>\n\t\t\t<name>font_folder</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
+              '\t\t\t<size>26</size>\n\t\t</font>\n')
     # 0.5.1: even smaller poster-tile font (15px) — long file names were still clipping at 17px
     extra += ('\t\t<font>\n\t\t\t<name>font_tile_xs</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
               '\t\t\t<size>15</size>\n\t\t</font>\n')

@@ -57,7 +57,7 @@
 			<control type="label">
 				<left>10</left><top>30</top><width>245</width><height>102</height>
 				<aligny>bottom</aligny>
-				<font>font_tile_sm</font>
+				<font>font_folder</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<!-- 0.5.1: black text shadow so the name stays readable over bright/busy genre art -->
 				<shadowcolor>FF000000</shadowcolor>
@@ -65,16 +65,17 @@
 				<wrapmultiline>true</wrapmultiline>
 				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile) + String.IsEmpty(ListItem.Property(fefc_people))</visible>
 				<!-- 0.3.22: Shuffle / Sort / Support Us art already carries the big centred label; no small duplicate -->
-				<!-- 0.4.2: label font shrunk (font10 -> font_tile_sm 17px) so long folder names fit fully; testing tile hides its label too -->
+				<!-- Folder names: 26px bold, white, wrapping inside the 245x102 label box. Poster tiles stay on font_tile_xs. -->
 			</control>
-			<!-- 0.5.0: Actors & Directors show just the last name, bigger (27px) and centred — the 17px full
-			     name was small and cut off. Only for people folders (fefc_people property). -->
+			<!-- People tiles keep the natural name, wrapped, in the same white as other labels. -->
 			<control type="label">
 				<left>10</left><top>30</top><width>245</width><height>102</height>
 				<align>center</align><aligny>center</aligny>
 				<font>font12_title</font>
 				<textcolor>FFFFFFFF</textcolor>
+				<shadowcolor>FF000000</shadowcolor>
 				<label>$INFO[ListItem.Label]</label>
+				<wrapmultiline>true</wrapmultiline>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_people))</visible>
 			</control>
 			<control type="image">
@@ -191,9 +192,9 @@
 				<!-- 0.3.22: HOME on every page's menu bar (back to the live Home screen) -->
 				<!-- 0.4.2: house icon, same group pattern as SEARCH / SOUND / SETTINGS -->
 				<control type="group">
-					<width>110</width><height>60</height>
+					<width>140</width><height>60</height>
 					<control type="button" id="9298">
-						<left>0</left><top>0</top><width>110</width><height>60</height>
+						<left>0</left><top>0</top><width>140</width><height>60</height>
 						<include>FefcSmallButton</include>
 						<font>fefc_bar</font>
 						<textoffsetx>46</textoffsetx><align>left</align>
@@ -215,9 +216,9 @@
 					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 				</control>
 				<control type="group">
-					<width>200</width><height>60</height>
+					<width>210</width><height>60</height>
 					<control type="button" id="9294">
-						<left>0</left><top>0</top><width>200</width><height>60</height>
+						<left>0</left><top>0</top><width>210</width><height>60</height>
 						<include>FefcSmallButton</include>
 						<font>fefc_bar</font>
 						<textoffsetx>46</textoffsetx><align>left</align>
@@ -239,25 +240,6 @@
 					</control>
 					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 				</control>
-				<control type="button" id="9293">
-					<width>120</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
-					<label>ABOUT</label>
-					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
-					<!-- 0.4.2: About and Update do not show on video details pages -->
-					<visible>!Window.IsActive(movieinformation)</visible>
-				</control>
-				<control type="button" id="9297">
-					<width>182</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
-					<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
-					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
-					<!-- 0.4.2: About and Update do not show on video details pages; width 200 -> 182 so the
-					     paused-state bar (RESUME + STOP shown) fits the 1224px pill instead of overflowing it -->
-					<visible>!Window.IsActive(movieinformation)</visible>
-				</control>
 			</control>
 		</control>
 		</definition>
@@ -277,8 +259,8 @@
 				<aligny>center</aligny>
 				<font>fefc_ticker</font>
 				<textcolor>FFFFFFFF</textcolor>
-				<!-- 0.5.3: no native <scroll> — the service drives the marquee by rotating the text, so it
-				     keeps moving on every page (Home and folders). Native scroll stopped once you left Home. -->
+				<scroll>true</scroll>
+				<scrollspeed>70</scrollspeed>
 				<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
 				<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 			</control>

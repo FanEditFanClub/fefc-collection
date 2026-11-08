@@ -5,38 +5,24 @@
 	<backgroundcolor>FF000000</backgroundcolor>
 	<onload condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">SetFocus(9021)</onload>
 	<controls>
-		<!-- 0.5.0: black background everywhere; the wall video now lives in two small corner windows
-		     (bottom-left and bottom-right), clear of the centred bottom menu bar — nothing behind it. -->
-		<control type="videowindow">
-			<left>96</left><top>858</top><width>224</width><height>126</height>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
-		</control>
-		<control type="videowindow">
-			<left>1600</left><top>858</top><width>224</width><height>126</height>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
-		</control>
-		<!-- 0.5.3: tap guard — a tap on a videowindow in Kodi can flip the wall video to fullscreen (the
-		     "stutter and reset" when tapping outside the tiles). A near-transparent image over each window
-		     absorbs the tap and does nothing, while the video still shows through. -->
+		<!-- Full-frame mosaic. The black panel below covers the 3x3 so clips only show in the margins. -->
 		<control type="image">
-			<left>96</left><top>858</top><width>224</width><height>126</height>
-			<texture colordiffuse="01FFFFFF">fefc-white.png</texture>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
-		</control>
-		<control type="image">
-			<left>1600</left><top>858</top><width>224</width><height>126</height>
-			<texture colordiffuse="01FFFFFF">fefc-white.png</texture>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
-		</control>
-		<!-- 0.3.22: still frame covers the loop seam (service sets FEFC.WallSeam for ~0.4s around the restart) -->
-		<control type="image">
-			<left>96</left><top>858</top><width>224</width><height>126</height>
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
 			<texture fallback="fefc-bg.jpg">fefc-wall-still.jpg</texture>
 			<aspectratio>scale</aspectratio>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.WallSeam))</visible>
+		</control>
+		<control type="videowindow">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
+		</control>
+		<!-- Tap guard sits above the video and below the tiles, so a tap on the mosaic does not fullscreen it. -->
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<texture colordiffuse="01FFFFFF">fefc-white.png</texture>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
 		</control>
 		<control type="image">
-			<left>1600</left><top>858</top><width>224</width><height>126</height>
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
 			<texture fallback="fefc-bg.jpg">fefc-wall-still.jpg</texture>
 			<aspectratio>scale</aspectratio>
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.WallSeam))</visible>
@@ -228,12 +214,12 @@
 			<left>348</left><top>878</top><width>1224</width><height>60</height><align>center</align>
 			<orientation>horizontal</orientation>
 			<align>center</align>
-			<itemgap>8</itemgap>
+			<itemgap>4</itemgap>
 			<onup>9008</onup><onleft>9100</onleft><onright>9100</onright>
 			<control type="group">
-				<width>190</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+				<width>124</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 				<control type="button" id="9021">
-					<left>0</left><top>0</top><width>120</width><height>60</height>
+					<left>0</left><top>0</top><width>124</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<label>RESUME</label>
@@ -243,9 +229,9 @@
 
 			</control>
 			<control type="group">
-				<width>140</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+				<width>88</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 				<control type="button" id="9022">
-					<left>0</left><top>0</top><width>86</width><height>60</height>
+					<left>0</left><top>0</top><width>88</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<label>STOP</label>
@@ -255,9 +241,9 @@
 
 			</control>
 			<control type="group">
-				<width>168</width><height>60</height>
+				<width>160</width><height>60</height>
 				<control type="button" id="9031">
-					<left>0</left><top>0</top><width>168</width><height>60</height>
+					<left>0</left><top>0</top><width>160</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<textoffsetx>46</textoffsetx><align>left</align>
@@ -268,9 +254,9 @@
 				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 			</control>
 			<control type="group">
-				<width>200</width><height>60</height>
+				<width>204</width><height>60</height>
 				<control type="button" id="9032">
-					<left>0</left><top>0</top><width>200</width><height>60</height>
+					<left>0</left><top>0</top><width>204</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<textoffsetx>46</textoffsetx><align>left</align>
@@ -282,9 +268,9 @@
 				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 			</control>
 			<control type="group">
-				<width>180</width><height>60</height>
+				<width>176</width><height>60</height>
 				<control type="button" id="9033">
-					<left>0</left><top>0</top><width>180</width><height>60</height>
+					<left>0</left><top>0</top><width>176</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<textoffsetx>46</textoffsetx><align>left</align>
@@ -295,9 +281,9 @@
 				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 			<control type="group">
-				<width>120</width><height>60</height>
+				<width>112</width><height>60</height>
 				<control type="button" id="9034">
-					<left>0</left><top>0</top><width>120</width><height>60</height>
+					<left>0</left><top>0</top><width>112</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<label>ABOUT</label>
@@ -307,10 +293,10 @@
 
 			</control>
 			<control type="group">
-				<!-- 0.4.2: width 200 -> 176 so the paused-state bar fits the 1224px pill (it overflowed by 22px) -->
-				<width>176</width><height>60</height>
+				<!-- "Checking for updates" at fefc_bar 20px. 124+88+160+204+176+112+276 = 1140, plus 6*4 gap = 1164 of 1224. -->
+				<width>276</width><height>60</height>
 				<control type="button" id="9023">
-					<left>0</left><top>0</top><width>176</width><height>60</height>
+					<left>0</left><top>0</top><width>276</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<font>fefc_bar</font>
 					<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>

@@ -19,22 +19,16 @@ src = sorted(glob.glob('assets/clips/*.mp4'))
 L, F, FPS = 75.0, 1.5, 24
 T = L + F
 W, H = 1920, 1080
-# 0.4.0: tiles are EXACTLY the Home 3x3 menu tiles (400x200, 12 px gap; grid at x 348/760/1172, y 212/424/636).
-# 0.5.3: 3 equal tiles per side, lined up with the 3 menu rows (y 212/424/636), plus one equal tile in each of
-# the 4 corners. All 10 tiles are 324x200 — the side strips are 324px wide (0..324 and 1596..1920) and the menu
-# rows are 200px tall, so every tile is the same size and the side tiles sit exactly on the rows. (The old
-# layout had 5 per side + 3 across the bottom, which is why 5 tiles crowded into the space of 3 menu rows.)
-TW, TH = 324, 200
+# 0.4.0 layout, restored: Home tiles are 400x200 with a 12px gap at x 348/760/1172, y 212/424/636.
+# Mosaic: 5 left + 5 right at y 0, 212, 424, 636, 848 (left x = 348-400-12 = -64, right x = 1172+400+12 = 1584)
+# plus 3 bottom tiles on the menu columns at y 848. Nothing is placed behind the title or the 3x3.
+TW, TH, GP = 400, 200, 12
 cells = []
-# 4 corners, all the same size
-cells.append((0, 0, TW, TH))          # top-left
-cells.append((1596, 0, TW, TH))       # top-right
-cells.append((0, 880, TW, TH))        # bottom-left (bottom strip is 856..1080; 880+200 = 1080, flush with the edge)
-cells.append((1596, 880, TW, TH))     # bottom-right
-# 3 per side, on the menu rows
-for y in (212, 424, 636):
-    cells.append((0, y, TW, TH))      # left
-    cells.append((1596, y, TW, TH))   # right
+for y in (0, 212, 424, 636, 848):
+    cells.append((348 - TW - GP, y, TW, TH))
+    cells.append((1172 + TW + GP, y, TW, TH))
+for x in (348, 760, 1172):
+    cells.append((x, 848, TW, TH))
 random.seed(22)
 order = src[:]; random.shuffle(order)
 tmp = '/tmp/wall2'; os.makedirs(tmp, exist_ok=True)

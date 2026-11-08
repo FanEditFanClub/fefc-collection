@@ -149,6 +149,9 @@ assert 'skin.fefc' in t; open(ap, 'w', encoding='utf-8').write(t)
 # Also map one-finger swipe-left to Back on the windows users navigate in.
 _km = os.path.join(A, 'system', 'keymaps')
 os.makedirs(_km, exist_ok=True)
+_nav = os.path.join(root, 'kodi-src', 'plugin.video.fefc', 'resources', 'keymaps', 'fefc-nav.xml')
+if os.path.exists(_nav):
+    shutil.copy(_nav, os.path.join(_km, 'fefc-nav.xml'))
 open(os.path.join(_km, 'fefc-touch.xml'), 'w', encoding='utf-8').write("""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!-- FEFC: one-finger swipe left = Back (same as remote), so phone edge-swipe pops history. -->
 <keymap>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Physical Back plays the FEFC back cue (armback) and then does the normal Back. -->
+<keymap>
+  <global>
+    <keyboard>
+      <backspace>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</backspace>
+      <browser_back>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</browser_back>
+    </keyboard>
+    <remote>
+      <back>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</back>
+    </remote>
+    <gamepad>
+      <back>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</back>
+    </gamepad>
+  </global>
+</keymap>
