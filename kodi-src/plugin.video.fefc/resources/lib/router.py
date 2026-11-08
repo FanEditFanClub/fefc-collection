@@ -214,12 +214,15 @@ class Router:
     def _fanart_default(self, li):
         li.setArt({'fanart': 'special://home/addons/plugin.video.fefc/resources/fanart.jpg'})
 
-    def add_folder(self, label, art='', info=None, landscape='', **kw):
+    def add_folder(self, label, art='', info=None, landscape='', props=None, **kw):
         li = xbmcgui.ListItem(label, offscreen=True)
         land = landscape or art
         self._art(li, art)
         if land:
             li.setArt({'landscape': land, 'thumb': land, 'fanart': land or art})
+        if props:
+            for k, v in props.items():
+                li.setProperty(k, v)
         self._land = True
         tag = li.getVideoInfoTag()
         tag.setTitle(label)
@@ -683,7 +686,8 @@ class Router:
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def people(self):
-        """0.3.22: one flat A-Z list of every actor and director folder (display only; Drive is untouched)."""
+        """0.3.22: one flat A-Z list of every actor and director folder (display only; Drive is untouched).
+        0.5.0: show just the last name, bigger — full names were long, small, and cut off on the tile."""
         m = _model()
         meta = m.get('people_meta') or {}
         role = self.params.get('role')
@@ -691,7 +695,12 @@ class Router:
         rows.sort(key=lambda k: catalog.natkey(meta[k][0]))
         for k in rows:
             art = catalog.folder_art(m, _base(), k)
-            self.add_folder('%s  (%d)' % (meta[k][0], m['cnt'].get(k, 0)), art, action='folder', id=k)
+            parts = (meta[k][0] or '').strip().split()
+            while parts and parts[-1].rstrip('.').lower() in ('jr', 'sr', 'ii', 'iii', 'iv'):
+                parts.pop()
+            last = parts[-1] if parts else (meta[k][0] or '')
+            self.add_folder('%s  (%d)' % (last, m['cnt'].get(k, 0)), art, action='folder', id=k,
+                            props={'fefc_people': '1'})
         self.end()
 
     def _page_text(self, path):
@@ -1077,10 +1086,15 @@ class Router:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def _add_external(self, rec, plot):
+        # 0.5.0: a playable video file — portrait poster grid (view 501), not the landscape card grid.
+        # _vid flips end() to content 'movies', so these render as portrait posters like every other video.
+        self._vid = True
         li = xbmcgui.ListItem(rec.get('name') or 'Verified file', offscreen=True)
-        # 0.4.2: video tile, not the DOCUMENT tile — this is a playable video file.
-        tile = 'special://xbmc/addons/skin.fefc/media/fefc-video-tile.png'
-        li.setArt({'thumb': tile, 'icon': tile, 'poster': tile})
+        # 0.5.0: portrait VIDEO poster — the landscape VIDEO tile squashed into a 222x333 poster slot
+        # is why these showed with no real artwork. No per-file poster exists for provider links, so
+        # the portrait tile is the artwork until a real thumbnail is wired per provider.
+        poster = 'special://xbmc/addons/skin.fefc/media/fefc-video-poster.png'
+        li.setArt({'thumb': poster, 'icon': poster, 'poster': poster})
         li.setProperty('IsPlayable', 'true')
         tag = li.getVideoInfoTag()
         tag.setTitle(rec.get('name') or 'Verified file')

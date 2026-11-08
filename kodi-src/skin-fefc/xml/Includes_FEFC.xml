@@ -61,9 +61,19 @@
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
 				<wrapmultiline>true</wrapmultiline>
-				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
+				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile) + String.IsEmpty(ListItem.Property(fefc_people))</visible>
 				<!-- 0.3.22: Shuffle / Sort / Support Us art already carries the big centred label; no small duplicate -->
 				<!-- 0.4.2: label font shrunk (font10 -> font_tile_sm 17px) so long folder names fit fully; testing tile hides its label too -->
+			</control>
+			<!-- 0.5.0: Actors & Directors show just the last name, bigger (27px) and centred — the 17px full
+			     name was small and cut off. Only for people folders (fefc_people property). -->
+			<control type="label">
+				<left>10</left><top>30</top><width>245</width><height>102</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font12_title</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<label>$INFO[ListItem.Label]</label>
+				<visible>!String.IsEmpty(ListItem.Property(fefc_people))</visible>
 			</control>
 			<control type="image">
 				<width>265</width><height>138</height>
@@ -109,7 +119,10 @@
 	<include name="FefcSmallButton">
 		<texturenofocus border="26">fefc-tile.png</texturenofocus>
 		<texturefocus border="26">fefc-tile-focus.png</texturefocus>
-		<font>font12_title</font>
+		<!-- 0.5.0: the bar font (20px) lives here, not overridden per button — the per-button override
+		     was not reliably winning over this 27px font, so Update / Sound / Settings text rendered
+		     too wide for their buttons and got cut off (4th report). One font, one place. -->
+		<font>fefc_bar</font>
 		<textcolor>FFFFFFFF</textcolor>
 		<focusedcolor>FFFFFFFF</focusedcolor>
 		<align>center</align>

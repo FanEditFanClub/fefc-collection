@@ -737,7 +737,8 @@ class HomeWall(object):
     """OnLive-style Home background. 0.3.22: a 75 s 1280x720 seamless loop bundled in the APK (instant start; the
     still first frame is the skin background so there is never a blank wait). Two encodes: with the original FEFC
     ambience (intro.mp3 tail, ~-20 LUFS, TP -5.9 dBTP) and silent, picked by the SOUND toggle. Falls back to a
-    one-time download when the bundle is missing. Stopped as soon as Home is left or anything else wants the player."""
+    one-time download when the bundle is missing. 0.5.0: keeps playing off-Home (ambience audio never skips);
+    the video only shows on Home because only Home has a videowindow — other screens are audio-only, on black."""
     URL = BASE + '/assets/home-wall.mp4'
     LOOP = 75.0
 
@@ -818,29 +819,33 @@ class HomeWall(object):
                 cur = pl.getPlayingFile() if pl.isPlaying() else ''
             except Exception:
                 pass
-            if not at_home or (cur and 'home-wall' not in cur):
-                if 'home-wall' in cur:
-                    self.stop()
-                else:
-                    home.clearProperty('FEFC.Wall')   # something else took the player
-                    home.clearProperty('FEFC.WallSeam')
+            if cur and 'home-wall' not in cur:
+                # something else took the player (a real video) — wall is done
+                home.clearProperty('FEFC.Wall')
+                home.clearProperty('FEFC.WallSeam')
                 return
             if not cur:   # loop ended or failed: restart straight away
                 home.clearProperty('FEFC.Wall')
                 self.t_next = 0.0
-            else:
-                try:
-                    t = pl.getTime()
-                except Exception:
-                    t = 1.0
-                # hide the decoder restart behind the identical still frame
-                if t > self.LOOP - 0.6 or t < 0.35:
-                    home.setProperty('FEFC.WallSeam', '1')
-                else:
-                    home.clearProperty('FEFC.WallSeam')
-                if sound != self.cur_sound:   # SOUND toggled: swap encode, same position
-                    self._start(pl, sound, t)
                 return
+            if not at_home:
+                # 0.5.0: the wall keeps playing off-Home so the ambience audio never skips a beat.
+                # The video is hidden because only Home has a videowindow — other screens are audio-only.
+                # Do NOT stop it here (the old code stopped it the moment Home was left, so the audio
+                # cut out and restarted from the top every time you came back).
+                return
+            try:
+                t = pl.getTime()
+            except Exception:
+                t = 1.0
+            # hide the decoder restart behind the identical still frame
+            if t > self.LOOP - 0.6 or t < 0.35:
+                home.setProperty('FEFC.WallSeam', '1')
+            else:
+                home.clearProperty('FEFC.WallSeam')
+            if sound != self.cur_sound:   # SOUND toggled: swap encode, same position
+                self._start(pl, sound, t)
+            return
         if not at_home or pl.isPlaying() or home.getProperty('FEFC.PausedTitle') or time.time() < self.t_next:
             return
         if self.fails >= 3:
@@ -849,12 +854,13 @@ class HomeWall(object):
 
 
 class SkipIntro(xbmcgui.WindowDialog):
-    """Small overlay on the intro video: 'Skip intro' is focused, one press of OK goes straight to Home."""
+    """Small overlay on the intro video: 'Skip intro' is focused, one press of OK goes straight to Home.
+    0.5.0: bottom-right corner, low down — out of the way of the intro itself."""
 
     def __init__(self):
         super().__init__()
         self.done = False
-        self.btn = xbmcgui.ControlButton(960, 520, 280, 140, 'SKIP', font='font13_title', textColor='FFFFFFFF',
+        self.btn = xbmcgui.ControlButton(1544, 886, 280, 140, 'SKIP', font='font13_title', textColor='FFFFFFFF',
                                          focusedColor='FFFFFFFF', alignment=6,
                                          focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.btn)

@@ -2,28 +2,31 @@
 <!-- FEFC home: 3x3 tile menu like the Fan Edit Fan Club web app home. Everything sits inside a 5% TV-safe margin (96..1824 x 54..1026). -->
 <window>
 	<defaultcontrol>9005</defaultcontrol>
-	<backgroundcolor>background</backgroundcolor>
+	<backgroundcolor>FF000000</backgroundcolor>
 	<onload condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">SetFocus(9021)</onload>
 	<controls>
-		<control type="image">
-			<left>0</left><top>0</top><width>1920</width><height>1080</height>
-			<texture fallback="fefc-bg.jpg">fefc-wall-still.jpg</texture>
-			<aspectratio>scale</aspectratio>
+		<!-- 0.5.0: black background everywhere; the wall video now lives in two small corner windows
+		     (bottom-left and bottom-right), clear of the centred bottom menu bar — nothing behind it. -->
+		<control type="videowindow">
+			<left>96</left><top>858</top><width>224</width><height>126</height>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
 		</control>
 		<control type="videowindow">
-			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<left>1600</left><top>858</top><width>224</width><height>126</height>
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
 		</control>
 		<!-- 0.3.22: still frame covers the loop seam (service sets FEFC.WallSeam for ~0.4s around the restart) -->
 		<control type="image">
-			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<left>96</left><top>858</top><width>224</width><height>126</height>
 			<texture fallback="fefc-bg.jpg">fefc-wall-still.jpg</texture>
 			<aspectratio>scale</aspectratio>
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.WallSeam))</visible>
 		</control>
 		<control type="image">
-			<left>0</left><top>0</top><width>1920</width><height>1080</height>
-			<texture colordiffuse="66000000">colors/white.png</texture>
+			<left>1600</left><top>858</top><width>224</width><height>126</height>
+			<texture fallback="fefc-bg.jpg">fefc-wall-still.jpg</texture>
+			<aspectratio>scale</aspectratio>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.WallSeam))</visible>
 		</control>
 		<!-- 0.4.0: top band removed (it covered the corner mosaic tiles); the wall has no tiles behind the title -->
 		<!-- 0.3.22: solid black behind the 3x3 grid, so the mosaic video only shows around it -->

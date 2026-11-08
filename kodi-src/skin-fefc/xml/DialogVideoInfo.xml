@@ -2,15 +2,12 @@
 <!-- FEFC details page: everything is inside the 5% TV-safe margin (96..1824 x 54..1026); long text scrolls instead of being cut off. -->
 <window>
 	<defaultcontrol always="true">8</defaultcontrol>
+	<!-- 0.5.0: black background on every screen -->
+	<backgroundcolor>FF000000</backgroundcolor>
 	<controls>
 		<control type="image">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
 			<texture colordiffuse="E6000000">colors/white.png</texture>
-		</control>
-		<control type="image">
-			<left>0</left><top>0</top><width>1920</width><height>1080</height>
-			<texture colordiffuse="55FFFFFF">$INFO[ListItem.Art(fanart)]</texture>
-			<aspectratio>scale</aspectratio>
 		</control>
 		<control type="group">
 			<include>FefcContentZoom</include>

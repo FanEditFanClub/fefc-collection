@@ -16,7 +16,14 @@ CTA = (
 )
 
 
-_URL_RE = re.compile(r'https?://\S+|www\.\S+', re.I)
+_URL_RE = re.compile(
+    r'https?://\S+'
+    r'|www\.\S+'
+    # 0.5.0: bare domains too — feed titles carry discord.gg/…, x.com/…, faneditfanclub.com, bit.ly/…
+    # and the like, which the old http/www-only pattern left in the ticker. The Join CTAs keep their
+    # short discord.gg invite because _cta() builds them without _clean().
+    r'|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|gg|io|co|me|ly|be|fm|to|cc|tv|link|site|club|live|app|info|us|uk|ca|au|de|fr|es|it|nl|ru|br|jp|kr|cn|in|dev|xyz|online)\b(?:/\S*)?',
+    re.I)
 
 
 def _clean(text):

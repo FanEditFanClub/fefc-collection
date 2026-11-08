@@ -251,6 +251,24 @@ def make_textures(media):
     # 0.4.2: generic video tile for the non-Google provider items (Testing folder) — they are video
     # files and links, not documents, so they no longer show the DOCUMENT tile.
     land_tile(['VIDEO'], 'fefc-video-tile.png')
+    # 0.5.0: portrait VIDEO poster for Testing-folder video files — they render in the portrait poster
+    # grid (view 501), so a landscape tile would be squashed. 2:3 like the poster slot (222x333).
+    def portrait_tile(lines, name):
+        w, h, m = 440, 660, 24
+        im = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        body = Image.new('RGBA', (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(body)
+        d.rounded_rectangle((m, m, w - m - 1, h - m - 1), 18, fill=(0, 0, 0, 255), outline=(110, 114, 120, 255), width=3)
+        gl3 = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+        ImageDraw.Draw(gl3).rounded_rectangle((m + 4, m + 4, w - m - 5, h // 2), 14, fill=(255, 255, 255, 22))
+        body = Image.alpha_composite(body, gl3); d = ImageDraw.Draw(body)
+        y = (h // 2) - 40
+        for i, t in enumerate(lines):
+            f = font_tile if i == 0 else font_sub
+            col = (255, 255, 255, 255) if i == 0 else (200, 205, 215, 255)
+            bb = d.textbbox((0, 0), t, font=f); tw = bb[2] - bb[0]
+            d.text(((w - tw) / 2, y), t, fill=col, font=f); y += 60 if i == 0 else 40
+        Image.alpha_composite(im, body).save(media / name)
+    portrait_tile(['VIDEO'], 'fefc-video-poster.png')
 
     shutil.copy(ROOT / 'assets' / 'fefc-logo.png', media / 'fefc-logo.png')
     shutil.copy(ROOT / 'assets' / 'fefc-wordmark.png', media / 'fefc-wordmark.png')

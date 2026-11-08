@@ -1,6 +1,18 @@
 {
  "versions": [
   {
+   "version": "0.5.0 Beta",
+   "date": "2026-11-07",
+   "notes": [
+    "Skip Intro button moved to the bottom-right corner, low down and out of the way.",
+    "Bottom menu buttons: text no longer cut off \u2014 the bar font now lives in one place (the old per-button override was not reliably winning).",
+    "Home background video now plays in the bottom-left and bottom-right corners, clear of the bottom menu bar; every screen has a black background. The ambience audio keeps playing smoothly on all screens \u2014 the video is hidden off-Home, not stopped.",
+    "News ticker strips bare-domain links too (discord.gg, x.com, faneditfanclub.com, bit.ly and the like), not just http:// and www. links.",
+    "Testing folder video files now show as portrait posters with a proper video poster, not landscape cards.",
+    "Actors & Directors folders show just the last name, bigger and centred, so it is easy to read and never cut off."
+   ]
+  },
+  {
    "version": "0.4.4 Beta",
    "date": "2026-11-07",
    "notes": [

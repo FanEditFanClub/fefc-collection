@@ -3,14 +3,10 @@
      0.3.22: every grid is 6 tiles wide. View 500: landscape tiles (collections, genres). View 501: portrait posters (video files). -->
 <window id="25">
 	<defaultcontrol always="true">500</defaultcontrol>
-	<backgroundcolor>background</backgroundcolor>
+	<!-- 0.5.0: black background on every screen -->
+	<backgroundcolor>FF000000</backgroundcolor>
 	<views>500,501</views>
 	<controls>
-		<control type="image">
-			<left>0</left><top>0</top><width>1920</width><height>1080</height>
-			<texture>fefc-bg.jpg</texture>
-			<aspectratio>scale</aspectratio>
-		</control>
 		<control type="group">
 			<include>FefcContentZoom</include>
 		<control type="image">
