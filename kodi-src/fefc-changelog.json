@@ -1,6 +1,17 @@
 {
  "versions": [
   {
+   "version": "0.5.5 Beta",
+   "date": "2026-11-09",
+   "notes": [
+    "Home mosaic is a full 5x5 of equal tiles: five across the top, five across the bottom, and five down each side including the corners. The centre 3x3 menu matches those cells. The corner tiles are no longer cropped.",
+    "Tapping outside the menu stays on Home. It does not open the background video full screen or restart the screen.",
+    "SKIP appears about 3 seconds into the intro, already focused, so one Select skips to Home. It can also be tapped.",
+    "Search, Settings, Sound and the update label fit on the bottom bar at TV and phone sizes.",
+    "The news ticker moves in one continuous slide, with the same icons and posts, and does not step forward on a timer while the mosaic is playing."
+   ]
+  },
+  {
    "version": "0.5.4 Beta",
    "date": "2026-11-08",
    "notes": [

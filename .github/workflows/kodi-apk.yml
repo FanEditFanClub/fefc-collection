@@ -73,7 +73,7 @@ jobs:
           apk = 'kodi-%s-%s-armeabi-v7a.apk' % (ver, code)
           # hash of everything that goes into the app besides stock Kodi
           h = hashlib.sha256()
-          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'tools/build_kodi_skin.py', 'tools/kodi_navsfx.py', 'assets/sfx/ui-back.wav', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png'):
+          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'tools/build_kodi_skin.py', 'tools/kodi_navsfx.py', 'tools/home_layout.py', 'assets/sfx/ui-back.wav', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png', 'assets/home-wall.mp4', 'assets/home-wall-silent.mp4', 'assets/home-wall-still.jpg'):
               paths = [base] if os.path.isfile(base) else [os.path.join(d, f) for d, _, fs in os.walk(base) for f in fs]
               for p in sorted(paths):
                   h.update(p.encode()); h.update(open(p, 'rb').read())

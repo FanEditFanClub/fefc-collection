@@ -1,59 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- FEFC home: 3x3 tile menu like the Fan Edit Fan Club web app home. Everything sits inside a 5% TV-safe margin (96..1824 x 54..1026). -->
+<!-- FEFC home. 5x5 lattice (tools/home_layout.py): centre 3x3 menu, 16 equal video cells around it. -->
 <window>
 	<defaultcontrol>9005</defaultcontrol>
 	<backgroundcolor>FF000000</backgroundcolor>
 	<onload condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">SetFocus(9021)</onload>
+	<onload condition="!String.IsEmpty(Window(Home).Property(FEFC.Skip))">SetFocus(9040)</onload>
 	<controls>
-		<!-- Full-frame mosaic. The black panel below covers the 3x3 so clips only show in the margins. -->
 		<control type="image">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
 			<texture fallback="fefc-bg.jpg">fefc-wall-still.jpg</texture>
-			<aspectratio>scale</aspectratio>
+			<aspectratio>stretch</aspectratio>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 		</control>
 		<control type="videowindow">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
+			<visible>Player.HasVideo + [!String.IsEmpty(Window(Home).Property(FEFC.Wall)) | !String.IsEmpty(Window(Home).Property(FEFC.Intro))]</visible>
 		</control>
-		<!-- Tap guard sits above the video and below the tiles, so a tap on the mosaic does not fullscreen it. -->
-		<control type="image">
+		<!-- Eats taps that would otherwise hit the videowindow and send it fullscreen (black flash, wall restart). -->
+		<control type="button" id="9049">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
-			<texture colordiffuse="01FFFFFF">fefc-white.png</texture>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
+			<label></label>
+			<font>fefc_bar</font>
+			<texturenofocus colordiffuse="00FFFFFF">fefc-white.png</texturenofocus>
+			<texturefocus colordiffuse="00FFFFFF">fefc-white.png</texturefocus>
+			<onfocus condition="!String.IsEmpty(Window(Home).Property(FEFC.Skip))">SetFocus(9040)</onfocus>
+			<onfocus condition="String.IsEmpty(Window(Home).Property(FEFC.Intro))">SetFocus(9005)</onfocus>
+			<onleft condition="!String.IsEmpty(Window(Home).Property(FEFC.Skip))">9040</onleft>
+			<onleft condition="String.IsEmpty(Window(Home).Property(FEFC.Intro))">9005</onleft>
+			<onleft>9049</onleft>
+			<onright condition="!String.IsEmpty(Window(Home).Property(FEFC.Skip))">9040</onright>
+			<onright condition="String.IsEmpty(Window(Home).Property(FEFC.Intro))">9005</onright>
+			<onright>9049</onright>
+			<onup condition="!String.IsEmpty(Window(Home).Property(FEFC.Skip))">9040</onup>
+			<onup condition="String.IsEmpty(Window(Home).Property(FEFC.Intro))">9005</onup>
+			<onup>9049</onup>
+			<ondown condition="!String.IsEmpty(Window(Home).Property(FEFC.Skip))">9040</ondown>
+			<ondown condition="String.IsEmpty(Window(Home).Property(FEFC.Intro))">9005</ondown>
+			<ondown>9049</ondown>
 		</control>
 		<control type="image">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
 			<texture fallback="fefc-bg.jpg">fefc-wall-still.jpg</texture>
-			<aspectratio>scale</aspectratio>
-			<visible>!String.IsEmpty(Window(Home).Property(FEFC.WallSeam))</visible>
+			<aspectratio>stretch</aspectratio>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.WallSeam)) + String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 		</control>
-		<!-- 0.4.0: top band removed (it covered the corner mosaic tiles); the wall has no tiles behind the title -->
-		<!-- 0.3.22: solid black behind the 3x3 grid, so the mosaic video only shows around it -->
+		<!-- Centre 3x3 only. Corner and edge cells stay visible. -->
 		<control type="image">
-			<left>324</left><top>192</top><width>1272</width><height>664</height>
+			<left>400</left><top>225</top><width>1120</width><height>630</height>
 			<texture colordiffuse="FF000000">colors/white.png</texture>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 		</control>
-		<!-- Wordmark + tagline -->
 		<control type="image">
-			<left>680</left><top>54</top><width>520</width><height>76</height>
+			<left>410</left><top>8</top><width>1100</width><height>156</height>
+			<texture colordiffuse="C0000000">colors/white.png</texture>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
+		</control>
+		<control type="image">
+			<left>680</left><top>22</top><width>560</width><height>70</height>
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 		</control>
-		<!-- 0.5.1: tagline moved down (134 -> 152) — it sat 4px under the wordmark with a 42px empty
-		     gap below it; now it sits centred in the gap between wordmark and tile grid. -->
 		<control type="label">
-			<left>96</left><top>152</top><width>1728</width><height>36</height>
+			<left>410</left><top>100</top><width>1100</width><height>40</height>
 			<align>center</align><aligny>center</aligny>
 			<font>font12_title</font>
 			<textcolor>FF99CCFF</textcolor>
+			<shadowcolor>FF000000</shadowcolor>
 			<label>A Community for Creators, Editors &amp; Fans dedicated to the art of The Fan Edit.</label>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 		</control>
 
-		<!-- 3 x 3 tiles, same order as the web app home -->
 		<control type="group" id="9000">
-			<left>348</left><top>212</top>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 			<control type="button" id="9001">
-				<left>0</left><top>0</top><width>400</width><height>200</height>
+				<left>400</left><top>225</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label>READ ME</label>
 				<wrapmultiline>true</wrapmultiline>
@@ -61,7 +82,7 @@
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=readme)</onclick>
 			</control>
 			<control type="button" id="9002">
-				<left>412</left><top>0</top><width>400</width><height>200</height>
+				<left>784</left><top>225</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label>NEW ARRIVALS</label>
 				<wrapmultiline>true</wrapmultiline>
@@ -69,7 +90,7 @@
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent,return)</onclick>
 			</control>
 			<control type="button" id="9003">
-				<left>824</left><top>0</top><width>400</width><height>200</height>
+				<left>1168</left><top>225</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label>SUPPORT US</label>
 				<wrapmultiline>true</wrapmultiline>
@@ -77,51 +98,47 @@
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=support)</onclick>
 			</control>
 			<control type="button" id="9004">
-				<left>0</left><top>212</top><width>400</width><height>200</height>
+				<left>400</left><top>441</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label></label>
-				<wrapmultiline>true</wrapmultiline>
 				<onleft>9006</onleft><onright>9005</onright><onup>9001</onup><ondown>9007</ondown>
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder&amp;id=1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB,return)</onclick>
 			</control>
 			<control type="button" id="9005">
-				<left>412</left><top>212</top><width>400</width><height>200</height>
+				<left>784</left><top>441</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label></label>
-				<wrapmultiline>true</wrapmultiline>
 				<onleft>9004</onleft><onright>9006</onright><onup>9002</onup><ondown>9008</ondown>
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder,return)</onclick>
 			</control>
 			<control type="image">
-				<left>412</left><top>223</top><width>400</width><height>101</height>
+				<left>810</left><top>451</top><width>300</width><height>84</height>
 				<texture>fefc-logo.png</texture>
 				<aspectratio>keep</aspectratio>
 			</control>
 			<control type="label">
-				<left>412</left><top>324</top><width>400</width><height>42</height>
+				<left>792</left><top>534</top><width>336</width><height>40</height>
 				<align>center</align><aligny>center</aligny>
 				<font>font12_title</font>
 				<textcolor>FFFF9C00</textcolor>
 				<label>MAIN COLLECTION</label>
 			</control>
 			<control type="button" id="9006">
-				<left>824</left><top>212</top><width>400</width><height>200</height>
+				<left>1168</left><top>441</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label></label>
-				<wrapmultiline>true</wrapmultiline>
 				<onleft>9005</onleft><onright>9004</onright><onup>9003</onup><ondown>9009</ondown>
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder&amp;id=1503Wl56hzRppaIFcQisvQksOaeYOEjnk,return)</onclick>
 			</control>
 			<control type="button" id="9007">
-				<left>0</left><top>424</top><width>400</width><height>200</height>
+				<left>400</left><top>657</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label></label>
-				<wrapmultiline>true</wrapmultiline>
 				<onleft>9009</onleft><onright>9008</onright><onup>9004</onup><ondown>9100</ondown>
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=people,return)</onclick>
 			</control>
 			<control type="button" id="9008">
-				<left>412</left><top>424</top><width>400</width><height>200</height>
+				<left>784</left><top>657</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label>MY LIST</label>
 				<wrapmultiline>true</wrapmultiline>
@@ -129,7 +146,7 @@
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=mylist,return)</onclick>
 			</control>
 			<control type="button" id="9009">
-				<left>824</left><top>424</top><width>400</width><height>200</height>
+				<left>1168</left><top>657</top><width>352</width><height>198</height>
 				<include>FefcTile</include>
 				<label>GENRES</label>
 				<wrapmultiline>true</wrapmultiline>
@@ -137,189 +154,181 @@
 				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=genres,return)</onclick>
 			</control>
 			<control type="label">
-				<left>9</left><top>359</top><width>382</width><height>38</height>
-				<align>center</align><aligny>center</aligny>
-				<font>font10</font>
-				<textcolor>FF99CCFF</textcolor>
-				<label>$INFO[Window(Home).Property(FEFC.Cnt.Collections)]</label>
-			</control>
-			<control type="label">
-				<left>833</left><top>359</top><width>382</width><height>38</height>
-				<align>center</align><aligny>center</aligny>
-				<font>font10</font>
-				<textcolor>FF99CCFF</textcolor>
-				<label>$INFO[Window(Home).Property(FEFC.Cnt.TBC)]</label>
-			</control>
-			<control type="label">
-				<left>9</left><top>571</top><width>382</width><height>38</height>
-				<align>center</align><aligny>center</aligny>
-				<font>font10</font>
-				<textcolor>FF99CCFF</textcolor>
-				<label>$INFO[Window(Home).Property(FEFC.Cnt.People)]</label>
-			</control>
-			<control type="label">
-				<left>421</left><top>571</top><width>382</width><height>38</height>
-				<align>center</align><aligny>center</aligny>
-				<font>font10</font>
-				<textcolor>FF99CCFF</textcolor>
-				<label>$INFO[Window(Home).Property(FEFC.Cnt.MyList)]</label>
-			</control>
-			<control type="label">
-				<left>833</left><top>571</top><width>382</width><height>38</height>
-				<align>center</align><aligny>center</aligny>
-				<font>font10</font>
-				<textcolor>FF99CCFF</textcolor>
-				<label>$INFO[Window(Home).Property(FEFC.Cnt.Genres)]</label>
-			</control>
-			<control type="label">
-				<left>421</left><top>366</top><width>382</width><height>38</height>
-				<align>center</align><aligny>center</aligny>
-				<font>font10</font>
-				<textcolor>FF99CCFF</textcolor>
-				<label>$INFO[Window(Home).Property(FEFC.Cnt.Main)]</label>
-			</control>
-			<control type="label">
-				<left>20</left><top>218</top><width>360</width><height>140</height>
+				<left>408</left><top>449</top><width>336</width><height>130</height>
 				<align>center</align><aligny>center</aligny><wrapmultiline>true</wrapmultiline>
 				<font>font11_tile</font><textcolor>FFFFFFFF</textcolor>
 				<label>FAN EDIT COLLECTIONS</label>
-				<animation effect="zoom" start="100" end="104" time="160" tween="sine" easing="inout" center="200,312" condition="Control.HasFocus(9004)">Conditional</animation>
+				<animation effect="zoom" start="100" end="104" time="160" tween="sine" easing="inout" center="576,540" condition="Control.HasFocus(9004)">Conditional</animation>
 			</control>
 			<control type="label">
-				<left>844</left><top>218</top><width>360</width><height>140</height>
+				<left>1176</left><top>449</top><width>336</width><height>130</height>
 				<align>center</align><aligny>center</aligny><wrapmultiline>true</wrapmultiline>
 				<font>font11_tile</font><textcolor>FFFFFFFF</textcolor>
 				<label>TO BE CATALOGUED</label>
-				<animation effect="zoom" start="100" end="104" time="160" tween="sine" easing="inout" center="1024,312" condition="Control.HasFocus(9006)">Conditional</animation>
+				<animation effect="zoom" start="100" end="104" time="160" tween="sine" easing="inout" center="1344,540" condition="Control.HasFocus(9006)">Conditional</animation>
 			</control>
 			<control type="label">
-				<left>20</left><top>430</top><width>360</width><height>140</height>
+				<left>408</left><top>665</top><width>336</width><height>130</height>
 				<align>center</align><aligny>center</aligny><wrapmultiline>true</wrapmultiline>
 				<font>font11_tile</font><textcolor>FFFFFFFF</textcolor>
 				<label>ACTORS &amp; DIRECTORS</label>
-				<animation effect="zoom" start="100" end="104" time="160" tween="sine" easing="inout" center="200,524" condition="Control.HasFocus(9007)">Conditional</animation>
+				<animation effect="zoom" start="100" end="104" time="160" tween="sine" easing="inout" center="576,756" condition="Control.HasFocus(9007)">Conditional</animation>
 			</control>
 			<control type="image">
-				<left>595</left><top>446</top><width>34</width><height>34</height>
+				<left>1084</left><top>667</top><width>28</width><height>28</height>
 				<texture>fefc-star.png</texture><aspectratio>keep</aspectratio>
+			</control>
+			<control type="label">
+				<left>408</left><top>591</top><width>336</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font><textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.Collections)]</label>
+			</control>
+			<control type="label">
+				<left>1176</left><top>591</top><width>336</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font><textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.TBC)]</label>
+			</control>
+			<control type="label">
+				<left>408</left><top>807</top><width>336</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font><textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.People)]</label>
+			</control>
+			<control type="label">
+				<left>792</left><top>807</top><width>336</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font><textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.MyList)]</label>
+			</control>
+			<control type="label">
+				<left>1176</left><top>807</top><width>336</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font><textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.Genres)]</label>
+			</control>
+			<control type="label">
+				<left>792</left><top>591</top><width>336</width><height>36</height>
+				<align>center</align><aligny>center</aligny>
+				<font>font10</font><textcolor>FF99CCFF</textcolor>
+				<label>$INFO[Window(Home).Property(FEFC.Cnt.Main)]</label>
 			</control>
 		</control>
 
-		<!-- bottom-centre menu bar (like OnLive's hint bar): dark rounded bar with key-cap style buttons -->
+		<!-- Kodi insets button text by textoffsetx on BOTH sides, so icon buttons are wide enough that width - 2*36 still fits the word at fefc_bar 22px. -->
 		<control type="image">
-			<left>348</left><top>866</top><width>1224</width><height>84</height>
-			<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
+			<left>387</left><top>886</top><width>1146</width><height>64</height>
+			<texture border="32" colordiffuse="E6101418">fefc-lc-pill.png</texture>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 		</control>
 		<control type="grouplist" id="9100">
-			<left>348</left><top>878</top><width>1224</width><height>60</height><align>center</align>
+			<left>387</left><top>892</top><width>1146</width><height>52</height><align>center</align>
 			<orientation>horizontal</orientation>
-			<align>center</align>
 			<itemgap>4</itemgap>
 			<onup>9008</onup><onleft>9100</onleft><onright>9100</onright>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 			<control type="group">
-				<width>124</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+				<width>120</width><height>52</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 				<control type="button" id="9021">
-					<left>0</left><top>0</top><width>124</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
+					<left>0</left><top>0</top><width>120</width><height>52</height>
+					<include>FefcBarButton</include>
 					<label>RESUME</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>ActivateWindow(fullscreenvideo)</onclick>
 				</control>
-
 			</control>
 			<control type="group">
-				<width>88</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+				<width>90</width><height>52</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 				<control type="button" id="9022">
-					<left>0</left><top>0</top><width>88</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
+					<left>0</left><top>0</top><width>90</width><height>52</height>
+					<include>FefcBarButton</include>
 					<label>STOP</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>PlayerControl(Stop)</onclick>
 				</control>
-
 			</control>
 			<control type="group">
-				<width>160</width><height>60</height>
+				<width>165</width><height>52</height>
 				<control type="button" id="9031">
-					<left>0</left><top>0</top><width>160</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
-					<textoffsetx>46</textoffsetx><align>left</align>
+					<left>0</left><top>0</top><width>165</width><height>52</height>
+					<include>FefcBarIconButton</include>
 					<label>SEARCH</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
 				</control>
-				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+				<control type="image"><left>8</left><top>14</top><width>24</width><height>24</height><texture>fefc-ic-search.png</texture></control>
 			</control>
 			<control type="group">
-				<width>204</width><height>60</height>
+				<width>208</width><height>52</height>
 				<control type="button" id="9032">
-					<left>0</left><top>0</top><width>204</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
-					<textoffsetx>46</textoffsetx><align>left</align>
+					<left>0</left><top>0</top><width>208</width><height>52</height>
+					<include>FefcBarIconButton</include>
 					<label>$VAR[FefcSoundLabel]</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
 				</control>
-				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
-				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>8</left><top>14</top><width>24</width><height>24</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>8</left><top>14</top><width>24</width><height>24</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 			</control>
 			<control type="group">
-				<width>176</width><height>60</height>
+				<width>185</width><height>52</height>
 				<control type="button" id="9033">
-					<left>0</left><top>0</top><width>176</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
-					<textoffsetx>46</textoffsetx><align>left</align>
+					<left>0</left><top>0</top><width>185</width><height>52</height>
+					<include>FefcBarIconButton</include>
 					<label>SETTINGS</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 				</control>
-				<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+				<control type="image"><left>8</left><top>14</top><width>24</width><height>24</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 			<control type="group">
-				<width>112</width><height>60</height>
+				<width>104</width><height>52</height>
 				<control type="button" id="9034">
-					<left>0</left><top>0</top><width>112</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
+					<left>0</left><top>0</top><width>104</width><height>52</height>
+					<include>FefcBarButton</include>
 					<label>ABOUT</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
 				</control>
-
 			</control>
 			<control type="group">
-				<!-- "Checking for updates" at fefc_bar 20px. 124+88+160+204+176+112+276 = 1140, plus 6*4 gap = 1164 of 1224. -->
-				<width>276</width><height>60</height>
+				<width>250</width><height>52</height>
 				<control type="button" id="9023">
-					<left>0</left><top>0</top><width>276</width><height>60</height>
-					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
+					<left>0</left><top>0</top><width>250</width><height>52</height>
+					<include>FefcBarButton</include>
 					<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
 					<onup>9008</onup><ondown>9008</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
 				</control>
-
 			</control>
 		</control>
 		<control type="label">
-			<left>96</left><top>954</top><width>1728</width><height>26</height>
+			<left>96</left><top>956</top><width>1728</width><height>26</height>
 			<align>center</align><aligny>center</aligny>
 			<font>font10</font>
 			<textcolor>FFB8C2CC</textcolor>
 			<label>[COLOR FFFF9C00][B][ OK ][/B][/COLOR] Select     [COLOR FFFF9C00][B][ BACK ][/B][/COLOR] Return     [COLOR FFFF9C00][B][ MENU ][/B][/COLOR] Options</label>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 		</control>
 		<include>FefcTicker</include>
-		<!-- Kodi Foundation notice is in About only, not under the ticker. -->
-		<!-- black splash: hides the home screen until the FEFC intro has played (service sets FEFC.Ready) -->
+		<control type="button" id="9040">
+			<left>1504</left><top>880</top><width>280</width><height>110</height>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Skip))</visible>
+			<texturenofocus border="16">fefc-ol-tile.png</texturenofocus>
+			<texturefocus border="16">fefc-ol-focus.png</texturefocus>
+			<font>font13_title</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<label>SKIP</label>
+			<onclick>PlayerControl(Stop)</onclick>
+			<onleft>9040</onleft><onright>9040</onright><onup>9040</onup><ondown>9040</ondown>
+		</control>
 		<control type="image">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
 			<texture colordiffuse="FF000000">colors/white.png</texture>
-			<visible>String.IsEmpty(Window(Home).Property(FEFC.Ready))</visible>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Ready)) + String.IsEmpty(Window(Home).Property(FEFC.Intro))</visible>
 			<animation effect="fade" start="100" end="0" time="200" delay="180000" condition="String.IsEmpty(Window(Home).Property(FEFC.Ready))">Conditional</animation>
 		</control>
 		<include content="FefcTopBar"><param name="down" value="9005"/><param name="up" value="9100"/></include>
