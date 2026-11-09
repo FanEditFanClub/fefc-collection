@@ -50,20 +50,19 @@
 				<aspectratio scalediffuse="false">keep</aspectratio>
 			</control>
 			<control type="image">
-				<left>5</left><top>58</top><width>255</width><height>75</height>
-				<texture>fefc-shade.png</texture>
+				<left>5</left><top>5</top><width>255</width><height>128</height>
+				<texture>fefc-white.png</texture>
+				<colordiffuse>8C000000</colordiffuse>
 				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
 			</control>
-			<!-- Collection and people names: centred, wrapping, no count badge. Baked-art tools keep their picture text. -->
-			<control type="label">
-				<left>8</left><top>8</top><width>249</width><height>122</height>
-				<align>center</align><aligny>center</aligny>
+			<!-- A label control ellipsizes in a panel even with wrapmultiline. A textbox wraps the full name. -->
+			<control type="textbox">
+				<left>10</left><top>22</top><width>245</width><height>100</height>
+				<align>center</align>
 				<font>font_folder</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<shadowcolor>FF000000</shadowcolor>
 				<label>$INFO[ListItem.Label]</label>
-				<wrapmultiline>true</wrapmultiline>
-				<scroll>$PARAM[scroll]</scroll>
 				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
 			</control>
 			<control type="image">
@@ -73,7 +72,6 @@
 			</control>
 		</definition>
 		<param name="focused" default="false" />
-		<param name="scroll" default="false" />
 	</include>
 	<!-- Portrait poster tile for video files (slot 242x425): poster 222x333, two-line title below -->
 	<include name="FefcPosterTile">
@@ -155,14 +153,14 @@
 		<control type="group">
 			<visible>!Window.IsActive(home) + !Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</visible>
 			<control type="image">
-				<left>348</left><top>866</top><width>1224</width><height>84</height>
+				<left>110</left><top>866</top><width>1700</width><height>84</height>
 				<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
 			</control>
 			<!-- Fixed coordinates. Nested grouplist groups were collapsing HOME to the icon and the letter H. -->
 			<control type="group">
-				<left>348</left><top>878</top>
+				<left>110</left><top>878</top>
 				<control type="button" id="9295">
-					<left>8</left><top>0</top><width>112</width><height>60</height>
+					<left>16</left><top>0</top><width>170</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<label>RESUME</label>
 					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
@@ -171,7 +169,7 @@
 					<onclick>ActivateWindow(fullscreenvideo)</onclick>
 				</control>
 				<control type="button" id="9296">
-					<left>128</left><top>0</top><width>80</width><height>60</height>
+					<left>194</left><top>0</top><width>140</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<label>STOP</label>
 					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
@@ -181,51 +179,51 @@
 				</control>
 			</control>
 			<control type="group">
-				<left>348</left><top>878</top>
-				<animation effect="slide" end="106,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
+				<left>110</left><top>878</top>
+				<animation effect="slide" end="165,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
 				<control type="button" id="9290">
-					<left>179</left><top>0</top><width>200</width><height>60</height>
+					<left>348</left><top>0</top><width>220</width><height>60</height>
 					<include>FefcSmallButton</include>
-					<textoffsetx>46</textoffsetx><align>left</align>
+					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>HOME</label>
 					<onleft condition="Control.IsVisible(9296)">9296</onleft><onleft>9292</onleft>
 					<onright>9291</onright>
 					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>ActivateWindow(Home)</onclick>
 				</control>
-				<control type="image"><left>191</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
+				<control type="image"><left>364</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
 				<control type="button" id="9291">
-					<left>391</left><top>0</top><width>190</width><height>60</height>
+					<left>576</left><top>0</top><width>220</width><height>60</height>
 					<include>FefcSmallButton</include>
-					<textoffsetx>46</textoffsetx><align>left</align>
+					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>SEARCH</label>
 					<onleft>9290</onleft><onright>9294</onright>
 					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
 				</control>
-				<control type="image"><left>403</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+				<control type="image"><left>592</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 				<control type="button" id="9294">
-					<left>593</left><top>0</top><width>230</width><height>60</height>
+					<left>804</left><top>0</top><width>270</width><height>60</height>
 					<include>FefcSmallButton</include>
-					<textoffsetx>46</textoffsetx><align>left</align>
+					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>$VAR[FefcSoundLabel]</label>
 					<onleft>9291</onleft><onright>9292</onright>
 					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
 				</control>
-				<control type="image"><left>605</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
-				<control type="image"><left>605</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>820</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>820</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 				<control type="button" id="9292">
-					<left>835</left><top>0</top><width>210</width><height>60</height>
+					<left>1082</left><top>0</top><width>250</width><height>60</height>
 					<include>FefcSmallButton</include>
-					<textoffsetx>46</textoffsetx><align>left</align>
+					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>SETTINGS</label>
 					<onleft>9294</onleft>
 					<onright condition="Control.IsVisible(9295)">9295</onright><onright>9290</onright>
 					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 				</control>
-				<control type="image"><left>847</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+				<control type="image"><left>1098</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 		</control>
 		</definition>

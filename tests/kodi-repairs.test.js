@@ -172,7 +172,8 @@ print('ok', x, y, w, h)
   assert.match(home, /<control type="videowindow">\s*<left>0<\/left><top>0<\/top><width>1920<\/width><height>1080<\/height>/);
   assert.match(home, /<label>ABOUT<\/label>/);
   assert.match(home, /FEFC\.UpdateLabel/);
-  assert.match(home, /<width>280<\/width>/);
+  assert.match(home, /id="9031"[\s\S]{0,180}<width>220<\/width>/);
+  assert.match(home, /<width>360<\/width>/);
   assert.match(home, /id="8990"/);
   assert.match(home, /<label>ACTORS &amp;<\/label>/);
   assert.match(home, /<label>DIRECTORS<\/label>/);
@@ -183,7 +184,10 @@ print('ok', x, y, w, h)
   assert.match(skin, /<label>HOME<\/label>/);
   assert.match(skin, /<label>SEARCH<\/label>/);
   assert.match(skin, /<label>SETTINGS<\/label>/);
-  assert.match(skin, /id="9290"[\s\S]{0,220}<width>200<\/width>/);
+  assert.match(skin, /id="9290"[\s\S]{0,220}<width>220<\/width>/);
+  const keep = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Custom_11191_WallKeep.xml'), 'utf8');
+  assert.match(keep, /id="11191"/);
+  assert.match(keep, /videowindow/);
   assert.match(skin, /<font>font_folder<\/font>/);
   assert.match(skin, /<scroll>true<\/scroll>/);
   assert.match(skin, /<scrollspeed>48<\/scrollspeed>/);

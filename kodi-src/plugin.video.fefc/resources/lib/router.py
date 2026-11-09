@@ -194,6 +194,23 @@ def _url(handle_url, **kw):
     return handle_url + '?' + urlencode(kw)
 
 
+def _play_queue(entries, note):
+    """Start playback after the plugin call has returned. Player.play while Kodi's busy dialog is up aborts the app."""
+    def go():
+        xbmc.sleep(500)
+        pl = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        pl.clear()
+        for url, title in entries:
+            li = xbmcgui.ListItem(title, path=url)
+            li.getVideoInfoTag().setTitle(title)
+            li.setProperty('IsPlayable', 'true')
+            li.setProperty('fefc_kind', 'video')
+            pl.add(url, li)
+        xbmcgui.Dialog().notification('FEFC', note, xbmcgui.NOTIFICATION_INFO, 3000)
+        xbmc.Player().play(pl)
+    threading.Thread(target=go, daemon=True).start()
+
+
 class Router:
     def __init__(self, argv):
         self.url = argv[0]
@@ -720,25 +737,18 @@ class Router:
                 continue
             seen.add(i)
             vids.append(i)
+        _log('mylist shuffle ids=%d videos=%d' % (len(ml.ids()), len(vids)))
         if not vids:
             xbmcgui.Dialog().notification('FEFC', 'No starred videos to shuffle.', xbmcgui.NOTIFICATION_INFO, 3000)
             if self.handle >= 0:
                 xbmcplugin.endOfDirectory(self.handle, succeeded=False)
             return
         pick = random.sample(vids, min(25, len(vids)))
-        pl = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        pl.clear()
-        for v in pick:
-            t = catalog.display_title(m['items'][v][0])
-            li = xbmcgui.ListItem(t, path=_url('plugin://plugin.video.fefc/', action='play', id=v))
-            li.getVideoInfoTag().setTitle(t)
-            li.setProperty('IsPlayable', 'true')
-            li.setProperty('fefc_kind', 'video')
-            pl.add(_url('plugin://plugin.video.fefc/', action='play', id=v), li)
-        xbmcgui.Dialog().notification('FEFC', 'Shuffle Play: %d starred videos' % len(pick), xbmcgui.NOTIFICATION_INFO, 3000)
-        xbmc.Player().play(pl)
+        entries = [(_url('plugin://plugin.video.fefc/', action='play', id=v), catalog.display_title(m['items'][v][0])) for v in pick]
+        # Close this plugin call before play. Playing while the busy dialog is up aborts Kodi.
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+        _play_queue(entries, 'Shuffle Play: %d starred videos' % len(pick))
 
     def history(self):
         m = _model()
@@ -781,17 +791,9 @@ class Router:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
             return
         pick = random.sample(vids, min(25, len(vids)))
-        pl = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        pl.clear()
-        for v in pick:
-            t = catalog.display_title(m['items'][v][0])
-            li = xbmcgui.ListItem(t, path=_url('plugin://plugin.video.fefc/', action='play', id=v))
-            li.getVideoInfoTag().setTitle(t)
-            li.setProperty('IsPlayable', 'true')
-            pl.add(_url('plugin://plugin.video.fefc/', action='play', id=v), li)
-        xbmcgui.Dialog().notification('FEFC', 'Shuffle Play: %d edits queued' % len(pick), xbmcgui.NOTIFICATION_INFO, 3000)
-        xbmc.Player().play(pl)
+        entries = [(_url('plugin://plugin.video.fefc/', action='play', id=v), catalog.display_title(m['items'][v][0])) for v in pick]
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+        _play_queue(entries, 'Shuffle Play: %d edits queued' % len(pick))
 
     def people(self):
         """Flat actor/director list. Original Drive folder names, A–Z. Metadata full names are not shown.
@@ -1553,6 +1555,17 @@ class SupportWindow(xbmcgui.WindowDialog):
                 PayQrWindow(name, url, sub).doModal()
 
     def onAction(self, action):
+        # Overriding onAction replaces the default, so Select never reached onControl.
+        if action.getId() in (xbmcgui.ACTION_SELECT_ITEM, xbmcgui.ACTION_MOUSE_LEFT_CLICK):
+            try:
+                fid = self.getFocusId()
+            except Exception:
+                fid = 0
+            for k, b in enumerate(self.btns):
+                if b.getId() == fid:
+                    name, url, sub = self.items[k]
+                    PayQrWindow(name, url, sub).doModal()
+                    return
         if _dialog_back(action):
             self.close()
 

@@ -45,7 +45,6 @@
 			<left>96</left><top>122</top><width>1700</width><height>760</height>
 			<onleft>500</onleft><onright>60</onright>
 			<onup>9290</onup>
-			<ondown>9290</ondown>
 			<viewtype label="31102">icon</viewtype>
 			<pagecontrol>60</pagecontrol>
 			<scrolltime tween="cubic" easing="out">300</scrolltime>
@@ -64,7 +63,6 @@
 					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
 					<include content="FefcGridTile">
 						<param name="focused" value="true" />
-						<param name="scroll" value="true" />
 					</include>
 				</control>
 			</focusedlayout>
@@ -75,7 +73,6 @@
 			<left>96</left><top>122</top><width>1700</width><height>760</height>
 			<onleft>501</onleft><onright>60</onright>
 			<onup>9290</onup>
-			<ondown>9290</ondown>
 			<viewtype label="31102">icon</viewtype>
 			<pagecontrol>60</pagecontrol>
 			<scrolltime tween="cubic" easing="out">300</scrolltime>
@@ -86,31 +83,32 @@
 			<!-- 0.5.1: landscape condition uses the built-in !ListItem.IsPlayable boolean, not a string
 			     comparison on the IsPlayable property — the string form was not reliably keeping tools
 			     (Sort, storage row) landscape in the Downloads folder; they flipped to portrait with the videos. -->
-			<itemlayout width="283" height="150" condition="!String.IsEqual(ListItem.Property(fefc_kind),video)">
+			<!-- One cell size. Layout conditions were not applied per item, so every file drew as a folder card.
+			     Visibility is per item: folders and actions stay landscape, files use the poster. -->
+			<itemlayout width="283" height="430">
 				<control type="group">
+					<visible>!String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
 					<left>9</left><top>8</top>
 					<include content="FefcGridTile"></include>
 				</control>
-			</itemlayout>
-			<focusedlayout width="283" height="150" condition="!String.IsEqual(ListItem.Property(fefc_kind),video)">
 				<control type="group">
+					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
+					<left>30</left><top>8</top>
+					<include content="FefcPosterTile"></include>
+				</control>
+			</itemlayout>
+			<focusedlayout width="283" height="430">
+				<control type="group">
+					<visible>!String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
 					<left>9</left><top>8</top>
 					<depth>DepthContentPopout</depth>
 					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
 					<include content="FefcGridTile">
 						<param name="focused" value="true" />
-						<param name="scroll" value="true" />
 					</include>
 				</control>
-			</focusedlayout>
-			<itemlayout width="283" height="430" condition="String.IsEqual(ListItem.Property(fefc_kind),video)">
 				<control type="group">
-					<left>30</left><top>8</top>
-					<include content="FefcPosterTile"></include>
-				</control>
-			</itemlayout>
-			<focusedlayout width="283" height="430" condition="String.IsEqual(ListItem.Property(fefc_kind),video)">
-				<control type="group">
+					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
 					<left>30</left><top>8</top>
 					<depth>DepthContentPopout</depth>
 					<animation effect="zoom" start="100" end="105" time="180" tween="sine" easing="inout" center="111,166" reversible="true">Focus</animation>
