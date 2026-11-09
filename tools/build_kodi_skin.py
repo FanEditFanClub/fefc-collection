@@ -305,6 +305,54 @@ def make_textures(media):
     return media
 
 
+def patch_intro_skip(xml_dir):
+    """SKIP has to live on the video OSD. Fullscreen video is drawn above every dialog, including a custom window."""
+    p = xml_dir / 'VideoOSD.xml'
+    t = p.read_text(encoding='utf-8')
+    if 'id="11192"' in t:
+        return
+    # The OSD window is zoomed to 90% around the centre. These coords land on skip_button() (1540, 910, 260, 92) after that zoom.
+    button = '''
+		<control type="button" id="11192">
+			<description>Intro skip. Visible only while the service sets FEFC.Skip.</description>
+			<left>1604</left>
+			<top>951</top>
+			<width>289</width>
+			<height>102</height>
+			<textoffsetx>0</textoffsetx>
+			<align>center</align>
+			<aligny>center</aligny>
+			<font>font13_title</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<focusedcolor>FFFFFFFF</focusedcolor>
+			<label>SKIP</label>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Skip))</visible>
+			<onclick>PlayerControl(Stop)</onclick>
+		</control>
+'''
+    t = t.replace(
+        '<onload condition="!Player.PauseEnabled">SetFocus(603)</onload>',
+        '<onload condition="!Player.PauseEnabled">SetFocus(603)</onload>\n'
+        '\t<onload condition="!String.IsEmpty(Window(Home).Property(FEFC.Skip))">SetFocus(11192)</onload>',
+        1)
+    t = t.replace(
+        '<visible>![Window.IsVisible(SliderDialog)',
+        '<visible>String.IsEmpty(Window(Home).Property(FEFC.Skip)) + ![Window.IsVisible(SliderDialog)',
+        1)
+    i = t.rindex('</controls>')
+    t = t[:i] + button + t[i:]
+    p.write_text(t, encoding='utf-8')
+    # Opening the OSD also shows the seek bar, which cuts across the intro. Hide that bar while SKIP is up.
+    seek = xml_dir / 'DialogSeekBar.xml'
+    st = seek.read_text(encoding='utf-8')
+    needle = '<visible>Window.IsActive(fullscreenvideo) | Window.IsActive(visualisation)</visible>'
+    extra = needle + '\n\t<visible>String.IsEmpty(Window(Home).Property(FEFC.Skip))</visible>'
+    if needle in st and 'FEFC.Skip' not in st:
+        seek.write_text(st.replace(needle, extra, 1), encoding='utf-8')
+
+
 def patch_fonts(xml_dir):
     p = xml_dir / 'Font.xml'
     s = p.read_text(encoding='utf-8')
@@ -384,12 +432,13 @@ def build(est, out):
             i = t2.rindex('</controls>')
             t2 = (t2[:i] + '\t<control type="group">\n\t\t<animation effect="zoom" start="100" end="121.95" center="960,540" time="0" '
                   'condition="true" type="conditional">Conditional</animation>\n\t\t<include>FefcTopBar</include>\n'
-                  '\t\t<include>FefcTicker</include>\n\t</control>\n\t' + t2[i:])
+                  '\t\t<include>FefcTicker</include>\n\t\t<include>FefcWallKeep</include>\n\t</control>\n\t' + t2[i:])
         else:
             t2 = re.sub(r'(<window\b[^>]*>)', lambda m: m.group(1) + zoom, t, count=1)
         if t2 != t:
             f.write_text(t2, encoding='utf-8'); nz += 1
     print('overscan zoom added to', nz, 'windows')
+    patch_intro_skip(xml)
     inc = xml / 'Includes.xml'
     s = inc.read_text(encoding='utf-8')
     s = s.replace('<include file="Variables.xml" />', '<include file="Variables.xml" />\n\t<include file="Includes_FEFC.xml" />', 1)

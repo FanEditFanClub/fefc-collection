@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Always-open dialog whose only job is to keep a videowindow alive.
+     Home draws the visible picture. This one stays off-screen so leaving Home
+     does not destroy the last videowindow and stop the wall player. -->
+<window type="dialog" id="11191">
+	<zorder>0</zorder>
+	<controls>
+		<control type="videowindow">
+			<left>-3200</left>
+			<top>0</top>
+			<width>480</width>
+			<height>270</height>
+		</control>
+	</controls>
+</window>

@@ -9,27 +9,34 @@ ICONS = {
     'reddit': ('\ue004', 'FFFF4500'),
 }
 CTA = (
-    ('discord', 'Join the FEFC Discord: discord.gg/d8A9xHTey7'),
+    ('discord', 'Join the FEFC Discord'),
     ('x', 'Follow @FanEditFanClub on X'),
     ('facebook', 'Join the FEFC Facebook Group'),
     ('reddit', 'Join r/FanEditFanClub on Reddit'),
 )
 
 
+_MD_LINK = re.compile(r'\[([^\]]*)\]\((?:https?://|www\.)[^)\s]+\)', re.I)
 _URL_RE = re.compile(
     r'https?://\S+'
     r'|www\.\S+'
-    # 0.5.0: bare domains too — feed titles carry discord.gg/…, x.com/…, faneditfanclub.com, bit.ly/…
-    # and the like, which the old http/www-only pattern left in the ticker. The Join CTAs keep their
-    # short discord.gg invite because _cta() builds them without _clean().
+    # Bare domains left in feed titles (discord.gg/…, x.com/…, faneditfanclub.com, bit.ly/…).
     r'|\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|net|org|gg|io|co|me|ly|be|fm|to|cc|tv|link|site|club|live|app|info|us|uk|ca|au|de|fr|es|it|nl|ru|br|jp|kr|cn|in|dev|xyz|online)\b(?:/\S*)?',
     re.I)
+_EMPTY_WRAP = re.compile(r'[\(\[\{]\s*[\)\]\}]')
+_MULTI_PUNCT = re.compile(r'([:;,])(?:\s*[:;,])+')
+_SPACE_PUNCT = re.compile(r'\s+([,.;:!?])')
 
 
 def _clean(text):
-    # 0.4.2: no raw URLs in the ticker (feed titles often carry a bare link); the Join CTAs keep
-    # their short discord.gg invite, which is a call to action, not a pasted link.
-    return ' '.join(_URL_RE.sub('', str(text or '')).split())
+    """Ticker line with post text kept and visible URLs removed."""
+    s = _MD_LINK.sub(lambda m: m.group(1), str(text or ''))
+    s = _URL_RE.sub(' ', s)
+    s = _EMPTY_WRAP.sub(' ', s)
+    s = _MULTI_PUNCT.sub(r'\1', s)
+    s = _SPACE_PUNCT.sub(r'\1', s)
+    s = ' '.join(s.split())
+    return s.strip(' \t-–—|•')
 
 
 def items_from_new_files(feed):

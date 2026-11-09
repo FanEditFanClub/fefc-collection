@@ -1,6 +1,26 @@
 {
  "versions": [
   {
+   "version": "0.5.5 Beta",
+   "date": "2026-11-09",
+   "notes": [
+    "Home mosaic is a full perimeter again: five video cells across the top, five across the bottom, and five down each side, including all four corners, the same size as the menu tiles.",
+    "Tapping outside the menu tiles no longer opens or restarts the background.",
+    "SKIP sits in the bottom-right corner, inside the TV safe area, and appears about 3 seconds into the intro. One Select press skips to Home. The intro video is unchanged.",
+    "Home background video keeps playing with its ambience. On other screens the picture hides and the same ambience continues. A film or the intro takes the player; ambience returns when you are browsing again. Sound Off stays silent.",
+    "Opening a collection, folder, or video plays its existing clip without stopping the ambience. Sound Off stays silent.",
+    "Search, Settings, Home, and the update label show the full words.",
+    "The news ticker keeps scrolling on every browsing screen, including My List, and no longer shows raw web addresses.",
+    "Actors and Directors show the original folder names, in alphabetical order, not expanded full names.",
+    "Collection folder tiles drop the count badge and centre the full folder name. Home tile counts stay.",
+    "Video files stay portrait posters. Folders, collections, and action buttons stay landscape.",
+    "My List has a star by the heading. Link My List, Recently Opened, and Downloads are readable landscape tiles. Sort offers Date added, A-Z, and Z-A. Shuffle Play queues starred videos only.",
+    "Support Us uses landscape Patreon, PayPal, and Venmo cards with Optimus. Each card opens a square code for the same link.",
+    "Link My List, feedback, and payment codes are square, with a white quiet zone, and are not stretched.",
+    "Search shows a silent frame loop of Optimus watching a film and eating popcorn. It stops when the search field is used. The home ambience keeps playing. The still picture remains if the frames are missing."
+   ]
+  },
+  {
    "version": "0.5.4 Beta",
    "date": "2026-11-08",
    "notes": [

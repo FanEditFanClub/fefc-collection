@@ -50,33 +50,20 @@
 				<aspectratio scalediffuse="false">keep</aspectratio>
 			</control>
 			<control type="image">
-				<left>5</left><top>58</top><width>255</width><height>75</height>
-				<texture>fefc-shade.png</texture>
+				<left>5</left><top>5</top><width>255</width><height>128</height>
+				<texture>fefc-white.png</texture>
+				<colordiffuse>8C000000</colordiffuse>
 				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
 			</control>
-			<control type="label">
-				<left>10</left><top>30</top><width>245</width><height>102</height>
-				<aligny>bottom</aligny>
+			<!-- A label control ellipsizes in a panel even with wrapmultiline. A textbox wraps the full name. -->
+			<control type="textbox">
+				<left>10</left><top>22</top><width>245</width><height>100</height>
+				<align>center</align>
 				<font>font_folder</font>
 				<textcolor>FFFFFFFF</textcolor>
-				<!-- 0.5.1: black text shadow so the name stays readable over bright/busy genre art -->
 				<shadowcolor>FF000000</shadowcolor>
 				<label>$INFO[ListItem.Label]</label>
-				<wrapmultiline>true</wrapmultiline>
-				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile) + String.IsEmpty(ListItem.Property(fefc_people))</visible>
-				<!-- 0.3.22: Shuffle / Sort / Support Us art already carries the big centred label; no small duplicate -->
-				<!-- Folder names: 26px bold, white, wrapping inside the 245x102 label box. Poster tiles stay on font_tile_xs. -->
-			</control>
-			<!-- People tiles keep the natural name, wrapped, in the same white as other labels. -->
-			<control type="label">
-				<left>10</left><top>30</top><width>245</width><height>102</height>
-				<align>center</align><aligny>center</aligny>
-				<font>font12_title</font>
-				<textcolor>FFFFFFFF</textcolor>
-				<shadowcolor>FF000000</shadowcolor>
-				<label>$INFO[ListItem.Label]</label>
-				<wrapmultiline>true</wrapmultiline>
-				<visible>!String.IsEmpty(ListItem.Property(fefc_people))</visible>
+				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
 			</control>
 			<control type="image">
 				<width>265</width><height>138</height>
@@ -166,80 +153,77 @@
 		<control type="group">
 			<visible>!Window.IsActive(home) + !Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</visible>
 			<control type="image">
-				<left>348</left><top>866</top><width>1224</width><height>84</height>
+				<left>110</left><top>866</top><width>1700</width><height>84</height>
 				<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
 			</control>
-			<control type="grouplist" id="9290">
-				<left>348</left><top>878</top><width>1224</width><height>60</height><align>center</align>
-				<orientation>horizontal</orientation>
-				<align>center</align>
-				<itemgap>8</itemgap>
-				<onup condition="Control.IsVisible(501)">501</onup><onup>$PARAM[down]</onup><ondown condition="Control.IsVisible(501)">501</ondown><ondown>$PARAM[down]</ondown><onleft>9290</onleft><onright>9290</onright>
+			<!-- Fixed coordinates. Nested grouplist groups were collapsing HOME to the icon and the letter H. -->
+			<control type="group">
+				<left>110</left><top>878</top>
 				<control type="button" id="9295">
-					<width>120</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+					<left>16</left><top>0</top><width>170</width><height>60</height>
 					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
 					<label>RESUME</label>
+					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+					<onleft>9292</onleft><onright>9296</onright>
+					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>ActivateWindow(fullscreenvideo)</onclick>
 				</control>
 				<control type="button" id="9296">
-					<width>86</width><height>60</height><visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+					<left>194</left><top>0</top><width>140</width><height>60</height>
 					<include>FefcSmallButton</include>
-					<font>fefc_bar</font>
 					<label>STOP</label>
+					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
+					<onleft>9295</onleft><onright>9290</onright>
+					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>PlayerControl(Stop)</onclick>
 				</control>
-				<!-- 0.3.22: HOME on every page's menu bar (back to the live Home screen) -->
-				<!-- 0.4.2: house icon, same group pattern as SEARCH / SOUND / SETTINGS -->
-				<control type="group">
-					<width>140</width><height>60</height>
-					<control type="button" id="9298">
-						<left>0</left><top>0</top><width>140</width><height>60</height>
-						<include>FefcSmallButton</include>
-						<font>fefc_bar</font>
-						<textoffsetx>46</textoffsetx><align>left</align>
-						<label>HOME</label>
-						<onclick>ActivateWindow(Home)</onclick>
-					</control>
-					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
+			</control>
+			<control type="group">
+				<left>110</left><top>878</top>
+				<animation effect="slide" end="165,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
+				<control type="button" id="9290">
+					<left>348</left><top>0</top><width>220</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<textoffsetx>52</textoffsetx><align>left</align>
+					<label>HOME</label>
+					<onleft condition="Control.IsVisible(9296)">9296</onleft><onleft>9292</onleft>
+					<onright>9291</onright>
+					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onclick>ActivateWindow(Home)</onclick>
 				</control>
-				<control type="group">
-					<width>168</width><height>60</height>
-					<control type="button" id="9291">
-						<left>0</left><top>0</top><width>168</width><height>60</height>
-						<include>FefcSmallButton</include>
-						<font>fefc_bar</font>
-						<textoffsetx>46</textoffsetx><align>left</align>
-						<label>SEARCH</label>
-						<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
-					</control>
-					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+				<control type="image"><left>364</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
+				<control type="button" id="9291">
+					<left>576</left><top>0</top><width>220</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<textoffsetx>52</textoffsetx><align>left</align>
+					<label>SEARCH</label>
+					<onleft>9290</onleft><onright>9294</onright>
+					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
 				</control>
-				<control type="group">
-					<width>210</width><height>60</height>
-					<control type="button" id="9294">
-						<left>0</left><top>0</top><width>210</width><height>60</height>
-						<include>FefcSmallButton</include>
-						<font>fefc_bar</font>
-						<textoffsetx>46</textoffsetx><align>left</align>
-						<label>$VAR[FefcSoundLabel]</label>
-						<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
-					</control>
-					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
-					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>592</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+				<control type="button" id="9294">
+					<left>804</left><top>0</top><width>270</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<textoffsetx>52</textoffsetx><align>left</align>
+					<label>$VAR[FefcSoundLabel]</label>
+					<onleft>9291</onleft><onright>9292</onright>
+					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
 				</control>
-				<control type="group">
-					<width>180</width><height>60</height>
-					<control type="button" id="9292">
-						<left>0</left><top>0</top><width>180</width><height>60</height>
-						<include>FefcSmallButton</include>
-						<font>fefc_bar</font>
-						<textoffsetx>46</textoffsetx><align>left</align>
-						<label>SETTINGS</label>
-						<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
-					</control>
-					<control type="image"><left>14</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+				<control type="image"><left>820</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>820</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="button" id="9292">
+					<left>1082</left><top>0</top><width>250</width><height>60</height>
+					<include>FefcSmallButton</include>
+					<textoffsetx>52</textoffsetx><align>left</align>
+					<label>SETTINGS</label>
+					<onleft>9294</onleft>
+					<onright condition="Control.IsVisible(9295)">9295</onright><onright>9290</onright>
+					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 				</control>
+				<control type="image"><left>1098</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 		</control>
 		</definition>
@@ -260,7 +244,9 @@
 				<font>fefc_ticker</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<scroll>true</scroll>
-				<scrollspeed>70</scrollspeed>
+				<scrollspeed>48</scrollspeed>
+				<!-- Keeps the marquee dirty on windows that are not redrawing a video, so My List and folders keep scrolling. -->
+				<animation effect="fade" start="100" end="99" time="700" pulse="true" condition="true">Conditional</animation>
 				<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
 				<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 			</control>
@@ -274,6 +260,15 @@
 			</control>
 		</control>
 		</definition>
+	</include>
+	<!-- Off-screen player target so the home-wall loop (and its ambience) is not stopped when Home closes.
+	     Home keeps the visible videowindow. A real fullscreen film uses the fullscreen window. -->
+	<include name="FefcWallKeep">
+		<!-- Far enough left that a 90% zoom around the screen centre cannot pull any of it on screen. -->
+		<control type="videowindow">
+			<left>-3200</left><top>0</top><width>480</width><height>270</height>
+			<visible>!Window.IsActive(home)</visible>
+		</control>
 	</include>
 	<!-- content of a page shrunk 90% about the centre so it sits between the top bar and the ticker -->
 	<include name="FefcContentZoom">

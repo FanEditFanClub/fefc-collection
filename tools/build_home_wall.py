@@ -1,7 +1,10 @@
-"""Pre-render the Kodi Home background (0.3.22): a muted-or-ambient 1280x720 'video wall' loop of fan edit clips
-that only fills the EDGES around the centred 3x3 menu (OnLive style). The centre is solid black, exactly where
-Home.xml draws its black panel (324..1596 x 192..856 in 1920x1080 -> 216..1064 x 128..571 here), so no clip ever
-shows behind or over a tile.
+"""Pre-render the Kodi Home background: one 1920x1080 fan-edit clip loop around the centred 3x3 menu.
+
+Perimeter of the outer 5x5 lattice (see resources/lib/wallplan.py): five cells on the top row,
+five on the bottom, and five down each side, including all four corners. The centre 3x3 stays
+black, where Home.xml draws its black panel, so no clip shows behind a menu tile.
+
+The primary file carries the original FEFC ambience. home-wall-silent.mp4 is the Sound Off twin.
 
 Seamless loop: the composite is rendered L+F seconds long; the output is V[F..L] followed by a crossfade of
 V[L..L+F] into V[0..F], so the last frame equals the first frame. Encoded closed-GOP, IDR at frame 0, no B-frames
@@ -15,20 +18,14 @@ Outputs: assets/home-wall.mp4 (with ambience), assets/home-wall-silent.mp4 (Soun
 (the loop's first frame, 1920x1080, shown instantly before the video starts and across the loop seam),
 assets/home-amb.m4a (the same ambience loop for the web app). Uses only assets/clips (no Drive access)."""
 import glob, os, random, subprocess, sys
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'kodi-src', 'plugin.video.fefc', 'resources', 'lib'))
+from wallplan import mosaic_cells
 src = sorted(glob.glob('assets/clips/*.mp4'))
 L, F, FPS = 75.0, 1.5, 24
 T = L + F
 W, H = 1920, 1080
-# 0.4.0 layout, restored: Home tiles are 400x200 with a 12px gap at x 348/760/1172, y 212/424/636.
-# Mosaic: 5 left + 5 right at y 0, 212, 424, 636, 848 (left x = 348-400-12 = -64, right x = 1172+400+12 = 1584)
-# plus 3 bottom tiles on the menu columns at y 848. Nothing is placed behind the title or the 3x3.
-TW, TH, GP = 400, 200, 12
-cells = []
-for y in (0, 212, 424, 636, 848):
-    cells.append((348 - TW - GP, y, TW, TH))
-    cells.append((1172 + TW + GP, y, TW, TH))
-for x in (348, 760, 1172):
-    cells.append((x, 848, TW, TH))
+# Full perimeter: top 5, bottom 5, left 5, right 5 (corners shared). Centre 3x3 is black.
+cells = mosaic_cells()
 random.seed(22)
 order = src[:]; random.shuffle(order)
 tmp = '/tmp/wall2'; os.makedirs(tmp, exist_ok=True)
