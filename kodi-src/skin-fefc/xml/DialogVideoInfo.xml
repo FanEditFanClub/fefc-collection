@@ -185,5 +185,6 @@
 			</control>
 		<include content="FefcTopBar"><param name="down" value="8"/><param name="up" value="8"/></include>
 		<include>FefcTicker</include>
+		<include>FefcWallKeep</include>
 	</controls>
 </window>

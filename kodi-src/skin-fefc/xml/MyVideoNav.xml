@@ -14,6 +14,12 @@
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
 		</control>
+		<control type="image">
+			<left>330</left><top>66</top><width>32</width><height>32</height>
+			<texture>fefc-star.png</texture>
+			<aspectratio>keep</aspectratio>
+			<visible>String.IsEqual(Container.PluginCategory,My List)</visible>
+		</control>
 		<control type="label">
 			<left>336</left><top>54</top><width>1000</width><height>56</height>
 			<aligny>center</aligny>
@@ -21,7 +27,18 @@
 			<textcolor>FFFFFFFF</textcolor>
 			<label>$VAR[FefcHeader]</label>
 			<scroll>true</scroll>
+			<visible>!String.IsEqual(Container.PluginCategory,My List)</visible>
 		</control>
+		<control type="label">
+			<left>372</left><top>54</top><width>964</width><height>56</height>
+			<aligny>center</aligny>
+			<font>font13_title</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<label>$VAR[FefcHeader]</label>
+			<scroll>true</scroll>
+			<visible>String.IsEqual(Container.PluginCategory,My List)</visible>
+		</control>
+		<include>FefcWallKeep</include>
 		<!-- landscape tiles -->
 		<control type="panel" id="500">
 			<visible>!Container.Content(movies)</visible>
@@ -47,6 +64,7 @@
 					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
 					<include content="FefcGridTile">
 						<param name="focused" value="true" />
+						<param name="scroll" value="true" />
 					</include>
 				</control>
 			</focusedlayout>
@@ -68,29 +86,30 @@
 			<!-- 0.5.1: landscape condition uses the built-in !ListItem.IsPlayable boolean, not a string
 			     comparison on the IsPlayable property — the string form was not reliably keeping tools
 			     (Sort, storage row) landscape in the Downloads folder; they flipped to portrait with the videos. -->
-			<itemlayout width="283" height="150" condition="ListItem.IsFolder | !ListItem.IsPlayable">
+			<itemlayout width="283" height="150" condition="!String.IsEqual(ListItem.Property(fefc_kind),video)">
 				<control type="group">
 					<left>9</left><top>8</top>
 					<include content="FefcGridTile"></include>
 				</control>
 			</itemlayout>
-			<focusedlayout width="283" height="150" condition="ListItem.IsFolder | !ListItem.IsPlayable">
+			<focusedlayout width="283" height="150" condition="!String.IsEqual(ListItem.Property(fefc_kind),video)">
 				<control type="group">
 					<left>9</left><top>8</top>
 					<depth>DepthContentPopout</depth>
 					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
 					<include content="FefcGridTile">
 						<param name="focused" value="true" />
+						<param name="scroll" value="true" />
 					</include>
 				</control>
 			</focusedlayout>
-			<itemlayout width="283" height="430">
+			<itemlayout width="283" height="430" condition="String.IsEqual(ListItem.Property(fefc_kind),video)">
 				<control type="group">
 					<left>30</left><top>8</top>
 					<include content="FefcPosterTile"></include>
 				</control>
 			</itemlayout>
-			<focusedlayout width="283" height="430">
+			<focusedlayout width="283" height="430" condition="String.IsEqual(ListItem.Property(fefc_kind),video)">
 				<control type="group">
 					<left>30</left><top>8</top>
 					<depth>DepthContentPopout</depth>

@@ -223,9 +223,11 @@ class Router:
         self._art(li, art)
         if land:
             li.setArt({'landscape': land, 'thumb': land, 'fanart': land or art})
-        if props:
-            for k, v in props.items():
-                li.setProperty(k, v)
+        props = dict(props or {})
+        props.setdefault('fefc_kind', 'folder')
+        props.setdefault('fefc_centerlabel', '1')
+        for k, v in props.items():
+            li.setProperty(k, v)
         self._land = True
         tag = li.getVideoInfoTag()
         tag.setTitle(label)
@@ -235,22 +237,19 @@ class Router:
 
     def add_dir_item(self, m, fid):
         v = m['items'][fid]
-        # 0.5.2: same count the listing filter used (recursive total) — a folder whose videos all sit in
-        # subfolders has a DIRECT count of 0 but a recursive count > 0, so the old label showed "(0)".
-        n = (m.get('rcnt') or m['cnt']).get(fid, 0)
         art = catalog.folder_art(m, _base(), fid)
         gs = m['vgenres'].get(fid) or []
         if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' or v[3] == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk':
-            # 0.3.22: same To Be Catalogued tile + destination as Home
+            # Same To Be Catalogued tile + destination as Home. No count badge on the tile.
             t = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
-            self.add_folder('To Be Catalogued  (%d)' % n, t, ', '.join(gs), landscape=t, action='folder', id='1503Wl56hzRppaIFcQisvQksOaeYOEjnk')
+            self.add_folder('To Be Catalogued', t, ', '.join(gs), landscape=t, action='folder', id='1503Wl56hzRppaIFcQisvQksOaeYOEjnk')
             return
         if fid in (m.get('people_meta') or {}) or v[1] in (FOLD['actors'], FOLD['directors']):
-            # Person tiles: natural name, no count badge. Drive folder names are not renamed.
-            self.add_folder(namesort.display_name(v[0]), art, ', '.join(gs), action='folder', id=fid,
+            # Original Drive folder name (surname as catalogued). Not the metadata full name.
+            self.add_folder(namesort.original_folder_name(v[0]), art, ', '.join(gs), action='folder', id=fid,
                             props={'fefc_people': '1'})
             return
-        self.add_folder('%s  (%d)' % (v[0], n), art, ', '.join(gs), action='folder', id=fid)
+        self.add_folder(v[0], art, ', '.join(gs), action='folder', id=fid)
 
     def add_tool(self, label, plot, art='DefaultAddonService.png', folder=False, landscape='', **kw):
         li = xbmcgui.ListItem(label, offscreen=True)
@@ -263,6 +262,8 @@ class Router:
                 landscape = 'special://xbmc/addons/skin.fefc/media/fefc-sort-tile.png'
         land = landscape or art
         li.setArt({'thumb': land, 'icon': art, 'landscape': land, 'fanart': land})
+        li.setProperty('fefc_kind', 'action')
+        li.setProperty('fefc_centerlabel', '1')
         self._land = True
         tag = li.getVideoInfoTag()
         tag.setTitle(label)
@@ -282,6 +283,7 @@ class Router:
         self._art(li, art, video=True)
         on = self.mydb().has(vid)
         li.setProperty('fefc_id', vid)
+        li.setProperty('fefc_kind', 'video')
         rel = catalog.sfx_up(m, vid)  # franchise clip: nearest ancestor folder that has clips (played by the service on the details page)
         wav = catalog.sfx_wav(rel) if rel else ''
         if wav:
@@ -445,8 +447,8 @@ class Router:
         ks = [k for k in ks if not m['items'][k][2] or (m.get('rcnt') or m['cnt']).get(k)]
         key = _sort_get(fid)
         if fid in (FOLD['actors'], FOLD['directors']) and key in ('az', 'za'):
-            # Surname order, not the first name on the tile and not Drive's numeric prefixes.
-            ks = sorted(ks, key=lambda k: namesort.sort_key(m['items'][k][0]))
+            # Alphabetical by the original folder name, not a parsed full name.
+            ks = sorted(ks, key=lambda k: namesort.folder_sort_key(m['items'][k][0]))
             if key == 'za':
                 ks.reverse()
         elif key != 'az':
@@ -511,8 +513,14 @@ class Router:
         from .sfxpref import sfx_enabled
         if not sfx_enabled(ADDON.getSetting('play_sfx')) or not rel:
             return
-        # Same wav name the details page uses, including shuffle-bag rotations (m4a/mp3 pairs).
-        # playSFX does not stop the home-wall player, so ambience keeps going under the clip.
+        # playSFX mixes over the wall. It must not run on top of a film, and it must not use Player().play
+        # (that would stop the ambience loop).
+        try:
+            import service as _svc
+            if _svc._foreground_video():
+                return
+        except Exception:
+            pass
         wav = catalog.sfx_wav(rel)
         if not wav:
             return
@@ -641,36 +649,37 @@ class Router:
             if err:
                 _log('mylist sync: %s' % err)
         who = ml.db.get('user') or 'linked'
-        li = xbmcgui.ListItem(('Sync My List with the FEFC web app  (%s)' % who) if ml.linked else 'Link My List  (sync with the web app)', offscreen=True)
-        li.setArt({'thumb': 'DefaultAddonService.png', 'icon': 'DefaultAddonService.png'})
-        li.getVideoInfoTag().setPlot('Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.')
-        li.setProperty('IsPlayable', 'false')
-        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='mylist_sync'), li, False)
+        dark = 'special://xbmc/addons/skin.fefc/media/fefc-ol-tile.png'
+        link_plot = 'Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.'
+        if ml.linked:
+            link_plot += ' Signed in as %s.' % who
+        self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
         nf = nv = 0
         shown = set()
         sortk = self.params.get('sort') or _pref('_mylist', 'date')
-        self.add_tool('Sort: %s   (select to change)' % ('Name A-Z' if sortk == 'az' else 'Date added'), 'Switch between date added and name.',
-                      action='mylist_sortswitch', cur=sortk)
-        self.add_tool('Recently opened', 'The last edits you opened or played (synced with the FEFC web app).', 'DefaultRecentlyAddedMovies.png',
-                      folder=True, action='history')
-        # 0.4.2: Downloads — its own section inside My List (local copies, playable offline).
+        if sortk not in ('date', 'az', 'za'):
+            sortk = 'date'
+        sort_name = {'date': 'Date added', 'az': 'Name A-Z', 'za': 'Name Z-A'}[sortk]
+        self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
+        self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
+        self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
         try:
             ndl = _dl().count()
         except Exception:
             ndl = 0
-        self.add_folder('Downloads  (%d)' % ndl, '', 'Videos downloaded to this device. Play offline, no streaming.', action='downloads')
-        cont = []
-        for sid in ml.continue_ids():
-            i = self._resolve(m, sid)
-            if i and not m['items'][i][2] and i not in cont:
-                cont.append(i)
-        for i in cont[:20]:
-            self.add_video(m, i)
-            nv += 1
-            shown.add(i)
+        self.add_folder('Downloads' if not ndl else 'Downloads · %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
         ids = ml.ids()
-        if sortk == 'az':
+        if sortk in ('az', 'za'):
             ids = sorted(ids, key=lambda x: catalog.natkey(m['items'][self._resolve(m, x) or x][0]) if self._resolve(m, x) else ())
+            if sortk == 'za':
+                ids.reverse()
+        else:
+            for sid in ml.continue_ids():
+                i = self._resolve(m, sid)
+                if i and not m['items'][i][2] and i not in shown:
+                    self.add_video(m, i)
+                    nv += 1
+                    shown.add(i)
         for sid in ids:
             i = self._resolve(m, sid)
             if not i or i in shown:
@@ -687,10 +696,49 @@ class Router:
         self.end('movies' if nv > nf else 'files', cache=False)
 
     def mylist_sortswitch(self):
-        new = 'date' if self.params.get('cur') == 'az' else 'az'
-        _sort_set('_mylist', new)
-        xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='mylist', sort=new, nosync='1'))
-        xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+        opts = [('date', 'Date added'), ('az', 'Name A-Z'), ('za', 'Name Z-A')]
+        cur = self.params.get('cur') or _pref('_mylist', 'date')
+        if cur not in dict(opts):
+            cur = 'date'
+        k = xbmcgui.Dialog().select('Sort My List', [n for _, n in opts], preselect=[i for i, _ in opts].index(cur))
+        if k >= 0:
+            _sort_set('_mylist', opts[k][0])
+            xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='mylist', sort=opts[k][0], nosync='1'))
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
+    def mylist_shuffle(self):
+        """Shuffle starred videos only. Folders and the My List action tiles are not queued."""
+        import random
+        m = _model()
+        ml = self.mydb()
+        vids = []
+        seen = set()
+        for sid in ml.ids():
+            i = self._resolve(m, sid)
+            if not i or i in seen or m['items'][i][2]:
+                continue
+            seen.add(i)
+            vids.append(i)
+        if not vids:
+            xbmcgui.Dialog().notification('FEFC', 'No starred videos to shuffle.', xbmcgui.NOTIFICATION_INFO, 3000)
+            if self.handle >= 0:
+                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            return
+        pick = random.sample(vids, min(25, len(vids)))
+        pl = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        pl.clear()
+        for v in pick:
+            t = catalog.display_title(m['items'][v][0])
+            li = xbmcgui.ListItem(t, path=_url('plugin://plugin.video.fefc/', action='play', id=v))
+            li.getVideoInfoTag().setTitle(t)
+            li.setProperty('IsPlayable', 'true')
+            li.setProperty('fefc_kind', 'video')
+            pl.add(_url('plugin://plugin.video.fefc/', action='play', id=v), li)
+        xbmcgui.Dialog().notification('FEFC', 'Shuffle Play: %d starred videos' % len(pick), xbmcgui.NOTIFICATION_INFO, 3000)
+        xbmc.Player().play(pl)
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def history(self):
         m = _model()
@@ -746,16 +794,16 @@ class Router:
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def people(self):
-        """Flat actor/director list. Natural names, surname A–Z. Drive folder names are not changed.
-        end() sets SORT_METHOD_UNSORTED so Kodi does not re-sort these labels by first name."""
+        """Flat actor/director list. Original Drive folder names, A–Z. Metadata full names are not shown.
+        end() sets SORT_METHOD_UNSORTED so Kodi does not re-sort the labels."""
         m = _model()
         meta = m.get('people_meta') or {}
         role = self.params.get('role')
         rows = [k for k, (n, r) in meta.items() if (not role or r == role) and k in m['items'] and (m.get('rcnt') or m['cnt']).get(k)]
-        rows.sort(key=lambda k: namesort.sort_key(meta[k][0]))
+        rows.sort(key=lambda k: namesort.folder_sort_key(m['items'][k][0]))
         for k in rows:
             art = catalog.folder_art(m, _base(), k)
-            self.add_folder(namesort.display_name(meta[k][0]), art, action='folder', id=k,
+            self.add_folder(namesort.original_folder_name(m['items'][k][0]), art, action='folder', id=k,
                             props={'fefc_people': '1'})
         self.end()
 
@@ -871,8 +919,7 @@ class Router:
     def feedback(self):
         """Feedback form QR (same remote-QR pattern as the Support and link windows).
         0.5.1: the QR code and the short URL are tappable — either opens the form in the browser."""
-        qr_path = ('https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=24&format=png&color=000000&bgcolor=ffffff'
-                   '&data=%s&_=%d' % (quote_plus(FEEDBACK_FORM_URL), int(time.time() * 1000)))
+        qr_path = _qr_for(FEEDBACK_FORM_URL)
         lines = ['Give feedback on the FEFC app',
                  'Scan the code with your phone, or tap it to open the feedback form in your browser.',
                  'Or email us: %s' % CONTACT_EMAIL,
@@ -898,25 +945,24 @@ class Router:
             xbmc.executebuiltin('Container.Refresh')
 
     def mylist_sync(self):
-        # Kodi invokes non-folder list items with a handle and expects a resolve; without one it can re-run this URL later
-        # (e.g. after Back to Home), which re-opened the popup. Answer the handle at once, and only open the dialog on an
-        # explicit press inside the FEFC list views or settings (never on Home, never twice at the same time).
-        if self.handle >= 0:
-            try:
-                xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem(offscreen=True))
-            except Exception:
-                pass
+        # Folder item: open the dialog, then close the directory handle so Back does not re-run it.
+        def _end():
+            if self.handle >= 0:
+                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
         home = xbmcgui.Window(10000)
         if xbmc.getCondVisibility('Window.IsActive(home)') and self.params.get('src') != 'menu':
             _log('mylist_sync: ignored (not an explicit press; Home is active)')
+            _end()
             return
         if home.getProperty('FEFC.LinkOpen') == '1':
+            _end()
             return
         home.setProperty('FEFC.LinkOpen', '1')
         try:
             self._mylist_sync()
         finally:
             home.clearProperty('FEFC.LinkOpen')
+        _end()
 
     def _mylist_sync(self):
         ml = self.mydb()
@@ -982,13 +1028,9 @@ class Router:
         except Exception as e:
             xbmcgui.Dialog().ok('My List', 'Could not start linking: %s' % e)
             return
-        qr_path = ''
+        qr_path = _qr_for(url)
         if mode == 'qr':
-            # Remote QR image by default: local PNGs in special://temp never appeared on Fire TV (black square),
-            # while Kodi loads remote https images reliably. Unique query param defeats the texture cache.
-            qr_path = ('https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=24&format=png&color=000000&bgcolor=ffffff'
-                       '&data=%s&_=%d' % (quote_plus(url), int(time.time() * 1000)))
-            lines[-1] = url.replace('https://', '')  # full link, own line, so it can be typed if the QR still doesn't show
+            lines[-1] = url.replace('https://', '')  # full link, own line, so it can be typed if needed
         win = LinkWindow(lines, qr_path)
         win.show()
         mon = xbmc.Monitor()
@@ -1159,6 +1201,7 @@ class Router:
         poster = 'special://xbmc/addons/skin.fefc/media/fefc-video-poster.png'
         li.setArt({'thumb': poster, 'icon': poster, 'poster': poster})
         li.setProperty('IsPlayable', 'true')
+        li.setProperty('fefc_kind', 'video')
         tag = li.getVideoInfoTag()
         tag.setTitle(rec.get('name') or 'Verified file')
         tag.setPlot(plot)
@@ -1312,7 +1355,16 @@ class Router:
         for r in rows:
             li = xbmcgui.ListItem(catalog.display_title(r.get('name') or 'video.mp4'), offscreen=True)
             li.setProperty('IsPlayable', 'true')
+            li.setProperty('fefc_kind', 'video')
             li.setProperty('fefc_download', 'true')
+            poster = 'special://xbmc/addons/skin.fefc/media/fefc-video-poster.png'
+            try:
+                m = _model()
+                if r.get('id') in m['items']:
+                    poster = catalog.poster_for(m, _base(), r['id']) or poster
+            except Exception:
+                pass
+            li.setArt({'thumb': poster, 'icon': poster, 'poster': poster})
             sz = r.get('size') or 0
             if sz:
                 li.getVideoInfoTag().setPlot('Downloaded to this device  ·  %.2f GB' % (sz / 1073741824.0))
@@ -1401,21 +1453,24 @@ def _tmpdir():
 
 
 def _make_qr_png(url, size=600):
-    """QR code as an absolute-path 8-bit RGB PNG, unique name so Kodi's texture cache never serves an old one."""
-    from . import segno
-    m = [list(r) for r in segno.make(url, error='m').matrix]
-    n = len(m) + 8  # 4-module white quiet zone
-    px = max(1, size // n)
-    W, B = b'\xff\xff\xff', b'\x00\x00\x00'
-    rows = []
-    for y in range(n):
-        line = b''.join((B if (4 <= y < n - 4 and 4 <= x < n - 4 and m[y - 4][x - 4]) else W) * px for x in range(n))
-        rows.extend([line] * px)
-    path = os.path.join(_tmpdir(), 'fefc-link-qr-%d.png' % int(time.time() * 1000))
-    _png_rgb(path, rows)
-    if os.path.getsize(path) < 100:
+    """Square 8-bit RGB PNG with a 4-module quiet zone, in the add-on profile (not special://temp)."""
+    from .qrdraw import write_qr_png
+    d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/qr')
+    os.makedirs(d, exist_ok=True)
+    path = os.path.join(d, 'fefc-qr-%d.png' % int(time.time() * 1000))
+    info = write_qr_png(path, url, size=size, quiet=4)
+    if os.path.getsize(path) < 100 or info['side'] != info['px'] * (info['modules'] + 8):
         raise IOError('QR png not written')
     return path
+
+
+def _qr_for(url):
+    """Local square code, then the remote square fallback. The encoded URL is not changed."""
+    try:
+        return _make_qr_png(url)
+    except Exception as e:
+        _log('local qr: %s' % e)
+        return _remote_qr_png(url)
 
 
 def _remote_qr_png(url):
@@ -1460,51 +1515,71 @@ def _short_url(u):
 
 
 class SupportWindow(xbmcgui.WindowDialog):
-    """Three tiles (Patreon, PayPal, Venmo): brand colour, QR code to scan with a phone, OK opens it on this device.
-    Logos use aspect keep so the whole mark is visible. Optimus stays still."""
-    COLORS = {'Patreon': 'FFF96854', 'PayPal': 'FF0070BA', 'Venmo': 'FF3D95CE'}
-    # aspectRatio 2 = keep (contain). 1 scales up and crops.
+    """Web-style Support Us: Optimus on the left, three landscape payment cards.
+    Selecting a card opens a square QR for that same URL. Logos use aspect keep."""
+    COLORS = {'Patreon': 'FFFF424D', 'PayPal': 'FF003087', 'Venmo': 'FF008CFF'}
     KEEP = 2
 
     def __init__(self, items):
         super().__init__()
         self.items = items
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        self.addControl(xbmcgui.ControlLabel(48, 28, 1184, 44, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=2))
-        self.addControl(xbmcgui.ControlLabel(48, 76, 1184, 56, 'Every bit helps cover the cloud storage and our time adding new edits. '
-                                             'Scan a code with your phone, or press OK to open it here.', font='font12',
-                                             textColor='FFE8EEF6', alignment=2))
-        self.addControl(xbmcgui.ControlImage(36, 150, 200, 480, 'fefc-optimus-begging.png', aspectRatio=self.KEEP))
+        self.addControl(xbmcgui.ControlLabel(40, 28, 1200, 48, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(40, 82, 1200, 40, 'Thank you for supporting the collection.', font='font13', textColor='FFE8EEF6', alignment=2))
+        self.addControl(xbmcgui.ControlImage(28, 140, 340, 500, 'fefc-optimus-begging.png', aspectRatio=self.KEEP))
         self.btns = []
-        w, gap = 300, 24
-        x0 = 250
+        w, h, gap = 270, 176, 18
+        x0, y0 = 390, 250
         for k, (name, url, sub) in enumerate(items):
             x = x0 + k * (w + gap)
-            col = self.COLORS.get(name, 'FFFF9C00')
-            b = xbmcgui.ControlButton(x, 148, w, 480, '', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+            b = xbmcgui.ControlButton(x, y0, w, h, '', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
             self.addControl(b)
             self.btns.append(b)
             icon = {'Patreon': 'fefc-ic-patreon.png', 'PayPal': 'fefc-ic-paypal.png', 'Venmo': 'fefc-ic-venmo.png'}.get(name, 'fefc-lc-pill.png')
-            self.addControl(xbmcgui.ControlImage(x + 70, 164, 160, 88, icon, aspectRatio=self.KEEP))
-            self.addControl(xbmcgui.ControlImage(x + 16, 264, w - 32, 48, 'fefc-lc-pill.png', colorDiffuse=col))
-            self.addControl(xbmcgui.ControlLabel(x + 16, 264, w - 32, 48, name.upper(), font='font13_title', textColor='FFFFFFFF', alignment=6))
-            qr = ('https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=16&format=png&data=%s' % quote_plus(url))
-            self.addControl(xbmcgui.ControlImage(x + 50, 324, w - 100, w - 100, 'fefc-white.png'))
-            self.addControl(xbmcgui.ControlImage(x + 56, 330, w - 112, w - 112, qr, aspectRatio=self.KEEP))
-            self.addControl(xbmcgui.ControlLabel(x + 10, 548, w - 20, 32, sub, font='font12_title', textColor='FFFFFFFF', alignment=6))
-            self.addControl(xbmcgui.ControlLabel(x + 10, 580, w - 20, 36, _short_url(url), font='font10', textColor='FF99CCFF', alignment=6))
+            self.addControl(xbmcgui.ControlImage(x + 99, y0 + 14, 72, 72, icon, aspectRatio=self.KEEP))
+            self.addControl(xbmcgui.ControlImage(x + 40, y0 + 94, w - 80, 6, 'fefc-white.png', colorDiffuse=self.COLORS.get(name, 'FFFF9C00')))
+            self.addControl(xbmcgui.ControlLabel(x + 8, y0 + 106, w - 16, 32, name, font='font13_title', textColor='FFFFFFFF', alignment=6))
+            self.addControl(xbmcgui.ControlLabel(x + 8, y0 + 138, w - 16, 28, sub, font='font12', textColor='FFFF9C00', alignment=6))
         for k, b in enumerate(self.btns):
             b.controlLeft(self.btns[k - 1])
             b.controlRight(self.btns[(k + 1) % len(self.btns)])
-        self.addControl(xbmcgui.ControlLabel(48, 660, 1184, 32, 'Back to close', font='font10', textColor='FF7F8FA6', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(40, 660, 1200, 32, 'Select a card for a square code.  Back to close.', font='font12', textColor='FF7F8FA6', alignment=2))
         self.setFocus(self.btns[0])
 
     def onControl(self, c):
         for k, b in enumerate(self.btns):
             if c == b:
-                u = self.items[k][1]
-                xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % u)
-                xbmcgui.Dialog().notification('Support Us', 'If nothing opened, scan the code or visit %s' % _short_url(u), xbmcgui.NOTIFICATION_INFO, 6000)
+                name, url, sub = self.items[k]
+                PayQrWindow(name, url, sub).doModal()
+
+    def onAction(self, action):
+        if _dialog_back(action):
+            self.close()
+
+
+class PayQrWindow(xbmcgui.WindowDialog):
+    """Square QR for one payment URL, with the quiet zone kept by aspect-keep."""
+    KEEP = 2
+
+    def __init__(self, name, url, sub):
+        super().__init__()
+        self.url = url
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
+        self.addControl(xbmcgui.ControlLabel(80, 36, 1120, 44, name, font='font14_title', textColor='FFFFFFFF', alignment=2))
+        self.addControl(xbmcgui.ControlLabel(80, 84, 1120, 32, sub, font='font13', textColor='FFFF9C00', alignment=2))
+        self.addControl(xbmcgui.ControlImage(440, 130, 400, 400, 'fefc-white.png'))
+        self.addControl(xbmcgui.ControlImage(460, 150, 360, 360, _qr_for(url), aspectRatio=self.KEEP))
+        self.addControl(xbmcgui.ControlLabel(80, 544, 1120, 32, _short_url(url), font='font12', textColor='FF99CCFF', alignment=2))
+        self.btn = xbmcgui.ControlButton(460, 590, 360, 64, 'Open on this device', font='font13_title', textColor='FFFFFFFF',
+                                          alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+        self.addControl(self.btn)
+        self.setFocus(self.btn)
+        self.addControl(xbmcgui.ControlLabel(80, 668, 1120, 28, 'Back to return to Support Us.', font='font12', textColor='FF7F8FA6', alignment=2))
+
+    def onControl(self, c):
+        if c == self.btn:
+            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % self.url)
+            xbmcgui.Dialog().notification('Support Us', 'If nothing opened, scan the code or visit %s' % _short_url(self.url), xbmcgui.NOTIFICATION_INFO, 6000)
 
     def onAction(self, action):
         if _dialog_back(action):
@@ -1530,7 +1605,7 @@ class LinkWindow(xbmcgui.WindowDialog):
             if open_url:
                 self.qr_btn = xbmcgui.ControlButton(96, 130, 400, 400, '', focusTexture='fefc-ol-focus.png', noFocusTexture='')
                 self.addControl(self.qr_btn)
-            self.addControl(xbmcgui.ControlImage(96, 130, 400, 400, qr_path, aspectRatio=1))
+            self.addControl(xbmcgui.ControlImage(96, 130, 400, 400, qr_path, aspectRatio=2))
             x = 540
         else:
             x = 96
@@ -1575,20 +1650,21 @@ class OptimusWindow(xbmcgui.WindowDialog):
         from . import optimusplan
         self.query = ''
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        self.addControl(xbmcgui.ControlImage(48, 80, 420, 420, _optimus_art(), aspectRatio=2))
-        self.addControl(xbmcgui.ControlLabel(500, 80, 720, 56, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
-        cue = xbmcgui.ControlTextBox(500, 146, 720, 100, font='font13', textColor='FFE8EEF6')
+        # Still is the fallback until a reviewed optimus-search clip exists. Same box, keep aspect.
+        self.addControl(xbmcgui.ControlImage(48, 110, 480, 480, _optimus_art(), aspectRatio=2))
+        self.addControl(xbmcgui.ControlLabel(560, 96, 660, 52, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
+        cue = xbmcgui.ControlTextBox(560, 160, 660, 88, font='font13', textColor='FFE8EEF6')
         self.addControl(cue)
         cue.setText(optimusplan.CUE)
-        self.edit = xbmcgui.ControlEdit(500, 270, 720, 64, '', font='font13', textColor='FFFFFFFF',
+        self.edit = xbmcgui.ControlEdit(560, 268, 660, 72, '', font='font13', textColor='FFFFFFFF',
                                          focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.edit)
-        self.btn = xbmcgui.ControlButton(500, 360, 280, 72, optimusplan.SEARCH_LABEL, font='font13_title', textColor='FFFFFFFF',
+        self.btn = xbmcgui.ControlButton(560, 364, 280, 72, optimusplan.SEARCH_LABEL, font='font13_title', textColor='FFFFFFFF',
                                           focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png', alignment=6)
         self.addControl(self.btn)
-        self.status = xbmcgui.ControlLabel(500, 450, 720, 40, 'Type a title, then press Search.', font='font12', textColor='FF99CCFF')
+        self.status = xbmcgui.ControlLabel(560, 460, 660, 48, 'Type a title, then press Search.', font='font12', textColor='FF99CCFF')
         self.addControl(self.status)
-        self.addControl(xbmcgui.ControlLabel(500, 520, 720, 36, 'Back to close.', font='font12', textColor='FF7F8FA6'))
+        self.addControl(xbmcgui.ControlLabel(560, 540, 660, 36, 'Back to close.', font='font12', textColor='FF7F8FA6'))
         self.edit.controlDown(self.btn)
         self.btn.controlUp(self.edit)
         self.setFocus(self.edit)
@@ -1624,7 +1700,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
 ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'genre': 'genre', 'recent': 'recent',
           'search': 'search', 'searchbox': 'searchbox', 'play': 'play', 'update': 'update', 'mylist': 'mylist', 'mylist_toggle': 'mylist_toggle',
           'mylist_sync': 'mylist_sync', 'open_vlc': 'open_vlc', 'open_drive': 'open_drive', 'readme': 'readme', 'support': 'support',
-          'mylist_sortswitch': 'mylist_sortswitch', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
+          'mylist_sortswitch': 'mylist_sortswitch', 'mylist_shuffle': 'mylist_shuffle', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
           'open_link': 'open_link', 'play_external': 'play_external',
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',

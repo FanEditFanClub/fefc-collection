@@ -660,6 +660,11 @@ class Watcher(object):
         if ADDON.getSetting('pause_on_back') == 'false':
             return
         pl = xbmc.Player()
+        try:
+            if pl.isPlaying() and 'home-wall' in (pl.getPlayingFile() or ''):
+                return
+        except Exception:
+            pass
         if not xbmc.getCondVisibility('Player.HasVideo'):
             self.mine = False
             self.seen_full = False
@@ -800,11 +805,11 @@ _last_info = ['']
 
 
 class HomeWall(object):
-    """OnLive-style Home background. 0.3.22: a 75 s 1280x720 seamless loop bundled in the APK (instant start; the
-    still first frame is the skin background so there is never a blank wait). Two encodes: with the original FEFC
-    ambience (intro.mp3 tail, ~-20 LUFS, TP -5.9 dBTP) and silent, picked by the SOUND toggle. Falls back to a
-    one-time download when the bundle is missing. 0.5.0: keeps playing off-Home (ambience audio never skips);
-    the video only shows on Home because only Home has a videowindow — other screens are audio-only, on black."""
+    """OnLive-style Home background. One bundled 75 s loop (instant start; the still first frame is the skin
+    background). Sound On plays home-wall.mp4, which carries the original FEFC ambience. Sound Off plays the
+    silent twin. The same player stays up on every browsing screen: Home shows the picture, other screens keep
+    an off-screen videowindow so only the picture hides and the ambience does not restart. A real film,
+    trailer, or the intro replaces this player; browsing again resumes the loop from the saved position."""
     URL = BASE + '/assets/home-wall.mp4'
     LOOP = 75.0
 
@@ -888,9 +893,9 @@ class HomeWall(object):
 
     def tick(self):
         """Keep one wall player alive across Home and folder screens. Home shows the picture; other
-        screens have no videowindow, so they are audio only. A real edit suspends the wall. Coming
-        back resumes from the last position instead of starting a second copy. Kodi can still drop
-        the player when a window closes; that resume is a seek, not a proven gapless handoff."""
+        screens keep an off-screen videowindow so the same playback continues and only the picture
+        hides. A real edit suspends the wall. If Kodi still drops the player when a window closes,
+        resume seeks back into the same loop instead of starting a second copy."""
         home = xbmcgui.Window(10000)
         pl = xbmc.Player()
         sound = home.getProperty('FEFC.SoundOff') != '1'
@@ -932,18 +937,25 @@ class HomeWall(object):
 
 
 class SkipIntro(xbmcgui.WindowDialog):
-    """Focused SKIP tile on the intro. Sits in the 1920x1080 safe area (ends at x 1240, y 660), not in overscan."""
+    """Focused SKIP tile. Bottom-right, inside the TV safe area, clear of the intro's centre."""
 
     def __init__(self):
         super().__init__()
+        try:
+            from resources.lib.wallplan import skip_button
+            x, y, w, h = skip_button()
+        except Exception:
+            x, y, w, h = 1540, 910, 260, 92
         self.done = False
-        self.btn = xbmcgui.ControlButton(960, 520, 280, 140, 'SKIP', font='font13_title', textColor='FFFFFFFF',
+        self.btn = xbmcgui.ControlButton(x, y, w, h, 'SKIP', font='font13_title', textColor='FFFFFFFF',
                                          focusedColor='FFFFFFFF', alignment=6,
                                          focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.btn)
         self.setFocus(self.btn)
 
-    def onControl(self, c):
+    def _go(self):
+        if self.done:
+            return
         self.done = True
         try:
             xbmc.Player().stop()
@@ -951,9 +963,14 @@ class SkipIntro(xbmcgui.WindowDialog):
             pass
         self.close()
 
+    def onControl(self, c):
+        self._go()
+
     def onAction(self, action):
-        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
-            self.onControl(None)
+        aid = action.getId()
+        select = {xbmcgui.ACTION_SELECT_ITEM, xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401}
+        if aid in select or aid in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
+            self._go()
 
 
 def details_sfx():
@@ -970,7 +987,7 @@ def details_sfx():
         from sfxpref import sfx_enabled as _sfx_on
     except Exception:
         _sfx_on = lambda raw: str(raw).strip().lower() != 'false'
-    if not _sfx_on(ADDON.getSetting('play_sfx')) or (xbmc.Player().isPlaying() and not xbmcgui.Window(10000).getProperty('FEFC.Wall')):
+    if not _sfx_on(ADDON.getSetting('play_sfx')) or _foreground_video():
         return
     def go():
         try:
@@ -991,6 +1008,20 @@ def details_sfx():
         except Exception as e:
             log('details sfx: %s' % e)
     threading.Thread(target=go, daemon=True).start()
+
+
+def _foreground_video():
+    """True when the player is a film or trailer, not the home-wall loop or the intro."""
+    try:
+        pl = xbmc.Player()
+        if not pl.isPlaying():
+            return False
+        cur = pl.getPlayingFile() or ''
+    except Exception:
+        return False
+    if not cur or 'home-wall' in cur or 'fefc-intro' in cur:
+        return False
+    return True
 
 
 def apply_nav_sound(on):
@@ -1045,29 +1076,58 @@ def main():
                 break
         if ADDON.getSettingBool('play_intro'):
             xbmc.executebuiltin('PlayMedia(%s,noresume)' % INTRO)
-            skip = None
             started = False
-            for n in range(120):
-                if monitor.waitForAbort(0.5):
+            t_play = None
+            show_skip = False
+            for n in range(160):
+                if monitor.waitForAbort(0.25):
                     return
-                playing = xbmc.Player().isPlaying()
-                if playing and skip is None:
+                pl = xbmc.Player()
+                playing = pl.isPlaying()
+                if playing:
                     started = True
+                    if t_play is None:
+                        t_play = time.time()
                     try:
-                        skip = SkipIntro()
-                        skip.show()
-                    except Exception as e:
-                        log('skip intro: %s' % e)
-                if started and not playing:
+                        pos = pl.getTime()
+                    except Exception:
+                        pos = time.time() - t_play
+                    if pos >= 3.0:
+                        show_skip = True
+                        break
+                elif started:
                     break
-                if not started and n > 6:
+                elif n > 24:
                     break
-            if skip is not None:
+            if show_skip and xbmc.Player().isPlaying():
+                skip = None
                 try:
-                    skip.close()
-                except Exception:
-                    pass
-                del skip
+                    skip = SkipIntro()
+                    holder = {'win': skip}
+
+                    def _watch():
+                        mon = xbmc.Monitor()
+                        while not holder['win'].done and not mon.abortRequested():
+                            if not xbmc.Player().isPlaying():
+                                break
+                            if mon.waitForAbort(0.2):
+                                return
+                        if not holder['win'].done:
+                            try:
+                                holder['win'].close()
+                            except Exception:
+                                pass
+
+                    threading.Thread(target=_watch, daemon=True).start()
+                    skip.doModal()
+                except Exception as e:
+                    log('skip intro: %s' % e)
+                if skip is not None:
+                    try:
+                        skip.close()
+                    except Exception:
+                        pass
+                    del skip
         home.setProperty('FEFC.Ready', '1')  # the home screen stays hidden behind a black splash until the intro has finished
         if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')

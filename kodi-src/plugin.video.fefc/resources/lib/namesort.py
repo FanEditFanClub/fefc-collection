@@ -56,3 +56,21 @@ def sort_key(raw, folder=None):
     if folder and _fold(str(folder).strip()) == _fold(sur):
         sur = str(folder).strip()
     return (_fold(sur), _fold(name))
+
+
+def original_folder_name(item_name, meta_folder=None):
+    """Drive/catalog folder name as stored. Never replaced with a metadata full name.
+
+    A metadata folder field is used only when the catalog item has no name of its own.
+    Spelling is kept (including a catalog misspelling). No last-token guess.
+    """
+    for candidate in (item_name, meta_folder):
+        text = re.sub(r'\s+', ' ', (candidate or '').strip())
+        if text:
+            return text
+    return ''
+
+
+def folder_sort_key(folder_name):
+    """Alphabetical order of the original folder name, accent-folded."""
+    return _fold(original_folder_name(folder_name))

@@ -384,7 +384,7 @@ def build(est, out):
             i = t2.rindex('</controls>')
             t2 = (t2[:i] + '\t<control type="group">\n\t\t<animation effect="zoom" start="100" end="121.95" center="960,540" time="0" '
                   'condition="true" type="conditional">Conditional</animation>\n\t\t<include>FefcTopBar</include>\n'
-                  '\t\t<include>FefcTicker</include>\n\t</control>\n\t' + t2[i:])
+                  '\t\t<include>FefcTicker</include>\n\t\t<include>FefcWallKeep</include>\n\t</control>\n\t' + t2[i:])
         else:
             t2 = re.sub(r'(<window\b[^>]*>)', lambda m: m.group(1) + zoom, t, count=1)
         if t2 != t:
