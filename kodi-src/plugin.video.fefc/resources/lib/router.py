@@ -258,7 +258,7 @@ class Router:
         gs = m['vgenres'].get(fid) or []
         if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' or v[3] == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk':
             # Same To Be Catalogued tile + destination as Home. No count badge on the tile.
-            t = 'special://xbmc/addons/skin.fefc/media/fefc-tbc-tile.png'
+            t = 'special://skin/media/fefc-tbc-tile.png'
             self.add_folder('To Be Catalogued', t, ', '.join(gs), landscape=t, action='folder', id='1503Wl56hzRppaIFcQisvQksOaeYOEjnk')
             return
         if fid in (m.get('people_meta') or {}) or v[1] in (FOLD['actors'], FOLD['directors']):
@@ -270,13 +270,10 @@ class Router:
 
     def add_tool(self, label, plot, art='DefaultAddonService.png', folder=False, landscape='', **kw):
         li = xbmcgui.ListItem(label, offscreen=True)
-        # Sort / Shuffle / similar tools are landscape cards (same shape as folders)
-        low = (label or '').lower()
+        # Dark landscape card. The skin draws the real label on it. Baked SORT / SHUFFLE
+        # images hid that label, and a missing texture then looked like a blank folder.
         if not landscape:
-            if 'shuffle' in low:
-                landscape = 'special://xbmc/addons/skin.fefc/media/fefc-shuffle-tile.png'
-            elif 'sort' in low:
-                landscape = 'special://xbmc/addons/skin.fefc/media/fefc-sort-tile.png'
+            landscape = 'special://skin/media/fefc-ol-tile.png'
         land = landscape or art
         li.setArt({'thumb': land, 'icon': art, 'landscape': land, 'fanart': land})
         li.setProperty('fefc_kind', 'action')
@@ -422,7 +419,7 @@ class Router:
         self.add_folder('My List', '', 'Your saved edits, synced with the FEFC web app.', action='mylist')
         self.add_folder('Search', '', 'Search every collection and edit.', action='search')
         self.add_folder('Read Me', '', 'Welcome and how the collection works.', action='readme')
-        self.add_folder('Support Us', 'special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', action='support')
+        self.add_folder('Support Us', 'special://skin/media/fefc-ol-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://skin/media/fefc-ol-tile.png', action='support', props={'fefc_kind': 'action'})
         if xbmcvfs.exists('special://xbmc/fefc-build.json'):
             self.add_folder('Check for FEFC app update', '', 'See if a newer FEFC app is available.', action='update')
         self.end()
@@ -474,7 +471,7 @@ class Router:
         if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
             # 0.4.2: 01 - Testing is the first item in To Be Catalogued, with its own tile (the old
             # fefc-tbc-tile art says "TO BE CATALOGUED" and hid the "01 - Testing" label entirely).
-            tile = 'special://xbmc/addons/skin.fefc/media/fefc-testing-tile.png'
+            tile = 'special://skin/media/fefc-testing-tile.png'
             self.add_folder('01 - Testing', tile, 'App-only provider links. 2 verified videos.', landscape=tile, action='folder', id='pt:testing')
         if not page:
             self._maybe_sfx(catalog.sfx_for(m, fid))
@@ -488,15 +485,15 @@ class Router:
             seen_kind = set()
             for did, dname, kind in (m.get('docs') or {}).get((m['items'].get(fid) or [0, 0, 0, ''])[3] or fid, []):
                 if kind == 'gdoc':
-                    self.add_folder(dname, 'special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png', 'Document (read-only).', landscape='special://xbmc/addons/skin.fefc/media/fefc-doc-tile.png', action='gdoc', id=did, title=dname)
+                    self.add_folder(dname, 'special://skin/media/fefc-doc-tile.png', 'Document (read-only).', landscape='special://skin/media/fefc-doc-tile.png', action='gdoc', id=did, title=dname)
                     continue
                 if kind in seen_kind:
                     continue
                 seen_kind.add(kind)
                 if kind == 'support':
-                    self.add_folder('Support Us', 'special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://xbmc/addons/skin.fefc/media/fefc-support-tile.png', action='support')
+                    self.add_folder('Support Us', 'special://skin/media/fefc-ol-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://skin/media/fefc-ol-tile.png', action='support', props={'fefc_kind': 'action'})
                 else:
-                    self.add_folder('Read First', 'special://xbmc/addons/skin.fefc/media/fefc-readfirst-tile.png', 'Welcome and how the collection works.', landscape='special://xbmc/addons/skin.fefc/media/fefc-readfirst-tile.png', action='readme')
+                    self.add_folder('Read First', 'special://skin/media/fefc-readfirst-tile.png', 'Welcome and how the collection works.', landscape='special://skin/media/fefc-readfirst-tile.png', action='readme')
         for k in chunk:
             if m['items'][k][2]:
                 self.add_dir_item(m, k)
@@ -666,7 +663,7 @@ class Router:
             if err:
                 _log('mylist sync: %s' % err)
         who = ml.db.get('user') or 'linked'
-        dark = 'special://xbmc/addons/skin.fefc/media/fefc-ol-tile.png'
+        dark = 'special://skin/media/fefc-ol-tile.png'
         link_plot = 'Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.'
         if ml.linked:
             link_plot += ' Signed in as %s.' % who
@@ -1154,7 +1151,7 @@ class Router:
         idx = providers.index(doc)
         has_kids = set(v.get('parent') for v in idx.values() if v.get('parent'))
         # 0.4.2: video tile, not the DOCUMENT tile — these are video files and links, not documents.
-        tile = 'special://xbmc/addons/skin.fefc/media/fefc-video-tile.png'
+        tile = 'special://skin/media/fefc-video-tile.png'
         rows = [v for v in idx.values() if v.get('parent') == fid]
         rows.sort(key=lambda r: (0 if r.get('kind') == 'folder' else 1, (r.get('name') or '').lower()))
         for r in rows:
@@ -1200,7 +1197,7 @@ class Router:
         # 0.5.0: portrait VIDEO poster — the landscape VIDEO tile squashed into a 222x333 poster slot
         # is why these showed with no real artwork. No per-file poster exists for provider links, so
         # the portrait tile is the artwork until a real thumbnail is wired per provider.
-        poster = 'special://xbmc/addons/skin.fefc/media/fefc-video-poster.png'
+        poster = 'special://skin/media/fefc-video-poster.png'
         li.setArt({'thumb': poster, 'icon': poster, 'poster': poster})
         li.setProperty('IsPlayable', 'true')
         li.setProperty('fefc_kind', 'video')
@@ -1359,7 +1356,7 @@ class Router:
             li.setProperty('IsPlayable', 'true')
             li.setProperty('fefc_kind', 'video')
             li.setProperty('fefc_download', 'true')
-            poster = 'special://xbmc/addons/skin.fefc/media/fefc-video-poster.png'
+            poster = 'special://skin/media/fefc-video-poster.png'
             try:
                 m = _model()
                 if r.get('id') in m['items']:

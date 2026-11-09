@@ -264,8 +264,9 @@
 	<!-- Off-screen player target so the home-wall loop (and its ambience) is not stopped when Home closes.
 	     Home keeps the visible videowindow. A real fullscreen film uses the fullscreen window. -->
 	<include name="FefcWallKeep">
+		<!-- Far enough left that a 90% zoom around the screen centre cannot pull any of it on screen. -->
 		<control type="videowindow">
-			<left>-400</left><top>0</top><width>320</width><height>180</height>
+			<left>-3200</left><top>0</top><width>480</width><height>270</height>
 			<visible>!Window.IsActive(home)</visible>
 		</control>
 	</include>

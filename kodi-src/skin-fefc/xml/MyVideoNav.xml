@@ -7,6 +7,8 @@
 	<backgroundcolor>FF000000</backgroundcolor>
 	<views>500,501</views>
 	<controls>
+		<!-- Outside the content zoom. Inside it, a videowindow parked at a negative x is scaled back onto the left edge. -->
+		<include>FefcWallKeep</include>
 		<control type="group">
 			<include>FefcContentZoom</include>
 		<control type="image">
@@ -38,7 +40,6 @@
 			<scroll>true</scroll>
 			<visible>String.IsEqual(Container.PluginCategory,My List)</visible>
 		</control>
-		<include>FefcWallKeep</include>
 		<!-- landscape tiles -->
 		<control type="panel" id="500">
 			<visible>!Container.Content(movies)</visible>

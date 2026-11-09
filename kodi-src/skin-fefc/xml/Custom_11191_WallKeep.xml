@@ -6,7 +6,7 @@
 	<zorder>0</zorder>
 	<controls>
 		<control type="videowindow">
-			<left>-800</left>
+			<left>-3200</left>
 			<top>0</top>
 			<width>480</width>
 			<height>270</height>
