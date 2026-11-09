@@ -1649,9 +1649,16 @@ class OptimusWindow(xbmcgui.WindowDialog):
         super().__init__()
         from . import optimusplan
         self.query = ''
+        self._closed = False
+        self._anim = False
+        from . import optimusframes
+        media = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media')
+        self._frames = optimusframes.frame_list(media)
+        self._still = _optimus_art()
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        # Still is the fallback until a reviewed optimus-search clip exists. Same box, keep aspect.
-        self.addControl(xbmcgui.ControlImage(48, 110, 480, 480, _optimus_art(), aspectRatio=2))
+        # Still until the first silent frame. Never a video player.
+        self.art = xbmcgui.ControlImage(48, 110, 480, 480, self._still, aspectRatio=2)
+        self.addControl(self.art)
         self.addControl(xbmcgui.ControlLabel(560, 96, 660, 52, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
         cue = xbmcgui.ControlTextBox(560, 160, 660, 88, font='font13', textColor='FFE8EEF6')
         self.addControl(cue)
@@ -1664,10 +1671,51 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self.addControl(self.btn)
         self.status = xbmcgui.ControlLabel(560, 460, 660, 48, 'Type a title, then press Search.', font='font12', textColor='FF99CCFF')
         self.addControl(self.status)
-        self.addControl(xbmcgui.ControlLabel(560, 540, 660, 36, 'Back to close.', font='font12', textColor='FF7F8FA6'))
+        self.addControl(xbmcgui.ControlLabel(560, 540, 660, 36, 'Back to close. Up from Search types a title.', font='font12', textColor='FF7F8FA6'))
         self.edit.controlDown(self.btn)
         self.btn.controlUp(self.edit)
-        self.setFocus(self.edit)
+        # Search starts focused so the clip can play. Moving onto the field stops it.
+        # The frame pump never calls setFocus.
+        self.setFocus(self.btn)
+
+    def _field_focused(self):
+        try:
+            return self.getFocusId() == self.edit.getId()
+        except Exception:
+            return False
+
+    def _halt_anim(self):
+        if not self._anim and not self._frames:
+            return
+        self._anim = False
+        try:
+            self.art.setImage(self._still)
+        except Exception:
+            pass
+
+    def doModal(self):
+        """Pump silent frames on this thread. Do not open Kodi's video player."""
+        from . import optimusplan
+        self.show()
+        self._anim = bool(self._frames)
+        mon = xbmc.Monitor()
+        i = 0
+        n = len(self._frames)
+        while not self._closed and not mon.abortRequested():
+            if self._anim and self._field_focused():
+                self._halt_anim()
+            elif self._anim:
+                try:
+                    self.art.setImage(self._frames[i % n])
+                except Exception:
+                    self._halt_anim()
+                i += 1
+            if mon.waitForAbort(optimusplan.FRAME_MS / 1000.0 if self._anim else 0.2):
+                break
+        try:
+            self.close()
+        except Exception:
+            pass
 
     def _submit(self):
         from . import searchflow
@@ -1685,15 +1733,46 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self.query = r['query']
         self.close()
 
+    def close(self):
+        self._closed = True
+        self._anim = False
+        try:
+            super().close()
+        except Exception:
+            pass
+
     def onControl(self, c):
         if c == self.btn:
             self._submit()
 
     def onAction(self, action):
-        if action.getId() == xbmcgui.ACTION_SELECT_ITEM:
+        aid = action.getId()
+        uni = 0
+        try:
+            uni = action.getUnicode() or 0
+        except Exception:
+            uni = 0
+        # Up or landing on the field stops the frames. A typed character also stops them
+        # and moves focus onto the field so the next key is not lost to the button.
+        if self._field_focused() or aid == xbmcgui.ACTION_MOVE_UP:
+            self._halt_anim()
+        if uni >= 32:
+            self._halt_anim()
+            if not self._field_focused():
+                try:
+                    self.setFocus(self.edit)
+                except Exception:
+                    pass
+        if aid == xbmcgui.ACTION_SELECT_ITEM:
+            if self._field_focused():
+                self._halt_anim()
             self._submit()
             return
+        if aid in (xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401) and self._field_focused():
+            self._halt_anim()
+            return
         if _dialog_back(action):
+            self._closed = True
             self.close()
 
 

@@ -275,6 +275,31 @@ print('ok', info['side'], info['modules'])
   assert.match(out, /^ok /);
 });
 
+test('search animation is silent frames and does not use the video player', () => {
+  const media = path.join(root, 'kodi-src/plugin.video.fefc/resources/media/optimus-search');
+  const frames = fs.readdirSync(media).filter((n) => /^f\d+\.jpg$/.test(n)).sort();
+  assert.ok(frames.length >= 24 && frames.length <= 60);
+  const bytes = frames.reduce((n, f) => n + fs.statSync(path.join(media, f)).size, 0);
+  assert.ok(bytes < 800000, bytes);
+  const out = py(`
+import os, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import optimusframes, optimusplan
+media = ${JSON.stringify(path.join(root, 'kodi-src/plugin.video.fefc/resources/media'))}
+frames = optimusframes.frame_list(media)
+assert frames and all(p.endswith('.jpg') for p in frames)
+assert not any(p.lower().endswith(('.mp4', '.m4a', '.aac', '.wav')) for p in frames)
+assert optimusplan.FRAME_MS >= 80
+print('ok', len(frames))
+`);
+  assert.match(out, /^ok /);
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(router, /def _halt_anim/);
+  assert.match(router, /setFocus\(self\.btn\)/);
+  assert.doesNotMatch(router, /Player\(\)\.play\([^)]*optimus/);
+  assert.doesNotMatch(router, /optimus-popcorn-search\.mp4/);
+});
+
 test('item kind, my list actions, and opening sfx stay off the wall player', () => {
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
