@@ -10,10 +10,14 @@ test('intro skip control reads SKIP and uses the Home tile look', () => {
   assert.doesNotMatch(html, /Skip ›|SKIP INTRO/);
   const css = fs.readFileSync(path.join(root, 'style.css'), 'utf8');
   assert.match(css, /#intro \.ihint\{[^}]*border:2px solid #9fb6cf/);
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  assert.match(home, /<label>SKIP<\/label>/);
+  assert.match(home, /fefc-ol-tile\.png/);
+  assert.match(home, /fefc-ol-focus\.png/);
+  assert.doesNotMatch(home, /SKIP INTRO/);
   const py = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
-  assert.match(py, /'SKIP'/);
-  assert.match(py, /fefc-ol-tile\.png/);
-  assert.doesNotMatch(py, /SKIP INTRO/);
+  assert.match(py, /SKIP_AFTER = 3\.0/);
+  assert.match(py, /SetFocus\(9040\)/);
 });
 
 test('details actions use the Home tile include and keep the star', () => {

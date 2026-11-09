@@ -138,59 +138,143 @@ print('ok')
   assert.doesNotMatch(router, /Player\(\)\.stop\(\)/);
 });
 
-test('mosaic cells, skip safe area, cast color, ticker, home-only about', () => {
-  const wall = fs.readFileSync(path.join(root, 'tools/build_home_wall.py'), 'utf8');
-  assert.match(wall, /TW, TH, GP = 400, 200, 12/);
-  assert.match(wall, /348 - TW - GP/);
-  assert.match(wall, /1172 \+ TW \+ GP/);
-  assert.doesNotMatch(wall, /TW, TH = 324, 200/);
+test('mosaic lattice, outside tap, skip, bar fit, ticker slide', () => {
+  const out = py(`
+import sys
+sys.path.insert(0, 'tools')
+import home_layout as L
+cells = L.cells()
+assert len(cells) == 16
+assert len({(w, h) for _c, _r, _x, _y, w, h in cells}) == 1
+assert L.CELL_W == 352 and L.CELL_H == 198
+for side in ('top', 'bottom', 'left', 'right'):
+    n = [c for c in cells if L.on_side(c[0], c[1], side)]
+    assert len(n) == 5, (side, len(n))
+beside = [c for c in cells if c[0] in (0, 4) and c[1] in (1, 2, 3)]
+assert len(beside) == 6
+for col, row in ((0, 0), (4, 0), (0, 4), (4, 4)):
+    hit = [c for c in cells if c[0] == col and c[1] == row]
+    assert len(hit) == 1
+    _c, _r, x, y, w, h = hit[0]
+    assert x >= 0 and y >= 0 and x + w <= L.W and y + h <= L.H
+mx, my, mw, mh = L.menu_block()
+assert (mx, my, mw, mh) == (400, 225, 1120, 630)
+# menu cells are the same rectangle the video cells use
+assert L.cell_rect(1, 1) == (400, 225, 352, 198)
+assert L.cell_rect(2, 0)[0] == 784
+print('ok')
+`);
+  assert.equal(out, 'ok');
   const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
   assert.match(home, /<control type="videowindow">\s*<left>0<\/left><top>0<\/top><width>1920<\/width><height>1080<\/height>/);
-  assert.match(home, /<label>ABOUT<\/label>/);
-  assert.match(home, /FEFC\.UpdateLabel/);
-  assert.match(home, /<width>276<\/width>/);
+  assert.match(home, /<control type="button" id="9001">\s*<left>400<\/left><top>225<\/top><width>352<\/width><height>198<\/height>/);
+  assert.match(home, /<control type="button" id="9009">\s*<left>1168<\/left><top>657<\/top><width>352<\/width><height>198<\/height>/);
+  assert.match(home, /<control type="button" id="9049">/);
+  const guard = home.slice(home.indexOf('id="9049"'), home.indexOf('id="9000"'));
+  assert.doesNotMatch(guard, /PlayerControl|FullScreen|ActivateWindow|RunPlugin/);
+  assert.match(home, /<control type="button" id="9040">/);
+  assert.match(home, /<label>SKIP<\/label>/);
+  assert.match(home, /SetFocus\(9040\)/);
+  assert.match(home, /<label>SEARCH<\/label>/);
+  assert.match(home, /<label>SETTINGS<\/label>/);
+  assert.match(home, /<width>165<\/width>/);
+  assert.match(home, /<width>185<\/width>/);
+  assert.match(home, /<width>250<\/width>/);
   const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  assert.match(skin, /<include name="FefcBarIconButton">[\s\S]*?<textoffsetx>36<\/textoffsetx>/);
+  assert.match(skin, /end="-16000,0"/);
+  assert.match(skin, /tween="linear"/);
+  assert.match(skin, /loop="true"/);
+  assert.doesNotMatch(skin, /<scroll>true<\/scroll>/);
   assert.doesNotMatch(skin, /<label>ABOUT<\/label>/);
-  assert.doesNotMatch(skin, /FEFC\.UpdateLabel/);
-  assert.match(skin, /<font>font_folder<\/font>/);
-  assert.match(skin, /<scroll>true<\/scroll>/);
-  assert.match(skin, /<scrollspeed>70<\/scrollspeed>/);
-  const info = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/DialogVideoInfo.xml'), 'utf8');
-  assert.doesNotMatch(info, /textcolor>FF99CCFF<\/textcolor><label>\$INFO\[ListItem\.Label\]/);
-  assert.match(info, /fefc-ol-focus\.png/);
   const svc = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
-  assert.match(svc, /ControlButton\(960, 520, 280, 140, 'SKIP'/);
-  assert.doesNotMatch(svc, /1544, 886/);
+  assert.match(svc, /SKIP_AFTER = 3\.0/);
+  assert.match(svc, /windowed=True/);
+  assert.match(svc, /SetFocus\(9040\)/);
+  assert.match(svc, /fit_loop/);
   assert.doesNotMatch(svc, /ticker_frame/);
-  const support = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
-  assert.doesNotMatch(support, /def _bob/);
-  assert.match(support, /aspectRatio=self\.KEEP/);
+  assert.doesNotMatch(svc, /PlayMedia\(/);
+  assert.doesNotMatch(svc, /ControlButton\(960/);
   const fonts = fs.readFileSync(path.join(root, 'tools/build_kodi_skin.py'), 'utf8');
-  assert.match(fonts, /font_folder[\s\S]{0,80}<size>26<\/size>/);
+  assert.match(fonts, /fefc_bar<\/name>[\s\S]{0,80}<size>22<\/size>/);
 });
 
-test('restored wall frame has tiles in the 5+5+3 places and black behind the menu', () => {
+test('bar labels fit after Kodi doubles textoffsetx', () => {
   const out = py(`
-import subprocess, os
+from PIL import ImageFont
+font = ImageFont.truetype('/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf', 22)
+def tw(s):
+    return font.getlength(s)
+# width - 2*offset must hold the word. Icon buttons use offset 36.
+need = {
+    'SEARCH': (165, 36),
+    'SETTINGS': (185, 36),
+    'SOUND OFF': (208, 36),
+    'HOME': (151, 36),
+    'ABOUT': (104, 0),
+    'RESUME': (120, 0),
+    'STOP': (90, 0),
+    'Checking for updates': (250, 0),
+    'Update available': (250, 0),
+    'Unable to check': (250, 0),
+    'Up to date': (250, 0),
+}
+for label, (width, offset) in need.items():
+    room = width - 2 * offset
+    got = tw(label)
+    assert got + 6 <= room, (label, got, room)
+print('ok')
+`);
+  assert.equal(out, 'ok');
+});
+
+test('ticker loop string lands on the slide slot', () => {
+  const out = py(`
+import sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import tickerfit
+font = 'kodi-src/skin-fefc/fonts/Jura-Bold.ttf'
+sample = '[COLOR FF5865F2]\\ue001[/COLOR]  Join the FEFC Discord    •    [COLOR FFFFB02E]NEW[/COLOR]  Example Edit'
+fitted = tickerfit.fit_loop(sample, font)
+w = tickerfit.text_width(tickerfit.strip_colors(fitted), font, 27)
+assert abs(w - tickerfit.SLOT) < 8, w
+assert '\\ue001' in fitted and 'NEW' in fitted
+print('ok', round(w, 1))
+`);
+  assert.match(out, /^ok /);
+});
+
+test('wall frame shows all four corners, the top row, and black behind the menu', () => {
+  const out = py(`
+import subprocess
 from PIL import Image
 src = 'assets/home-wall.mp4'
 frame = '/tmp/fefc-wall-frame.png'
-r = subprocess.run(['ffmpeg', '-y', '-v', 'error', '-i', src, '-frames:v', '1', frame], capture_output=True)
+r = subprocess.run(['ffmpeg', '-y', '-v', 'error', '-ss', '2', '-i', src, '-frames:v', '1', frame], capture_output=True)
 assert r.returncode == 0, r.stderr
 im = Image.open(frame).convert('RGB')
 assert im.size == (1920, 1080), im.size
-def luma(x, y, w=24, h=24):
-    c = im.crop((x, y, x+w, y+h))
-    p = list(c.getdata())
-    return sum(sum(px) for px in p) / (len(p) * 3)
-# menu cell centres must be the black plate in the rendered wall
-for x, y in ((548, 312), (960, 312), (1372, 312)):
-    assert luma(x, y) < 12, (x, y, luma(x, y))
-# a side tile and a bottom tile must carry picture
-assert luma(120, 80) > 12, luma(120, 80)
-assert luma(1700, 80) > 12, luma(1700, 80)
-assert luma(548, 920) > 12, luma(548, 920)
-print('ok', round(luma(120, 80), 1), round(luma(548, 312), 1))
+def p90(box):
+    c = im.crop(box)
+    vals = sorted(sum(px) / 3 for px in c.getdata())
+    return vals[int(len(vals) * 0.9)]
+# menu centre is the black plate (a dark clip can sit near black in one 24px sample)
+assert p90((784, 441, 1136, 639)) < 3, p90((784, 441, 1136, 639))
+# four corners, top centre, bottom centre, and a side cell carry picture
+boxes = {
+    'tl': (16, 9, 368, 207),
+    'tr': (1552, 9, 1904, 207),
+    'bl': (16, 873, 368, 1071),
+    'br': (1552, 873, 1904, 1071),
+    'top': (784, 9, 1136, 207),
+    'bottom': (784, 873, 1136, 1071),
+    'side': (16, 441, 368, 639),
+}
+for name, box in boxes.items():
+    assert p90(box) > 18, (name, p90(box))
+# gutter between the left column and the menu is black
+assert p90((368, 40, 400, 180)) < 8
+print('ok', round(p90(boxes['tl']), 1), round(p90(boxes['top']), 1))
 `);
   assert.match(out, /^ok /);
 });

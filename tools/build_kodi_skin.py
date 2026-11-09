@@ -334,7 +334,7 @@ def patch_fonts(xml_dir):
         extra += ('\t\t<font>\n\t\t\t<name>%s</name>\n\t\t\t<filename>Antonio-Bold.ttf</filename>\n'
                   '\t\t\t<size>%d</size>\n\t\t</font>\n') % (name, size)
     # 0.4.0: ticker keeps Jura (it carries the X/Discord/Facebook/Reddit brand glyphs U+E001-E004 that Noto lacks)
-    extra += '\t\t<font>\n\t\t\t<name>fefc_bar</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n\t\t\t<size>20</size>\n\t\t</font>\n'
+    extra += '\t\t<font>\n\t\t\t<name>fefc_bar</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n\t\t\t<size>22</size>\n\t\t</font>\n'
     extra += '\t\t<font>\n\t\t\t<name>fefc_ticker</name>\n\t\t\t<filename>Jura-Bold.ttf</filename>\n\t\t\t<size>27</size>\n\t\t</font>\n'
     s = re.sub(r'(</fontset>)', extra + r'\1', s)
     p.write_text(s, encoding='utf-8')

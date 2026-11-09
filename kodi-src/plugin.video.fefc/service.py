@@ -16,6 +16,7 @@ import xbmcvfs
 
 ADDON = xbmcaddon.Addon()
 INTRO = 'special://xbmc/media/fefc-intro.mp4'
+SKIP_AFTER = 3.0
 SRC_URL = 'https://fefc-collection.pages.dev/kodi/'
 SRC_XML = '''<sources>
     <programs><default pathversion="1"></default></programs>
@@ -631,7 +632,15 @@ def build_ticker():
             log('community-feed: %s' % e)
     if not any_ok:
         return ''
-    return tk.build_text(new_items, community)
+    text = tk.build_text(new_items, community)
+    try:
+        import tickerfit
+        font = xbmcvfs.translatePath('special://skin/fonts/Jura-Bold.ttf')
+        if font and os.path.exists(font):
+            text = tickerfit.fit_loop(text, font)
+    except Exception as e:
+        log('ticker fit: %s' % e)
+    return text
 
 
 
@@ -918,10 +927,14 @@ class HomeWall(object):
                 self._start(pl, sound, self.pos)
                 return
             if at_home:
-                if self.pos > self.LOOP - 0.6 or self.pos < 0.35:
-                    home.setProperty('FEFC.WallSeam', '1')
-                else:
-                    home.clearProperty('FEFC.WallSeam')
+                # Only write the property when it changes. Repeating it every tick dirties the
+                # window and restarts the ticker slide.
+                seam = '1' if (self.pos > self.LOOP - 0.6 or self.pos < 0.35) else ''
+                if home.getProperty('FEFC.WallSeam') != seam:
+                    if seam:
+                        home.setProperty('FEFC.WallSeam', seam)
+                    else:
+                        home.clearProperty('FEFC.WallSeam')
             return
         if cur:
             return
@@ -931,29 +944,13 @@ class HomeWall(object):
         self._start(pl, sound, self.pos if self.pos > 0.5 else 0.0)
 
 
-class SkipIntro(xbmcgui.WindowDialog):
-    """Focused SKIP tile on the intro. Sits in the 1920x1080 safe area (ends at x 1240, y 660), not in overscan."""
-
-    def __init__(self):
-        super().__init__()
-        self.done = False
-        self.btn = xbmcgui.ControlButton(960, 520, 280, 140, 'SKIP', font='font13_title', textColor='FFFFFFFF',
-                                         focusedColor='FFFFFFFF', alignment=6,
-                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
-        self.addControl(self.btn)
-        self.setFocus(self.btn)
-
-    def onControl(self, c):
-        self.done = True
-        try:
-            xbmc.Player().stop()
-        except Exception:
-            pass
-        self.close()
-
-    def onAction(self, action):
-        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
-            self.onControl(None)
+def _keep_intro_windowed(monitor):
+    """PlayMedia used to fullscreen the intro and cover every skin button, including SKIP.
+    If the player still flips to fullscreen, step back once. A second toggle would re-enter it."""
+    if not xbmc.getCondVisibility('Window.IsActive(fullscreenvideo)'):
+        return
+    xbmc.executebuiltin('FullScreen')
+    monitor.waitForAbort(0.4)
 
 
 def details_sfx():
@@ -1044,30 +1041,42 @@ def main():
             if xbmc.getCondVisibility('Window.IsActive(home)'):
                 break
         if ADDON.getSettingBool('play_intro'):
-            xbmc.executebuiltin('PlayMedia(%s,noresume)' % INTRO)
-            skip = None
+            # Windowed on the Home videowindow so the skin SKIP button (9040) is on top of the picture.
+            home.setProperty('FEFC.Intro', '1')
+            home.clearProperty('FEFC.Skip')
+            try:
+                li = xbmcgui.ListItem('FEFC', offscreen=True)
+                xbmc.Player().play(INTRO, li, windowed=True)
+            except Exception as e:
+                log('intro play: %s' % e)
             started = False
-            for n in range(120):
-                if monitor.waitForAbort(0.5):
+            for _n in range(40):
+                if monitor.waitForAbort(0.2):
                     return
-                playing = xbmc.Player().isPlaying()
-                if playing and skip is None:
+                _keep_intro_windowed(monitor)
+                if xbmc.Player().isPlaying():
                     started = True
-                    try:
-                        skip = SkipIntro()
-                        skip.show()
-                    except Exception as e:
-                        log('skip intro: %s' % e)
-                if started and not playing:
                     break
-                if not started and n > 6:
-                    break
-            if skip is not None:
-                try:
-                    skip.close()
-                except Exception:
-                    pass
-                del skip
+            if started:
+                if monitor.waitForAbort(SKIP_AFTER):
+                    return
+                _keep_intro_windowed(monitor)
+                if xbmc.Player().isPlaying():
+                    home.setProperty('FEFC.Skip', '1')
+                    xbmc.executebuiltin('SetFocus(9040)')
+                while xbmc.Player().isPlaying():
+                    if monitor.waitForAbort(0.2):
+                        return
+                    _keep_intro_windowed(monitor)
+            home.clearProperty('FEFC.Skip')
+            home.clearProperty('FEFC.Intro')
+            try:
+                pl = xbmc.Player()
+                cur = pl.getPlayingFile() if pl.isPlaying() else ''
+                if cur and 'fefc-intro' in cur:
+                    pl.stop()
+            except Exception:
+                pass
         home.setProperty('FEFC.Ready', '1')  # the home screen stays hidden behind a black splash until the intro has finished
         if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')
