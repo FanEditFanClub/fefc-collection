@@ -1193,10 +1193,21 @@ class Router:
                ('Venmo', 'https://venmo.com/u/FanEditFanClub', '@FanEditFanClub')]
 
     def support(self):
-        """Support Us: PayPal / Patreon / Venmo tiles with QR codes (like the old Fire TV app and the web app)."""
+        """Support Us. Home and any folder use the same screen: three Home-style tiles.
+        The QR dialog stays behind the tile press."""
         win = SupportWindow(self.SUPPORT)
         win.doModal()
         del win
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
+    def support_qr(self):
+        """Open the square code for one payment tile. The Support Us screen itself has no QR."""
+        want = (self.params.get('name') or '').lower()
+        for name, url, sub in self.SUPPORT:
+            if name.lower() == want:
+                PayQrWindow(name, url, sub).doModal()
+                break
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
@@ -1582,42 +1593,82 @@ def _short_url(u):
 
 
 class SupportWindow(xbmcgui.WindowDialog):
-    """Web-style Support Us: Optimus on the left, three landscape payment cards.
-    Selecting a card opens a square QR for that same URL. Logos use aspect keep."""
-    COLORS = {'Patreon': 'FFFF424D', 'PayPal': 'FF003087', 'Venmo': 'FF008CFF'}
+    """Three Home-style tiles (black face, orange focus glow, same centered face).
+    Optimus stays on the left. The bottom bar and ticker match the other screens.
+    A tile press opens the square QR. The code is not drawn here. 1920x1080, no video."""
     KEEP = 2
+    LOGOS = {'Patreon': 'fefc-logo-patreon.png', 'PayPal': 'fefc-logo-paypal.png', 'Venmo': 'fefc-logo-venmo.png'}
 
     def __init__(self, items):
         super().__init__()
         self.items = items
-        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        self.addControl(xbmcgui.ControlLabel(40, 28, 1200, 48, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=2))
-        self.addControl(xbmcgui.ControlLabel(40, 82, 1200, 40, 'Thank you for supporting the collection.', font='font13', textColor='FFE8EEF6', alignment=2))
-        self.addControl(xbmcgui.ControlImage(28, 140, 340, 500, 'fefc-optimus-begging.png', aspectRatio=self.KEEP))
+        # This dialog is laid out in the 1280x720 space Kodi scales up to 1920x1080.
+        # Home tiles are 400x200 there; the same proportion here is 267x133, drawn 280x140.
+        # font10_title (22) scales to the same on-screen size as Home's font11_tile (34).
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
+        self.addControl(xbmcgui.ControlImage(24, 70, 300, 500, 'fefc-optimus-begging.png', aspectRatio=self.KEEP))
+        self.addControl(xbmcgui.ControlLabel(340, 70, 900, 48, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=6))
         self.btns = []
-        w, h, gap = 270, 176, 18
-        x0, y0 = 390, 250
+        xs = (360, 656, 952)
+        tw, th = 280, 140
         for k, (name, url, sub) in enumerate(items):
-            x = x0 + k * (w + gap)
-            b = xbmcgui.ControlButton(x, y0, w, h, '', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+            x = xs[k]
+            b = xbmcgui.ControlButton(x, 200, tw, th, '', font='font10_title', textColor='FFFFFFFF', alignment=6,
+                                       focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
             self.addControl(b)
             self.btns.append(b)
-            icon = {'Patreon': 'fefc-ic-patreon.png', 'PayPal': 'fefc-ic-paypal.png', 'Venmo': 'fefc-ic-venmo.png'}.get(name, 'fefc-lc-pill.png')
-            self.addControl(xbmcgui.ControlImage(x + 99, y0 + 14, 72, 72, icon, aspectRatio=self.KEEP))
-            self.addControl(xbmcgui.ControlImage(x + 40, y0 + 94, w - 80, 6, 'fefc-white.png', colorDiffuse=self.COLORS.get(name, 'FFFF9C00')))
-            self.addControl(xbmcgui.ControlLabel(x + 8, y0 + 106, w - 16, 32, name, font='font13_title', textColor='FFFFFFFF', alignment=6))
-            self.addControl(xbmcgui.ControlLabel(x + 8, y0 + 138, w - 16, 28, sub, font='font12', textColor='FFFF9C00', alignment=6))
-        for k, b in enumerate(self.btns):
-            b.controlLeft(self.btns[k - 1])
-            b.controlRight(self.btns[(k + 1) % len(self.btns)])
-        self.addControl(xbmcgui.ControlLabel(40, 660, 1200, 32, 'Select a card for a square code.  Back to close.', font='font12', textColor='FF7F8FA6', alignment=2))
+            if name == 'Patreon':
+                self.addControl(xbmcgui.ControlImage(x + 95, 208, 90, 72, self.LOGOS[name], aspectRatio=self.KEEP))
+            else:
+                self.addControl(xbmcgui.ControlImage(x + 24, 214, 232, 60, self.LOGOS[name], aspectRatio=self.KEEP))
+            self.addControl(xbmcgui.ControlLabel(x, 284, tw, 48, name, font='font10_title', textColor='FFFFFFFF', alignment=6))
+        self.addControl(xbmcgui.ControlImage(40, 620, 1200, 56, 'fefc-lc-pill.png', colorDiffuse='E6101418'))
+        bar = (('HOME', 70, 160), ('SEARCH', 250, 160), ('SOUND ON', 430, 200), ('SETTINGS', 650, 190))
+        self.menu = []
+        for lab, x, w in bar:
+            btn = xbmcgui.ControlButton(x, 626, w, 44, lab, font='fefc_bar', textColor='FFFFFFFF', alignment=6,
+                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-tile.png')
+            self.addControl(btn)
+            self.menu.append(btn)
+        for i, b in enumerate(self.btns):
+            b.controlLeft(self.btns[i - 1])
+            b.controlRight(self.btns[(i + 1) % len(self.btns)])
+            b.controlDown(self.menu[0])
+            b.controlUp(b)
+        for i, b in enumerate(self.menu):
+            b.controlLeft(self.menu[i - 1])
+            b.controlRight(self.menu[(i + 1) % len(self.menu)])
+            b.controlUp(self.btns[0])
+            b.controlDown(self.btns[0])
+        tick = xbmc.getInfoLabel('Window(home).Property(FEFC.Ticker)') or ''
+        self.addControl(xbmcgui.ControlImage(40, 684, 1200, 28, 'fefc-tile.png'))
+        self.addControl(xbmcgui.ControlLabel(52, 684, 1176, 28, tick, font='font12', textColor='FFFFFFFF', alignment=4))
         self.setFocus(self.btns[0])
+
+    def _menu_go(self, c):
+        if c == self.menu[0]:
+            self.close()
+            xbmc.executebuiltin('ActivateWindow(Home)')
+        elif c == self.menu[1]:
+            self.close()
+            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=searchbox)')
+        elif c == self.menu[2]:
+            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)')
+            try:
+                self.menu[2].setLabel('SOUND OFF' if xbmc.getInfoLabel('Window(home).Property(FEFC.SoundOff)') else 'SOUND ON')
+            except Exception:
+                pass
+        elif c == self.menu[3]:
+            self.close()
+            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=settings)')
 
     def onControl(self, c):
         for k, b in enumerate(self.btns):
             if c == b:
                 name, url, sub = self.items[k]
                 PayQrWindow(name, url, sub).doModal()
+                return
+        self._menu_go(c)
 
     def onAction(self, action):
         # Overriding onAction replaces the default, so Select never reached onControl.
@@ -1630,6 +1681,10 @@ class SupportWindow(xbmcgui.WindowDialog):
                 if b.getId() == fid:
                     name, url, sub = self.items[k]
                     PayQrWindow(name, url, sub).doModal()
+                    return
+            for b in self.menu:
+                if b.getId() == fid:
+                    self._menu_go(b)
                     return
         if _dialog_back(action):
             self.close()
@@ -1865,7 +1920,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop',
-          'armback': 'armback', 'fefcmenu': 'fefcmenu'}
+          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr'}
 
 
 def _play_back_sfx():

@@ -160,9 +160,10 @@
 	<include name="FefcTopBar">
 		<param name="down">noop</param>
 		<param name="up">noop</param>
+		<param name="show">!Window.IsActive(home) + !Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</param>
 		<definition>
 		<control type="group">
-			<visible>!Window.IsActive(home) + !Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</visible>
+			<visible>$PARAM[show]</visible>
 			<control type="image">
 				<left>110</left><top>866</top><width>1700</width><height>84</height>
 				<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
