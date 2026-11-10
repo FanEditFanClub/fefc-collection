@@ -1597,7 +1597,7 @@ class SupportWindow(xbmcgui.WindowDialog):
     Optimus stays on the left. The bottom bar and ticker match the other screens.
     A tile press opens the square QR. The code is not drawn here. 1920x1080, no video."""
     KEEP = 2
-    LOGOS = {'Patreon': 'fefc-sup-patreon.png', 'PayPal': 'fefc-sup-paypal.png', 'Venmo': 'fefc-sup-venmo.png'}
+    LOGOS = {'Patreon': 'fefc-brand2-patreon.png', 'PayPal': 'fefc-brand2-paypal.png', 'Venmo': 'fefc-brand2-venmo.png'}
 
     def __init__(self, items):
         super().__init__()
@@ -1614,26 +1614,39 @@ class SupportWindow(xbmcgui.WindowDialog):
             self._frames = optimusframes.support_frames(media)
         except Exception:
             self._frames = []
-        # Silent JPEG loop of Optimus offering the hat. The still is only the fallback.
+        # Silent JPEG loop of Optimus offering the hat. Frames are 400x533.
+        # The control uses that aspect so the figure fills the panel.
         art = self._frames[0] if self._frames else 'fefc-optimus-begging.png'
-        self.art = xbmcgui.ControlImage(16, 78, 250, 470, art, aspectRatio=self.KEEP)
+        art_h = 420
+        art_w = int(round(art_h * 400 / 533.0))
+        band_top, band_bot = 16, 608
+        art_y = band_top + max(0, (band_bot - band_top - art_h) // 2)
+        self.art = xbmcgui.ControlImage(18, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
         self.addControl(self.art)
         self.btns = []
-        tw, th = 312, 156
-        gap = 16
+        # Home-tile cards beside Optimus. Taller than 2:1 so the logo plate and the
+        # name both sit inside the focus glow, which eats about 16% of the texture.
+        tw, th = 300, 210
+        gap = 12
         row = tw * 3 + gap * 2
-        x0 = 280 + max(0, (1280 - 16 - 280 - row) // 2)
-        y0 = 232
-        self.addControl(xbmcgui.ControlLabel(x0, y0 - 64, row, 48, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=6))
+        x0 = 18 + art_w + 16
+        y0 = art_y + max(0, (art_h - th) // 2)
+        self.addControl(xbmcgui.ControlLabel(x0, max(8, y0 - 46), row, 40, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=6))
+        side = int(tw * 0.11)
+        top = int(th * 0.22)
+        bottom = int(th * 0.16)
+        label_h = 42
+        plate_w = tw - side * 2
+        plate_h = th - top - bottom - label_h
         for k, (name, url, sub) in enumerate(items):
             x = x0 + k * (tw + gap)
             b = xbmcgui.ControlButton(x, y0, tw, th, '', font='font11_tile', textColor='FFFFFFFF', alignment=6,
                                        focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
             self.addControl(b)
             self.btns.append(b)
-            # Logo canvas already has clear padding. It sits above the name, inset from the tile edge.
-            self.addControl(xbmcgui.ControlImage(x + 26, y0 + 10, tw - 52, 88, self.LOGOS[name], aspectRatio=self.KEEP))
-            self.addControl(xbmcgui.ControlLabel(x + 8, y0 + 102, tw - 16, 46, name, font='font11_tile', textColor='FFFFFFFF', alignment=6))
+            self.addControl(xbmcgui.ControlImage(x + side, y0 + top, plate_w, plate_h, self.LOGOS[name], aspectRatio=self.KEEP))
+            self.addControl(xbmcgui.ControlLabel(x + side, y0 + top + plate_h, tw - side * 2, label_h,
+                                                  name, font='font11_tile', textColor='FFFFFFFF', alignment=6))
         self.addControl(xbmcgui.ControlImage(40, 620, 1200, 56, 'fefc-lc-pill.png', colorDiffuse='E6101418'))
         bar = (('HOME', 70, 160), ('SEARCH', 250, 160), ('SOUND ON', 430, 200), ('SETTINGS', 650, 190))
         self.menu = []

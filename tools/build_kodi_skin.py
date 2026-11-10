@@ -206,20 +206,25 @@ def make_textures(media):
         im.resize((128, 128), Image.LANCZOS).save(media / name)
         lg2 = Image.open(OVER / 'brand' / src).convert('RGBA'); lg2.save(media / ('fefc-logo-' + src))
 
-    def support_logo(src, name, box, max_size):
-        """Tight crop of the official mark, centered on a clear canvas so the tile
-        shows padding on every side instead of clipping the wordmark."""
+    def support_plate(src, name, size, bg, pad=0.12):
+        """Brand plate for the upper part of a Support Us tile.
+        The official mark is centered, with padding on every side of the plate."""
         lg = Image.open(OVER / 'brand' / src).convert('RGBA')
         bb = lg.getbbox()
         if bb:
             lg = lg.crop(bb)
-        lg.thumbnail(max_size, Image.LANCZOS)
-        canvas = Image.new('RGBA', box, (0, 0, 0, 0))
-        canvas.alpha_composite(lg, ((box[0] - lg.width) // 2, (box[1] - lg.height) // 2))
+        w, h = size
+        canvas = Image.new('RGBA', size, (0, 0, 0, 0))
+        d = ImageDraw.Draw(canvas)
+        d.rounded_rectangle((0, 0, w - 1, h - 1), max(8, h // 6), fill=bg + (255,))
+        lg.thumbnail((int(w * (1 - 2 * pad)), int(h * (1 - 2 * pad))), Image.LANCZOS)
+        canvas.alpha_composite(lg, ((w - lg.width) // 2, (h - lg.height) // 2))
         canvas.save(media / name)
-    support_logo('patreon.png', 'fefc-sup-patreon.png', (260, 96), (88, 80))
-    support_logo('paypal.png', 'fefc-sup-paypal.png', (260, 96), (176, 52))
-    support_logo('venmo.png', 'fefc-sup-venmo.png', (260, 96), (160, 42))
+    # Plates are 2x the dialog control (234x90). Patreon is the official lockup
+    # (symbol + PATREON) on white. PayPal and Venmo are the wordmarks on white.
+    support_plate('patreon-lockup.png', 'fefc-brand2-patreon.png', (468, 178), (255, 255, 255), 0.12)
+    support_plate('paypal.png', 'fefc-brand2-paypal.png', (468, 178), (255, 255, 255), 0.12)
+    support_plate('venmo.png', 'fefc-brand2-venmo.png', (468, 178), (255, 255, 255), 0.14)
     brand_logo('patreon.png', 'fefc-ic-patreon.png')
     brand_logo('paypal.png', 'fefc-ic-paypal.png')
     brand_logo('venmo.png', 'fefc-ic-venmo.png')
