@@ -129,8 +129,9 @@ print('ok')
   assert.match(xml, /<name>previousmenu<\/name><file>back\.wav<\/file>/);
   assert.match(xml, /<name>parentdir<\/name><file>back\.wav<\/file>/);
   const keymap = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/keymaps/fefc-nav.xml'), 'utf8');
-  assert.match(keymap, /action=armback/);
-  assert.match(keymap, /\\nBack/);
+  assert.doesNotMatch(keymap, /action=armback/);
+  assert.doesNotMatch(keymap, /\\nBack/);
+  assert.match(keymap, /action=fefcmenu/);
   assert.ok(fs.existsSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/ui-back.wav')));
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   assert.match(router, /playSFX\(p, False\)/);
@@ -143,15 +144,17 @@ import sys
 sys.path.insert(0, ${JSON.stringify(lib)})
 import wallplan
 cells = wallplan.mosaic_cells()
-assert len(cells) == 16
+assert len(cells) == 10
 xs = sorted({c[0] for c in cells})
 ys = sorted({c[1] for c in cells})
-assert len(xs) == 5 and len(ys) == 5
+assert len(xs) == 2 and len(ys) == 5
 top = [c for c in cells if c[1] == ys[0]]
 bot = [c for c in cells if c[1] == ys[-1]]
 left = [c for c in cells if c[0] == xs[0]]
 right = [c for c in cells if c[0] == xs[-1]]
-assert len(top) == 5 and len(bot) == 5 and len(left) == 5 and len(right) == 5
+assert len(top) == 2 and len(bot) == 2 and len(left) == 5 and len(right) == 5
+assert (348, ys[0], 400, 200) not in cells
+assert (760, ys[-1], 400, 200) not in cells
 assert all(c[2] == 400 and c[3] == 200 for c in cells)
 # centre 3x3 is not a video cell
 assert (348, 212, 400, 200) not in cells

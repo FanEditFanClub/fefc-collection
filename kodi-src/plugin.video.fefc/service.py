@@ -1074,16 +1074,12 @@ def apply_nav_sound(on):
     except Exception as e:
         log('nav sound: %s' % e)
     try:
-        src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'keymaps', 'fefc-nav.xml')
         d = xbmcvfs.translatePath('special://profile/keymaps')
-        os.makedirs(d, exist_ok=True)
         dst = os.path.join(d, 'fefc-nav.xml')
-        if os.path.exists(src):
-            data = open(src, encoding='utf-8').read()
-            prev = open(dst, encoding='utf-8').read() if os.path.exists(dst) else ''
-            if prev != data:
-                open(dst, 'w', encoding='utf-8').write(data)
-                xbmc.executebuiltin('ReloadKeymaps')
+        if os.path.exists(dst):
+            os.remove(dst)
+            xbmc.executebuiltin('ReloadKeymaps')
+            log('removed back-swallowing keymap')
     except Exception as e:
         log('nav keymap: %s' % e)
 
@@ -1178,6 +1174,8 @@ def main():
     next_feed = 0.0
     next_counts = 0.0
     next_new_files = 0.0
+    next_catalog = time.time() + 25
+    next_due = 0.0
     ticker_shown = ['']
     t_start = time.time()
     checked = False
@@ -1207,6 +1205,30 @@ def main():
             except Exception:
                 pass
             next_new_files = now + 900  # 15 min; feed is published with the 9am ET social posts
+        due_path = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('profile')), 'cache', 'refresh.due')
+        if os.path.exists(due_path) and now >= next_due:
+            next_catalog = min(next_catalog, now)
+            next_due = now + 45
+        if now >= next_catalog:
+            def refresh_catalog():
+                try:
+                    import catalog
+                    base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
+                    prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
+                    cache = os.path.join(prof, 'cache')
+                    try:
+                        mins = int(ADDON.getSetting('refresh_minutes') or 180)
+                    except ValueError:
+                        mins = 180
+                    catalog.load_model(base, cache, mins, log, force=True)
+                except Exception as e:
+                    log('catalogue refresh: %s' % e)
+            threading.Thread(target=refresh_catalog, daemon=True).start()
+            try:
+                mins = int(ADDON.getSetting('refresh_minutes') or 180)
+            except ValueError:
+                mins = 180
+            next_catalog = now + max(60, mins * 60)
         if now >= next_feed:
             def refresh():
                 try:

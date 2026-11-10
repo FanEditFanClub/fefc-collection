@@ -18,13 +18,19 @@ VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.
 FOLDER = 'application/vnd.google-apps.folder'
 MODEL_VERSION = 6
 UA = 'plugin.video.fefc/1.0 (Kodi)'
+# Newest files shown on New Arrivals. The web app caps at 500 and pages 60; the first
+# page has to come back in a few seconds on a Fire Stick, so the plugin only builds one page.
+RECENT_CAP = 180
+RECENT_PAGE = 60
+# In-process model so a second folder open in the same Kodi session skips the marshal read.
+_MEM = {}
 
 
 def natkey(s):
     return [((0, int(t), '') if t.isdigit() else (1, 0, t)) for t in re.split(r'(\d+)', (s or '').lower().strip()) if t != ''] or [(1, 0, '')]
 
 
-def _fetch(base, name, etag=None, lm=None, timeout=60):
+def _fetch(base, name, etag=None, lm=None, timeout=15):
     """Conditional GET -> (status, bytes|None, etag, last_modified). 304 -> (304, None, ...)."""
     req = urllib.request.Request(base.rstrip('/') + '/data/' + name + '.json?ts=1', headers={
         'User-Agent': UA, 'Accept-Encoding': 'gzip'})
@@ -255,11 +261,52 @@ def build_model(raw):
             'people_meta': {k: (v.get('name') or '', v.get('role') or '') for k, v in (raw.get('people') or {}).items() if isinstance(v, dict)}}
 
 
-def load_model(base, cache_dir, refresh_minutes=180, log=None):
+def _mark_refresh_due(cache_dir):
+    try:
+        open(os.path.join(cache_dir, 'refresh.due'), 'a').close()
+    except Exception:
+        pass
+
+
+def refresh_due(cache_dir):
+    return os.path.exists(os.path.join(cache_dir, 'refresh.due'))
+
+
+def clear_refresh_due(cache_dir):
+    try:
+        os.remove(os.path.join(cache_dir, 'refresh.due'))
+    except OSError:
+        pass
+
+
+def _decorate(model):
+    """Fill derived lists that old on-disk models do not have yet."""
+    if not isinstance(model.get('recent'), list) or not model.get('recent'):
+        model['recent'] = _compute_recent(model)
+    if not isinstance(model.get('art'), dict) or not model.get('art'):
+        model['art'] = _build_art_index(model)
+    return model
+
+
+def load_model(base, cache_dir, refresh_minutes=180, log=None, force=False):
+    """Return the catalogue. A model already on disk is returned immediately, even if it
+    is older than refresh_minutes (stale-while-revalidate). The service refreshes it in
+    the background. `force=True` does the network check on this call."""
     log = log or (lambda m: None)
     os.makedirs(cache_dir, exist_ok=True)
     mpath = os.path.join(cache_dir, 'model.bin')
     meta_path = os.path.join(cache_dir, 'meta.json')
+    key = (os.path.abspath(cache_dir), base or '')
+    now = time.time()
+    try:
+        mtime = os.path.getmtime(mpath)
+    except OSError:
+        mtime = 0
+    slot = _MEM.get(key)
+    if slot and not force and slot.get('mtime') == mtime and slot.get('model'):
+        if now - float(slot.get('checked') or 0) >= refresh_minutes * 60:
+            _mark_refresh_due(cache_dir)
+        return slot['model']
     meta = {}
     try:
         meta = _load_json(meta_path)
@@ -273,20 +320,30 @@ def load_model(base, cache_dir, refresh_minutes=180, log=None):
             have = None
     except Exception:
         have = None
-    now = time.time()
-    if have and now - meta.get('checked', 0) < refresh_minutes * 60:
+    if have and not force:
+        have = _decorate(have)
+        _MEM[key] = {'model': have, 'mtime': mtime, 'checked': meta.get('checked') or 0}
+        if now - float(meta.get('checked') or 0) >= refresh_minutes * 60:
+            _mark_refresh_due(cache_dir)
         return have
     changed = have is None
     files = meta.get('files', {})
     if meta.get('base') != base:
         files = {}
     errors = []
+    # A cold open (nothing on disk) must not sit on fourteen slow downloads. The service
+    # refresh (force=True, cache already present) may take longer because the UI is not waiting.
+    deadline = time.time() + (90 if have else 20)
     for name in SOURCES:
+        if time.time() > deadline and name != 'index':
+            errors.append('%s: skipped (time budget)' % name)
+            continue
         p = os.path.join(cache_dir, name + '.json')
         st = files.get(name, {})
         try:
             status, raw, etag, lm = _fetch(base, name, st.get('etag') if os.path.exists(p) else None,
-                                           st.get('lm') if os.path.exists(p) else None)
+                                           st.get('lm') if os.path.exists(p) else None,
+                                           timeout=20 if have else 8)
         except Exception as e:  # network failure: keep whatever we have
             errors.append('%s: %s' % (name, e))
             continue
@@ -310,16 +367,23 @@ def load_model(base, cache_dir, refresh_minutes=180, log=None):
                     pass
         if 'index' not in raw:
             if have:
-                return have
+                return _decorate(have)
             raise RuntimeError('catalogue unavailable: ' + '; '.join(errors)[:200])
         have = build_model(raw)
         tmp = mpath + '.tmp'
         with open(tmp, 'wb') as f:
             marshal.dump(have, f)
         os.replace(tmp, mpath)
+    try:
+        mtime = os.path.getmtime(mpath)
+    except OSError:
+        mtime = 0
+    have = _decorate(have)
     meta = {'checked': now, 'files': files, 'base': base}
     with open(meta_path, 'w') as f:
         json.dump(meta, f)
+    clear_refresh_due(cache_dir)
+    _MEM[key] = {'model': have, 'mtime': mtime, 'checked': now}
     return have
 
 
@@ -340,10 +404,99 @@ def stream_url(base, vid, name):
     return base.rstrip('/') + '/api/stream/' + vid + '/' + quote(nm)
 
 
-def poster_for(m, base, vid):
+def _show_key(name):
+    """Title used to borrow artwork: drop the extension, a leading episode number,
+    season/episode marks, a year, and a trailing 'Fan Edit'."""
+    base = re.sub(r'\.[a-z0-9]{2,4}$', '', name or '', flags=re.I)
+    base = re.sub(r'^\s*\d{1,4}[A-Za-z]?\s+', '', base)
+    base = re.sub(r'\bS\d{1,2}\s*E\d{1,3}\b.*$', '', base, flags=re.I)
+    base = re.sub(r'\b(?:Ep|Episode)\s*\d+\b.*$', '', base, flags=re.I)
+    base = re.sub(r'\s*\(\d{4}\)\s*.*$', '', base)
+    base = re.sub(r'\s*-\s*Fan Edit\s*$', '', base, flags=re.I)
+    return re.sub(r'\s+', ' ', base).strip().lower()
+
+
+def _compute_recent(m):
+    added = m.get('added') or {}
+    items = m.get('items') or {}
+    vids = [i for i in added if i in items and not items[i][2]]
+    vids = dedupe(m, vids)
+    vids.sort(key=lambda i: added.get(i) or '', reverse=True)
+    return vids[:RECENT_CAP]
+
+
+def recent_ids(m, limit=None):
+    limit = RECENT_CAP if limit is None else int(limit)
+    cached = m.get('recent')
+    if not isinstance(cached, list) or not cached:
+        cached = _compute_recent(m)
+        m['recent'] = cached
+    return cached[:limit]
+
+
+def _poster_url(m, vid):
     it = m['items'].get(vid)
-    u = m['posters'].get(vid) or (m['posters'].get(it[3]) if it and it[3] else None)
-    return abs_url(base, u)
+    posters = m.get('posters') or {}
+    u = posters.get(vid) or (posters.get(it[3]) if it and it[3] else None)
+    return u or ''
+
+
+def _build_art_index(m):
+    """id -> artwork url (poster, a sibling edit of the same title, or a Drive thumbnail).
+    Built once with the catalogue. Nothing here writes to Drive."""
+    items = m.get('items') or {}
+    kids = m.get('kids') or {}
+    by_parent = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        by_parent.setdefault(v[1] or '', []).append(i)
+    sibling = {}
+    for group in by_parent.values():
+        have = {}
+        for i in group:
+            u = _poster_url(m, i)
+            if not u:
+                continue
+            key = _show_key(items[i][0])
+            if key and key not in have:
+                have[key] = u
+        for i in group:
+            if _poster_url(m, i):
+                continue
+            key = _show_key(items[i][0])
+            if key and key in have:
+                sibling[i] = have[key]
+    art = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        u = _poster_url(m, i) or sibling.get(i) or ''
+        if u:
+            art[i] = u
+            continue
+        fid = v[3] or i
+        art[i] = 'drive:' + fid
+    return art
+
+
+def poster_for(m, base, vid):
+    """Poster for a video. Order: its own poster, a sibling of the same show, then the
+    file's Drive thumbnail (a read of the public thumbnail, not a Drive change)."""
+    it = m['items'].get(vid)
+    art = m.get('art')
+    if not isinstance(art, dict) or not art:
+        art = _build_art_index(m)
+        m['art'] = art
+    u = art.get(vid) or ''
+    if not u:
+        u = _poster_url(m, vid)
+    if u.startswith('drive:'):
+        return 'https://drive.google.com/thumbnail?sz=w400&id=' + u[6:]
+    if u:
+        return abs_url(base, u)
+    fid = (it[3] if it and it[3] else vid)
+    return 'https://drive.google.com/thumbnail?sz=w400&id=' + fid if fid else ''
 
 
 def folder_art(m, base, fid):
@@ -366,10 +519,10 @@ def folder_art(m, base, fid):
                         # instead of its portrait poster, so folder cards stay landscape. (Only 369/1803
                         # folders have a curated fthumb; the rest hit this fallback.)
                         vk = (m['items'].get(k) or [0, 0, 0, ''])[3] or k
-                        return 'https://drive.google.com/thumbnail?sz=w500&id=' + vk
+                        return 'https://drive.google.com/thumbnail?sz=w320&id=' + vk
             q = nq[:40]
     if t:
-        return abs_url(base, t) if t.startswith('assets/') else 'https://drive.google.com/thumbnail?sz=w500&id=' + t
+        return abs_url(base, t) if t.startswith('assets/') else 'https://drive.google.com/thumbnail?sz=w320&id=' + t
     return ''
 
 
@@ -573,19 +726,22 @@ def sfx_up(m, vid):
     0.5.2: also match the video's OWN name first — a file like "Armageddon - Revisited" sitting in the root has no
     Armageddon ancestor folder, so without this it would never get the Armageddon clips. sfx_for() already checks
     the name plus ancestors (for path rules), so trying it on the video itself covers both."""
+    cache = m.get('_sfxup')
+    if isinstance(cache, dict) and vid in cache:
+        return cache[vid]
     r = sfx_for(m, vid)
-    if r:
-        return r
-    it = m['items'].get(vid)
-    p = it[1] if it else ''
-    n = 0
-    while p and n < 30:
-        r = sfx_for(m, p)
-        if r:
-            return r
-        p = (m['items'].get(p) or ['', ''])[1]
-        n += 1
-    return ''
+    if not r:
+        it = m['items'].get(vid)
+        p = it[1] if it else ''
+        n = 0
+        while p and n < 30:
+            r = sfx_for(m, p)
+            if r:
+                break
+            p = (m['items'].get(p) or ['', ''])[1]
+            n += 1
+    m.setdefault('_sfxup', {})[vid] = r or ''
+    return r or ''
 
 
 def sfx_for(m, fid):
@@ -616,7 +772,7 @@ def sfx_for(m, fid):
     while p and len(anc) < 30:
         anc.append(m['items'].get(p, ['', ''])[0])
         p = m['items'].get(p, ['', ''])[1]
-    for rule in sfx.get('_rules') or []:
+    for rule, rx in _compiled_rules(sfx):
         try:
             hit = False
             names = [name] + (anc if rule.get('path') else [])
@@ -624,8 +780,7 @@ def sfx_for(m, fid):
                 hit = True
             if rule.get('match'):
                 hit = hit or any(rule['match'].lower() in n.lower() for n in names)
-            if rule.get('regex'):
-                rx = re.compile(rule['regex'], re.I)
+            if rx is not None:
                 hit = hit or any(rx.search(n) for n in names)
             if hit:
                 r = pick(rule)
@@ -634,6 +789,28 @@ def sfx_for(m, fid):
         except Exception:
             continue
     return ''
+
+
+_RULE_CACHE = {}
+
+
+def _compiled_rules(sfx):
+    """Compile folder-sfx regexes once per process. Compiling them per video made large folders stall."""
+    key = id(sfx)
+    hit = _RULE_CACHE.get(key)
+    if hit is not None:
+        return hit
+    out = []
+    for rule in sfx.get('_rules') or []:
+        rx = None
+        if isinstance(rule, dict) and rule.get('regex'):
+            try:
+                rx = re.compile(rule['regex'], re.I)
+            except re.error:
+                rx = None
+        out.append((rule, rx))
+    _RULE_CACHE[key] = out
+    return out
 
 
 def search(m, query, limit=300):

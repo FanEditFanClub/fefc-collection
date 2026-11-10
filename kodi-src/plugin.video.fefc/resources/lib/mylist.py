@@ -154,13 +154,13 @@ class MyList:
         self.db['user'] = ''
         self.save()
 
-    def sync(self):
+    def sync(self, timeout=12):
         """Merge with the server list (newest record wins per id) and push the result. Returns '' or an error text."""
         if not self.linked:
             return 'not linked'
         try:
             self.reload()
-            remote = (self._api('list') or {}).get('data') or {}
+            remote = (self._api('list', timeout=timeout) or {}).get('data') or {}
             rs = remote.get('stars') or {}
             loc = self.db['stars']
             for k, r in rs.items():
@@ -174,7 +174,7 @@ class MyList:
                         ll[k] = r
             payload = {'v': 1, 'updatedAt': _now(), 'stars': loc, 'history': self.db.get('history') or {},
                        'playback': self.db.get('playback') or {}}
-            self._api('list', {'data': payload}, timeout=20)
+            self._api('list', {'data': payload}, timeout=timeout)
             self.save()
             return ''
         except urllib.error.HTTPError as e:

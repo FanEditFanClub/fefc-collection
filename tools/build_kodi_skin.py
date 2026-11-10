@@ -372,6 +372,10 @@ def patch_fonts(xml_dir):
     # 0.5.1: even smaller poster-tile font (15px) — long file names were still clipping at 17px
     extra += ('\t\t<font>\n\t\t\t<name>font_tile_xs</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
               '\t\t\t<size>15</size>\n\t\t</font>\n')
+    # 0.5.6: poster titles. 30px is the couch-readable size already used for font13_title;
+    # this alias is here so a skin that drops the numbered fonts still has the poster face.
+    extra += ('\t\t<font>\n\t\t\t<name>font_poster</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
+              '\t\t\t<size>30</size>\n\t\t</font>\n')
     # add to every fontset
     if not (xml_dir.parent / 'fonts' / 'NotoSans-Bold.ttf').exists():
         extra = extra.replace('NotoSans-Bold.ttf', 'NotoSans-Regular.ttf')

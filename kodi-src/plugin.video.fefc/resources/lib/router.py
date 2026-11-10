@@ -20,7 +20,8 @@ from .webcounts import FOLD
 ADDON = xbmcaddon.Addon()
 PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
 CONTACT_EMAIL = 'faneditfanclub@gmail.com'
-FEEDBACK_FORM_URL = 'https://is.gd/UVko0K'  # 0.5.1: short link for the Google Form (redirects to the docs.google.com form); the QR code and the shown URL both use this.
+# Direct Google Form. is.gd/UVko0K only redirects here; the QR encodes this address.
+FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform'
 
 
 
@@ -412,16 +413,20 @@ class Router:
 
     # -- routes ----------------------------------------------------------------------------------
     def root(self):
+        """Add-on root (plugin://plugin.video.fefc/). Styled landscape cards, not Kodi's blue folder icons.
+        Home is a different screen; this list is what opens from the add-on entry."""
         m = _model()
-        self.add_folder('Collections', '', 'Browse the collection folders, same tree as the FEFC app.', action='folder', id=m['root'])
-        self.add_folder('New Arrivals', '', 'Newest files in the collection.', action='recent')
-        self.add_folder('Genres', '', 'Browse by genre (a title can be in several genres).', action='genres')
-        self.add_folder('My List', '', 'Your saved edits, synced with the FEFC web app.', action='mylist')
-        self.add_folder('Search', '', 'Search every collection and edit.', action='search')
-        self.add_folder('Read Me', '', 'Welcome and how the collection works.', action='readme')
-        self.add_folder('Support Us', 'special://skin/media/fefc-ol-tile.png', 'Patreon, PayPal and Venmo.', landscape='special://skin/media/fefc-ol-tile.png', action='support', props={'fefc_kind': 'action'})
+        dark = 'special://skin/media/fefc-ol-tile.png'
+        kind = {'fefc_kind': 'action'}
+        self.add_folder('Collections', dark, 'Browse the collection folders, same tree as the FEFC app.', landscape=dark, action='folder', id=m['root'], props=kind)
+        self.add_folder('New Arrivals', dark, 'Newest files in the collection.', landscape=dark, action='recent', props=kind)
+        self.add_folder('Genres', dark, 'Browse by genre (a title can be in several genres).', landscape=dark, action='genres', props=kind)
+        self.add_folder('My List', dark, 'Your saved edits, synced with the FEFC web app.', landscape=dark, action='mylist', props=kind)
+        self.add_folder('Search', dark, 'Search every collection and edit.', landscape=dark, action='search', props=kind)
+        self.add_folder('Read Me', dark, 'Welcome and how the collection works.', landscape=dark, action='readme', props=kind)
+        self.add_folder('Support Us', dark, 'Patreon, PayPal and Venmo.', landscape=dark, action='support', props=kind)
         if xbmcvfs.exists('special://xbmc/fefc-build.json'):
-            self.add_folder('Check for FEFC app update', '', 'See if a newer FEFC app is available.', action='update')
+            self.add_folder('Check for FEFC app update', dark, 'See if a newer FEFC app is available.', landscape=dark, action='update', props=kind)
         self.end()
 
     def update(self):
@@ -447,6 +452,51 @@ class Router:
             home.setProperty('FEFC.BackSkip', '1')
         if play:
             _play_back_sfx()
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
+    def fefcmenu(self):
+        """Long-press menu. Kodi always appends Add/Remove from favourites after a plugin's own
+        items, and replaceItems does not stop that. This dialog is the menu instead, so My List
+        is the only list action. Play, Play next, Queue, Information, Mark as watched and
+        Play from here stay."""
+        path = xbmc.getInfoLabel('ListItem.FilenameAndPath') or ''
+        fid = xbmc.getInfoLabel('ListItem.Property(fefc_id)') or ''
+        kind = xbmc.getInfoLabel('ListItem.Property(fefc_kind)') or ''
+        label = xbmc.getInfoLabel('ListItem.Label') or 'FEFC'
+        ours = ('plugin.video.fefc' in path) or bool(fid) or kind in ('video', 'folder', 'action')
+        if not ours:
+            xbmc.executebuiltin('Action(ContextMenu)')
+        else:
+            is_video = kind == 'video' or ('action=play' in path)
+            opts, acts = [], []
+            if is_video and fid:
+                try:
+                    on = self.mydb().has(fid)
+                except Exception:
+                    on = False
+                opts.append('Remove from My List' if on else 'Add to My List')
+                acts.append('mylist')
+                opts += ['Play', 'Play next', 'Queue item', 'Information', 'Mark as watched', 'Play from here']
+                acts += ['play', 'next', 'queue', 'info', 'watched', 'fromhere']
+            else:
+                opts.append('Information')
+                acts.append('info')
+            k = xbmcgui.Dialog().select(label, opts)
+            if k >= 0:
+                act = acts[k]
+                if act == 'mylist':
+                    xbmc.executebuiltin('RunPlugin(%s)' % _url('plugin://plugin.video.fefc/', action='mylist_toggle', id=fid))
+                elif act == 'play' or act == 'fromhere':
+                    xbmc.executebuiltin('PlayMedia(%s,noresume)' % path)
+                elif act == 'next':
+                    xbmc.executebuiltin('QueueMedia(%s,playnext)' % path)
+                elif act == 'queue':
+                    xbmc.executebuiltin('QueueMedia(%s)' % path)
+                elif act == 'info':
+                    xbmc.executebuiltin('Action(Info)')
+                elif act == 'watched':
+                    xbmc.executebuiltin('Action(ToggleWatched)')
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
@@ -524,11 +574,11 @@ class Router:
         return dst
 
     def _maybe_sfx(self, rel):
+        """Start the folder clip without holding the directory listing. A missing wav is fetched
+        on a side thread; a clip already on disk plays immediately."""
         from .sfxpref import sfx_enabled
         if not sfx_enabled(ADDON.getSetting('play_sfx')) or not rel:
             return
-        # playSFX mixes over the wall. It must not run on top of a film, and it must not use Player().play
-        # (that would stop the ambience loop).
         try:
             import service as _svc
             if _svc._foreground_video():
@@ -538,12 +588,17 @@ class Router:
         wav = catalog.sfx_wav(rel)
         if not wav:
             return
-        try:
-            path = self._sfx_local(catalog.abs_url(_base(), wav))
-            if path:
-                xbmc.playSFX(path, False)
-        except Exception as e:
-            _log('sfx failed: %s' % e)
+        url = catalog.abs_url(_base(), wav)
+
+        def go():
+            try:
+                path = self._sfx_local(url)
+                if path:
+                    xbmc.playSFX(path, False)
+            except Exception as e:
+                _log('sfx failed: %s' % e)
+
+        threading.Thread(target=go, daemon=True).start()
 
     def genres(self):
         m = _model()
@@ -585,16 +640,29 @@ class Router:
         self.end('movies' if nv > nf else 'files')
 
     def recent(self):
-        m = _model()
-        vids = [i for i in m['added'] if i in m['items'] and not m['items'][i][2]]
-        vids = catalog.dedupe(m, vids)
-        vids.sort(key=lambda i: m['added'][i], reverse=True)
+        """New Arrivals. The added-date list covers the whole catalogue (13k files). Building a
+        list item for every one of them never returns on a Fire Stick, so the busy dialog stays
+        up. This shows one page of the precomputed newest files and always closes the dialog."""
+        try:
+            m = _model()
+        except Exception as e:
+            _log('recent catalogue: %s' % e)
+            xbmcgui.Dialog().notification('New Arrivals', 'Could not load new files. Check the connection and try again.', xbmcgui.NOTIFICATION_ERROR, 5000)
+            if self.handle >= 0:
+                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            return
+        vids = catalog.recent_ids(m)
         page = int(self.params.get('page') or 0)
-        for i in vids[page * PAGE:(page + 1) * PAGE]:
+        page_size = catalog.RECENT_PAGE
+        chunk = vids[page * page_size:(page + 1) * page_size]
+        if not chunk and page == 0:
+            xbmcgui.Dialog().notification('New Arrivals', 'No new files yet.', xbmcgui.NOTIFICATION_INFO, 4000)
+            self.end('files', cache=False)
+            return
+        for i in chunk:
             self.add_video(m, i)
-        if (page + 1) * PAGE < len(vids):
-            self.add_folder('Next page (%d more) >>' % (len(vids) - (page + 1) * PAGE), '', action='recent', page=page + 1)
-        xbmcplugin.addSortMethod(self.handle, xbmcplugin.SORT_METHOD_DATEADDED)
+        if (page + 1) * page_size < len(vids):
+            self.add_folder('Next page (%d more) >>' % (len(vids) - (page + 1) * page_size), '', action='recent', page=page + 1)
         self.end('movies', cache=False)
 
     def search(self):
@@ -659,7 +727,7 @@ class Router:
         m = _model()
         ml = self.mydb()
         if ml.linked and not self.params.get('nosync'):
-            err = ml.sync()
+            err = ml.sync(timeout=4)
             if err:
                 _log('mylist sync: %s' % err)
         who = ml.db.get('user') or 'linked'
@@ -1652,8 +1720,8 @@ def _optimus_art():
 
 
 class OptimusWindow(xbmcgui.WindowDialog):
-    """Search card: Optimus, an editable field, and a Search button. The field submits the catalogue query.
-    A second keyboard is not opened while this card is still on screen."""
+    """One search bar plus a silent Optimus loop. Selecting the bar opens input.
+    The real modal loop is used so Back closes this dialog and returns to Home."""
 
     def __init__(self):
         super().__init__()
@@ -1661,84 +1729,105 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self.query = ''
         self._closed = False
         self._anim = False
+        self._saw_keyboard = False
         from . import optimusframes
         media = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media')
         self._frames = optimusframes.frame_list(media)
         self._still = _optimus_art()
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        # Still until the first silent frame. Never a video player.
         self.art = xbmcgui.ControlImage(48, 110, 480, 480, self._still, aspectRatio=2)
         self.addControl(self.art)
         self.addControl(xbmcgui.ControlLabel(560, 96, 660, 52, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
         cue = xbmcgui.ControlTextBox(560, 160, 660, 88, font='font13', textColor='FFE8EEF6')
         self.addControl(cue)
         cue.setText(optimusplan.CUE)
-        self.edit = xbmcgui.ControlEdit(560, 268, 660, 72, '', font='font13', textColor='FFFFFFFF',
-                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+        # One bar: dark tile, magnifying glass, centered placeholder, the edit control.
+        self.addControl(xbmcgui.ControlImage(540, 300, 680, 84, 'fefc-ol-tile.png'))
+        self.addControl(xbmcgui.ControlImage(562, 326, 32, 32, 'fefc-ic-search.png', aspectRatio=2))
+        self.edit = xbmcgui.ControlEdit(600, 308, 600, 68, '', font='font13', textColor='FFFFFFFF',
+                                         focusTexture='fefc-ol-focus.png', noFocusTexture='')
         self.addControl(self.edit)
-        self.btn = xbmcgui.ControlButton(560, 364, 280, 72, optimusplan.SEARCH_LABEL, font='font13_title', textColor='FFFFFFFF',
-                                          focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png', alignment=6)
-        self.addControl(self.btn)
-        self.status = xbmcgui.ControlLabel(560, 460, 660, 48, 'Type a title, then press Search.', font='font12', textColor='FF99CCFF')
+        self.placeholder = xbmcgui.ControlLabel(600, 300, 600, 84, 'Search', font='font13_title',
+                                                 textColor='FFB7C3D4', alignment=6)
+        self.addControl(self.placeholder)
+        self.status = xbmcgui.ControlLabel(540, 400, 680, 48, 'Select the bar and type a title.', font='font12', textColor='FF99CCFF')
         self.addControl(self.status)
-        self.addControl(xbmcgui.ControlLabel(560, 540, 660, 36, 'Back to close. Up from Search types a title.', font='font12', textColor='FF7F8FA6'))
-        self.edit.controlDown(self.btn)
-        self.btn.controlUp(self.edit)
-        # Search starts focused so the clip can play. Moving onto the field stops it.
-        # The frame pump never calls setFocus.
-        self.setFocus(self.btn)
+        self.addControl(xbmcgui.ControlLabel(540, 460, 680, 36, 'Back returns to Home.', font='font12', textColor='FF7F8FA6'))
+        self.setFocus(self.edit)
 
-    def _field_focused(self):
+    def _keyboard_open(self):
+        return bool(xbmc.getCondVisibility('Window.IsActive(virtualkeyboard) | Window.IsVisible(virtualkeyboard) | Window.IsActive(numericinput)'))
+
+    def _draft(self):
         try:
-            return self.getFocusId() == self.edit.getId()
+            return (self.edit.getText() or '').strip()
         except Exception:
-            return False
+            return ''
+
+    def _busy_editing(self):
+        return self._keyboard_open() or bool(self._draft())
 
     def _halt_anim(self):
-        if not self._anim and not self._frames:
-            return
         self._anim = False
         try:
             self.art.setImage(self._still)
         except Exception:
             pass
 
-    def doModal(self):
-        """Pump silent frames on this thread. Do not open Kodi's video player."""
+    def _resume_anim(self):
+        if self._frames and not self._busy_editing():
+            self._anim = True
+
+    def _pump(self):
         from . import optimusplan
-        self.show()
-        self._anim = bool(self._frames)
         mon = xbmc.Monitor()
         i = 0
-        n = len(self._frames)
+        n = len(self._frames) or 1
         while not self._closed and not mon.abortRequested():
-            if self._anim and self._field_focused():
-                self._halt_anim()
-            elif self._anim:
+            editing = self._busy_editing()
+            if editing:
+                self._saw_keyboard = self._saw_keyboard or self._keyboard_open()
+                if self._anim:
+                    self._halt_anim()
+            elif self._saw_keyboard:
+                # Keyboard just closed. A title runs the search; an empty cancel resumes the loop.
+                self._saw_keyboard = False
+                if self._draft():
+                    self._submit()
+                    return
+                self._resume_anim()
+            if self._anim and self._frames:
                 try:
                     self.art.setImage(self._frames[i % n])
                 except Exception:
-                    self._halt_anim()
+                    pass
                 i += 1
-            if mon.waitForAbort(optimusplan.FRAME_MS / 1000.0 if self._anim else 0.2):
-                break
+            try:
+                self.placeholder.setVisible(not self._draft() and not self._keyboard_open())
+            except Exception:
+                pass
+            mon.waitForAbort(optimusplan.FRAME_MS / 1000.0 if self._anim else 0.12)
+
+    def doModal(self):
+        """Real modal loop so Back is delivered. Frames are pumped on a side thread and never use the video player."""
+        self._closed = False
+        self._anim = bool(self._frames)
+        threading.Thread(target=self._pump, daemon=True).start()
         try:
-            self.close()
-        except Exception:
-            pass
+            super(OptimusWindow, self).doModal()
+        finally:
+            self._closed = True
+            self._anim = False
 
     def _submit(self):
         from . import searchflow
-        try:
-            text = self.edit.getText()
-        except Exception:
-            text = ''
-        r = searchflow.submit(text)
+        r = searchflow.submit(self._draft())
         if not r['ok']:
             try:
                 self.status.setLabel(r['status'])
             except Exception:
                 pass
+            self._resume_anim()
             return
         self.query = r['query']
         self.close()
@@ -1747,43 +1836,24 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self._closed = True
         self._anim = False
         try:
-            super().close()
+            super(OptimusWindow, self).close()
         except Exception:
             pass
 
-    def onControl(self, c):
-        if c == self.btn:
-            self._submit()
-
     def onAction(self, action):
         aid = action.getId()
-        uni = 0
-        try:
-            uni = action.getUnicode() or 0
-        except Exception:
-            uni = 0
-        # Up or landing on the field stops the frames. A typed character also stops them
-        # and moves focus onto the field so the next key is not lost to the button.
-        if self._field_focused() or aid == xbmcgui.ACTION_MOVE_UP:
-            self._halt_anim()
-        if uni >= 32:
-            self._halt_anim()
-            if not self._field_focused():
-                try:
-                    self.setFocus(self.edit)
-                except Exception:
-                    pass
-        if aid == xbmcgui.ACTION_SELECT_ITEM:
-            if self._field_focused():
-                self._halt_anim()
-            self._submit()
-            return
-        if aid in (xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401) and self._field_focused():
-            self._halt_anim()
-            return
-        if _dialog_back(action):
-            self._closed = True
+        # 10 PreviousMenu (Esc, some remotes), 92 NavBack (Fire TV / Android back / edge swipe),
+        # 9 ParentDir, 110 Backspace. While the on-screen keyboard is up, that first Back only closes it.
+        if aid in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PARENT_DIR, 110):
+            if self._keyboard_open():
+                return
             self.close()
+            return
+        if aid in (xbmcgui.ACTION_SELECT_ITEM, xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401):
+            if self._draft() and not self._keyboard_open():
+                self._submit()
+                return
+            self._halt_anim()
 
 
 ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'genre': 'genre', 'recent': 'recent',
@@ -1795,7 +1865,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop',
-          'armback': 'armback'}
+          'armback': 'armback', 'fefcmenu': 'fefcmenu'}
 
 
 def _play_back_sfx():

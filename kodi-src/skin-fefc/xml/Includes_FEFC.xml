@@ -90,15 +90,26 @@
 				<texture border="20">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
-			<!-- 0.4.2: year label removed from poster tiles -->
-			<!-- 0.5.1: 15px label (was 17px) so long file names fit instead of clipping -->
-			<control type="label">
-				<left>-6</left><top>337</top><width>234</width><height>92</height>
-				<aligny>top</aligny><align>center</align>
-				<font>font_tile_xs</font>
+			<!-- 0.5.6: 30px, three lines, centered. A label control ellipsizes inside a
+			     list even with wrapmultiline, so this is a textbox. The focused tile
+			     scrolls the full name instead. -->
+			<control type="textbox">
+				<left>-6</left><top>338</top><width>234</width><height>108</height>
+				<align>center</align>
+				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
-				<wrapmultiline>true</wrapmultiline>
+				<visible>!$PARAM[focused]</visible>
+			</control>
+			<control type="label">
+				<left>-6</left><top>338</top><width>234</width><height>108</height>
+				<aligny>top</aligny><align>center</align>
+				<font>font13_title</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<label>$INFO[ListItem.Label]</label>
+				<scroll>true</scroll>
+				<scrollspeed>40</scrollspeed>
+				<visible>$PARAM[focused]</visible>
 			</control>
 		</definition>
 		<param name="focused" default="false" />

@@ -15,6 +15,16 @@
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
 		</control>
+		<!-- Cover the three centre cells of the top row and the three centre cells of the bottom row.
+		     Those clips sat behind the wordmark and the menu bar. Corners and side cells stay visible. -->
+		<control type="group">
+			<control type="image"><left>348</left><top>0</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>760</left><top>0</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>1172</left><top>0</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>348</left><top>848</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>760</left><top>848</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>1172</left><top>848</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+		</control>
 		<!-- Tap guard: image controls do not receive clicks, so a press on the mosaic fullscreened
 		     the wall player (black centre, then a restart). This button swallows the click and
 		     returns focus to the menu. It is not in the remote chain. -->
