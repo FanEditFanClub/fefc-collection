@@ -165,7 +165,9 @@
 					<label>RESUME</label>
 					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 					<onleft>9292</onleft><onright>9296</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>ActivateWindow(fullscreenvideo)</onclick>
 				</control>
 				<control type="button" id="9296">
@@ -174,7 +176,9 @@
 					<label>STOP</label>
 					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 					<onleft>9295</onleft><onright>9290</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>PlayerControl(Stop)</onclick>
 				</control>
 			</control>
@@ -188,7 +192,9 @@
 					<label>HOME</label>
 					<onleft condition="Control.IsVisible(9296)">9296</onleft><onleft>9292</onleft>
 					<onright>9291</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>ActivateWindow(Home)</onclick>
 				</control>
 				<control type="image"><left>364</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
@@ -198,7 +204,9 @@
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>SEARCH</label>
 					<onleft>9290</onleft><onright>9294</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
 				</control>
 				<control type="image"><left>592</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
@@ -208,7 +216,9 @@
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>$VAR[FefcSoundLabel]</label>
 					<onleft>9291</onleft><onright>9292</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
 				</control>
 				<control type="image"><left>820</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
@@ -220,7 +230,9 @@
 					<label>SETTINGS</label>
 					<onleft>9294</onleft>
 					<onright condition="Control.IsVisible(9295)">9295</onright><onright>9290</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup><ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 				</control>
 				<control type="image"><left>1098</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>

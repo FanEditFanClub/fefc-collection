@@ -148,13 +148,15 @@
 				<include>FefcDetailTile</include>
 			</control>
 		</control>
+		<!-- 0.5.6: shorter row so Download stays inside the 1080p safe area.
+		     Down leaves this row for the bottom menu. -->
 		<control type="grouplist" id="5001">
-			<left>660</left><top>824</top><width>1120</width><height>76</height>
+			<left>660</left><top>824</top><width>920</width><height>76</height>
 			<orientation>horizontal</orientation>
-			<itemgap>16</itemgap>
-			<onleft>5001</onleft><onright>5001</onright><onup>5000</onup><ondown>5001</ondown>
+			<itemgap>12</itemgap>
+			<onleft>5001</onleft><onright>5001</onright><onup>5000</onup><ondown>9290</ondown>
 			<control type="button" id="13">
-				<width>300</width><height>76</height>
+				<width>280</width><height>76</height>
 				<label>OPEN IN VLC</label>
 				<include>FefcDetailTile</include>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=open_vlc&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
@@ -170,7 +172,7 @@
 			<!-- 0.5.1: no fallback — add_video() always sets fefc_download_label, and the ',Download'
 			     fallback was rendering a second "Download" next to it ("Download Download"). -->
 			<control type="button" id="15">
-				<width>300</width><height>76</height>
+				<width>250</width><height>76</height>
 				<label>$INFO[ListItem.Property(fefc_download_label)]</label>
 				<include>FefcDetailTile</include>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=download&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
@@ -183,7 +185,9 @@
 			<aspectratio>keep</aspectratio>
 		</control>
 			</control>
-		<include content="FefcTopBar"><param name="down" value="8"/><param name="up" value="8"/></include>
+		<!-- Up from the menu returns to the bottom action row. Target the VLC button
+		     itself: focusing the grouplist id drops focus back on Play. -->
+		<include content="FefcTopBar"><param name="down" value="8"/><param name="up" value="13"/></include>
 		<include>FefcTicker</include>
 		<include>FefcWallKeep</include>
 	</controls>
