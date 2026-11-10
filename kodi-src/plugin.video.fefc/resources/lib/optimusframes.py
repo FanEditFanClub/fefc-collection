@@ -19,3 +19,13 @@ def frame_list(media_dir):
 
 def still_path(media_dir):
     return os.path.join(media_dir, optimusplan.IMAGE_NAME)
+
+
+def support_frames(media_dir):
+    """Silent Support Us loop. JPEGs only, same idea as the search frames."""
+    d = os.path.join(media_dir, 'optimus-support')
+    if not os.path.isdir(d):
+        return []
+    names = [n for n in os.listdir(d) if n.startswith('f') and n.lower().endswith('.jpg')]
+    names.sort()
+    return [os.path.join(d, n) for n in names]

@@ -1597,31 +1597,43 @@ class SupportWindow(xbmcgui.WindowDialog):
     Optimus stays on the left. The bottom bar and ticker match the other screens.
     A tile press opens the square QR. The code is not drawn here. 1920x1080, no video."""
     KEEP = 2
-    LOGOS = {'Patreon': 'fefc-logo-patreon.png', 'PayPal': 'fefc-logo-paypal.png', 'Venmo': 'fefc-logo-venmo.png'}
+    LOGOS = {'Patreon': 'fefc-sup-patreon.png', 'PayPal': 'fefc-sup-paypal.png', 'Venmo': 'fefc-sup-venmo.png'}
 
     def __init__(self, items):
         super().__init__()
         self.items = items
-        # This dialog is laid out in the 1280x720 space Kodi scales up to 1920x1080.
-        # Home tiles are 400x200 there; the same proportion here is 267x133, drawn 280x140.
-        # font10_title (22) scales to the same on-screen size as Home's font11_tile (34).
+        # 1280x720 is the space this dialog is scaled from onto a 1080p screen.
+        # Home tiles are 400x200 (2:1). The same proportion here is 312x156.
+        # The row is centered in the band beside Optimus, above the menu.
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
-        self.addControl(xbmcgui.ControlImage(24, 70, 300, 500, 'fefc-optimus-begging.png', aspectRatio=self.KEEP))
-        self.addControl(xbmcgui.ControlLabel(340, 70, 900, 48, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=6))
+        self._frames = []
+        self._closed = False
+        try:
+            from . import optimusframes
+            media = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media')
+            self._frames = optimusframes.support_frames(media)
+        except Exception:
+            self._frames = []
+        # Silent JPEG loop of Optimus offering the hat. The still is only the fallback.
+        art = self._frames[0] if self._frames else 'fefc-optimus-begging.png'
+        self.art = xbmcgui.ControlImage(16, 78, 250, 470, art, aspectRatio=self.KEEP)
+        self.addControl(self.art)
         self.btns = []
-        xs = (360, 656, 952)
-        tw, th = 280, 140
+        tw, th = 312, 156
+        gap = 16
+        row = tw * 3 + gap * 2
+        x0 = 280 + max(0, (1280 - 16 - 280 - row) // 2)
+        y0 = 232
+        self.addControl(xbmcgui.ControlLabel(x0, y0 - 64, row, 48, 'SUPPORT US', font='font14_title', textColor='FFFF9C00', alignment=6))
         for k, (name, url, sub) in enumerate(items):
-            x = xs[k]
-            b = xbmcgui.ControlButton(x, 200, tw, th, '', font='font10_title', textColor='FFFFFFFF', alignment=6,
+            x = x0 + k * (tw + gap)
+            b = xbmcgui.ControlButton(x, y0, tw, th, '', font='font11_tile', textColor='FFFFFFFF', alignment=6,
                                        focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
             self.addControl(b)
             self.btns.append(b)
-            if name == 'Patreon':
-                self.addControl(xbmcgui.ControlImage(x + 95, 208, 90, 72, self.LOGOS[name], aspectRatio=self.KEEP))
-            else:
-                self.addControl(xbmcgui.ControlImage(x + 24, 214, 232, 60, self.LOGOS[name], aspectRatio=self.KEEP))
-            self.addControl(xbmcgui.ControlLabel(x, 284, tw, 48, name, font='font10_title', textColor='FFFFFFFF', alignment=6))
+            # Logo canvas already has clear padding. It sits above the name, inset from the tile edge.
+            self.addControl(xbmcgui.ControlImage(x + 26, y0 + 10, tw - 52, 88, self.LOGOS[name], aspectRatio=self.KEEP))
+            self.addControl(xbmcgui.ControlLabel(x + 8, y0 + 102, tw - 16, 46, name, font='font11_tile', textColor='FFFFFFFF', alignment=6))
         self.addControl(xbmcgui.ControlImage(40, 620, 1200, 56, 'fefc-lc-pill.png', colorDiffuse='E6101418'))
         bar = (('HOME', 70, 160), ('SEARCH', 250, 160), ('SOUND ON', 430, 200), ('SETTINGS', 650, 190))
         self.menu = []
@@ -1644,6 +1656,36 @@ class SupportWindow(xbmcgui.WindowDialog):
         self.addControl(xbmcgui.ControlImage(40, 684, 1200, 28, 'fefc-tile.png'))
         self.addControl(xbmcgui.ControlLabel(52, 684, 1176, 28, tick, font='font12', textColor='FFFFFFFF', alignment=4))
         self.setFocus(self.btns[0])
+
+    def _pump(self):
+        """Advance the hat loop off the video player, the same way Search does."""
+        mon = xbmc.Monitor()
+        i = 0
+        n = len(self._frames) or 1
+        while not self._closed and not mon.abortRequested():
+            if self._frames:
+                try:
+                    self.art.setImage(self._frames[i % n])
+                except Exception:
+                    pass
+                i += 1
+            mon.waitForAbort(0.125 if self._frames else 0.2)
+
+    def doModal(self):
+        self._closed = False
+        if self._frames:
+            threading.Thread(target=self._pump, daemon=True).start()
+        try:
+            super(SupportWindow, self).doModal()
+        finally:
+            self._closed = True
+
+    def close(self):
+        self._closed = True
+        try:
+            super(SupportWindow, self).close()
+        except Exception:
+            pass
 
     def _menu_go(self, c):
         if c == self.menu[0]:

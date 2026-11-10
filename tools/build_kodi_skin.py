@@ -205,6 +205,21 @@ def make_textures(media):
         im.alpha_composite(lg, ((256 - lg.width) // 2, (256 - lg.height) // 2))
         im.resize((128, 128), Image.LANCZOS).save(media / name)
         lg2 = Image.open(OVER / 'brand' / src).convert('RGBA'); lg2.save(media / ('fefc-logo-' + src))
+
+    def support_logo(src, name, box, max_size):
+        """Tight crop of the official mark, centered on a clear canvas so the tile
+        shows padding on every side instead of clipping the wordmark."""
+        lg = Image.open(OVER / 'brand' / src).convert('RGBA')
+        bb = lg.getbbox()
+        if bb:
+            lg = lg.crop(bb)
+        lg.thumbnail(max_size, Image.LANCZOS)
+        canvas = Image.new('RGBA', box, (0, 0, 0, 0))
+        canvas.alpha_composite(lg, ((box[0] - lg.width) // 2, (box[1] - lg.height) // 2))
+        canvas.save(media / name)
+    support_logo('patreon.png', 'fefc-sup-patreon.png', (260, 96), (88, 80))
+    support_logo('paypal.png', 'fefc-sup-paypal.png', (260, 96), (176, 52))
+    support_logo('venmo.png', 'fefc-sup-venmo.png', (260, 96), (160, 42))
     brand_logo('patreon.png', 'fefc-ic-patreon.png')
     brand_logo('paypal.png', 'fefc-ic-paypal.png')
     brand_logo('venmo.png', 'fefc-ic-venmo.png')
