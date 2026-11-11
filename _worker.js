@@ -704,6 +704,17 @@ function kodiHtml(path, entries) {
   for (const e of entries) o += '<a href="' + encodeURIComponent(e.name).replace(/'/g, '%27') + (e.dir ? '/' : '') + '">' + xe(e.name) + (e.dir ? '/' : '') + '</a>' + (e.dir ? '  -\n' : '  -\n');
   return o + '</pre>\n</body></html>\n';
 }
+async function guidePage(env, url, req, file, marker) {
+  const page = await env.ASSETS.fetch(new Request(new URL(file, url), { method: 'GET' }));
+  const text = page.status === 200 ? await page.text() : '';
+  if (page.status !== 200 || !text.includes(marker)) {
+    return new Response('Guide is not available.', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+  return new Response(req.method === 'HEAD' ? null : text, {
+    status: 200,
+    headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-cache, must-revalidate' },
+  });
+}
 async function kodiApi(req, env, ctx, url) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
   let segs;
@@ -838,19 +849,14 @@ export default {
         return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
       }
     }
-    if (url.pathname === '/samsung' || url.pathname === '/samsung/') {
-      const page = await env.ASSETS.fetch(new Request(new URL('/samsung.html', url), req));
-      const h = new Headers(page.headers);
-      h.set('content-type', 'text/html; charset=utf-8');
-      h.set('cache-control', 'no-cache, must-revalidate');
-      return new Response(page.body, { status: page.status, headers: h });
+    // Pages turns a request for foo.html into a 308 to /foo. Fetching that from here and
+    // returning it sends the browser back to this same route. The .raw file is the same
+    // HTML with no .html name, so the asset server returns the bytes.
+    if (url.pathname === '/samsung' || url.pathname === '/samsung/' || url.pathname === '/samsung.html') {
+      return await guidePage(env, url, req, '/samsung.raw', 'Tizen Studio');
     }
-    if (url.pathname === '/lg-update' || url.pathname === '/lg-update/') {
-      const page = await env.ASSETS.fetch(new Request(new URL('/lg-update.html', url), req));
-      const h = new Headers(page.headers);
-      h.set('content-type', 'text/html; charset=utf-8');
-      h.set('cache-control', 'no-cache, must-revalidate');
-      return new Response(page.body, { status: page.status, headers: h });
+    if (url.pathname === '/lg-update' || url.pathname === '/lg-update/' || url.pathname === '/lg-update.html') {
+      return await guidePage(env, url, req, '/lg-update.raw', 'webOS Dev Manager');
     }
     const res = await env.ASSETS.fetch(req);
     const path = url.pathname;
