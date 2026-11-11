@@ -126,13 +126,13 @@ Kodi has no Tizen build. `FEFC.wgt` is a TV web app. It opens `https://collectio
 
 The words on the package are the shared FEFC version, currently **0.6.3 Beta**. Tizen also needs a three-number package version. That is `0.6.3` when the FEFC build is not higher than 3, and `0.6.51` for the published build 51, because the third number becomes the build number once the build is higher. Each part has to stay in 0–255. A later package installs over FEFC only if that three-number version is higher and the author certificate is the same one.
 
-CI builds an **unsigned** `FEFC.wgt` and uploads it as the Actions artifact `fefc-tizen`. Publishing stays off while `FEFC_PUBLISH_NEW_PLATFORMS` is unset. Do not commit `author.p12` or any other certificate. Each person signs for their own TV with a free Samsung account.
+CI builds an **unsigned** `FEFC.wgt` and uploads it as the Actions artifact `fefc-tizen`. The public file is [FEFC.wgt](https://fefc-collection.pages.dev/kodi-app/FEFC.wgt). Mac and webOS are not published by this workflow. `FEFC_PUBLISH_NEW_PLATFORMS` does not publish them. Samsung is uploaded only when the workflow is started with `publish_tizen`, or the repository variable `FEFC_PUBLISH_TIZEN` is exactly `true`. Do not commit `author.p12` or any other certificate. Each person signs for their own TV with a free Samsung account.
 
 ### What you need
 
 - A Samsung smart TV and a Windows or Mac computer on the same Wi-Fi.
 - A free Samsung account. No paid partner account.
-- The unsigned `FEFC.wgt` from the `fefc-tizen` artifact, or a copy someone sends you. It is not in the Samsung store, and it is not on the website until publishing is turned on.
+- The unsigned [FEFC.wgt](https://fefc-collection.pages.dev/kodi-app/FEFC.wgt). It is not in the Samsung store.
 
 ### Install Tizen Studio
 

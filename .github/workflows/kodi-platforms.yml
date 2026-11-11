@@ -9,6 +9,10 @@ name: kodi-platforms
 on:
   workflow_dispatch:
     inputs:
+      publish_tizen:
+        description: "Publish the unsigned Tizen widget only. Does not publish Mac or webOS."
+        type: boolean
+        default: false
       force:
         description: "Rebuild even if the checkout is unchanged"
         type: boolean
@@ -41,6 +45,8 @@ concurrency:
 
 jobs:
   webos:
+    # Artifacts only. A Tizen publish dispatch does not build or upload this package.
+    if: ${{ github.event_name == 'push' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -64,6 +70,7 @@ jobs:
           if-no-files-found: error
 
   macos:
+    if: ${{ github.event_name == 'push' }}
     runs-on: macos-latest
     timeout-minutes: 120
     steps:
@@ -109,6 +116,7 @@ jobs:
           if-no-files-found: error
 
   tizen:
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_tizen == true) }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -119,7 +127,7 @@ jobs:
       - name: Tools
         run: pip install pillow
       - name: Build unsigned Tizen widget
-        run: python3 tools/build_tizen_wgt.py --out dist/FEFC.wgt --use-published-build
+        run: python3 tools/build_tizen_wgt.py --out dist/FEFC.wgt --build 51
       - uses: actions/upload-artifact@v4
         with:
           name: fefc-tizen
@@ -128,39 +136,58 @@ jobs:
             dist/FEFC.report.json
           if-no-files-found: error
 
-  # Stays skipped until the repository variable FEFC_PUBLISH_NEW_PLATFORMS is exactly "true".
-  publish:
-    needs: [webos, macos, tizen]
-    if: ${{ vars.FEFC_PUBLISH_NEW_PLATFORMS == 'true' }}
+  # Samsung only. Mac and webOS have no publish job. The old FEFC_PUBLISH_NEW_PLATFORMS
+  # variable does not publish them. This job runs only for an explicit Tizen publish.
+  publish-tizen:
+    needs: [tizen]
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_tizen == true) || vars.FEFC_PUBLISH_TIZEN == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      FEFC_PUBLISH_NEW_PLATFORMS: 'true'
+      FEFC_PUBLISH_PLATFORM: tizen
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
       - uses: actions/download-artifact@v4
         with:
+          name: fefc-tizen
           path: dist/incoming
-      - name: Merge platform entries into version.json without touching Android fields
+      - name: Check the widget, then add platforms.tizen without touching Android fields
         run: |
           set -euo pipefail
+          python3 - <<'PY'
+          import json
+          report = json.load(open('dist/incoming/FEFC.report.json'))
+          assert report['widget_version'] == '0.6.51', report
+          assert report['fefc_version'] == '0.6.3 Beta', report
+          assert report['signed'] is False, report
+          print('widget', report['widget_version'], report['sha256'], report['bytes'])
+          PY
           python3 tools/publish_kodi_platforms.py \
-            --webos dist/incoming/fefc-webos/FEFC-webOS.ipk \
-            --macos-arm64 dist/incoming/fefc-macos/FEFC-macOS-arm64.dmg \
-            --macos-x86_64 dist/incoming/fefc-macos/FEFC-macOS-x86_64.dmg \
-            --tizen dist/incoming/fefc-tizen/FEFC.wgt \
+            --tizen dist/incoming/FEFC.wgt \
             --out dist/version.json
-      - name: Upload packages and version.json to R2
+          python3 - <<'PY'
+          import json
+          doc = json.load(open('dist/version.json'))
+          names = set((doc.get('platforms') or {}))
+          assert names <= {'tizen'} or 'macos' not in names and 'webos' not in names
+          assert 'macos' not in names and 'webos' not in names
+          block = doc['platforms']['tizen']
+          assert block['filename'] == 'FEFC.wgt'
+          assert block['url'].endswith('/kodi-app/FEFC.wgt')
+          assert len(block['sha256']) == 64 and block['size'] > 0
+          print('platforms', sorted(names))
+          PY
+      - name: Upload the unsigned widget and version.json to R2
         run: |
           set -euo pipefail
           npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
-          npx wrangler r2 object put fan-edit-media/kodi/FEFC-webOS.ipk --file=dist/incoming/fefc-webos/FEFC-webOS.ipk --content-type=application/vnd.webos.ipk --remote
-          npx wrangler r2 object put fan-edit-media/kodi/FEFC-macOS-arm64.dmg --file=dist/incoming/fefc-macos/FEFC-macOS-arm64.dmg --content-type=application/x-apple-diskimage --remote
-          npx wrangler r2 object put fan-edit-media/kodi/FEFC-macOS-x86_64.dmg --file=dist/incoming/fefc-macos/FEFC-macOS-x86_64.dmg --content-type=application/x-apple-diskimage --remote
-          npx wrangler r2 object put fan-edit-media/kodi/FEFC.wgt --file=dist/incoming/fefc-tizen/FEFC.wgt --content-type=application/widget --remote
+          npx wrangler r2 object put fan-edit-media/kodi/FEFC.wgt --file=dist/incoming/FEFC.wgt --content-type=application/widget --remote
           npx wrangler r2 object put fan-edit-media/kodi/version.json --file=dist/version.json --content-type=application/json --remote

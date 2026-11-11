@@ -239,18 +239,30 @@ print('ok')
   assert.match(samsung, /Certificate Manager/);
   assert.match(samsung, /same author certificate/);
   assert.match(samsung, /Nothing here was installed on a real Samsung TV/);
+  assert.match(samsung, /https:\/\/fefc-collection\.pages\.dev\/kodi-app\/FEFC\.wgt/);
   assert.match(readme, /collection\.faneditfanclub\.com\/samsung/);
   assert.match(readme, /FEFC_PUBLISH_NEW_PLATFORMS/);
+  assert.match(readme, /FEFC_PUBLISH_TIZEN/);
   assert.match(worker, /\/samsung/);
 });
 
 test('publish script stays closed unless Carson turns the gate on', () => {
   const r = spawnSync('python3', ['tools/publish_kodi_platforms.py', '--help'], {
-    encoding: 'utf8', cwd: root, env: {...process.env, FEFC_PUBLISH_NEW_PLATFORMS: ''}
+    encoding: 'utf8', cwd: root, env: {...process.env, FEFC_PUBLISH_PLATFORM: ''}
   });
   assert.notEqual(r.status, 0);
+  const webos = spawnSync('python3', ['tools/publish_kodi_platforms.py', '--tizen', 'x', '--out', 'y'], {
+    encoding: 'utf8', cwd: root, env: {...process.env, FEFC_PUBLISH_PLATFORM: 'webos'}
+  });
+  assert.notEqual(webos.status, 0);
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/kodi-platforms.yml'), 'utf8');
-  assert.match(workflow, /FEFC_PUBLISH_NEW_PLATFORMS == 'true'/);
+  assert.match(workflow, /inputs\.publish_tizen == true/);
+  assert.match(workflow, /FEFC_PUBLISH_TIZEN == 'true'/);
+  assert.match(workflow, /FEFC_PUBLISH_PLATFORM: tizen/);
+  const publish = workflow.slice(workflow.indexOf('publish-tizen:'));
+  assert.doesNotMatch(publish, /FEFC-webOS\.ipk/);
+  assert.doesNotMatch(publish, /FEFC-macOS/);
+  assert.match(publish, /fan-edit-media\/kodi\/FEFC\.wgt/);
   assert.match(workflow, /runs-on: macos-latest/);
   const apk = fs.readFileSync(path.join(root, '.github/workflows/kodi-apk.yml'), 'utf8');
   assert.match(apk, /write-android --out version.json/);
