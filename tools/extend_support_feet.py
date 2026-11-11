@@ -113,6 +113,38 @@ def frame_pose(rgb):
     return head, cut, cols
 
 
+def _taper_caps(canvas, rgb, place):
+    """Feather a tall pose's thigh into the shin.
+
+    The rounded cap is a little brighter than the shin. A short vertical mix
+    across the join evens that out, and the cap's extra width is carried down
+    a few pixels using the edge pixel itself. Bowed frames never call this.
+    """
+    ink = rgb.sum(axis=2) > 48
+    height, width = canvas.shape[:2]
+    for dest_x, dest_y, join_y, leg_w, leg_h, x0, x1 in place:
+        bottoms = []
+        for x in range(x0, x1 + 1):
+            ys = np.where(ink[rgb.shape[0] // 2:, x])[0]
+            if len(ys) > 4:
+                bottoms.append(int(ys[-1]) + rgb.shape[0] // 2)
+        if len(bottoms) < 6:
+            continue
+        cap_y = int(np.median(bottoms))
+        y0 = max(2, cap_y - 10)
+        y1 = min(height - 3, cap_y + 16)
+        xa = max(0, x0 - 4)
+        xb = min(width - 1, x1 + 4)
+        band = canvas[y0:y1 + 1, xa:xb + 1].copy()
+        # Vertical feather of the pixels that are already the leg.
+        blur = band.copy()
+        blur[2:-2] = (band[:-4] + 2 * band[1:-3] + 3 * band[2:-2] + 2 * band[3:-1] + band[4:]) / 9.0
+        leg = band.sum(axis=2) > 70
+        mixed = band * 0.45 + blur * 0.55
+        band[leg] = mixed[leg]
+        canvas[y0:y1 + 1, xa:xb + 1] = band
+
+
 def extend_all(source_dir=None, preview=None):
     crop, alpha, y0, sleft, sright = build_sprite(STILL)
     s_spacing = ((sright[0] + sright[1]) - (sleft[0] + sleft[1])) / 2.0
@@ -234,6 +266,10 @@ def extend_all(source_dir=None, preview=None):
             if len(ys) > 8:
                 body[int(ys[0]):int(ys[-1]) + 1, x] = True
         canvas[:rgb.shape[0]] = np.where(body[..., None], rgb, canvas[:rgb.shape[0]])
+        # Tall poses end the thigh in a rounded cap, so the shin reads as a step.
+        # Bowed poses already show the knee joint; leave those frames alone.
+        if place and head <= 18:
+            _taper_caps(canvas, rgb, place)
         out = np.clip(canvas, 0, 255).astype(np.uint8)
         Image.fromarray(out, 'RGB').save(
             os.path.join(out_dir, os.path.basename(name)), quality=74, optimize=True)
