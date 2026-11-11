@@ -7,11 +7,26 @@
 	<backgroundcolor>0</backgroundcolor>
 	<controls>
 		<control type="image">
-			<left>336</left><top>206</top><width>1248</width><height>632</height>
+			<left>336</left><top>198</top><width>1248</width><height>630</height>
 			<texture colordiffuse="FF000000">fefc-white.png</texture>
 		</control>
+		<!-- Page line sits under the top mosaic row and above the tiles, clear of the menu. -->
+		<control type="label">
+			<left>900</left><top>204</top><width>360</width><height>36</height>
+			<align>right</align><aligny>center</aligny>
+			<font>font12_title</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<label>GENRES</label>
+		</control>
+		<control type="label" id="9150">
+			<left>1270</left><top>204</top><width>300</width><height>36</height>
+			<align>right</align><aligny>center</aligny>
+			<font>font12_title</font>
+			<textcolor>FFFF9C00</textcolor>
+			<label></label>
+		</control>
 		<control type="button" id="9101">
-			<left>348</left><top>212</top><width>400</width><height>200</height>
+			<left>348</left><top>248</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -19,7 +34,7 @@
 			<label></label>
 		</control>
 		<control type="button" id="9102">
-			<left>760</left><top>212</top><width>400</width><height>200</height>
+			<left>760</left><top>248</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -27,7 +42,7 @@
 			<label></label>
 		</control>
 		<control type="button" id="9103">
-			<left>1172</left><top>212</top><width>400</width><height>200</height>
+			<left>1172</left><top>248</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -35,7 +50,7 @@
 			<label></label>
 		</control>
 		<control type="button" id="9104">
-			<left>348</left><top>424</top><width>400</width><height>200</height>
+			<left>348</left><top>440</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -43,7 +58,7 @@
 			<label></label>
 		</control>
 		<control type="button" id="9105">
-			<left>760</left><top>424</top><width>400</width><height>200</height>
+			<left>760</left><top>440</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -51,7 +66,7 @@
 			<label></label>
 		</control>
 		<control type="button" id="9106">
-			<left>1172</left><top>424</top><width>400</width><height>200</height>
+			<left>1172</left><top>440</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -59,7 +74,7 @@
 			<label></label>
 		</control>
 		<control type="button" id="9107">
-			<left>348</left><top>636</top><width>400</width><height>200</height>
+			<left>348</left><top>632</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -68,7 +83,7 @@
 			<ondown>9401</ondown>
 		</control>
 		<control type="button" id="9108">
-			<left>760</left><top>636</top><width>400</width><height>200</height>
+			<left>760</left><top>632</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
@@ -77,27 +92,13 @@
 			<ondown>9401</ondown>
 		</control>
 		<control type="button" id="9109">
-			<left>1172</left><top>636</top><width>400</width><height>200</height>
+			<left>1172</left><top>632</top><width>400</width><height>180</height>
 			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
 			<label></label>
 			<ondown>9401</ondown>
-		</control>
-		<control type="label">
-			<left>360</left><top>840</top><width>140</width><height>24</height>
-			<aligny>center</aligny>
-			<font>font12</font>
-			<textcolor>FFFFFFFF</textcolor>
-			<label>GENRES</label>
-		</control>
-		<control type="label" id="9150">
-			<left>500</left><top>840</top><width>120</width><height>24</height>
-			<aligny>center</aligny>
-			<font>font12_title</font>
-			<textcolor>FFFF9C00</textcolor>
-			<label></label>
 		</control>
 		<control type="image">
 			<left>110</left><top>866</top><width>1700</width><height>84</height>

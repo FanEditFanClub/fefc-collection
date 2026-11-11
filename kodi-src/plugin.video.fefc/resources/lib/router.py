@@ -1949,7 +1949,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
         menu_top = int(round(866 * 2 / 3.0))
         # Room under the frame for the three small marks. The frames themselves are unchanged.
-        mark_h = 40
+        mark_h = 58
         art_h = menu_top - 28 - mark_h - 8
         art_w = int(round(art_h * 222 / 278.0))
         self.art = xbmcgui.ControlImage(0, 12, art_w, art_h, self._still, aspectRatio=2)
@@ -1999,15 +1999,24 @@ class OptimusWindow(xbmcgui.WindowDialog):
 
     def _add_optimus_marks(self, y, art_w):
         """Grok, Discord and Muse under the loop. Decorative only, so they take no focus.
-        The 48 frames are not modified. No link is added: Discord and Grok already have
-        addresses elsewhere in the app, and Muse does not."""
-        names = ('fefc-mark-grok.png', 'fefc-mark-discord.png', 'fefc-mark-muse.png')
-        size, gap = 36, 22
-        row = size * len(names) + gap * (len(names) - 1)
-        x0 = max(8, (art_w - row) // 2)
-        for i, name in enumerate(names):
+        The 48 frames are not modified. Discord's mark is from its brand page. Grok's
+        slash is the public-domain xAI mark. Muse is a labeled placeholder: this
+        project does not name a Muse product."""
+        marks = (
+            ('fefc-mark-grok.png', 'Grok'),
+            ('fefc-mark-discord.png', 'Discord'),
+            ('fefc-mark-muse.png', 'Muse'),
+        )
+        col, icon, gap = 78, 30, 10
+        row = col * len(marks) + gap * (len(marks) - 1)
+        x0 = max(4, (art_w - row) // 2)
+        for i, (name, label) in enumerate(marks):
+            x = x0 + i * (col + gap)
             self.addControl(xbmcgui.ControlImage(
-                x0 + i * (size + gap), y, size, size, name, aspectRatio=2))
+                x + (col - icon) // 2, y, icon, icon, name, aspectRatio=2))
+            self.addControl(xbmcgui.ControlLabel(
+                x, y + icon + 1, col, 18, label, font='font12',
+                textColor='FFFFFFFF', alignment=2))
 
     def _keyboard_open(self):
         return bool(xbmc.getCondVisibility('Window.IsActive(virtualkeyboard) | Window.IsVisible(virtualkeyboard) | Window.IsActive(numericinput)'))
