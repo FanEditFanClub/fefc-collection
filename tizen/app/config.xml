@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="https://collection.faneditfanclub.com/tizen" version="0.6.0" viewmodes="maximized">
+<widget xmlns="http://www.w3.org/ns/widgets" xmlns:tizen="http://tizen.org/ns/widgets" id="https://collection.faneditfanclub.com/tizen" version="0.6.3" viewmodes="maximized">
   <access origin="*" subdomains="true"/>
   <tizen:application id="fefccollec.FEFC" package="fefccollec" required_version="2.3"/>
   <content src="index.html"/>
   <feature name="http://tizen.org/feature/screen.size.all"/>
   <icon src="icon.png"/>
   <name>FEFC</name>
-  <description>Fan Edit Fan Club Collection. The picture is the live FEFC site. Playback uses AVPlay when the TV provides it.</description>
+  <description>FEFC 0.6.3 Beta. The picture is the live FEFC site. Playback uses AVPlay when the TV provides it.</description>
   <tizen:privilege name="http://tizen.org/privilege/internet"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
   <tizen:privilege name="http://tizen.org/privilege/tv.audio"/>

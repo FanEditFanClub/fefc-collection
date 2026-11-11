@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install FEFC on a Samsung TV</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #03060c; color: #f0f0f0; font: 22px/1.45 "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 48rem; margin: 0 auto; padding: 2.2rem 1.3rem 4rem; }
+  h1 { font-size: 2.4rem; line-height: 1.15; margin: 0 0 .4rem; }
+  h2 { font-size: 1.55rem; margin: 2.2rem 0 .6rem; }
+  p, li { font-size: 1.2rem; }
+  a { color: #99ccff; }
+  .lead { color: #99ccff; font-size: 1.35rem; }
+  ol.steps > li, ul li { margin: .7rem 0; }
+  code, .file { font-family: ui-monospace, Consolas, monospace; color: #f4f7fb; }
+  .note { background: #0b1220; border: 2px solid #2fa8ff; border-radius: 14px; padding: 1rem 1.1rem; }
+</style>
+</head>
+<body>
+<main>
+<h1>Install FEFC on a Samsung TV</h1>
+<p class="lead">This is the free way. You need a free Samsung account, Tizen Studio on a Windows or Mac computer, and the TV on the same Wi-Fi. The app is FEFC <span class="file">0.6.3 Beta</span>. The TV shows it as FEFC, with the FEFC icon. The picture is the live site. You sign the package yourself. This project does not include a Samsung certificate.</p>
+<p class="note">These steps follow Samsung’s current TV device page and certificate page. Button names move between Tizen Studio versions. Where this page is not sure, it says so. Nothing here was installed on a real Samsung TV.</p>
+
+<h2>What you need</h2>
+<ul>
+<li>A Samsung smart TV and a Windows or Mac computer on the <strong>same Wi-Fi</strong>.</li>
+<li>A free Samsung account. Create one at <a href="https://account.samsung.com/">account.samsung.com</a> if you do not have one. You do not need a paid Samsung partner account.</li>
+<li>The unsigned file <span class="file">FEFC.wgt</span>. It is not in the Samsung store. The person who runs FEFC can send it to you. If you can open the project’s GitHub Actions, download the artifact named <span class="file">fefc-tizen</span>. That zip contains <span class="file">FEFC.wgt</span>. Publishing that file to the website is still turned off, so there is no public download link yet.</li>
+</ul>
+
+<h2>1. Install Tizen Studio</h2>
+<ol class="steps">
+<li>Download Tizen Studio from <a href="https://developer.tizen.org/development/tizen-studio/download">developer.tizen.org</a>. Use the installer for Windows or Mac. Install it and open it once so it can finish setup.</li>
+<li>Open <strong>Tools &gt; Package Manager</strong> (it may also appear as Tizen Package Manager).</li>
+<li>Open the <strong>Extension SDK</strong> tab. Install <strong>TV Extensions</strong> and <strong>Samsung Certificate Extension</strong>. Samsung’s TV extension download page listed TV Extension 10.0.0 on February 26, 2026. Install the TV extension Package Manager offers. You do not need the TV emulator to put the app on a real TV.</li>
+<li>If Package Manager also lists Certificate Manager or Web CLI under the main SDK and they are not installed, install those too. The sign step needs Certificate Manager. The command-line alternative needs the <span class="file">tizen</span> command.</li>
+</ol>
+
+<h2>2. Turn on Developer Mode on the TV</h2>
+<p>Samsung’s current TV device page says:</p>
+<ol class="steps">
+<li>On the TV, open <strong>Smart Hub</strong>, then the <strong>Apps</strong> panel.</li>
+<li>Go to <strong>App Settings</strong>. On some sets you can type the numbers on the Apps screen itself, without opening App Settings.</li>
+<li>With the remote, enter <strong>12345</strong>. A developer-mode box opens.</li>
+<li>Switch <strong>Developer mode</strong> to <strong>On</strong>.</li>
+<li>Enter the <strong>IP address of the computer</strong>, not the TV, and confirm.</li>
+<li>Reboot the TV when it asks. After the reboot, open Apps. <strong>Develop Mode</strong> should be marked at the top of that screen.</li>
+</ol>
+<p>If 12345 does nothing, try <strong>123456</strong>. Older write-ups use that code on some sets. Samsung’s current TV device page only documents 12345, so which years use 123456 is not certain here.</p>
+<p>The computer’s IP is in its network settings. The TV’s IP is under the TV’s network or connection status. You need both, and they must be on the same network.</p>
+
+<h2>3. Connect the TV in Device Manager</h2>
+<ol class="steps">
+<li>In Tizen Studio, open <strong>Tools &gt; Device Manager</strong>.</li>
+<li>Open <strong>Remote Device Manager</strong> and press <strong>+</strong>.</li>
+<li>Name the TV anything you will recognize. Enter the <strong>TV’s</strong> IP address. Leave the port as the number the window already shows. Samsung’s guide says the port is filled in for you. Many installs use port 26101, but if the window shows a different port, keep that one.</li>
+<li>Add the TV, then switch its <strong>Connection</strong> to <strong>On</strong>. It should show as connected.</li>
+<li>If Device Manager offers <strong>Permit to install applications</strong>, turn that on. Samsung’s FAQ says you can also right-click a folder of the connected TV and choose that item.</li>
+</ol>
+
+<h2>4. Find the TV’s DUID</h2>
+<p>The DUID is the TV’s id. The certificate will only install on TVs whose DUID is in it.</p>
+<ul>
+<li>In Device Manager, right-click the connected TV and choose <strong>DUID</strong>, if that item is there. Copy it.</li>
+<li>Samsung’s certificate page also says: on the TV, open <strong>Menu &gt; Support &gt; Contact Samsung &gt; Unique Device ID</strong>.</li>
+</ul>
+<p>Write the DUID down. A second TV needs its own DUID added later. The exact menu on the TV moves by year. If neither place shows a DUID, connect the TV first and look again in Device Manager. This page cannot list every year’s menu.</p>
+
+<h2>5. Create your Samsung certificate</h2>
+<p>This certificate stays on your computer. Do not send it to anyone, and do not put it in the FEFC project.</p>
+<ol class="steps">
+<li>In Tizen Studio, open <strong>Tools &gt; Certificate Manager</strong>. If a migration box appears, choose <strong>Cancel</strong>.</li>
+<li>Press <strong>+</strong>. Choose <strong>Samsung</strong>, then <strong>TV</strong>, then Next.</li>
+<li>Name the profile, for example <span class="file">FEFC</span>.</li>
+<li>Create a new author certificate. Fill in the name and password it asks for. Sign in with your Samsung account when it asks. Save the backup where you will find it again. The author file is usually named <span class="file">author.p12</span>.</li>
+<li>Create a new distributor certificate. If it asks for a privilege level, choose <strong>Public</strong>. That is the free one. Partner is for companies in Samsung’s partner program. The privilege labels can differ by Studio version. Pick the choice that does not ask for a partner id.</li>
+<li>Add this TV’s DUID. Type it, or press <strong>+</strong> next to the connected TV if it is listed.</li>
+<li>Finish. This profile should be the active one.</li>
+</ol>
+<p>Keep the author certificate. An update has to be signed with the same author certificate. A different author certificate looks like a different app, and the TV may refuse to replace FEFC.</p>
+
+<h2>6. Sign the package and install it</h2>
+<p>Do this in Tizen Studio. The command line is lower down if you would rather use that.</p>
+<ol class="steps">
+<li>In the Tizen Studio menu, choose <strong>File &gt; Import &gt; Tizen &gt; Tizen project</strong>.</li>
+<li>Choose <strong>Select archive file</strong> and pick <span class="file">FEFC.wgt</span>. If it asks for a platform, pick the TV platform you installed. Finish.</li>
+<li>If the import refuses to reuse the name FEFC because a project of that name already exists, rename the old project first. Samsung’s FAQ says the import cannot rename the project for you.</li>
+<li>Right-click the imported project and build a <strong>signed</strong> package. The menu wording varies. Look for Build Signed Package, or Package, while the FEFC certificate profile is active. The result is a new <span class="file">.wgt</span> that contains signature files. The file you started with does not.</li>
+<li>With the TV’s connection On, right-click the project and choose <strong>Run As &gt; Tizen Web Application</strong>. That installs it and opens it.</li>
+<li>On the TV, open Apps. FEFC should be there, with the FEFC icon. The screen is the FEFC collection. The remote arrows, Enter, and Back move through it. If the TV has Samsung’s video player, playback uses that. If it does not, the page plays in the browser instead.</li>
+</ol>
+
+<h2>The same install from a command line</h2>
+<p>Only if Tizen Studio’s menus will not sign the file. Open a terminal where the <span class="file">tizen</span> command works. It lives under the Tizen Studio <span class="file">tools</span> folder. The profile name is the one you created.</p>
+<pre><code>tizen package -t wgt -s FEFC -- FEFC.wgt
+sdb connect TV-IP
+tizen install -n FEFC.wgt -t TV-NAME</code></pre>
+<p>Replace <span class="file">FEFC</span> with your profile name, <span class="file">TV-IP</span> with the television’s address, and <span class="file">TV-NAME</span> with the name you gave it in Device Manager. Some Studio versions want <span class="file">tizen package --type wgt</span> instead of <span class="file">-t wgt</span>. If the command is rejected, run <span class="file">tizen package --help</span> on that computer and follow its syntax. The signed file is the one you install, not the unsigned one.</p>
+
+<h2>Install a newer FEFC later</h2>
+<ol class="steps">
+<li>Get the new <span class="file">FEFC.wgt</span>. Its FEFC version is the same words as the other FEFC apps, such as 0.6.3 Beta. The package version inside the file is three numbers, such as 0.6.51 for build 51. That third number goes up when a newer build is made, which is what lets the TV replace the old app.</li>
+<li>Sign it with the <strong>same author certificate</strong> and a distributor certificate that still lists this TV’s DUID.</li>
+<li>Install it the same way. Same app id (<span class="file">fefccollec</span>), higher three-number version, same author certificate: the TV replaces FEFC. It does not add a second icon.</li>
+</ol>
+<p>The TV cannot install the new file by itself. When a newer version is published, FEFC on the TV can tell you. The install still happens on the computer.</p>
+
+<h2>If something goes wrong</h2>
+<ul>
+<li><strong>Developer Mode is off.</strong> Open Apps and check for “Develop Mode” at the top. If it is gone, turn Developer Mode on again, enter the computer’s IP, and reboot. Samsung’s current guide does not give one expiry time for every TV. Some sets drop the setting after a software update or after the power has been off. Check the switch before you assume the certificate is wrong.</li>
+<li><strong>The computer IP on the TV is old.</strong> Developer Mode stores the computer’s address. If the computer got a new IP, enter the new one and reboot the TV.</li>
+<li><strong>Device Manager will not connect.</strong> Same Wi-Fi, TV IP in Device Manager, computer IP on the TV, Connection set to On. A VPN on the computer often blocks this.</li>
+<li><strong>Install failed, or error 1010.</strong> Samsung says a certificate problem is a common cause. The usual case is an unsigned file, or a signature whose distributor certificate does not include this TV’s DUID. Add the DUID, sign again, and install the new signed file.</li>
+<li><strong>Certificate mismatch.</strong> The author certificate is not the one that signed the FEFC already on the TV. Sign with the original author certificate. If that file is lost, delete FEFC on the TV and install again with the new certificate. Keep the new author file.</li>
+<li><strong>A different TV.</strong> Add that TV’s DUID to the distributor certificate, sign again, and install that signed file. One signature does not cover a TV whose DUID was left out.</li>
+<li><strong>The app opens but video does not.</strong> The page still plays in the browser when the TV will not hand the stream to its hardware player. This package does not change the collection’s intro video.</li>
+</ul>
+</main>
+</body>
+</html>

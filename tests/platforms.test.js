@@ -52,7 +52,6 @@ print('ok')
   const svc = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
   const install = svc.slice(svc.indexOf('def _install_update'));
   assert.ok(install.indexOf("plat != 'android'") < install.indexOf('_for_my_package'));
-  assert.match(svc, /Downloading %s: %d%% \(%d \/ %d MB\)/);
   assert.doesNotMatch(svc, /Dialog\.Close\(all,true\)/);
 });
 
@@ -161,14 +160,26 @@ sys.path.insert(0, 'tools')
 import build_tizen_wgt as t
 assert t.widget_version('0.6 Beta', 0) == '0.6.0'
 assert t.widget_version('0.6 Beta', 4) == '0.6.4'
-t.build('dist/FEFC.wgt', 0)
+assert t.widget_version('0.6.3 Beta', 0) == '0.6.3'
+assert t.widget_version('0.6.3 Beta', 51) == '0.6.51'
+try:
+    t.widget_version('0.6.3 Beta', 256)
+    raise SystemExit('256 should be rejected')
+except SystemExit as e:
+    if 'outside 0' not in str(e):
+        raise
+t.build('dist/FEFC.wgt', 51)
 z = zipfile.ZipFile('dist/FEFC.wgt')
 names = z.namelist()
 assert 'config.xml' in names and 'author-signature.xml' not in names and 'signature1.xml' not in names
+assert not any(n.endswith('.p12') for n in names)
 cfg = z.read('config.xml').decode()
-assert 'version="0.6.0"' in cfg
+assert 'version="0.6.51"' in cfg
+assert '0.6.3 Beta' in cfg
 assert 'avplay' in cfg and 'tv.inputdevice' in cfg
 assert 'tizen=1' in z.read('index.html').decode()
+info = __import__('json').loads(z.read('fefc-build.json'))
+assert info['version'] == '0.6.3 Beta' and info['build'] == 51
 print('ok')
 `);
   assert.match(out, /"signed": false/);
@@ -221,6 +232,16 @@ print('ok')
   assert.match(readme, /collection\.faneditfanclub\.com\/lg-update/);
   assert.match(readme, /webOS Dev Manager/);
   assert.match(readme, /1000 hours/);
+  const samsung = fs.readFileSync(path.join(root, 'samsung.html'), 'utf8');
+  assert.match(samsung, /12345/);
+  assert.match(samsung, /123456/);
+  assert.match(samsung, /DUID/);
+  assert.match(samsung, /Certificate Manager/);
+  assert.match(samsung, /same author certificate/);
+  assert.match(samsung, /Nothing here was installed on a real Samsung TV/);
+  assert.match(readme, /collection\.faneditfanclub\.com\/samsung/);
+  assert.match(readme, /FEFC_PUBLISH_NEW_PLATFORMS/);
+  assert.match(worker, /\/samsung/);
 });
 
 test('publish script stays closed unless Carson turns the gate on', () => {

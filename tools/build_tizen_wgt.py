@@ -23,19 +23,27 @@ APP = ROOT / 'tizen' / 'app'
 
 
 def widget_version(version_label, build):
-    """Tizen's widget version is three numbers. The FEFC build number is the third component
-    once a build exists, so a later package can replace an earlier one."""
+    """Tizen's widget version is three numbers, each 0–255. The words people see stay
+    the FEFC label (for example 0.6.3 Beta). The third number is the patch from that
+    label, or the FEFC build number when that build is higher, so a later package
+    can replace an earlier one. 0.6.3 Beta with build 51 is 0.6.51."""
     text = re.sub(r'(?i)\s*beta\s*$', '', str(version_label or '').strip())
     nums = [int(part) for part in re.findall(r'\d+', text)] or [0, 0, 0]
     while len(nums) < 3:
         nums.append(0)
     major, minor, patch = nums[0], nums[1], nums[2]
-    third = max(patch, int(build or 0))
-    return '%d.%d.%d' % (major, minor, third)
+    third = patch if int(build or 0) <= patch else int(build)
+    parts = (major, minor, third)
+    if any(part < 0 or part > 255 for part in parts):
+        raise SystemExit('Tizen widget version %d.%d.%d is outside 0–255' % parts)
+    return '%d.%d.%d' % parts
 
 
-def stamp_config(text, widget_ver):
-    return re.sub(r'(<widget\b[^>]*\bversion=")[^"]+"', r'\g<1>%s"' % widget_ver, text, count=1)
+def stamp_config(text, widget_ver, fefc_version):
+    text = re.sub(r'(<widget\b[^>]*\bversion=")[^"]+"', r'\g<1>%s"' % widget_ver, text, count=1)
+    desc = ('FEFC %s. The picture is the live FEFC site. Playback uses AVPlay when the TV provides it.'
+            % fefc_version)
+    return re.sub(r'(<description>)[^<]*(</description>)', r'\g<1>%s\g<2>' % desc, text, count=1)
 
 
 def write_icon(dest):
@@ -45,12 +53,37 @@ def write_icon(dest):
     kodi_brand.icon(512).convert('RGB').save(dest)
 
 
-def build(out, build_num=None):
+def published_build(version_label):
+    """Build number from the live version.json when it names this same FEFC version.
+    Returns None if the file cannot be read or the version string differs."""
+    import urllib.request
+    url = 'https://fefc-collection.pages.dev/kodi-app/version.json'
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Tizen-Build'})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+    except Exception as exc:
+        print('published version.json not used (%s)' % exc)
+        return None
+    if str(data.get('version') or '').strip() != str(version_label or '').strip():
+        print('published version %r does not match %r' % (data.get('version'), version_label))
+        return None
+    try:
+        return int(data.get('build') or 0)
+    except (TypeError, ValueError):
+        return None
+
+
+def build(out, build_num=None, use_published_build=False):
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     rec = fefc_kodi_bundle.load_version()
     if build_num is not None:
         rec['build'] = int(build_num)
+    elif use_published_build and not int(rec.get('build') or 0):
+        published = published_build(rec.get('version'))
+        if published:
+            rec['build'] = published
     rec['platform'] = 'tizen'
     rec['pkg'] = 'tizen'
     rec['runtime'] = 'tizen-web'
@@ -64,7 +97,7 @@ def build(out, build_num=None):
                 full = Path(dirpath) / fn
                 rel = full.relative_to(APP).as_posix()
                 if rel == 'config.xml':
-                    data = stamp_config(full.read_text(encoding='utf-8'), wver).encode('utf-8')
+                    data = stamp_config(full.read_text(encoding='utf-8'), wver, rec.get('version') or '').encode('utf-8')
                     z.writestr(rel, data)
                 elif rel == 'icon.png':
                     continue
@@ -107,8 +140,10 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--out', default=str(ROOT / 'dist' / 'FEFC.wgt'))
     p.add_argument('--build', type=int, default=None)
+    p.add_argument('--use-published-build', action='store_true',
+                   help='If fefc-build.json has build 0, use version.json when it names the same FEFC version.')
     args = p.parse_args()
-    build(args.out, args.build)
+    build(args.out, args.build, use_published_build=args.use_published_build)
     return 0
 
 

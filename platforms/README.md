@@ -120,30 +120,91 @@ Before it runs out, open Developer Mode on the TV and extend the session from th
 
 ## Samsung Tizen
 
-Kodi has no Tizen build. `FEFC.wgt` is a TV web app. It opens the live FEFC site in TV layout (`?tv=1&tizen=1`), registers the remote keys the site already understands (arrows, Enter, Return key 10009), and asks the page to hand a stream to Samsung AVPlay when the TV provides `webapis.avplay`. If AVPlay is missing or refuses the URL, the page keeps its normal HTML5 player. The intro video is the site's own intro; the shell waits for it, or 25 seconds, before it talks about an update.
+The same guide is the public page [collection.faneditfanclub.com/samsung](https://collection.faneditfanclub.com/samsung) (`samsung.html`). Nothing in this section was installed on a real Samsung TV. Button names move between Tizen Studio versions. The places this page is unsure are marked.
 
-The `.wgt` in this repo is **not signed**. A Samsung TV rejects an unsigned widget.
+Kodi has no Tizen build. `FEFC.wgt` is a TV web app. It opens `https://collection.faneditfanclub.com/?tv=1&tizen=1`, puts the FEFC icon on the Apps screen, registers the remote keys the site already understands, and uses Samsung AVPlay when the TV provides it. If AVPlay is missing, the page plays in the browser. The intro video is the site’s own intro and is not changed here.
 
-1. Install [Tizen Studio](https://developer.tizen.org/development/tizen-studio) with the TV extension and the TV certificate tools.
-2. On the TV: open Apps and enter `12345` (2016–2019 sets) or `123456` (2020 and newer) to open the developer menu. Turn Developer Mode on and enter this computer's IP. Reboot the TV. Note the DUID if the certificate window asks for it.
-3. In Tizen Studio, open Certificate Manager and create a Samsung certificate profile. Sign in with a Samsung account. The distributor certificate has to list this TV's DUID. Keep that profile. An update must be signed with the same author certificate or the TV treats it as a different app.
-4. From a shell where `tizen` is on the PATH, with the profile name from Certificate Manager:
+The words on the package are the shared FEFC version, currently **0.6.3 Beta**. Tizen also needs a three-number package version. That is `0.6.3` when the FEFC build is not higher than 3, and `0.6.51` for the published build 51, because the third number becomes the build number once the build is higher. Each part has to stay in 0–255. A later package installs over FEFC only if that three-number version is higher and the author certificate is the same one.
 
-   ```bash
-   tizen package -t wgt -s <profile-name> -- tizen/app
-   ```
+CI builds an **unsigned** `FEFC.wgt` and uploads it as the Actions artifact `fefc-tizen`. Publishing stays off while `FEFC_PUBLISH_NEW_PLATFORMS` is unset. Do not commit `author.p12` or any other certificate. Each person signs for their own TV with a free Samsung account.
 
-   Or sign the already built `dist/FEFC.wgt` with the same `tizen package` / `tizen security-profiles` flow your Tizen Studio version documents. The signed widget contains `author-signature.xml` and `signature1.xml`. The file this repo builds does not.
-5. Connect and install:
+### What you need
 
-   ```bash
-   sdb connect <tv-ip>
-   tizen install -n FEFC.wgt -t <tv-name>
-   ```
+- A Samsung smart TV and a Windows or Mac computer on the same Wi-Fi.
+- A free Samsung account. No paid partner account.
+- The unsigned `FEFC.wgt` from the `fefc-tizen` artifact, or a copy someone sends you. It is not in the Samsung store, and it is not on the website until publishing is turned on.
 
-6. Launch FEFC from the TV's app list. The D-pad moves through the site. Back is the remote Return key. Play tries AVPlay and falls back to the browser player.
+### Install Tizen Studio
 
-The widget's own version number is three digits (`0.6.0` for `0.6 Beta` build 0, then the FEFC build number). The words on screen follow `version.json`, the same `0.6 Beta` string as the Kodi apps. Tizen will not install a signed update over itself unless that three-digit version increases and the certificate matches. The TV cannot install a new `.wgt` from inside the app. The update screen says when a build is published and where the file will be once publishing is on.
+1. Download [Tizen Studio](https://developer.tizen.org/development/tizen-studio/download) for Windows or Mac and install it.
+2. Open **Tools > Package Manager**, then the **Extension SDK** tab.
+3. Install **TV Extensions** and **Samsung Certificate Extension**. Samsung’s TV extension download page listed TV Extension 10.0.0 on February 26, 2026. Install the TV extension Package Manager offers. The emulator is not required for a real TV.
+4. If Certificate Manager or the Web CLI is listed under the main SDK and is not installed, install it. Signing needs Certificate Manager.
+
+### Developer Mode on the TV
+
+Samsung’s current [TV device page](https://developer.samsung.com/smarttv/develop/getting-started/using-sdk/tv-device.html) says:
+
+1. Open **Smart Hub**, then **Apps**.
+2. Open **App Settings**. On some sets you type the code on the Apps screen itself.
+3. Enter **12345**. A developer-mode box opens.
+4. Switch **Developer mode** to **On**.
+5. Enter the **computer’s** IP address and confirm.
+6. Reboot. Apps should then show **Develop Mode** at the top.
+
+If 12345 does nothing, try **123456**. Samsung’s current page only documents 12345, so which model years use 123456 is not certain here.
+
+### Connect, then read the DUID
+
+1. In Tizen Studio, open **Tools > Device Manager**.
+2. Open **Remote Device Manager**, press **+**, and add the **TV’s** IP. Keep the port the window already shows. Many installs use 26101. If the window shows another port, keep that.
+3. Switch **Connection** to **On**.
+4. If you see **Permit to install applications**, turn it on. Samsung’s FAQ also puts that item on a right-click of a folder on the connected TV.
+5. Copy the DUID. Right-click the TV in Device Manager and choose **DUID** if that item is there. Samsung’s certificate page also says **Menu > Support > Contact Samsung > Unique Device ID** on the TV. Menus differ by year. If neither place shows it, connect the TV and look in Device Manager again.
+
+### Create the certificate
+
+This stays on the computer. Do not commit it.
+
+1. **Tools > Certificate Manager**. If a migration box appears, press **Cancel**.
+2. Press **+**. Choose **Samsung**, then **TV**.
+3. Name the profile.
+4. Create a new author certificate, sign in with the Samsung account, and keep the backup. The author file is usually `author.p12`. An update must use this same author certificate.
+5. Create a distributor certificate. If it asks for a privilege level, choose **Public**. Partner is for Samsung’s partner program. The labels can differ by Studio version. Pick the choice that does not ask for a partner id.
+6. Add this TV’s DUID, either typed or with **+** next to the connected TV.
+7. Finish, and leave this profile active.
+
+### Sign and install
+
+In Tizen Studio:
+
+1. **File > Import > Tizen > Tizen project**.
+2. **Select archive file**, and choose `FEFC.wgt`. Pick the TV platform if it asks. If an old project is already named FEFC, rename that project first. Samsung’s FAQ says the import cannot rename it.
+3. Right-click the project and build a **signed** package. The menu may say Build Signed Package or Package. The signed file contains `author-signature.xml` and `signature1.xml`. The file from CI does not.
+4. With the TV connection On, right-click the project and choose **Run As > Tizen Web Application**.
+
+Command line, if the menus will not sign it. The profile name below is an example:
+
+```bash
+tizen package -t wgt -s FEFC -- FEFC.wgt
+sdb connect TV-IP
+tizen install -n FEFC.wgt -t TV-NAME
+```
+
+Some Studio versions want `tizen package --type wgt` instead of `-t wgt`. If the command is rejected, run `tizen package --help` on that computer.
+
+### A newer FEFC later
+
+Get the new `FEFC.wgt`. Sign it with the same author certificate and a distributor certificate that still lists this TV. Install it again. The app id stays `fefccollec`. The three-number version has to be higher. The TV does not install the update by itself. When a newer version is published, the app can say so and point at this page.
+
+### If it fails
+
+- **Developer Mode is off.** Look for “Develop Mode” at the top of Apps. Samsung’s current guide does not give one expiry time. If the mark is gone, turn Developer Mode on again, enter the computer’s IP, and reboot. Some sets drop it after a software update or after the power has been off.
+- **The computer IP on the TV is old.** Enter the new one and reboot.
+- **Device Manager will not connect.** Same Wi-Fi, TV IP in Device Manager, computer IP on the TV, Connection On. A VPN often blocks this.
+- **Install failed, or error 1010.** Samsung says a certificate problem is a common cause. Sign again after the distributor certificate includes this DUID. Do not install the unsigned file.
+- **Certificate mismatch.** The author certificate is not the one that signed the FEFC already on the TV. Use the original author file. If it is lost, delete FEFC on the TV and install again with the new certificate.
+- **Another TV.** Add that TV’s DUID to the distributor certificate, sign again, and install that signed file.
 
 ## Checks that do not need a TV or a Mac
 

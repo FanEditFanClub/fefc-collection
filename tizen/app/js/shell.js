@@ -92,10 +92,10 @@
     var rec = tizenRecord(remote);
     var label = sameReleaseText(remote);
     if (!rec || !rec.url || !allowed(rec.url)) {
-      showUpdate('FEFC ' + label + ' is published. The Tizen package is not on the server yet, so there is nothing to install. Mac, webOS, and Android use this same version.');
+      showUpdate('FEFC ' + label + ' is published. The Tizen package is not on the server yet. The install steps are at collection.faneditfanclub.com/samsung.');
       return;
     }
-    showUpdate('FEFC ' + label + ' is ready. This TV cannot install a .wgt by itself. Download ' + rec.filename + ' on a computer and install it with the same Samsung certificate. ' + rec.url);
+    showUpdate('FEFC ' + label + ' is ready. This TV cannot install a .wgt by itself. Download ' + rec.filename + ' on a computer and sign it with your Samsung certificate. Steps: collection.faneditfanclub.com/samsung. ' + rec.url);
   }
 
   function loadJson(url, done) {

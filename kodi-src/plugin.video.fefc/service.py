@@ -494,8 +494,7 @@ def _install_platform_update(new, plat):
     url, want, sha = rec['url'], rec.get('size') or 0, rec.get('sha256') or ''
     ok = False
     _cue('start')
-    prog = xbmcgui.DialogProgressBG()
-    prog.create('FEFC update', 'Downloading %s...' % version_label(new))
+    log('downloading %s' % version_label(new))
     tries = 0
     while tries < 8 and not ok:
         tries += 1
@@ -514,13 +513,9 @@ def _install_platform_update(new, plat):
                         break
                     f.write(chunk)
                     done += len(chunk)
-                    if total:
-                        pct = min(99, int(done * 100 / total))
-                        prog.update(pct, 'FEFC update', 'Downloading %s: %d%% (%d / %d MB)' % (
-                            version_label(new), pct, done >> 20, total >> 20))
             if want and os.path.getsize(part) != want and os.path.getsize(part) < want:
                 raise RuntimeError('short download')
-            prog.update(99, 'FEFC update', 'Checking the download...')
+            log('checking the download')
             h = hashlib.sha256()
             with open(part, 'rb') as f:
                 for c in iter(lambda: f.read(1 << 20), b''):
@@ -531,9 +526,7 @@ def _install_platform_update(new, plat):
             ok = True
         except Exception as e:
             log('platform update attempt %d failed: %s' % (tries, e))
-            prog.update(0, 'FEFC update', 'Connection problem, retrying (%d/8)...' % tries)
             xbmc.sleep(min(30, 3 * tries) * 1000)
-    prog.close()
     if not ok:
         _cue('error')
         xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again.')

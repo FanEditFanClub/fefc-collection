@@ -838,6 +838,13 @@ export default {
         return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
       }
     }
+    if (url.pathname === '/samsung' || url.pathname === '/samsung/') {
+      const page = await env.ASSETS.fetch(new Request(new URL('/samsung.html', url), req));
+      const h = new Headers(page.headers);
+      h.set('content-type', 'text/html; charset=utf-8');
+      h.set('cache-control', 'no-cache, must-revalidate');
+      return new Response(page.body, { status: page.status, headers: h });
+    }
     if (url.pathname === '/lg-update' || url.pathname === '/lg-update/') {
       const page = await env.ASSETS.fetch(new Request(new URL('/lg-update.html', url), req));
       const h = new Headers(page.headers);

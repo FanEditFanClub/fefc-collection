@@ -119,7 +119,7 @@ jobs:
       - name: Tools
         run: pip install pillow
       - name: Build unsigned Tizen widget
-        run: python3 tools/build_tizen_wgt.py --out dist/FEFC.wgt
+        run: python3 tools/build_tizen_wgt.py --out dist/FEFC.wgt --use-published-build
       - uses: actions/upload-artifact@v4
         with:
           name: fefc-tizen
