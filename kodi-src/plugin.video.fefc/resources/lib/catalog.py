@@ -1081,85 +1081,106 @@ def dedupe(m, ids):
     return [i for i in chosen if i not in drop]
 
 
-def sfx_wav(rel):
-    import random
-    files = rel if isinstance(rel, list) else [rel]
+def clip_list(value):
+    """Every clip in a sound entry, one path each. An m4a/mp3 pair is one clip."""
+    if isinstance(value, dict):
+        files = value.get('file') or value.get('files') or []
+    elif isinstance(value, str):
+        files = [value]
+    else:
+        files = list(value or [])
     if files and isinstance(files[0], list):
-        files = _bag(files)
-    files = [x for x in files if isinstance(x, str) and os.path.basename(x)]
-    if not files:
+        groups = files
+    else:
+        groups = [[p] for p in files]
+    out = []
+    seen = set()
+    for group in groups:
+        paths = [p for p in group if isinstance(p, str) and os.path.basename(p)]
+        if not paths:
+            continue
+        chosen = next((p for p in paths if p.lower().endswith('.mp3')), paths[0])
+        base = os.path.splitext(os.path.basename(chosen))[0].lower()
+        if base in seen:
+            continue
+        seen.add(base)
+        out.append(chosen)
+    return out
+
+
+def sfx_wav(rel):
+    """Wav path for one clip. A list is a full set: one clip is chosen now, not when the pack was built."""
+    import random
+    paths = [rel] if isinstance(rel, str) else clip_list(rel)
+    paths = [p for p in paths if isinstance(p, str) and os.path.basename(p)]
+    if not paths:
         return ''
-    f = files[0]
+    f = random.choice(paths) if len(paths) > 1 else paths[0]
     return 'kodi-sfx/' + os.path.splitext(os.path.basename(f))[0] + '.wav'
 
 
+def play_choice(rel, sound_off=False):
+    """The clip to play for this open. Sound Off returns nothing for every set."""
+    if sound_off or not rel:
+        return ''
+    return sfx_wav(rel)
+
+
 def sfx_up(m, vid):
-    """Clip set of the nearest ancestor folder with clips (e.g. any Terminator file -> the Terminator folder's clips).
-    0.5.2: also match the video's OWN name first — a file like "Armageddon - Revisited" sitting in the root has no
-    Armageddon ancestor folder, so without this it would never get the Armageddon clips. sfx_for() already checks
-    the name plus ancestors (for path rules), so trying it on the video itself covers both."""
+    """Full clip set for this item: its own set, or the nearest ancestor folder's set.
+    The set is cached. The clip is chosen later, once per open."""
     cache = m.get('_sfxup')
     if isinstance(cache, dict) and vid in cache:
         return cache[vid]
     r = sfx_for(m, vid)
-    if not r:
-        it = m['items'].get(vid)
-        p = it[1] if it else ''
-        n = 0
-        while p and n < 30:
-            r = sfx_for(m, p)
-            if r:
-                break
-            p = (m['items'].get(p) or ['', ''])[1]
-            n += 1
-    m.setdefault('_sfxup', {})[vid] = r or ''
-    return r or ''
+    m.setdefault('_sfxup', {})[vid] = r or []
+    return r or []
 
 
-def sfx_for(m, fid):
-    """Resolve a folder's sound clip per data/folder-sfx.json (id / exact name / rules). -> relative asset path or ''."""
-    import random
+def _sfx_direct(m, fid):
+    """Set pinned to this item, or the first rule that names it. Ancestors are not consulted."""
     sfx = m['sfx']
     it = m['items'].get(fid)
     name = it[0] if it else ''
 
     def pick(v):
-        if isinstance(v, dict):
-            files = v.get('file') or v.get('files')
-            rnd = v.get('random')
-        else:
-            files, rnd = v, False
-        if not files:
-            return ''
-        if files and isinstance(files[0], list):
-            files = _bag(files)
-        return files
+        return clip_list(v) or ''
+
     for key in (fid, name):
-        if key and key in sfx and not key.startswith('_'):
+        if key and key in sfx and not str(key).startswith('_'):
             r = pick(sfx[key])
             if r:
                 return r
-    anc = []
-    p = it[1] if it else ''
-    while p and len(anc) < 30:
-        anc.append(m['items'].get(p, ['', ''])[0])
-        p = m['items'].get(p, ['', ''])[1]
     for rule, rx in _compiled_rules(sfx):
         try:
             hit = False
-            names = [name] + (anc if rule.get('path') else [])
             if rule.get('ids') and fid in rule['ids']:
                 hit = True
-            if rule.get('match'):
-                hit = hit or any(rule['match'].lower() in n.lower() for n in names)
-            if rx is not None:
-                hit = hit or any(rx.search(n) for n in names)
+            if name and rule.get('match') and rule['match'].lower() in name.lower():
+                hit = True
+            if name and rx is not None and rx.search(name):
+                hit = True
             if hit:
                 r = pick(rule)
                 if r:
                     return r
         except Exception:
             continue
+    return ''
+
+
+def sfx_for(m, fid):
+    """Full clip set for an item or its nearest sounding ancestor. A list, or '' when silent."""
+    seen = set()
+    cur = fid
+    for _ in range(30):
+        if not cur or cur in seen:
+            break
+        seen.add(cur)
+        r = _sfx_direct(m, cur)
+        if r:
+            return r
+        cur = (m['items'].get(cur) or ['', ''])[1]
     return ''
 
 

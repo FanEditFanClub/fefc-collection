@@ -579,6 +579,10 @@ class Router:
         li.setProperty('fefc_id', fid)
         li.setProperty('fefc_mylabel', 'Remove from My List' if on else 'Add to My List')
         li.setProperty('fefc_download_label', 'Downloaded' if got else 'Download')
+        pool = row[6] if len(row) > 6 else ''
+        wav = catalog.sfx_wav(pool) if pool else ''
+        if wav:
+            li.setProperty('fefc_sfx', catalog.abs_url(_base(), wav))
         li.setProperty('IsPlayable', 'true')
         tag = li.getVideoInfoTag()
         tag.setTitle(name)
@@ -637,7 +641,8 @@ class Router:
         if (page + 1) * size < int(doc.get('total') or 0):
             more = int(doc['total']) - (page + 1) * size
             self.add_folder('Next page (%d more) >>' % more, '', action=action, page=page + 1, **kw)
-        self.end(cache=action != 'search')
+        # Each open re-runs so the folder clip and every file's details clip are chosen again.
+        self.end(cache=False)
 
     def folder(self):
         from . import pagepack
@@ -740,7 +745,7 @@ class Router:
                 return
         except Exception:
             pass
-        wav = catalog.sfx_wav(rel)
+        wav = catalog.play_choice(rel, xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1')
         if not wav:
             return
         url = catalog.abs_url(_base(), wav)

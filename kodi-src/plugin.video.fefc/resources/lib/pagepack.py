@@ -225,6 +225,11 @@ def build_pack(model, base):
                 info.get('rating_src') or '',
                 int(info.get('runtime') or 0),
             ])
+            # Full parent set. The listing picks one clip when the row is shown.
+            try:
+                row.append(catalog.sfx_up(model, fid) or [])
+            except Exception:
+                row.append([])
         return row
 
     parts = []

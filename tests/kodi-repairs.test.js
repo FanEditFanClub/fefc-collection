@@ -1071,7 +1071,8 @@ test('0.6.3 one file once, details, download label, series posters', () => {
   assert.match(skin, /FefcDownloadLabel/);
   assert.match(info, /\$VAR\[FefcDownloadLabel\]/);
   assert.match(router, /fefc_download_label/);
-  assert.match(skin, /<left>4<\/left><top>248<\/top><width>242<\/width><height>200<\/height>/);
+  assert.match(skin, /<left>0<\/left><top>278<\/top><width>250<\/width><height>200<\/height>/);
+  assert.match(skin, /<width>180<\/width><height>270<\/height>/);
   const out = py(`
 import json, sys
 sys.path.insert(0, ${JSON.stringify(lib)})
@@ -1136,5 +1137,94 @@ print('ok')
 `);
   assert.match(out, /^ok$/m);
   console.log(out);
+});
+
+test('folder and details sounds pick from the full set each open', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const service = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
+  const catalog = fs.readFileSync(path.join(lib, 'catalog.py'), 'utf8');
+  assert.match(router, /li\.setProperty\('fefc_sfx'/);
+  assert.match(router, /play_choice\(rel/);
+  assert.match(router, /cache=False/);
+  assert.match(catalog, /def play_choice\(rel, sound_off=False\)/);
+  const start = service.indexOf('def details_sfx');
+  const details = service.slice(start, service.indexOf('\ndef ', start + 10));
+  const off = details.indexOf('FEFC.SoundOff');
+  const play = details.indexOf('playSFX');
+  assert.ok(off > 0 && play > off);
+  const out = py(String.raw`
+import os, sys, json
+sys.path.insert(0, 'kodi-src/plugin.video.fefc/resources/lib')
+import catalog, pagepack
+pagepack._CACHE.clear()
+sfx = json.load(open('data/folder-sfx.json'))
+def bases(paths):
+    return sorted({os.path.splitext(os.path.basename(p))[0] for p in paths})
+m = {'items': {
+    'ww': ['Westworld', 'root', 1, ''],
+    'p2': ['Westworld Series - Part 2.mkv', 'ww', 0, ''],
+    'nest': ['notes.mkv', 'sub', 0, ''],
+    'sub': ['Extras', 'ww', 1, ''],
+    'st': ['Stallone', 'root', 1, ''],
+    'rk': ['clip.mkv', 'disc', 0, ''],
+    'disc': ['Disc 1', 'st', 1, ''],
+    '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg': ['Nolan', 'root', 1, ''],
+    'nv': ['tenet.mkv', '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg', 0, ''],
+    'ag': ['Armageddon', 'root', 1, ''],
+    'av': ['scene.mkv', 'inner', 0, ''],
+    'inner': ['Season 1', 'ag', 1, ''],
+    'quiet': ['Cooking', 'root', 1, ''],
+    'qv': ['recipe.mkv', 'quiet', 0, ''],
+}, 'sfx': sfx}
+ww = catalog.sfx_for(m, 'ww')
+want = {'westworld-violent', 'westworld-paint', 'westworld-theme', 'westworld-welcome'}
+assert set(bases(ww)) == want
+assert set(bases(catalog.sfx_up(m, 'p2'))) == want
+assert set(bases(catalog.sfx_up(m, 'nest'))) == want
+assert set(bases(catalog.sfx_for(m, 'sub'))) == want
+opens = {catalog.sfx_wav(ww) for _ in range(80)}
+assert opens == {'kodi-sfx/' + b + '.wav' for b in want}
+for pool in (ww, catalog.sfx_for(m, 'st'), catalog.sfx_for(m, 'ag'), catalog.sfx_for(m, '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg')):
+    assert catalog.play_choice(pool, True) == ''
+assert catalog.sfx_up(m, 'qv') == []
+st = catalog.sfx_for(m, 'st')
+assert len(st) >= 6 and set(bases(catalog.sfx_up(m, 'rk'))) == set(bases(st))
+assert len({catalog.sfx_wav(st) for _ in range(40)}) >= 4
+ag = catalog.sfx_for(m, 'ag')
+assert len(ag) >= 6 and set(bases(catalog.sfx_for(m, 'inner'))) == set(bases(ag))
+assert set(bases(catalog.sfx_up(m, 'av'))) == set(bases(ag))
+assert len({catalog.sfx_wav(ag) for _ in range(40)}) >= 4
+assert bases(catalog.sfx_up(m, 'nv')) == ['nolan-braaam']
+p = pagepack.shipped_path()
+idx, f, base = pagepack._open(p)
+doc = pagepack._read(p, idx['folders']['1kqkGTnoOlnst6DBwnBz1phPK2hvTz5X5'])
+assert set(bases(doc['sfx'])) == want
+files = [r for r in doc['rows'] if not r[2]]
+assert len(files) == 11
+for r in files:
+    assert set(bases(r[6])) == want
+    assert catalog.sfx_wav(r[6]).startswith('kodi-sfx/westworld-')
+rows = pagepack._read(p, idx['search'])['rows']
+hits = [r for r in rows if not r[2] and 'westworld' in (r[1] or '').lower()]
+assert len(hits) == 11
+for r in hits:
+    assert set(bases(r[6])) == want
+stf = pagepack._read(p, idx['folders']['1ofrxewxyqYT_DfprG3iEmjnarIeWPJR-'])
+assert stf['name'] == 'Stallone' and len(bases(stf['sfx'])) >= 6
+assert len({catalog.sfx_wav(stf['sfx']) for _ in range(40)}) >= 4
+nested = [r for r in stf['rows'] if not r[2]]
+assert any(set(bases(r[6])) == set(bases(stf['sfx'])) for r in nested)
+nl = pagepack._read(p, idx['folders']['1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg'])
+assert bases(nl['sfx']) == ['nolan-braaam']
+assert any(not r[2] and len(r) > 6 and bases(r[6]) == ['nolan-braaam'] for r in nl['rows'])
+arm = [r for r in rows if not r[2] and 'armageddon' in (r[1] or '').lower()]
+assert len(arm) >= 1
+for r in arm:
+    assert len(bases(r[6])) >= 6
+    assert 'armageddon-theme' in bases(r[6])
+print('ok', len(files), len(bases(stf['sfx'])), len(arm))
+`);
+  assert.match(out, /^ok /m);
+  console.log(out.trim());
 });
 
