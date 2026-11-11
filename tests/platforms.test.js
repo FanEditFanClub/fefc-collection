@@ -244,6 +244,11 @@ print('ok')
   assert.match(readme, /FEFC_PUBLISH_NEW_PLATFORMS/);
   assert.match(readme, /FEFC_PUBLISH_TIZEN/);
   assert.match(worker, /\/samsung/);
+  assert.match(worker, /\/samsung\.raw/);
+  assert.match(worker, /\/samsung\.html/);
+  assert.match(worker, /\/lg-update\.raw/);
+  assert.equal(fs.readFileSync(path.join(root, 'samsung.raw'), 'utf8'), samsung);
+  assert.equal(fs.readFileSync(path.join(root, 'lg-update.raw'), 'utf8'), page);
 });
 
 test('publish script stays closed unless Carson turns the gate on', () => {
