@@ -313,16 +313,9 @@ def platform_install_message(platform, path, opened=False, abi=''):
             'Then fully quit FEFC and open it again.'
         ) % (path, opened_txt)
     if platform == 'webos':
-        abi_txt = ''
-        if abi and abi != 'arm':
-            abi_txt = 'The published file is marked %s.\n' % abi
-        elif abi == 'arm':
-            abi_txt = 'This is the 32-bit arm package (the stable Kodi webOS build). A TV that only runs 64-bit apps cannot install it.\n'
-        return (
-            'The update is verified. webOS installs it only while Developer Mode is on.\n'
-            '%s\n'
-            'Package:\n%s\n\n'
-            'If no install prompt appears, install that file with webOS Dev Manager, or: ares-install -d <tv> <file>\n'
-            'Then fully quit FEFC and open it again. Developer Mode has to stay enabled or the app will not start.'
-        ) % (abi_txt, path)
+        try:
+            from webosguide import tv_text
+        except ImportError:
+            from resources.lib.webosguide import tv_text
+        return tv_text('')
     return 'No FEFC installer is available for this system.'

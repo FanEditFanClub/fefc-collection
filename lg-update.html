@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Update FEFC on an LG TV</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #03060c; color: #f0f0f0; font: 22px/1.45 "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 46rem; margin: 0 auto; padding: 2.2rem 1.3rem 4rem; }
+  h1 { font-size: 2.4rem; line-height: 1.15; margin: 0 0 .4rem; }
+  h2 { font-size: 1.55rem; margin: 2.2rem 0 .6rem; }
+  p, li { font-size: 1.2rem; }
+  a { color: #99ccff; }
+  .lead { color: #99ccff; font-size: 1.35rem; }
+  ol.steps { padding-left: 1.4rem; }
+  ol.steps > li { margin: .85rem 0; }
+  code, .file { font-family: ui-monospace, Consolas, monospace; color: #f4f7fb; }
+  .note { background: #0b1220; border: 2px solid #2fa8ff; border-radius: 14px; padding: 1rem 1.1rem; }
+  .warn { border-color: #cc6666; }
+</style>
+</head>
+<body>
+<main>
+<h1>Update FEFC on an LG TV</h1>
+<p class="lead">The TV cannot install the new file by itself. A computer on the same Wi-Fi installs it with webOS Dev Manager. This replaces the app named FEFC. Its id stays <span class="file">org.xbmc.kodi</span>.</p>
+<p class="note">These steps have not been tried on a real LG TV from this project. They follow LG’s Developer Mode app and the webOS Dev Manager desktop program.</p>
+
+<h2>What you need</h2>
+<ul>
+<li>The LG TV, turned on, with FEFC already installed.</li>
+<li>A computer (Windows, Mac, or Linux) on the <strong>same Wi-Fi</strong> as the TV. A phone is a poor fit for this program.</li>
+<li>The free <strong>Developer Mode</strong> app from the LG Content Store, signed in, with Dev Mode turned on.</li>
+<li><a href="https://github.com/webosbrew/dev-manager-desktop/releases/latest">webOS Dev Manager</a> on the computer. Pick the Windows installer, the Mac disk image, or the Linux package for that computer. You do not need LG’s developer tools or a command line.</li>
+</ul>
+
+<h2>Where the new file is</h2>
+<p>The file is <span class="file">FEFC-webOS.ipk</span>. The TV reads the address from <span class="file">platforms.webos</span> in <a href="https://fefc-collection.pages.dev/kodi-app/version.json">version.json</a>. Use the link written on the TV update screen. When that entry is published, the address is:</p>
+<p><a href="https://fefc-collection.pages.dev/kodi-app/FEFC-webOS.ipk">https://fefc-collection.pages.dev/kodi-app/FEFC-webOS.ipk</a></p>
+<p>If that link says the file is missing, the LG package has not been published yet. The TV still shows the new version number. Wait until the link on the TV screen downloads a file whose name ends in <span class="file">.ipk</span>.</p>
+
+<h2>Install the update</h2>
+<ol class="steps">
+<li>On the TV, open <strong>Developer Mode</strong>. If you have never used it: open the LG Content Store, search for Developer Mode, install it, sign in with an LG account, turn Dev Mode on, and let the TV restart. Open Developer Mode again.</li>
+<li>Turn <strong>Key Server</strong> on. Leave this screen up. Write down the <strong>IP address</strong> and the <strong>6-character passphrase</strong>. The passphrase is case-sensitive.</li>
+<li>On the computer, download <a href="https://github.com/webosbrew/dev-manager-desktop/releases/latest">webOS Dev Manager</a> and open it.</li>
+<li>On the computer, download <span class="file">FEFC-webOS.ipk</span> from the link on the TV (the address above once it is published).</li>
+<li>In Dev Manager, add the TV. Choose the Developer Mode connection, not a rooted TV. Type the IP address as the host and the 6-character passphrase, then add the TV.</li>
+<li>Press <strong>Install</strong> and choose the <span class="file">FEFC-webOS.ipk</span> file you just downloaded. Wait until it says the install finished. This replaces the existing FEFC app. It does not add a second copy.</li>
+<li>On the TV, fully close FEFC and open it again. The new version is the one that just installed.</li>
+</ol>
+
+<h2>Keep Developer Mode from expiring</h2>
+<p>The Developer Mode app shows a countdown. webOS Homebrew’s Dev Mode page currently describes that limit as <strong>1000 hours</strong>. When the countdown reaches zero, LG removes apps that were installed this way, including FEFC.</p>
+<p>Before it runs out, open <strong>Developer Mode</strong> on the TV and use the control on that screen to extend the session. The clock resets. You can also open the TV in Dev Manager and press <strong>Renew session</strong>. Do this while time is still left. One LG account can only keep Developer Mode on one TV. Signing that account in on a second TV turns it off on the first.</p>
+
+<h2>If the install fails</h2>
+<ul>
+<li><strong>Dev Manager cannot add the TV.</strong> The computer and the TV must be on the same Wi-Fi. Read the IP again from the Developer Mode screen. Turn Key Server off, then on. Restart the TV, open Developer Mode, and turn Key Server on again.</li>
+<li><strong>It cannot fetch the key.</strong> On the computer, open <span class="file">http://</span> plus the TV’s IP plus <span class="file">:9991/webos_rsa</span> in a browser. A key file should download. If the browser cannot connect, Key Server is off or the TV is not on this network.</li>
+<li><strong>Passphrase rejected.</strong> It is six characters and case-sensitive. Copy it from the Developer Mode screen, do not guess.</li>
+<li><strong>The .ipk link does not download.</strong> The LG package is still unpublished. Use only the <span class="file">platforms.webos</span> link from the TV. Do not install the Android APK.</li>
+<li><strong>The TV says the package is the wrong type.</strong> This file is the 32-bit arm build. A set that only runs 64-bit apps cannot install it. webOS 4 and newer are the ones this build is for, except sets with the K5LP chip.</li>
+<li><strong>FEFC still looks old.</strong> Close it completely and open it again. If the tile is stale, turn the TV off and on.</li>
+<li><strong>FEFC disappeared.</strong> The Developer Mode countdown hit zero, or the LG account was used on another TV. Turn Developer Mode back on and install the file again with the same steps.</li>
+</ul>
+
+<h2>Why this program, and not the others</h2>
+<p><strong>webOS Dev Manager</strong> is the one to use. It is a normal desktop program: you add the TV with the IP and passphrase, then you pick the <span class="file">.ipk</span> file. No command line.</p>
+<p><strong>ares-install</strong> is the same connection typed as commands. It works, and it is a worse fit if you do not already use a terminal. Dev Manager is enough.</p>
+<p><strong>Homebrew Channel</strong> on a rooted TV can install an IPK from a web address without a computer. That installer is not on a normal Developer Mode TV. Rooting is a separate step, LG updates can close it, and FEFC does not require it. Stay with Dev Manager.</p>
+</main>
+</body>
+</html>

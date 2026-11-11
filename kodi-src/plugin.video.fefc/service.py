@@ -409,9 +409,75 @@ def _host_arch(platform):
     return platform_arch(platform, machine)
 
 
+def _show_webos_guide(new, rec):
+    """Full-screen skin dialog with the Dev Manager steps. A text page is the fallback."""
+    from resources.lib import webosguide
+    url = rec.get('url') if rec and rec.get('available') else ''
+    body = '\n\n'.join(webosguide.tv_steps(url))
+    foot = 'If Install fails, turn Key Server off and on, then check the passphrase.'
+    skin = xbmcvfs.translatePath('special://skin')
+    qr = webosguide.write_qr(xbmcvfs.translatePath('special://temp/fefc-lg-qr.png'))
+    try:
+        dlg = _WebOSGuide(webosguide.DIALOG_XML, skin, 'default', '1080i')
+        dlg.step_text = body
+        dlg.foot_text = foot
+        dlg.qr_path = qr
+        dlg.doModal()
+        del dlg
+        return
+    except Exception as e:
+        log('webos guide dialog: %s' % e)
+    xbmcgui.Dialog().textviewer(webosguide.TITLE, webosguide.tv_text(url))
+
+
+class _WebOSGuide(xbmcgui.WindowXMLDialog):
+    """DialogFEFCWebOSUpdate.xml in skin.fefc. Close on the button or Back."""
+
+    def onInit(self):
+        try:
+            self.getControl(7000).setLabel(self._line(getattr(self, 'title_text', '') or 'A new FEFC is ready'))
+        except Exception:
+            pass
+        try:
+            self.getControl(7001).setText(getattr(self, 'step_text', '') or '')
+        except Exception:
+            pass
+        try:
+            self.getControl(7004).setLabel(getattr(self, 'foot_text', '') or '')
+        except Exception:
+            pass
+        qr = getattr(self, 'qr_path', '') or ''
+        try:
+            if qr:
+                self.getControl(7002).setImage(qr)
+        except Exception:
+            pass
+        try:
+            self.setFocusId(9000)
+        except Exception:
+            pass
+
+    def _line(self, text):
+        return text
+
+    def onClick(self, controlId):
+        if controlId == 9000:
+            self.close()
+
+    def onAction(self, action):
+        aid = action.getId()
+        if aid in (10, 92, 110):
+            self.close()
+
+
 def _install_platform_update(new, plat):
-    """Download the macOS or webOS package named in version.json and hand it to the OS.
+    """Download the macOS package named in version.json and hand it to the OS.
+    webOS shows the Dev Manager guide instead of trying to install from inside the app.
     Android never reaches this. A missing platforms entry does not download the APK."""
+    if plat == 'webos':
+        from resources.lib.updateflow import platform_download
+        _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
+        return
     import hashlib
     import shutil
     import subprocess
@@ -703,6 +769,9 @@ def check_update(manual=False, prompt=True):
     avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
     set_update_state(cur, new, avail)
     plat = _host_platform()
+    if plat == 'webos' and avail and (manual or prompt):
+        _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
+        return
     if plat != 'android' and avail:
         rec = platform_download(new, plat, _host_arch(plat))
         if not rec.get('available'):

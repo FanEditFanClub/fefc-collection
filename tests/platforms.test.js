@@ -175,6 +175,54 @@ print('ok')
   assert.match(out, /\nok$/);
 });
 
+test('LG update guide is the Dev Manager steps, on the TV skin and on /lg-update', () => {
+  const out = py(`
+import sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import webosguide
+steps = webosguide.tv_steps('https://fefc-collection.pages.dev/kodi-app/FEFC-webOS.ipk')
+text = '\\n'.join(steps)
+assert steps[0].startswith('1. ')
+assert 'same Wi-Fi' in text
+assert 'webOS Dev Manager' in text
+assert 'FEFC-webOS.ipk' in text
+assert 'fefc-collection.pages.dev/kodi-app/FEFC-webOS.ipk' in text
+assert 'Key Server' in text
+assert '6-character passphrase' in text
+assert 'Press Install' in text
+assert 'extend the session' in text
+missing = webosguide.tv_steps('')
+assert 'not on the server yet' in '\\n'.join(missing)
+assert webosguide.GUIDE_URL == 'https://collection.faneditfanclub.com/lg-update'
+assert 'real LG TV' not in webosguide.tv_text('https://fefc-collection.pages.dev/kodi-app/FEFC-webOS.ipk')
+print('ok')
+`);
+  assert.equal(out, 'ok');
+  const xml = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/DialogFEFCWebOSUpdate.xml'), 'utf8');
+  assert.match(xml, /id="7001"/);
+  assert.match(xml, /id="7002"/);
+  assert.match(xml, /font_title_big/);
+  assert.match(xml, /collection\.faneditfanclub\.com\/lg-update/);
+  const page = fs.readFileSync(path.join(root, 'lg-update.html'), 'utf8');
+  assert.match(page, /webOS Dev Manager/);
+  assert.match(page, /Key Server/);
+  assert.match(page, /6-character passphrase/);
+  assert.match(page, /Renew session/);
+  assert.match(page, /platforms\.webos/);
+  assert.match(page, /FEFC-webOS\.ipk/);
+  assert.match(page, /not been tried on a real LG TV/);
+  assert.match(page, /Homebrew Channel/);
+  const worker = fs.readFileSync(path.join(root, '_worker.js'), 'utf8');
+  assert.match(worker, /\/lg-update/);
+  const svc = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
+  assert.match(svc, /DialogFEFCWebOSUpdate\.xml/);
+  assert.match(svc, /plat == 'webos' and avail/);
+  const readme = fs.readFileSync(path.join(root, 'platforms/README.md'), 'utf8');
+  assert.match(readme, /collection\.faneditfanclub\.com\/lg-update/);
+  assert.match(readme, /webOS Dev Manager/);
+  assert.match(readme, /1000 hours/);
+});
+
 test('publish script stays closed unless Carson turns the gate on', () => {
   const r = spawnSync('python3', ['tools/publish_kodi_platforms.py', '--help'], {
     encoding: 'utf8', cwd: root, env: {...process.env, FEFC_PUBLISH_NEW_PLATFORMS: ''}
