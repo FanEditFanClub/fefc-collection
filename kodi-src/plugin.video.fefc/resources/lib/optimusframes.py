@@ -23,7 +23,7 @@ def still_path(media_dir):
 
 # Support frames are extended below the original 480x640 crop so the shoes fit.
 SUPPORT_W = 480
-SUPPORT_H = 1031
+SUPPORT_H = 933
 
 
 def support_frames(media_dir):
