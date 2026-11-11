@@ -220,7 +220,8 @@ class Router:
         self._mydb = None
         self._content = 'files'
         self._land = False  # True once any landscape card (folder / tool / Support Us) is added
-        self._vid = False   # 0.3.22: True once any video file is added (files are always portrait)
+        self._vid = False   # True once any video file is queued (files are always portrait)
+        self._pending = []  # (kind, emit) flushed by end() through shapes.pack
 
     def mydb(self):
         if self._mydb is None:
@@ -235,23 +236,40 @@ class Router:
     def _fanart_default(self, li):
         li.setArt({'fanart': 'special://home/addons/plugin.video.fefc/resources/fanart.jpg'})
 
+    def _enqueue(self, kind, fn):
+        self._pending.append((kind, fn))
+        if kind == 'video':
+            self._vid = True
+        else:
+            self._land = True
+
+    def _emit_pad(self):
+        """A cell reserved under a portrait poster. It is not a tile and not a gap."""
+        from . import shapes
+        li = xbmcgui.ListItem(' ', offscreen=True)
+        shapes.stamp(li, 'spacer')
+        li.setProperty('IsPlayable', 'false')
+        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='gridpad'), li, False)
+
     def add_folder(self, label, art='', info=None, landscape='', props=None, **kw):
         li = xbmcgui.ListItem(label, offscreen=True)
         land = landscape or art
-        self._art(li, art)
-        if land:
-            li.setArt({'landscape': land, 'thumb': land, 'fanart': land or art})
         props = dict(props or {})
         props.setdefault('fefc_kind', 'folder')
         props.setdefault('fefc_centerlabel', '1')
+        from . import shapes
+        kind = props.get('fefc_kind') or 'folder'
+        shapes.stamp(li, kind, land)
         for k, v in props.items():
+            if k == 'fefc_kind':
+                continue
             li.setProperty(k, v)
-        self._land = True
         tag = li.getVideoInfoTag()
         tag.setTitle(label)
         if info:
             tag.setPlot(info)
-        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, **kw), li, True)
+        url = _url(self.url, **kw)
+        self._enqueue('video' if kind == 'video' else kind, lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, True))
 
     def add_dir_item(self, m, fid):
         v = m['items'][fid]
@@ -276,16 +294,17 @@ class Router:
         if not landscape:
             landscape = 'special://skin/media/fefc-ol-tile.png'
         land = landscape or art
-        li.setArt({'thumb': land, 'icon': art, 'landscape': land, 'fanart': land})
-        li.setProperty('fefc_kind', 'action')
+        from . import shapes
+        shapes.stamp(li, 'action', land)
         li.setProperty('fefc_centerlabel', '1')
-        self._land = True
         tag = li.getVideoInfoTag()
         tag.setTitle(label)
         tag.setPlot(plot)
         if not folder:
             li.setProperty('IsPlayable', 'false')
-        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, **kw), li, folder)
+        url = _url(self.url, **kw)
+        is_folder = folder
+        self._enqueue('action', lambda li=li, url=url, is_folder=is_folder: xbmcplugin.addDirectoryItem(self.handle, url, li, is_folder))
 
     def add_video(self, m, vid):
         self._vid = True
@@ -295,10 +314,10 @@ class Router:
         title = catalog.display_title(v[0])
         li = xbmcgui.ListItem(title, offscreen=True)
         art = catalog.poster_for(m, base, vid)
-        self._art(li, art, video=True)
+        from . import shapes
+        shapes.stamp(li, 'video', art)
         on = self.mydb().has(vid)
         li.setProperty('fefc_id', vid)
-        li.setProperty('fefc_kind', 'video')
         rel = catalog.sfx_up(m, vid)  # franchise clip: nearest ancestor folder that has clips (played by the service on the details page)
         wav = catalog.sfx_wav(rel) if rel else ''
         if wav:
@@ -366,7 +385,8 @@ class Router:
         if isinstance(tr, dict) and tr.get('src') == 'youtube' and tr.get('id'):
             tag.setTrailer('plugin://plugin.video.youtube/play/?video_id=' + tr['id'])
         li.setProperty('IsPlayable', 'true')
-        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='play', id=vid), li, False)
+        url = _url(self.url, action='play', id=vid)
+        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
 
     def _title(self):
         a = self.params.get('action') or 'root'
@@ -395,10 +415,27 @@ class Router:
         return a
 
     def end(self, content='files', cache=True):
+        from . import shapes
+        pending = self._pending
+        self._pending = []
+        slots = shapes.pack([k for k, _ in pending])
+        real = 0
+        for slot in slots:
+            if slot == 'spacer':
+                self._emit_pad()
+            else:
+                pending[real][1]()
+                real += 1
+        try:
+            xbmcgui.Window(10000).setProperty('FEFC.Shown', str(real))
+        except Exception:
+            pass
         xbmcplugin.setPluginCategory(self.handle, self._title())
-                # 0.3.22: video files are ALWAYS portrait posters; folders / tools / docs are landscape cards. Any list with a
-        # video uses view 501, whose folder layout draws a landscape card, so mixed folders keep both shapes.
-        content = 'movies' if self._vid else 'files'
+        # The passed content is ignored on purpose. An older rule used "movies only
+        # when videos outnumber folders", which turned videos landscape again in
+        # any folder that held more collections than files. One video is enough,
+        # and the view id does not change with the content type.
+        content = shapes.listing_mode(self._vid)['content']
         xbmcplugin.setContent(self.handle, content)
         xbmcplugin.addSortMethod(self.handle, xbmcplugin.SORT_METHOD_UNSORTED)
         xbmcplugin.endOfDirectory(self.handle, cacheToDisc=cache)
@@ -407,9 +444,10 @@ class Router:
             xbmcgui.Window(10000).setProperty('FEFC.LastLoc', self._loc())
         except Exception:
             pass
-        # FEFC skin: view 500 = landscape grid (collections / tools), 501 = portrait poster grid (video files)
+        # Same panel for every listing. View 500 is that panel too, so a view Kodi
+        # saved for this path cannot put a video on a landscape-only layout.
         if xbmc.getSkinDir() == 'skin.fefc':
-            xbmc.executebuiltin('Container.SetViewMode(%d)' % (501 if content == 'movies' else 500))
+            xbmc.executebuiltin('Container.SetViewMode(%d)' % shapes.listing_mode(self._vid)['view'])
 
     # -- routes ----------------------------------------------------------------------------------
     def root(self):
@@ -553,7 +591,7 @@ class Router:
                 nv += 1
         if (page + 1) * PAGE < len(ks):
             self.add_folder('Next page (%d more) >>' % (len(ks) - (page + 1) * PAGE), '', action='folder', id=fid, page=page + 1)
-        self.end('movies' if nv > nf else 'files')
+        self.end()
 
     def _sfx_local(self, url):
         """Download the wav once into the add-on's data folder and return its local path ('' if unavailable).
@@ -637,7 +675,7 @@ class Router:
                 nv += 1
         if (page + 1) * PAGE < len(rows):
             self.add_folder('Next page (%d more) >>' % (len(rows) - (page + 1) * PAGE), '', action='genre', genre=g, page=page + 1)
-        self.end('movies' if nv > nf else 'files')
+        self.end()
 
     def recent(self):
         """New Arrivals. The added-date list covers the whole catalogue (13k files). Building a
@@ -657,13 +695,13 @@ class Router:
         chunk = vids[page * page_size:(page + 1) * page_size]
         if not chunk and page == 0:
             xbmcgui.Dialog().notification('New Arrivals', 'No new files yet.', xbmcgui.NOTIFICATION_INFO, 4000)
-            self.end('files', cache=False)
+            self.end(cache=False)
             return
         for i in chunk:
             self.add_video(m, i)
         if (page + 1) * page_size < len(vids):
             self.add_folder('Next page (%d more) >>' % (len(vids) - (page + 1) * page_size), '', action='recent', page=page + 1)
-        self.end('movies', cache=False)
+        self.end(cache=False)
 
     def search(self):
         from . import searchflow
@@ -699,7 +737,7 @@ class Router:
         msg = searchflow.result_message(q, len(res), False)
         if msg:
             xbmcgui.Dialog().notification('FEFC', msg, xbmcgui.NOTIFICATION_INFO, 3000)
-        self.end('movies' if nv > nf else 'files', cache=False)
+        self.end(cache=False)
 
     def searchbox(self):
         """Home Search tile (RunPlugin, no directory handle): the Optimus card collects the text, then the results list opens.
@@ -775,7 +813,7 @@ class Router:
                 nv += 1
         if not shown:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
-        self.end('movies' if nv > nf else 'files', cache=False)
+        self.end(cache=False)
 
     def mylist_sortswitch(self):
         opts = [('date', 'Date added'), ('az', 'Name A-Z'), ('za', 'Name Z-A')]
@@ -832,7 +870,7 @@ class Router:
                 n += 1
         if not seen:
             xbmcgui.Dialog().notification('FEFC', 'Nothing opened yet.', xbmcgui.NOTIFICATION_INFO, 3000)
-        self.end('movies', cache=False)
+        self.end(cache=False)
 
     def sort(self):
         fid = self.params['id']
@@ -1141,6 +1179,11 @@ class Router:
     def noop(self):
         pass
 
+    def gridpad(self):
+        """Selecting a cell reserved under a poster does nothing."""
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     def gdoc(self):
         """0.3.22: read-only view of a Google Doc from Fan Edit Collections (plain-text export; Drive is never changed)."""
         import urllib.request
@@ -1225,7 +1268,7 @@ class Router:
         except Exception as e:
             _log('testing list: %s' % e)
             xbmcgui.Dialog().notification('FEFC', 'Testing list unavailable', xbmcgui.NOTIFICATION_ERROR, 4000)
-            self.end('files', cache=False)
+            self.end(cache=False)
             return
         idx = providers.index(doc)
         has_kids = set(v.get('parent') for v in idx.values() if v.get('parent'))
@@ -1246,7 +1289,7 @@ class Router:
                 # container — navigating into it showed an empty list ("nothing happens"). Open the
                 # provider page instead. Same for file/page links.
                 self.add_tool(r['name'], plot, tile, folder=False, landscape=tile, action='open_link', id=r['id'])
-        self.end('files', cache=False)
+        self.end(cache=False)
 
     def open_link(self):
         from . import providers
@@ -1277,13 +1320,14 @@ class Router:
         # is why these showed with no real artwork. No per-file poster exists for provider links, so
         # the portrait tile is the artwork until a real thumbnail is wired per provider.
         poster = 'special://skin/media/fefc-video-poster.png'
-        li.setArt({'thumb': poster, 'icon': poster, 'poster': poster})
+        from . import shapes
+        shapes.stamp(li, 'video', poster)
         li.setProperty('IsPlayable', 'true')
-        li.setProperty('fefc_kind', 'video')
         tag = li.getVideoInfoTag()
         tag.setTitle(rec.get('name') or 'Verified file')
         tag.setPlot(plot)
-        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='play_external', id=rec['id']), li, False)
+        url = _url(self.url, action='play_external', id=rec['id'])
+        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
 
     def play_external(self):
         from . import providers
@@ -1427,13 +1471,11 @@ class Router:
         rows = dl.all()
         if not rows:
             xbmcgui.Dialog().notification('Downloads', 'Nothing downloaded yet. Open a video and pick Download.', xbmcgui.NOTIFICATION_INFO, 5000)
-            self._vid = True
             self.end()
             return
         for r in rows:
             li = xbmcgui.ListItem(catalog.display_title(r.get('name') or 'video.mp4'), offscreen=True)
             li.setProperty('IsPlayable', 'true')
-            li.setProperty('fefc_kind', 'video')
             li.setProperty('fefc_download', 'true')
             poster = 'special://skin/media/fefc-video-poster.png'
             try:
@@ -1442,13 +1484,14 @@ class Router:
                     poster = catalog.poster_for(m, _base(), r['id']) or poster
             except Exception:
                 pass
-            li.setArt({'thumb': poster, 'icon': poster, 'poster': poster})
+            from . import shapes
+            shapes.stamp(li, 'video', poster)
             sz = r.get('size') or 0
             if sz:
                 li.getVideoInfoTag().setPlot('Downloaded to this device  ·  %.2f GB' % (sz / 1073741824.0))
             li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=r['id']))])
-            xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='play_download', id=r['id']), li, False)
-        self._vid = True
+            url = _url(self.url, action='play_download', id=r['id'])
+            self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
         self.end()
 
     def download_storage(self):
@@ -2047,7 +2090,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'open_link': 'open_link', 'play_external': 'play_external',
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
-          'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop',
+          'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop', 'gridpad': 'gridpad',
           'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr'}
 
 

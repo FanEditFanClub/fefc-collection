@@ -348,8 +348,9 @@ test('item kind, my list actions, and opening sfx stay off the wall player', () 
   const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
   assert.match(router, /fefc_kind', 'video'/);
   assert.match(router, /fefc_kind', 'folder'/);
-  assert.match(router, /fefc_kind', 'action'/);
-  assert.match(nav, /String\.IsEqual\(ListItem\.Property\(fefc_kind\),video\)/);
+  assert.match(router, /shapes\.stamp\(li, 'action'/);
+  const inc = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  assert.match(inc, /String\.IsEqual\(ListItem\.Property\(fefc_kind\),video\)/);
   assert.match(router, /def mylist_shuffle/);
   assert.match(router, /No starred videos to shuffle/);
   assert.match(router, /Name Z-A/);
@@ -358,4 +359,157 @@ test('item kind, my list actions, and opening sfx stay off the wall player', () 
   assert.doesNotMatch(router, /Player\(\)\.play\(path\)/);
   assert.match(nav, /fefc-star\.png/);
   assert.match(nav, /Container\.PluginCategory,My List/);
+});
+
+test('folder tiles stay landscape and videos stay portrait at every depth', () => {
+  const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
+  const inc = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(nav, /Container\.SetViewMode\(501\)/);
+  assert.match(nav, /content="FefcBrowser"/);
+  assert.match(nav, /value="501"/);
+  assert.match(nav, /value="500"/);
+  assert.doesNotMatch(nav, /wraplist/);
+  assert.doesNotMatch(nav, /Container\.Content\(movies\)/);
+  assert.match(inc, /include name="FefcBrowser"/);
+  assert.match(inc, /itemlayout width="283" height="150"/);
+  assert.doesNotMatch(inc, /itemlayout[^>]*condition=/);
+  assert.match(inc, /fefc_kind\),video\)/);
+  assert.match(inc, /fefc_kind\),spacer\)/);
+  assert.equal((inc.match(/<height>312<\/height>/g) || []).length, 2);
+  // Poster block (group top 8 + title top 316 + title 108) fills the cells under it
+  // and stops before the next real row. 3 x 150 = 450.
+  assert.ok(8 + 316 + 108 > 150 * 2 && 8 + 316 + 108 <= 150 * 3);
+  assert.doesNotMatch(router, /nv > nf/);
+  assert.match(router, /shapes\.listing_mode/);
+  assert.match(router, /shapes\.stamp/);
+  assert.match(router, /shapes\.pack/);
+  assert.match(router, /def _enqueue/);
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog, shapes
+from webcounts import FOLD
+
+class LI:
+    def __init__(self):
+        self.props = {}
+        self.art = {}
+    def setProperty(self, k, v):
+        self.props[k] = v
+    def setArt(self, art):
+        self.art = dict(art)
+
+v = LI(); shapes.stamp(v, 'video', 'poster.jpg')
+assert v.props['fefc_kind'] == 'video' and v.art['poster'] == 'poster.jpg' and v.art['landscape'] == ''
+f = LI(); shapes.stamp(f, 'folder', 'wide.jpg')
+assert f.props['fefc_kind'] == 'folder' and f.art['landscape'] == 'wide.jpg' and f.art['poster'] == ''
+a = LI(); shapes.stamp(a, 'action', 'tool.jpg')
+assert a.props['fefc_kind'] == 'action' and a.art.get('poster') == ''
+# Interleaved folders and videos keep their order, and a poster owns the cells under it.
+mixed_kinds = ['folder', 'video', 'action', 'video', 'folder']
+mixed_slots = shapes.pack(mixed_kinds)
+assert [s for s in mixed_slots if s != 'spacer'] == mixed_kinds
+assert shapes.audit(mixed_slots) == []
+assert shapes.skip_delta(1, 0, lambda i: {0: 'video', 1: 'spacer', 2: 'spacer', 3: 'folder'}.get(i)) == 2
+assert shapes.skip_delta(0, None, lambda i: 'folder' if i == 0 else None) is None
+assert shapes.skip_delta(2, 1, lambda i: {0: 'folder', 1: 'video', 2: 'spacer'}.get(i)) == -1
+assert shapes.skip_delta(8, 2, lambda i: {2: 'video', 8: 'spacer'}.get(i)) == 'menu'
+idx = json.load(open('data/index.json'))
+added = json.load(open('data/added.json'))
+m = catalog.build_model({'index': idx, 'added': added})
+
+def child_key(fid):
+    it = m['items'].get(fid)
+    return (it[3] if it and it[3] else fid)
+
+def kids(fid):
+    return [k for k in m['kids'].get(child_key(fid), []) if k in m['items']]
+
+def kinds_for(fid, actions=0):
+    out = ['action'] * actions
+    key = child_key(fid)
+    for _did, _name, kind in (m.get('docs') or {}).get(key, []):
+        out.append('action' if kind == 'support' else 'folder')
+    for k in kids(fid):
+        if m['items'][k][2]:
+            if (m.get('rcnt') or m['cnt']).get(k):
+                out.append('folder')
+        else:
+            out.append('video')
+    return out
+
+def check(name, kinds):
+    assert kinds, name + ' empty'
+    mode = shapes.listing_mode('video' in kinds)
+    assert mode['view'] == 501 and mode['wrap'] is False, name
+    assert mode['content'] == ('movies' if 'video' in kinds else 'files'), name
+    slots = shapes.pack(kinds)
+    real = [s for s in slots if s != 'spacer']
+    assert real == ['video' if k == 'video' else k for k in kinds], name + ' reordered'
+    for k in kinds:
+        shape = shapes.shape_for_kind(k)
+        if k == 'video':
+            assert shape == 'portrait', (name, k, shape)
+        else:
+            assert shape == 'landscape', (name, k, shape)
+    problems = shapes.audit(slots)
+    assert not problems, (name, problems[:6])
+    # A poster fills the cells under it: the next real row is SPAN cells down,
+    # which is the poster block, not an empty band.
+    if 'video' in kinds:
+        assert shapes.SPAN * shapes.CELL_H == shapes.ROW_H['portrait']
+        assert shapes.ROW_H['landscape'] == shapes.CELL_H
+    print('PASS', name, 'items', len(kinds), 'videos', kinds.count('video'), 'slots', len(slots), 'view', mode['view'])
+
+# Collections
+check('Collections', kinds_for(FOLD['collections'], actions=1))
+# Actors & Directors, then one person folder
+people = kids(FOLD['directors'])
+assert people, 'no directors'
+check('Actors and Directors', ['folder'] * len(kids(FOLD['actors'])[:8] + people[:8]))
+person = next(k for k in people if any(not m['items'][c][2] for c in kids(k)))
+check('Director folder', kinds_for(person))
+# Nested mixed folder, two or more levels under Collections
+mixed = None
+stack = [(FOLD['collections'], 1)]
+seen = set()
+while stack:
+    fid, depth = stack.pop()
+    if fid in seen:
+        continue
+    seen.add(fid)
+    ks = kinds_for(fid)
+    if depth >= 2 and 'folder' in ks and 'video' in ks:
+        mixed = fid
+        break
+    if depth < 4:
+        for k in kids(fid):
+            if m['items'][k][2]:
+                stack.append((k, depth + 1))
+assert mixed, 'no mixed nested folder'
+check('Nested mixed folder', kinds_for(mixed))
+# New Arrivals
+recent = [i for i in catalog.recent_ids(m)[:60] if i in m['items']]
+check('New Arrivals', ['video' if not m['items'][i][2] else 'folder' for i in recent] + ['folder'])
+# My List: the tool row is landscape, starred videos are portrait
+starred = [i for i in recent if not m['items'][i][2]][:5]
+check('My List', ['action', 'action', 'action', 'action', 'action'] + ['video'] * len(starred))
+# Search results
+found = catalog.search(m, 'star')
+assert found, 'search empty'
+check('Search results', ['folder' if m['items'][i][2] else 'video' for i in found])
+# Plugin root fallback: every entry is a landscape card
+check('Plugin root', ['folder'] * 8)
+print('IDS', json.dumps({'director': person, 'mixed': mixed, 'mixed_name': m['items'][mixed][0], 'director_name': m['items'][person][0]}))
+`);
+  assert.match(out, /PASS Collections/);
+  assert.match(out, /PASS Director folder/);
+  assert.match(out, /PASS Nested mixed folder/);
+  assert.match(out, /PASS New Arrivals/);
+  assert.match(out, /PASS My List/);
+  assert.match(out, /PASS Search results/);
+  assert.match(out, /PASS Plugin root/);
+  const ids = out.split('IDS ').pop();
+  fs.writeFileSync('/tmp/shape-ids.json', ids.trim() + '\n');
 });
