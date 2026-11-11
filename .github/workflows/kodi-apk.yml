@@ -54,11 +54,46 @@ jobs:
         with:
           node-version: "20"
       - name: Tools
+        timeout-minutes: 10
         run: |
-          command -v ffmpeg >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg; }
-          pip install pillow numpy scipy
-          curl -fsSL -o "$RUNNER_TEMP/apktool.jar" https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar
-          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1); echo "BUILD_TOOLS=$BT" >> "$GITHUB_ENV"
+          set -euo pipefail
+          # ubuntu-latest (26.04) has no ffmpeg. apt-get install then sat silent for
+          # ~26 min after security.ubuntu.com failed to resolve (run 43048719924,
+          # attempt 1). Bound apt, and if it does not finish, use a pinned static build.
+          if ! command -v ffmpeg >/dev/null 2>&1; then
+            apt_ok=0
+            if timeout 60 sudo apt-get \
+                -o Acquire::Retries=2 \
+                -o Acquire::http::Timeout=15 \
+                -o Acquire::https::Timeout=15 \
+                update \
+              && timeout 120 sudo apt-get \
+                -o Acquire::Retries=2 \
+                -o Acquire::http::Timeout=20 \
+                -o Acquire::https::Timeout=20 \
+                install -y --no-install-recommends ffmpeg; then
+              apt_ok=1
+            fi
+            if [ "$apt_ok" != 1 ]; then
+              echo "apt did not install ffmpeg; downloading pinned static ffmpeg 7.0.2"
+              curl --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 180 \
+                -fsSL -o "$RUNNER_TEMP/ffmpeg.tar.xz" \
+                https://johnvansickle.com/ffmpeg/releases/ffmpeg-7.0.2-amd64-static.tar.xz
+              rm -rf "$RUNNER_TEMP/ffmpeg-static"
+              mkdir -p "$RUNNER_TEMP/ffmpeg-static"
+              tar -xJf "$RUNNER_TEMP/ffmpeg.tar.xz" -C "$RUNNER_TEMP/ffmpeg-static"
+              bin=$(find "$RUNNER_TEMP/ffmpeg-static" -type f -name ffmpeg -print -quit)
+              test -n "$bin"
+              sudo install -m 755 "$bin" /usr/local/bin/ffmpeg
+            fi
+          fi
+          ffmpeg -version | head -n 1
+          pip install --timeout 60 --retries 5 pillow numpy scipy
+          curl --retry 5 --retry-all-errors --retry-delay 2 --connect-timeout 15 --max-time 120 \
+            -fsSL -o "$RUNNER_TEMP/apktool.jar" \
+            https://github.com/iBotPeaches/Apktool/releases/download/v2.10.0/apktool_2.10.0.jar
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          echo "BUILD_TOOLS=$BT" >> "$GITHUB_ENV"
           echo "APKTOOL=$RUNNER_TEMP/apktool.jar" >> "$GITHUB_ENV"
       - name: Find latest stable Kodi (armeabi-v7a) + decide whether to rebuild
         id: plan
