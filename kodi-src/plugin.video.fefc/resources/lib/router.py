@@ -1682,7 +1682,8 @@ class SupportWindow(xbmcgui.WindowDialog):
                 except Exception:
                     pass
                 i += 1
-            mon.waitForAbort(0.125 if self._frames else 0.2)
+            # 5 fps. The stand, kneel, and rise loop is about 11 seconds.
+            mon.waitForAbort(0.2)
 
     def doModal(self):
         self._closed = False
