@@ -182,7 +182,7 @@ def audit(slots):
     return errors
 
 
-def skip_delta(pos, origin, lookup):
+def skip_delta(pos, origin, lookup, from_menu=False):
     """Where to send focus when it lands on a reserved or padding cell.
 
     pos is the absolute index. lookup(i) returns the kind, or None past either
@@ -194,8 +194,14 @@ def skip_delta(pos, origin, lookup):
     """
     if lookup(pos) != KIND_SPACER:
         return None
-    delta = 0 if origin is None else pos - origin
-    direction = 1 if delta >= 0 else -1
+    # Focus coming back from the bottom bar has no in-grid origin. Treating that
+    # as Down sent a trailing spacer straight back to the menu, so Up did nothing.
+    if from_menu:
+        delta = -1
+        direction = -1
+    else:
+        delta = 0 if origin is None else pos - origin
+        direction = 1 if delta >= 0 else -1
     covered = False
     for back in range(1, SPAN):
         if lookup(pos - back * COLS) == KIND_VIDEO:
@@ -234,18 +240,18 @@ def skip_delta(pos, origin, lookup):
             if k and k != KIND_SPACER:
                 return j - pos
         if direction > 0:
-            return 'menu'
+            return None if from_menu else 'menu'
         found = ahead(-1, 48)
         if found is not None:
             return found
-        return 'menu'
+        return None if from_menu else 'menu'
 
     found = ahead(direction, 36)
     if found is not None:
         return found
-    if direction > 0 and (origin is None or delta > 1):
+    if direction > 0 and (origin is None or delta > 1) and not from_menu:
         return 'menu'
     found = ahead(-direction, 36)
     if found is not None:
         return found
-    return 'menu'
+    return None if from_menu else 'menu'

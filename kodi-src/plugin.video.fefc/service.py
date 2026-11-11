@@ -521,8 +521,9 @@ TICKER_ICONS = {'discord': ('\ue001', 'FF5865F2'), 'facebook': ('\ue002', 'FF187
 
 
 def _cta(c):
-    ic = TICKER_ICONS.get(c[0].split()[0].lower())
-    return ('[COLOR %s]%s[/COLOR]  JOIN  %s' % (ic[1], ic[0], c[1])) if ic else 'JOIN  ' + c[1]
+    """Unused by the live ticker (that is ticker.build_text). Kept in step with it:
+    the network name, then the sentence, with no extra JOIN."""
+    return '%s  %s' % (c[0].split()[0].upper(), c[1])
 
 
 def _new_files_ticker_items():
@@ -1058,6 +1059,21 @@ def _foreground_video():
     return True
 
 
+def _drop_stale_back_keymap():
+    """An older build copied a keymap into the profile that ran a plugin on Back
+    and then the Back action. That file still swallows the Fire TV key after the
+    add-on keymap was corrected. Remove it on every start."""
+    try:
+        d = xbmcvfs.translatePath('special://profile/keymaps')
+        dst = os.path.join(d, 'fefc-nav.xml')
+        if os.path.exists(dst):
+            os.remove(dst)
+            xbmc.executebuiltin('ReloadKeymaps')
+            log('removed profile keymap that swallowed Back')
+    except Exception as e:
+        log('nav keymap: %s' % e)
+
+
 def apply_nav_sound(on):
     """Sound On: GUI sounds play during the wall video (mode 2) and the FEFC sound skin stays selected.
     Sound Off: GUI sounds off so Back does not ignore the mute. Does not stop the wall player."""
@@ -1074,15 +1090,7 @@ def apply_nav_sound(on):
             _set('lookandfeel.soundskin', 'resource.uisounds.fefc')
     except Exception as e:
         log('nav sound: %s' % e)
-    try:
-        d = xbmcvfs.translatePath('special://profile/keymaps')
-        dst = os.path.join(d, 'fefc-nav.xml')
-        if os.path.exists(dst):
-            os.remove(dst)
-            xbmc.executebuiltin('ReloadKeymaps')
-            log('removed back-swallowing keymap')
-    except Exception as e:
-        log('nav keymap: %s' % e)
+    _drop_stale_back_keymap()
 
 
 def _grid_pad_loop(monitor):
@@ -1129,13 +1137,18 @@ def _grid_pad_loop(monitor):
                     k = xbmc.getInfoLabel('Container.ListItem(%d).Property(fefc_kind)' % off)
                 return k or None
 
-            step = skip_delta(pos, origin, lookup)
+            home = xbmcgui.Window(10000)
+            from_menu = home.getProperty('FEFC.GridFromMenu') == '1'
+            step = skip_delta(pos, origin, lookup, from_menu=from_menu)
+            if from_menu:
+                home.clearProperty('FEFC.GridFromMenu')
             if step is None:
                 origin = pos
                 if monitor.waitForAbort(0.2):
                     return
                 continue
             if step == 'menu':
+                home.setProperty('FEFC.GridFromMenu', '1')
                 xbmc.executebuiltin('SetFocus(9290)')
                 origin = None
             else:
@@ -1155,6 +1168,7 @@ def main():
     monitor = xbmc.Monitor()
     ensure_source()
     set_select_action()
+    _drop_stale_back_keymap()
     cb = installed_build()
     if cb:
         xbmcgui.Window(10000).setProperty('FEFC.Version', 'FEFC app ' + version_label(cb))

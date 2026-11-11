@@ -147,7 +147,7 @@ print('ok')
   assert.doesNotMatch(router, /Player\(\)\.stop\(\)/);
 });
 
-test('mosaic cells, skip safe area, cast color, ticker, home-only about', () => {
+test('mosaic cells, skip safe area, cast color, ticker, about lives in settings', () => {
   const out = py(`
 import sys
 sys.path.insert(0, ${JSON.stringify(lib)})
@@ -182,10 +182,22 @@ print('ok', x, y, w, h)
   assert.match(wall, /mosaic_cells\(\)/);
   const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
   assert.match(home, /<control type="videowindow">\s*<left>0<\/left><top>0<\/top><width>1920<\/width><height>1080<\/height>/);
-  assert.match(home, /<label>ABOUT<\/label>/);
+  assert.doesNotMatch(home, /<label>ABOUT<\/label>/);
+  assert.doesNotMatch(home, /action=about/);
+  assert.doesNotMatch(home, /id="9034"/);
+  assert.match(home, /id="9033"[\s\S]{0,280}<onright>9023<\/onright>/);
+  assert.match(home, /id="9023"[\s\S]{0,360}<onleft>9033<\/onleft>/);
+  assert.match(home, /id="9023"[\s\S]{0,420}action=update/);
   assert.match(home, /FEFC\.UpdateLabel/);
   assert.match(home, /id="9031"[\s\S]{0,180}<width>220<\/width>/);
-  assert.match(home, /<width>360<\/width>/);
+  assert.match(home, /id="9023"[\s\S]{0,200}<width>360<\/width>/);
+  const settingsXml = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/settings.xml'), 'utf8');
+  const strings = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/language/resource.language.en_gb/strings.po'), 'utf8');
+  assert.match(settingsXml, /id="about_btn"[\s\S]{0,240}action=about/);
+  assert.match(settingsXml, /id="check_update_btn"[\s\S]{0,240}action=update/);
+  assert.match(strings, /msgctxt "#30030"\nmsgid "About"/);
+  assert.match(strings, /msgctxt "#30031"\nmsgid "About"/);
+  assert.match(strings, /msgctxt "#30032"\nmsgid "Check for software update"/);
   assert.match(home, /id="8990"/);
   assert.match(home, /<label>ACTORS &amp;<\/label>/);
   assert.match(home, /<label>DIRECTORS<\/label>/);
@@ -203,7 +215,7 @@ print('ok', x, y, w, h)
   assert.match(skin, /<font>font_folder<\/font>/);
   assert.match(skin, /<scroll>true<\/scroll>/);
   assert.match(skin, /<scrollspeed>48<\/scrollspeed>/);
-  assert.match(skin, /pulse="true"/);
+  assert.doesNotMatch(skin, /end="99"/);
   assert.match(skin, /FefcWallKeep/);
   const info = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/DialogVideoInfo.xml'), 'utf8');
   assert.doesNotMatch(info, /textcolor>FF99CCFF<\/textcolor><label>\$INFO\[ListItem\.Label\]/);
@@ -266,6 +278,10 @@ assert 'New cut' in text and 'is up' in text
 cta = ticker.build_text([], [])
 assert 'discord.gg' not in cta and 'http' not in cta
 assert 'Discord' in cta
+assert 'JOIN  Join' not in cta
+assert 'DISCORD  Join the FEFC Discord' in cta
+for piece in (ticker._cta(0), ticker._cta(1), ticker._cta(2), ticker._cta(3)):
+    assert 'JOIN' not in piece, piece
 print('ok')
 `);
   assert.equal(out, 'ok');
@@ -451,6 +467,11 @@ assert shapes.skip_delta(1, 0, lambda i: {0: 'video', 1: 'spacer', 2: 'spacer', 
 assert shapes.skip_delta(0, None, lambda i: 'folder' if i == 0 else None) is None
 assert shapes.skip_delta(2, 1, lambda i: {0: 'folder', 1: 'video', 2: 'spacer'}.get(i)) == -1
 assert shapes.skip_delta(8, 2, lambda i: {2: 'video', 8: 'spacer'}.get(i)) == 'menu'
+# Up from the menu lands on a spacer with no in-grid origin. That must walk
+# up to a real tile, not straight back to the menu.
+assert shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 'menu'
+back = shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None, from_menu=True)
+assert back != 'menu' and back is not None and back < 0, back
 idx = json.load(open('data/index.json'))
 added = json.load(open('data/added.json'))
 m = catalog.build_model({'index': idx, 'added': added})
@@ -715,6 +736,145 @@ assert hit['gumby']['art'] > 300
 assert hit['astro-monster']['art'] + hit.get('astro monster', {}).get('art', 0) > 0
 `);
   assert.match(out, /ART /);
+  console.log(out);
+});
+
+test('regressions: back key, menu words, genre list, nav gain', () => {
+  const keymap = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/keymaps/fefc-nav.xml'), 'utf8');
+  assert.match(keymap, /<back>PreviousMenu<\/back>/);
+  assert.match(keymap, /<escape>PreviousMenu<\/escape>/);
+  assert.match(keymap, /<backspace>PreviousMenu<\/backspace>/);
+  assert.match(keymap, /<browser_back>PreviousMenu<\/browser_back>/);
+  assert.doesNotMatch(keymap, /armback/);
+  assert.doesNotMatch(keymap, /<back>[^<]*RunPlugin/);
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
+  assert.match(home, /RunPlugin\(plugin:\/\/plugin\.video\.fefc\/\?action=genres\)/);
+  assert.doesNotMatch(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=genres/);
+  assert.doesNotMatch(nav, /Video add-ons/);
+  assert.doesNotMatch(nav, /Playlists/);
+  assert.doesNotMatch(home, /Video add-ons/);
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(router, /GENRE_PAGE = 60/);
+  assert.match(router, /genre-menu\.json/);
+  const genresFn = router.slice(router.indexOf('def genres('), router.indexOf('\n    def genre('));
+  assert.doesNotMatch(genresFn, /endOfDirectory\(/);
+  assert.match(genresFn, /action='genre'/);
+  const nvs = fs.readFileSync(path.join(root, 'tools/kodi_navsfx.py'), 'utf8');
+  assert.match(nvs, /NAV_QUIET = 0\.85/);
+  assert.match(nvs, /NAV_QUIET_NAMES = \('move', 'back'\)/);
+  assert.match(router, /SUPPORT_H/);
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog
+from PIL import ImageFont
+font = ImageFont.truetype('/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf', 20)
+need = {
+    'SOUND ON': font.getbbox('SOUND ON')[2] + 52 + 26,
+    'SOUND OFF': font.getbbox('SOUND OFF')[2] + 52 + 26,
+    'SETTINGS': font.getbbox('SETTINGS')[2] + 52 + 26,
+    'Checking for updates': font.getbbox('Checking for updates')[2] + 52,
+}
+# Shared bar buttons, from the skin include. SOUND is 240, SETTINGS is 220.
+assert need['SOUND OFF'] <= 240, need
+assert need['SETTINGS'] <= 220, need
+assert need['Checking for updates'] <= 360, need
+raw = {}
+for n in catalog.SOURCES:
+    p = 'data/' + n + '.json'
+    try:
+        raw[n] = json.load(open(p))
+    except FileNotFoundError:
+        pass
+m = catalog.build_model(raw)
+tbc = catalog.tbc_members(m['items'], m['kids'])
+menu = json.load(open('kodi-src/plugin.video.fefc/resources/genre-menu.json'))
+bad = []
+for row in menu:
+    g = row['key']
+    folders = [i for i in catalog.dedupe(m, m['genre_folders'].get(g) or []) if i not in tbc]
+    vids = [i for i in catalog.dedupe(m, m['genre_videos'].get(g) or []) if i not in tbc]
+    print('GENRE', g, len(folders), len(vids))
+    if not folders and not vids:
+        bad.append(g)
+assert not bad, bad
+print('ok', len(menu))
+`);
+  assert.match(out, /^ok /m);
+  console.log(out);
+});
+
+test('page pack, ticker windows, search open, marks, shared bar', () => {
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
+  const info = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/DialogVideoInfo.xml'), 'utf8');
+  const genres = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/skins/Default/1080i/DialogGenres.xml'), 'utf8');
+  for (const xml of [home, nav, info]) {
+    assert.match(xml, /FefcTicker/);
+  }
+  assert.match(genres, /<scroll>true<\/scroll>/);
+  assert.match(skin, /Integer\.IsEqual\(Container\.Viewmode,\$PARAM\[id\]\)/);
+  assert.match(nav, /FefcTopBar/);
+  assert.match(skin, /id="9290"[\s\S]{0,220}<width>220<\/width>/);
+  assert.match(skin, /id="9294"[\s\S]{0,280}<width>240<\/width>/);
+  assert.match(skin, /id="9292"[\s\S]{0,280}<width>220<\/width>/);
+  assert.match(home, /id="9031"[\s\S]{0,180}<width>220<\/width>/);
+  assert.match(home, /id="9032"[\s\S]{0,220}<width>240<\/width>/);
+  assert.match(home, /id="9033"[\s\S]{0,220}<width>220<\/width>/);
+  assert.match(genres, /id="9402"[\s\S]{0,120}<width>220<\/width>[\s\S]{0,500}<label>SEARCH<\/label>/);
+  assert.match(genres, /id="9403"[\s\S]{0,120}<width>240<\/width>/);
+  assert.match(genres, /id="9404"[\s\S]{0,120}<width>220<\/width>/);
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const searchFn = router.slice(router.indexOf('def search('), router.indexOf('\n    def searchbox('));
+  const endAt = searchFn.indexOf('endOfDirectory');
+  const winAt = searchFn.indexOf('OptimusWindow');
+  assert.ok(endAt >= 0 && winAt > endAt, 'directory must end before the search window');
+  assert.match(router, /_close_busy\(\)/);
+  assert.match(router, /_media_file\('fefc-mark-grok\.png'\)/);
+  assert.match(router, /_media_file\('fefc-mark-discord\.png'\)/);
+  assert.match(router, /_media_file\('fefc-mark-muse\.png'\)/);
+  assert.match(router, /width \* 15 \/ 200\.0/);
+  assert.match(router, /pagepack\.folder_page/);
+  assert.match(router, /_marquee_loop/);
+  for (const name of ['fefc-mark-grok.png', 'fefc-mark-discord.png', 'fefc-mark-muse.png']) {
+    assert.ok(fs.existsSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/media', name)), name);
+  }
+  assert.ok(fs.existsSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/shipped/pages.pack')));
+  const out = py(`
+import sys, time
+sys.path.insert(0, ${JSON.stringify(lib)})
+import pagepack
+p = pagepack.shipped_path()
+t0 = time.perf_counter()
+root = pagepack.root_id(p)
+doc = pagepack.folder_page(root, 0, p)
+folder_ms = (time.perf_counter() - t0) * 1000
+assert doc and len(doc['rows']) == 60 and doc['total'] > 60, doc
+t1 = time.perf_counter()
+g = pagepack.genre_page('Action', 0, p)
+genre_ms = (time.perf_counter() - t1) * 1000
+assert g and len(g['rows']) == 60 and g['total'] > 60
+t2 = time.perf_counter()
+r = pagepack.recent_page(0, p)
+recent_ms = (time.perf_counter() - t2) * 1000
+assert r and len(r['rows']) == 60
+t3 = time.perf_counter()
+s = pagepack.search_page('tarantino', 0, p)
+search_ms = (time.perf_counter() - t3) * 1000
+assert s and s['total'] > 0 and len(s['rows']) <= 60
+import os, optimusframes
+media = os.path.normpath(os.path.join(os.path.dirname(pagepack.shipped_path()), '..', 'media'))
+t4 = time.perf_counter()
+frames = optimusframes.frame_list(media)
+open_ms = (time.perf_counter() - t4) * 1000
+assert frames
+print('TIMES folder %.2f genre %.2f recent %.2f search %.2f frames %.2f rows %d' % (
+    folder_ms, genre_ms, recent_ms, search_ms, open_ms, doc['total']))
+`);
+  assert.match(out, /TIMES /);
   console.log(out);
 });
 

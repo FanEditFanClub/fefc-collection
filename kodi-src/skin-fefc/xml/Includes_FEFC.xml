@@ -127,6 +127,8 @@
 		<param name="id" default="501"/>
 		<definition>
 		<control type="panel" id="$PARAM[id]">
+			<!-- One view at a time. Both panels used to draw the same items, so posters sat on top of each other. -->
+			<visible>Integer.IsEqual(Container.Viewmode,$PARAM[id])</visible>
 			<left>96</left><top>122</top><width>1700</width><height>760</height>
 			<onleft>$PARAM[id]</onleft><onright>60</onright>
 			<onup>9290</onup>
@@ -214,10 +216,10 @@
 		<align>center</align>
 		<aligny>center</aligny>
 	</include>
-	<!-- Shared chrome on every FEFC page (like the web app): top bar (version, Search, Settings, About, clock) and the community ticker.
+	<!-- Shared chrome on every FEFC page: the bottom menu and the community ticker.
 	     Pages lay their own content out between y=102 and y=978 so nothing overlaps. Hidden during fullscreen video. -->
-	<!-- 0.3.22: no version / top-right menu anywhere. Every page gets the same bottom-centre rounded menu bar as Home
-	     (Resume/Stop when paused, Search, Sound, Settings, About, Update). Home draws its own bar (9100), so this one hides there. -->
+	<!-- Every page gets the same bottom-centre rounded menu bar (Resume/Stop when paused, Home, Search, Sound, Settings).
+	     Home draws its own bar (Search, Sound, Settings, and the update-status button). About opens from Settings. -->
 	<include name="FefcTopBar">
 		<param name="down">noop</param>
 		<param name="up">noop</param>
@@ -262,7 +264,7 @@
 				</control>
 			</control>
 			<control type="group">
-				<left>543</left><top>878</top>
+				<left>498</left><top>878</top>
 				<animation effect="slide" end="41,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
 				<control type="button" id="9290">
 					<left>0</left><top>0</top><width>220</width><height>60</height>
@@ -296,7 +298,7 @@
 				</control>
 				<control type="image"><left>244</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 				<control type="button" id="9294">
-					<left>456</left><top>0</top><width>190</width><height>60</height>
+					<left>456</left><top>0</top><width>240</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>$VAR[FefcSoundLabel]</label>
@@ -312,7 +314,7 @@
 				<control type="image"><left>472</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 				<control type="image"><left>472</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 				<control type="button" id="9292">
-					<left>654</left><top>0</top><width>180</width><height>60</height>
+					<left>704</left><top>0</top><width>220</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>SETTINGS</label>
@@ -326,7 +328,7 @@
 					<ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 				</control>
-				<control type="image"><left>670</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+				<control type="image"><left>720</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 		</control>
 		</definition>
@@ -348,8 +350,7 @@
 				<textcolor>FFFFFFFF</textcolor>
 				<scroll>true</scroll>
 				<scrollspeed>48</scrollspeed>
-				<!-- Keeps the marquee dirty on windows that are not redrawing a video, so My List and folders keep scrolling. -->
-				<animation effect="fade" start="100" end="99" time="700" pulse="true" condition="true">Conditional</animation>
+				<!-- No pulse animation here. A repeating fade restarts the label every cycle, so the marquee never moves. -->
 				<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
 				<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 			</control>

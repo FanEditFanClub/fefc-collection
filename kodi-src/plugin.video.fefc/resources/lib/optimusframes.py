@@ -21,6 +21,11 @@ def still_path(media_dir):
     return os.path.join(media_dir, optimusplan.IMAGE_NAME)
 
 
+# Support frames are extended below the original 480x640 crop so the shoes fit.
+SUPPORT_W = 480
+SUPPORT_H = 933
+
+
 def support_frames(media_dir):
     """Silent Support Us loop. JPEGs only, same idea as the search frames."""
     d = os.path.join(media_dir, 'optimus-support')

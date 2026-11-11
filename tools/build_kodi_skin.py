@@ -322,6 +322,11 @@ def make_textures(media):
         shutil.copy(ROOT / 'assets' / 'home-wall-still.jpg', media / 'fefc-wall-still.jpg')
     for f in sorted((ROOT / 'assets' / 'ticker-icons').glob('*.png')):
         shutil.copy(f, media / f.name)
+    marks = ROOT / 'kodi-src' / 'plugin.video.fefc' / 'resources' / 'media'
+    for name in ('fefc-mark-grok.png', 'fefc-mark-discord.png', 'fefc-mark-muse.png'):
+        src = marks / name
+        if src.exists():
+            shutil.copy(src, media / name)
     return media
 
 

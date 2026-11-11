@@ -27,7 +27,7 @@
 		</control>
 		<control type="button" id="9101">
 			<left>348</left><top>248</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -35,7 +35,7 @@
 		</control>
 		<control type="button" id="9102">
 			<left>760</left><top>248</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -43,7 +43,7 @@
 		</control>
 		<control type="button" id="9103">
 			<left>1172</left><top>248</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -51,7 +51,7 @@
 		</control>
 		<control type="button" id="9104">
 			<left>348</left><top>440</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -59,7 +59,7 @@
 		</control>
 		<control type="button" id="9105">
 			<left>760</left><top>440</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -67,7 +67,7 @@
 		</control>
 		<control type="button" id="9106">
 			<left>1172</left><top>440</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -75,7 +75,7 @@
 		</control>
 		<control type="button" id="9107">
 			<left>348</left><top>632</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -84,7 +84,7 @@
 		</control>
 		<control type="button" id="9108">
 			<left>760</left><top>632</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
@@ -93,19 +93,38 @@
 		</control>
 		<control type="button" id="9109">
 			<left>1172</left><top>632</top><width>400</width><height>180</height>
-			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<font>font11_tile</font><textcolor>00FFFFFF</textcolor><focusedcolor>00FFFFFF</focusedcolor>
 			<align>center</align><aligny>center</aligny>
 			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
 			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
 			<label></label>
 			<ondown>9401</ondown>
 		</control>
+		<!-- Art sits inside the existing border. The name stays the button label, drawn again on top so the picture does not cover it. -->
+		<control type="image" id="9201"><left>376</left><top>276</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9202"><left>788</left><top>276</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9203"><left>1200</left><top>276</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9204"><left>376</left><top>468</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9205"><left>788</left><top>468</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9206"><left>1200</left><top>468</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9207"><left>376</left><top>660</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9208"><left>788</left><top>660</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="image" id="9209"><left>1200</left><top>660</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
+		<control type="label" id="9301"><left>376</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9302"><left>788</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9303"><left>1200</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9304"><left>376</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9305"><left>788</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9306"><left>1200</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9307"><left>376</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9308"><left>788</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<control type="label" id="9309"><left>1200</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
 		<control type="image">
 			<left>348</left><top>866</top><width>1224</width><height>84</height>
 			<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
 		</control>
 		<control type="button" id="9401">
-			<left>543</left><top>878</top><width>220</width><height>60</height>
+			<left>498</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -113,9 +132,9 @@
 			<label>HOME</label>
 			<onleft>9404</onleft><onright>9402</onright><onup>9107</onup>
 		</control>
-		<control type="image"><left>559</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
+		<control type="image"><left>514</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
 		<control type="button" id="9402">
-			<left>771</left><top>878</top><width>220</width><height>60</height>
+			<left>726</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -123,9 +142,9 @@
 			<label>SEARCH</label>
 			<onleft>9401</onleft><onright>9403</onright><onup>9108</onup>
 		</control>
-		<control type="image"><left>787</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+		<control type="image"><left>742</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 		<control type="button" id="9403">
-			<left>999</left><top>878</top><width>190</width><height>60</height>
+			<left>954</left><top>878</top><width>240</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -133,9 +152,9 @@
 			<label>SOUND ON</label>
 			<onleft>9402</onleft><onright>9404</onright><onup>9108</onup>
 		</control>
-		<control type="image" id="9405"><left>1015</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture></control>
+		<control type="image" id="9405"><left>970</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture></control>
 		<control type="button" id="9404">
-			<left>1197</left><top>878</top><width>180</width><height>60</height>
+			<left>1202</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -143,6 +162,14 @@
 			<label>SETTINGS</label>
 			<onleft>9403</onleft><onright>9401</onright><onup>9109</onup>
 		</control>
-		<control type="image"><left>1213</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+		<control type="image"><left>1218</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+		<control type="label" id="9501">
+			<left>96</left><top>984</top><width>1728</width><height>44</height>
+			<font>font12</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<scroll>true</scroll>
+			<scrollspeed>48</scrollspeed>
+			<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
+		</control>
 	</controls>
 </window>
