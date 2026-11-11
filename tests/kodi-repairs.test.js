@@ -307,28 +307,31 @@ print('ok', len(frames))
   assert.doesNotMatch(router, /optimus-popcorn-search\.mp4/);
 });
 
-test('support animation is a silent cowboy-hat frame loop', () => {
+test('support animation is the approved 24 fps clip as silent frames', () => {
   const media = path.join(root, 'kodi-src/plugin.video.fefc/resources/media/optimus-support');
   const frames = fs.readdirSync(media).filter((n) => /^f\d+\.jpg$/.test(n)).sort();
-  assert.ok(frames.length >= 40 && frames.length <= 70);
+  assert.equal(frames.length, 265);
+  assert.equal(frames[0], 'f001.jpg');
+  assert.equal(frames[264], 'f265.jpg');
   const bytes = frames.reduce((n, f) => n + fs.statSync(path.join(media, f)).size, 0);
-  assert.ok(bytes < 1600000, bytes);
+  assert.ok(bytes < 8000000, bytes);
   const out = py(`
 import os, sys
 sys.path.insert(0, ${JSON.stringify(lib)})
 import optimusframes
 media = ${JSON.stringify(path.join(root, 'kodi-src/plugin.video.fefc/resources/media'))}
 frames = optimusframes.support_frames(media)
-assert frames and all(p.endswith('.jpg') for p in frames)
+assert len(frames) == 265
+assert all(p.endswith('.jpg') for p in frames)
 assert not any(p.lower().endswith(('.mp4', '.m4a', '.aac', '.wav')) for p in frames)
 print('ok', len(frames))
 `);
   assert.match(out, /^ok /);
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   assert.match(router, /support_frames/);
-  assert.match(router, /waitForAbort\(0\.2/);
+  assert.match(router, /1\.0 \/ 24\.0/);
   assert.match(router, /def _pump/);
-  assert.doesNotMatch(router, /Player\(\)\.play\([^)]*optimus-support/);
+  assert.doesNotMatch(router, /Player\(\)\.play\([^)]*optimus/);
 });
 
 test('item kind, my list actions, and opening sfx stay off the wall player', () => {

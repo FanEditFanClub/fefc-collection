@@ -1671,19 +1671,24 @@ class SupportWindow(xbmcgui.WindowDialog):
         self.setFocus(self.btns[0])
 
     def _pump(self):
-        """Advance the hat loop off the video player, the same way Search does."""
+        """Play the approved 24 fps clip off the video player, the same way Search does.
+        The clock chooses the frame, so a slow setImage skips ahead instead of stretching the loop."""
         mon = xbmc.Monitor()
-        i = 0
-        n = len(self._frames) or 1
+        n = len(self._frames)
+        if not n:
+            return
+        frame_s = 1.0 / 24.0
+        t0 = time.monotonic()
+        last = -1
         while not self._closed and not mon.abortRequested():
-            if self._frames:
+            i = int((time.monotonic() - t0) / frame_s) % n
+            if i != last:
                 try:
-                    self.art.setImage(self._frames[i % n])
+                    self.art.setImage(self._frames[i])
                 except Exception:
                     pass
-                i += 1
-            # 5 fps. The stand, kneel, and rise loop is about 11 seconds.
-            mon.waitForAbort(0.2)
+                last = i
+            mon.waitForAbort(0.01)
 
     def doModal(self):
         self._closed = False
