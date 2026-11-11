@@ -377,6 +377,60 @@ test('item kind, my list actions, and opening sfx stay off the wall player', () 
   assert.match(nav, /Container\.PluginCategory,My List/);
 });
 
+test('sound toggle flips the live flag before any settings write', () => {
+  const out = py(`
+import sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import sfxpref
+off = sfxpref.toggle_plan('')
+assert off['on'] is False and off['property'] == '1' and off['setting'] == 'false'
+on = sfxpref.toggle_plan('1')
+assert on['on'] is True and on['property'] == '' and on['setting'] == 'true'
+assert off['steps'] == ('property', 'audio', 'persist')
+assert off['steps'].index('property') < off['steps'].index('persist')
+print('ok')
+`);
+  assert.equal(out, 'ok');
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const body = router.slice(router.indexOf('def sound_toggle'), router.indexOf('def about'));
+  assert.match(body, /setProperty\('FEFC\.SoundOff', plan\['property'\]\)[\s\S]*setSetting\('play_sfx'/);
+  assert.match(body, /threading\.Thread\(target=persist/);
+  assert.match(body, /apply_sound_now/);
+  const svc = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
+  const now = svc.slice(svc.indexOf('def apply_sound_now'), svc.indexOf('def apply_nav_sound'));
+  assert.doesNotMatch(now, /setSetting/);
+  assert.match(now, /switch_sound/);
+});
+
+test('browse panels stay visible for every content type', () => {
+  const inc = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const genres = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/skins/Default/1080i/DialogGenres.xml'), 'utf8');
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(inc, /<label>Loading Fan Edit Fan Club Ticker<\/label>/);
+  assert.match(inc, /<align>center<\/align>[\s\S]{0,180}<label>Loading Fan Edit Fan Club Ticker<\/label>/);
+  assert.doesNotMatch(inc, /Loading community news/);
+  assert.match(genres, /<label>Loading Fan Edit Fan Club Ticker<\/label>/);
+  assert.match(router, /TICKER_LOADING/);
+  const out = py(`
+import sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import skinview
+panels = skinview.panels()
+assert panels, 'no browser panel'
+focus = skinview.default_control()
+# View ids Fire TV has actually reported, including none and the old list view.
+for mode in ('', '0', '50', '55', '500', '501'):
+    shown = [p for p in panels if skinview.panel_visible(p, mode)]
+    assert len(shown) == 1, (mode, [p['id'] for p in shown])
+    assert shown[0]['id'] == focus, (mode, shown[0]['id'], focus)
+for screen, kind in skinview.CONTENT.items():
+    assert skinview.tile_draws(kind), screen
+assert not skinview.tile_draws('spacer')
+print('ok', focus, list(skinview.CONTENT))
+`);
+  assert.match(out, /^ok /);
+});
+
 test('folder tiles stay landscape and videos stay portrait at every depth', () => {
   const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
   const inc = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
@@ -384,7 +438,7 @@ test('folder tiles stay landscape and videos stay portrait at every depth', () =
   assert.match(nav, /Container\.SetViewMode\(501\)/);
   assert.match(nav, /content="FefcBrowser"/);
   assert.match(nav, /value="501"/);
-  assert.match(nav, /value="500"/);
+  assert.doesNotMatch(nav, /FefcBrowser"><param name="id" value="500"/);
   assert.doesNotMatch(nav, /wraplist/);
   assert.doesNotMatch(nav, /Container\.Content\(movies\)/);
   assert.match(inc, /include name="FefcBrowser"/);
@@ -816,7 +870,8 @@ test('page pack, ticker windows, search open, marks, shared bar', () => {
     assert.match(xml, /FefcTicker/);
   }
   assert.match(genres, /<scroll>true<\/scroll>/);
-  assert.match(skin, /Integer\.IsEqual\(Container\.Viewmode,\$PARAM\[id\]\)/);
+  assert.doesNotMatch(skin, /Integer\.IsEqual\(Container\.Viewmode,\$PARAM\[id\]\)/);
+  assert.match(skin, /Loading Fan Edit Fan Club Ticker/);
   assert.match(nav, /FefcTopBar/);
   assert.match(skin, /id="9290"[\s\S]{0,220}<width>220<\/width>/);
   assert.match(skin, /id="9294"[\s\S]{0,280}<width>240<\/width>/);

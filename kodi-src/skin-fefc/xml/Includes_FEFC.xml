@@ -127,8 +127,9 @@
 		<param name="id" default="501"/>
 		<definition>
 		<control type="panel" id="$PARAM[id]">
-			<!-- One view at a time. Both panels used to draw the same items, so posters sat on top of each other. -->
-			<visible>Integer.IsEqual(Container.Viewmode,$PARAM[id])</visible>
+			<!-- Always drawn. Gating this on Container.Viewmode hid every tile on
+			     Fire TV: the device does not report 500 or 501, so both panels
+			     were invisible while the container still counted its items. -->
 			<left>96</left><top>122</top><width>1700</width><height>760</height>
 			<onleft>$PARAM[id]</onleft><onright>60</onright>
 			<onup>9290</onup>
@@ -356,10 +357,11 @@
 			</control>
 			<control type="label">
 				<left>22</left><top>0</top><width>1684</width><height>44</height>
+				<align>center</align>
 				<aligny>center</aligny>
 				<font>fefc_ticker</font>
 				<textcolor>FFFFFFFF</textcolor>
-				<label>Loading community news...</label>
+				<label>Loading Fan Edit Fan Club Ticker</label>
 				<visible>String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 			</control>
 		</control>

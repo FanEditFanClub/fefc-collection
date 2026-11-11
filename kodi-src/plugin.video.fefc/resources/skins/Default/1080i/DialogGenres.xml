@@ -170,6 +170,16 @@
 			<scroll>true</scroll>
 			<scrollspeed>48</scrollspeed>
 			<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
+		</control>
+		<control type="label" id="9502">
+			<left>96</left><top>984</top><width>1728</width><height>44</height>
+			<align>center</align>
+			<aligny>center</aligny>
+			<font>font12</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<label>Loading Fan Edit Fan Club Ticker</label>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 		</control>
 	</controls>
 </window>

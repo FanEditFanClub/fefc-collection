@@ -847,6 +847,23 @@ class HomeWall(object):
     def playing(self):
         return xbmcgui.Window(10000).getProperty('FEFC.Wall') == '1'
 
+    def switch_sound(self, sound):
+        """Swap the audible and silent loops now. Does not touch a real film."""
+        pl = xbmc.Player()
+        try:
+            if pl.isPlaying():
+                cur = pl.getPlayingFile() or ''
+                if cur and 'home-wall' not in cur and 'fefc-intro' not in cur:
+                    self.cur_sound = sound
+                    return
+                try:
+                    self.pos = pl.getTime()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        self._start(pl, bool(sound), self.pos)
+
     def stop(self):
         home = xbmcgui.Window(10000)
         home.clearProperty('FEFC.WallSeam')
@@ -947,7 +964,7 @@ class HomeWall(object):
                 except Exception:
                     pass
             if sound != self.cur_sound:
-                self._start(pl, sound, self.pos)
+                self.switch_sound(sound)
                 return
             # RepeatOne does not loop a file that is not in a playlist, so the player hits EOF and
             # the next start is a new OpenFile. Seek the same player back to the start instead.
@@ -1018,11 +1035,7 @@ def details_sfx():
     if not url or key == _last_info[0]:
         return
     _last_info[0] = key
-    try:
-        from sfxpref import sfx_enabled as _sfx_on
-    except Exception:
-        _sfx_on = lambda raw: str(raw).strip().lower() != 'false'
-    if not _sfx_on(ADDON.getSetting('play_sfx')) or _foreground_video():
+    if xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1' or _foreground_video():
         return
     def go():
         try:
@@ -1072,6 +1085,28 @@ def _drop_stale_back_keymap():
             log('removed profile keymap that swallowed Back')
     except Exception as e:
         log('nav keymap: %s' % e)
+
+
+_wall = None
+
+
+def apply_sound_now(on):
+    """Flip the live mute and the wall audio. No settings write and no keymap reload."""
+    home = xbmcgui.Window(10000)
+    home.setProperty('FEFC.SoundOff', '' if on else '1')
+    home.setProperty('FEFC.GuiSound', 'always' if on else 'off')
+    if not on:
+        try:
+            stop = getattr(xbmc, 'stopSFX', None)
+            if stop:
+                stop()
+        except Exception:
+            pass
+    if _wall is not None:
+        try:
+            _wall.switch_sound(bool(on))
+        except Exception as e:
+            log('sound now: %s' % e)
 
 
 def apply_nav_sound(on):
@@ -1247,7 +1282,8 @@ def main():
     # main loop: news ticker, pause-on-back, daily app update notice
     watcher = Watcher()
     tracker = Tracker()
-    wall = HomeWall()
+    global _wall
+    wall = _wall = HomeWall()
     next_feed = 0.0
     next_counts = 0.0
     next_new_files = 0.0

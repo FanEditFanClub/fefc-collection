@@ -1,6 +1,15 @@
 {
  "versions": [
   {
+   "version": "0.6.2 Beta",
+   "date": "2026-11-11",
+   "notes": [
+    "Folder, genre, person, My List and search screens show their tiles again. The grid no longer hides when the TV does not report view 500 or 501.",
+    "While the news ticker is still loading, the bar says Loading Fan Edit Fan Club Ticker, centered and still. It scrolls once the items arrive.",
+    "Sound off takes effect immediately. The button and the ambience no longer wait for the settings file."
+   ]
+  },
+  {
    "version": "0.6.1 Beta",
    "date": "2026-11-11",
    "notes": [

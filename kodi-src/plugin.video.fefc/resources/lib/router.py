@@ -688,8 +688,7 @@ class Router:
     def _maybe_sfx(self, rel):
         """Start the folder clip without holding the directory listing. A missing wav is fetched
         on a side thread; a clip already on disk plays immediately."""
-        from .sfxpref import sfx_enabled
-        if not sfx_enabled(ADDON.getSetting('play_sfx')) or not rel:
+        if xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1' or not rel:
             return
         try:
             import service as _svc
@@ -1116,16 +1115,34 @@ class Router:
             xbmcgui.Dialog().notification('Notifications', msg[:90], xbmcgui.NOTIFICATION_INFO, 5000)
 
     def sound_toggle(self):
-        """Top-bar sound on/off (saved in the add-on settings, so it survives restarts and app updates)."""
-        from .sfxpref import sfx_enabled
-        on = not sfx_enabled(ADDON.getSetting('play_sfx'))
-        ADDON.setSetting('play_sfx', 'true' if on else 'false')
-        xbmcgui.Window(10000).setProperty('FEFC.SoundOff', '' if on else '1')
+        """Top-bar sound on/off. The label and the audio change before anything is saved.
+
+        ADDON.setSetting and the GUI-sound JSON call block for seconds on Fire TV,
+        and they used to run first, so the button and the ambience waited on them.
+        """
+        from .sfxpref import toggle_plan
+        home = xbmcgui.Window(10000)
+        plan = toggle_plan(home.getProperty('FEFC.SoundOff'))
+        on = plan['on']
+        home.setProperty('FEFC.SoundOff', plan['property'])
         try:
             import service
-            service.apply_nav_sound(on)
+            service.apply_sound_now(on)
         except Exception:
             pass
+
+        def persist():
+            try:
+                ADDON.setSetting('play_sfx', plan['setting'])
+            except Exception:
+                pass
+            try:
+                import service
+                service.apply_nav_sound(on)
+            except Exception:
+                pass
+
+        threading.Thread(target=persist, daemon=True).start()
         xbmcgui.Dialog().notification('FEFC', 'Sound on' if on else 'Sound off', time=1500, sound=False)
 
     def about(self):
@@ -1846,9 +1863,12 @@ def _add_icon_bar(win, up):
         b.controlRight(buttons[(i + 1) % len(buttons)])
         b.controlUp(up)
         b.controlDown(up)
-    tick = xbmc.getInfoLabel('Window(home).Property(FEFC.Ticker)') or 'Loading community news...'
+    from .ticker import TICKER_LOADING
+    tick = xbmc.getInfoLabel('Window(home).Property(FEFC.Ticker)') or TICKER_LOADING
     win.addControl(xbmcgui.ControlImage(s(96), s(984), s(1728), s(44), _media_file('chrome/ticker.png')))
-    tick_label = xbmcgui.ControlLabel(s(118), s(984), s(1660), s(44), tick, font='fefc_ticker', textColor='FFFFFFFF', alignment=4)
+    # Loading stays centered. A live line is left-aligned so the marquee can move it.
+    tick_align = 6 if tick == TICKER_LOADING else 4
+    tick_label = xbmcgui.ControlLabel(s(118), s(984), s(1660), s(44), tick, font='fefc_ticker', textColor='FFFFFFFF', alignment=tick_align)
     win.addControl(tick_label)
     win._ticker_text = tick
     win._ticker_label = tick_label
@@ -1856,8 +1876,12 @@ def _add_icon_bar(win, up):
 
 
 def _marquee_loop(label, text, closed):
-    """Slide the ticker by rotating the string. A Python ControlLabel has no scroll flag."""
+    """Slide the ticker by rotating the string. A Python ControlLabel has no scroll flag.
+    The loading line stays centered and still."""
+    from .ticker import TICKER_LOADING
     text = text or ''
+    if text == TICKER_LOADING:
+        return
     if len(text) < 80:
         text = (text + '   •   ') * 4
     i = 0

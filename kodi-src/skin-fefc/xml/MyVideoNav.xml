@@ -6,7 +6,8 @@
 	<onload>Container.SetViewMode(501)</onload>
 	<!-- 0.5.0: black background on every screen -->
 	<backgroundcolor>FF000000</backgroundcolor>
-	<views>501,500</views>
+	<!-- One panel only. A second panel with the same items drew every poster twice. -->
+	<views>501</views>
 	<controls>
 		<!-- Outside the content zoom. Inside it, a videowindow parked at a negative x is scaled back onto the left edge. -->
 		<include>FefcWallKeep</include>
@@ -41,10 +42,8 @@
 			<scroll>true</scroll>
 			<visible>String.IsEqual(Container.PluginCategory,My List)</visible>
 		</control>
-		<!-- Same panel twice. Kodi remembers a view per path; either id still
-		     draws folders landscape and videos portrait. onload asks for 501. -->
+		<!-- The only grid. It stays visible even when Container.Viewmode is not 501. -->
 		<include content="FefcBrowser"><param name="id" value="501"/></include>
-		<include content="FefcBrowser"><param name="id" value="500"/></include>
 		<control type="scrollbar" id="60">
 			<left>1806</left><top>130</top><width>10</width><height>750</height>
 			<orientation>vertical</orientation>
