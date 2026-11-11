@@ -405,7 +405,28 @@ assert v.props['fefc_kind'] == 'video' and v.art['poster'] == 'poster.jpg' and v
 f = LI(); shapes.stamp(f, 'folder', 'wide.jpg')
 assert f.props['fefc_kind'] == 'folder' and f.art['landscape'] == 'wide.jpg' and f.art['poster'] == ''
 a = LI(); shapes.stamp(a, 'action', 'tool.jpg')
-assert a.props['fefc_kind'] == 'action' and a.art.get('poster') == ''
+assert a.props['fefc_kind'] == 'action' and a.art['landscape'] == 'tool.jpg' and a.art.get('poster') == ''
+# Utilities are landscape. Only a video file is portrait. Blank is the Back/Up row.
+utilities = [
+    ('Back / Up', ''),
+    ('Sort', 'action'),
+    ('Shuffle Play', 'action'),
+    ('Support Us', 'action'),
+    ('Read Me', 'action'),
+    ('Read First', 'folder'),
+    ('Check for update', 'action'),
+    ('Link My List', 'folder'),
+    ('Sync My List', 'folder'),
+    ('Recently Opened', 'folder'),
+    ('Downloads', 'folder'),
+    ('Next page', 'folder'),
+]
+for label, kind in utilities:
+    assert shapes.shape_for_kind(kind) == 'landscape', label
+    assert shapes.shape_for_kind(kind) != 'portrait', label
+assert shapes.shape_for_kind('video') == 'portrait'
+for kind in ('', 'folder', 'action', 'spacer', 'tool', 'button'):
+    assert shapes.shape_for_kind(kind) != 'portrait', kind
 # Interleaved folders and videos keep their order, and a poster owns the cells under it.
 mixed_kinds = ['folder', 'video', 'action', 'video', 'folder']
 mixed_slots = shapes.pack(mixed_kinds)
@@ -462,8 +483,11 @@ def check(name, kinds):
         assert shapes.ROW_H['landscape'] == shapes.CELL_H
     print('PASS', name, 'items', len(kinds), 'videos', kinds.count('video'), 'slots', len(slots), 'view', mode['view'])
 
-# Collections
-check('Collections', kinds_for(FOLD['collections'], actions=1))
+# A folder page: Back, then Sort, Shuffle, and Support Us, then its own rows.
+# Back is the parent row (no kind). Sort and Shuffle are action. Support Us is action.
+check('Folder with Back, Sort, Shuffle, Support Us', ['', 'action', 'action', 'action', 'folder', 'video'])
+# Collections, including that same utility row
+check('Collections', ['action', 'action'] + kinds_for(FOLD['collections']))
 # Actors & Directors, then one person folder
 people = kids(FOLD['directors'])
 assert people, 'no directors'
@@ -492,17 +516,24 @@ check('Nested mixed folder', kinds_for(mixed))
 # New Arrivals
 recent = [i for i in catalog.recent_ids(m)[:60] if i in m['items']]
 check('New Arrivals', ['video' if not m['items'][i][2] else 'folder' for i in recent] + ['folder'])
-# My List: the tool row is landscape, starred videos are portrait
+# My List: Back, then Link, Sort, Shuffle, Recently Opened, Downloads (landscape), then videos
 starred = [i for i in recent if not m['items'][i][2]][:5]
-check('My List', ['action', 'action', 'action', 'action', 'action'] + ['video'] * len(starred))
+mylist = ['', 'folder', 'folder', 'folder', 'folder', 'folder'] + ['video'] * len(starred)
+check('My List', mylist)
+assert sum(1 for k in mylist if shapes.shape_for_kind(k) == 'landscape') == 6
+assert all(shapes.shape_for_kind(k) == 'portrait' for k in mylist if k == 'video')
 # Search results
 found = catalog.search(m, 'star')
 assert found, 'search empty'
 check('Search results', ['folder' if m['items'][i][2] else 'video' for i in found])
-# Plugin root fallback: every entry is a landscape card
-check('Plugin root', ['folder'] * 8)
+# Plugin root: Collections, New Arrivals, Genres, My List, Search, Read Me,
+# Support Us, Check for update. All are action cards, none are videos.
+check('Plugin root', ['action'] * 8)
+print('PASS Utilities', len(utilities))
 print('IDS', json.dumps({'director': person, 'mixed': mixed, 'mixed_name': m['items'][mixed][0], 'director_name': m['items'][person][0]}))
 `);
+  assert.match(out, /PASS Utilities/);
+  assert.match(out, /PASS Folder with Back, Sort, Shuffle, Support Us/);
   assert.match(out, /PASS Collections/);
   assert.match(out, /PASS Director folder/);
   assert.match(out, /PASS Nested mixed folder/);

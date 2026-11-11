@@ -116,9 +116,10 @@
 		<param name="focused" default="false" />
 	</include>
 	<!-- Both browser views include this. The cell height never changes with the
-	     focused item: a folder shows the landscape card, a video shows the poster
-	     (drawn down across the cells shapes.pack reserved for it), a spacer shows
-	     nothing. View id and Container.Content do not choose the shape. -->
+	     focused item. Landscape card: a folder, and every utility (Sort, Shuffle,
+	     Support Us, Read Me, Check for update, and the Back/Up row, which has no
+	     fefc_kind). Portrait poster: a video file only. A spacer is the cell under
+	     a poster and draws nothing. View id and Container.Content do not choose the shape. -->
 	<include name="FefcBrowser">
 		<param name="id" default="501"/>
 		<definition>

@@ -1,8 +1,11 @@
 """The only place a listing decides landscape versus portrait.
 
-A collection, folder, document, or tool is a landscape card. A video file is a
-portrait poster. The rule does not depend on which view Kodi last saved, on
-Container.Content, or on which item is focused.
+A collection, a folder, and every utility button is a landscape card. That
+includes Sort, Shuffle, Back/Up, Support Us, Read Me, Read First, Check for
+update, Link/Sync My List, Recently Opened, Downloads, and the same kind of
+non-video control. Only an actual video file is a portrait poster. The rule
+does not depend on which view Kodi last saved, on Container.Content, or on
+which item is focused.
 
 Kodi picks one item layout for a whole container from the focused item, and a
 wraplist is a single column, not a grid. That is why the rule kept flipping:
@@ -43,6 +46,9 @@ def kind_for_container(is_container):
 
 
 def shape_for_kind(kind):
+    """Portrait is only a video file. A missing kind is Kodi's Back/Up row.
+    folder and action (Sort, Shuffle, Support Us, Read Me, Check for update,
+    and the same buttons) are landscape cards."""
     if kind == KIND_VIDEO:
         return PORTRAIT
     if kind == KIND_SPACER:
