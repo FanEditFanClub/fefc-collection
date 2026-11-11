@@ -92,6 +92,14 @@ assert built.startswith('StartAndroidActivity(com.android.packageinstaller,')
 phone = updateflow.installer_builtin('content://com.fefc.kodi.fefcupdate/ext/FEFC-update.apk', updateflow.installer_package_for('com.fefc.kodi'))
 assert phone.startswith('StartAndroidActivity(com.google.android.packageinstaller,')
 assert updateflow.installer_builtin('') == ''
+assert updateflow.version_key('0.6 Beta') == (0, 6, 0)
+assert updateflow.version_key('0.6') == updateflow.version_key('0.6.0')
+assert updateflow.release_is_newer('0.6 Beta', 1, '0.5.5 Beta', 99)
+assert updateflow.release_is_newer('0.6.1', 2, '0.6 Beta', 50)
+assert updateflow.release_is_newer('0.6.10', 3, '0.6.9', 80)
+assert not updateflow.release_is_newer('0.6 Beta', 4, '0.6.0', 4)
+assert updateflow.release_is_newer('0.6.0', 5, '0.6', 4)
+assert not updateflow.release_is_newer('0.5.5 Beta', 100, '0.6 Beta', 1)
 print('ok')
 `);
   assert.equal(out, 'ok');
@@ -99,6 +107,7 @@ print('ok')
   assert.doesNotMatch(svc, /Dialog\.Close\(all,true\)/);
   assert.doesNotMatch(svc, /_record_installed_build\(new\)/);
   assert.match(svc, /state='checking'/);
+  assert.match(svc, /release_is_newer/);
   assert.match(svc, /state='failed'/);
   assert.match(svc, /Downloading %s: %d%% \(%d \/ %d MB\)/);
 });

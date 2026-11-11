@@ -456,7 +456,8 @@ def check_update(manual=False, prompt=True):
             prog.close()
         except Exception:
             pass
-    avail = int(new.get('build', 0)) > int(cur.get('build', 0))
+    from resources.lib.updateflow import release_is_newer
+    avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
     set_update_state(cur, new, avail)
     if _updating():
         if manual:

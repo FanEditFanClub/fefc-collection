@@ -1,7 +1,7 @@
 {
  "versions": [
   {
-   "version": "0.5.6 Beta",
+   "version": "0.6 Beta",
    "date": "2026-11-10",
    "notes": [
     "Back returns to the previous screen again on Home, Search, folders, My List, New Arrivals, details, Support Us and Settings.",
