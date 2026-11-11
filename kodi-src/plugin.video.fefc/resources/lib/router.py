@@ -313,7 +313,7 @@ class Router:
         info = catalog.video_info(m, vid)
         title = catalog.display_title(v[0])
         li = xbmcgui.ListItem(title, offscreen=True)
-        art = catalog.poster_for(m, base, vid)
+        art = catalog.poster_for(m, base, vid) or 'special://skin/media/fefc-video-poster.png'
         from . import shapes
         shapes.stamp(li, 'video', art)
         on = self.mydb().has(vid)
@@ -398,7 +398,7 @@ class Router:
             return {'root': 'Fan Edit Fan Club', 'genres': 'Genres', 'recent': 'New Arrivals', 'history': 'Recently Opened', 'people': 'Actors & Directors'}.get(a) or {
                 'genre': self.params.get('genre', 'Genre'),
                 'mylist': 'My List',
-                'search': 'Fan Edit Optimus'}.get(a, 'Fan Edit Fan Club')
+                'search': 'Search'}.get(a, 'Fan Edit Fan Club')
         except Exception:
             return 'Fan Edit Fan Club'
 
@@ -1952,29 +1952,36 @@ class OptimusWindow(xbmcgui.WindowDialog):
         art_w = int(round(art_h * 222 / 278.0))
         self.art = xbmcgui.ControlImage(0, 12, art_w, art_h, self._still, aspectRatio=2)
         self.addControl(self.art)
-        # One left margin for the whole block, vertically centered beside Optimus.
+        # Title, then the bar. Left aligned and vertically centered beside Optimus.
+        # No second line: the old "Optimus is watching..." cue stays in optimusplan for the web app only.
         x = art_w + 36
         width = 1280 - x - 48
-        title_h, gap, bar_h = 50, 28, 76
+        title_h, gap, bar_h = 56, 22, 76
         block = title_h + gap + bar_h
-        y = max(28, (menu_top - 20 - block) // 2)
-        self.addControl(xbmcgui.ControlLabel(x, y, width, title_h, optimusplan.TITLE, font='font11_tile', textColor='FFFFFFFF', alignment=0x00000001))
+        y = max(36, (menu_top - 24 - block) // 2)
+        self.addControl(xbmcgui.ControlLabel(x, y, width, title_h, optimusplan.TITLE, font='font13_title', textColor='FFFFFFFF', alignment=0x00000004))
         bar_y = y + title_h + gap
-        # The button is the bar. Focus starts here, so the text caret stays hidden until Select.
+        # The button is the bar. Focus starts here. The edit is parked off screen so no caret shows.
         self.bar_btn = xbmcgui.ControlButton(
             x, bar_y, width, bar_h, '',
             focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png',
             textColor='00FFFFFF', focusedColor='00FFFFFF')
         self.addControl(self.bar_btn)
-        icon = 32
-        self.addControl(xbmcgui.ControlImage(x + 28, bar_y + (bar_h - icon) // 2, icon, icon, 'fefc-ic-search.png', aspectRatio=2))
+        icon = 36
+        pad = 36
+        self.addControl(xbmcgui.ControlImage(x + pad, bar_y + (bar_h - icon) // 2, icon, icon, 'fefc-ic-search.png', aspectRatio=2))
         blank = _media_file('fefc-blank.png')
-        # The edit starts to the right of the icon, so a caret cannot sit on the bar's left edge.
-        self.edit = xbmcgui.ControlEdit(x + 28 + icon + 16, bar_y + (bar_h - 48) // 2, width - 28 - icon - 40, 48, '',
+        self._edit_home = (x + pad + icon + 18, bar_y + (bar_h - 48) // 2, width - pad - icon - 56, 48)
+        self.edit = xbmcgui.ControlEdit(-400, -200, self._edit_home[2], self._edit_home[3], '',
                                          font='font13', textColor='FFFFFFFF', focusTexture=blank, noFocusTexture=blank)
         self.addControl(self.edit)
-        self.placeholder = xbmcgui.ControlLabel(x, bar_y, width, bar_h, 'Search', font='font13_title',
-                                                 textColor='FFB7C3D4', alignment=6)
+        try:
+            self.edit.setVisible(False)
+        except Exception:
+            pass
+        ph_x = x + pad + icon + 18
+        self.placeholder = xbmcgui.ControlLabel(ph_x, bar_y, width - (ph_x - x) - 28, bar_h, 'Search', font='font13',
+                                                 textColor='FFB7C3D4', alignment=0x00000004)
         self.addControl(self.placeholder)
         self._opening = False
         self.menu, self.sound_icon = _add_icon_bar(self, self.bar_btn)
@@ -2027,10 +2034,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
                 if self._draft():
                     self._submit()
                     return
-                try:
-                    self.setFocus(self.bar_btn)
-                except Exception:
-                    pass
+                self._park_edit()
                 self._resume_anim()
             if self._anim and self._frames:
                 try:
@@ -2060,10 +2064,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
         r = searchflow.submit(self._draft())
         if not r['ok']:
             xbmcgui.Dialog().notification('Search', r['status'], xbmcgui.NOTIFICATION_INFO, 3000)
-            try:
-                self.setFocus(self.bar_btn)
-            except Exception:
-                pass
+            self._park_edit()
             self._resume_anim()
             return
         self.query = r['query']
@@ -2104,13 +2105,28 @@ class OptimusWindow(xbmcgui.WindowDialog):
             # Select on the field opens the keyboard and holds the loop on the current pose.
             self._halt_anim()
 
+    def _park_edit(self):
+        """Idle focus stays on the bar. The field is off screen, so no caret is drawn."""
+        try:
+            self.edit.setPosition(-400, -200)
+            self.edit.setVisible(False)
+        except Exception:
+            pass
+        try:
+            self.setFocus(self.bar_btn)
+        except Exception:
+            pass
+
     def _open_keyboard(self):
-        """Move into the field and open the keyboard. Idle focus stays on the bar, so no caret shows."""
+        """Move the field into the bar and open the keyboard."""
         if self._opening or self._closed:
             return
         self._opening = True
         self._halt_anim()
         try:
+            ex, ey, ew, eh = self._edit_home
+            self.edit.setPosition(ex, ey)
+            self.edit.setVisible(True)
             self.setFocus(self.edit)
         except Exception:
             self._opening = False

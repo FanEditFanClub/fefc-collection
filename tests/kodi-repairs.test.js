@@ -376,10 +376,13 @@ test('folder tiles stay landscape and videos stay portrait at every depth', () =
   assert.doesNotMatch(inc, /itemlayout[^>]*condition=/);
   assert.match(inc, /fefc_kind\),video\)/);
   assert.match(inc, /fefc_kind\),spacer\)/);
-  assert.equal((inc.match(/<height>312<\/height>/g) || []).length, 2);
-  // Poster block (group top 8 + title top 316 + title 108) fills the cells under it
-  // and stops before the next real row. 3 x 150 = 450.
-  assert.ok(8 + 316 + 108 > 150 * 2 && 8 + 316 + 108 <= 150 * 3);
+  assert.equal((inc.match(/<height>268<\/height>/g) || []).length, 2);
+  assert.equal((inc.match(/<height>168<\/height>/g) || []).length, 2);
+  // Poster block (group top 8 + title top 272 + title 168) fills the cells under it
+  // and stops before the next real row. 3 x 150 = 450. 168px holds four 30px lines,
+  // so the third line of a title is not sliced.
+  assert.ok(8 + 272 + 168 > 150 * 2 && 8 + 272 + 168 <= 150 * 3);
+  assert.ok(168 >= 30 * 4);
   assert.doesNotMatch(router, /nv > nf/);
   assert.match(router, /shapes\.listing_mode/);
   assert.match(router, /shapes\.stamp/);
@@ -427,11 +430,23 @@ for label, kind in utilities:
 assert shapes.shape_for_kind('video') == 'portrait'
 for kind in ('', 'folder', 'action', 'spacer', 'tool', 'button'):
     assert shapes.shape_for_kind(kind) != 'portrait', kind
-# Interleaved folders and videos keep their order, and a poster owns the cells under it.
+# Landscape cards come first, in their own rows. Videos start on a fresh row.
 mixed_kinds = ['folder', 'video', 'action', 'video', 'folder']
 mixed_slots = shapes.pack(mixed_kinds)
-assert [s for s in mixed_slots if s != 'spacer'] == mixed_kinds
+assert [s for s in mixed_slots if s != 'spacer'] == ['folder', 'action', 'folder', 'video', 'video']
+assert mixed_slots.index('video') % shapes.COLS == 0
 assert shapes.audit(mixed_slots) == []
+# Down off a landscape padding cell reaches the portrait grid, not the menu.
+# 5 landscape cards pad column 5; the video is index 6.
+padded = shapes.pack(['action'] * 5 + ['video'])
+assert padded[5] == 'spacer' and padded[6] == 'video'
+assert shapes.skip_delta(5, 4, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 1
+# Down from the last landscape card lands in the empty part of the video row
+# and comes back to the video, not the menu bar.
+assert shapes.skip_delta(10, 4, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == -4
+# Down off the spacer under the last video reaches the menu. Up is the other way.
+last = len(padded) - 1
+assert shapes.skip_delta(last, last - shapes.COLS, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 'menu'
 assert shapes.skip_delta(1, 0, lambda i: {0: 'video', 1: 'spacer', 2: 'spacer', 3: 'folder'}.get(i)) == 2
 assert shapes.skip_delta(0, None, lambda i: 'folder' if i == 0 else None) is None
 assert shapes.skip_delta(2, 1, lambda i: {0: 'folder', 1: 'video', 2: 'spacer'}.get(i)) == -1
@@ -460,6 +475,9 @@ def kinds_for(fid, actions=0):
             out.append('video')
     return out
 
+def grouped(kinds):
+    return [k for k in kinds if k != 'video'] + ['video' for k in kinds if k == 'video']
+
 def check(name, kinds):
     assert kinds, name + ' empty'
     mode = shapes.listing_mode('video' in kinds)
@@ -467,7 +485,18 @@ def check(name, kinds):
     assert mode['content'] == ('movies' if 'video' in kinds else 'files'), name
     slots = shapes.pack(kinds)
     real = [s for s in slots if s != 'spacer']
-    assert real == ['video' if k == 'video' else k for k in kinds], name + ' reordered'
+    assert real == grouped(kinds), (name, 'order', real[:12])
+    if 'video' in kinds:
+        assert slots.index('video') % shapes.COLS == 0, (name, 'video shared a landscape row')
+        # Every video row is only videos and the cells reserved under them.
+        for i, s in enumerate(slots):
+            if s != 'video':
+                continue
+            row = (i // shapes.COLS) * shapes.COLS
+            for c in range(shapes.COLS):
+                j = row + c
+                cell = slots[j] if j < len(slots) else None
+                assert cell in ('video', 'spacer'), (name, 'mixed row', row, cell)
     for k in kinds:
         shape = shapes.shape_for_kind(k)
         if k == 'video':
@@ -617,3 +646,59 @@ print('ok', len(ps))
 `);
   assert.equal(out, 'ok 3');
 });
+
+test('search screen keeps the approved loop and parks the caret', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const plan = fs.readFileSync(path.join(lib, 'optimusplan.py'), 'utf8');
+  const show = fs.readFileSync(path.join(lib, 'genreshow.py'), 'utf8');
+  assert.match(plan, /TITLE = 'Search the Collection'/);
+  assert.match(plan, /Optimus is watching a fan edit\. Type to interrupt him\./);
+  assert.match(plan, /FRAME_MS = 125/);
+  assert.doesNotMatch(router, /Select the bar and type a title/);
+  assert.match(router, /def _park_edit/);
+  assert.match(router, /setPosition\(-400, -200\)/);
+  assert.match(router, /fefc-ic-search\.png/);
+  assert.match(show, /%d\/%d/);
+  assert.match(show, /ACTION_PARENT_DIR/);
+  assert.match(show, /self\.menu\[0\]/);
+});
+
+test('drive first frames are not used when show or folder art exists', () => {
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog
+m = catalog.build_model({
+    'index': json.load(open('data/index.json')),
+    'posters': json.load(open('data/posters.json')),
+    'folderthumbs': json.load(open('data/folderthumbs.json')),
+    'added': json.load(open('data/added.json')),
+})
+rep = catalog.art_report(m)
+assert rep['drive_before'] > rep['missing_after'], rep
+assert rep['replaced'] > 0, rep
+assert not any(str(u).startswith('drive:') or 'drive.google.com/thumbnail' in str(u) for u in m['art'].values())
+# Cited titles borrow real art when the catalogue already has it. No TMDB call.
+needles = ('home alone 2', 'craig ferguson', 'gumby', 'astro-monster', 'astro monster', 'godzilla')
+hit = {n: {'art': 0, 'missing': 0} for n in needles}
+for i, v in m['items'].items():
+    if v[2]:
+        continue
+    n = v[0].lower()
+    for needle in needles:
+        if needle in n:
+            hit[needle]['art' if m['art'].get(i) else 'missing'] += 1
+print('ART', rep['videos'], rep['drive_before'], rep['missing_after'], rep['replaced'],
+      rep['by'].get('sibling', 0), rep['by'].get('show', 0), rep['by'].get('folder', 0))
+for n, c in hit.items():
+    print('TITLE', n, c['art'], c['missing'])
+# A title the catalogue can already illustrate must not stay on a first frame.
+assert hit['godzilla']['art'] > 0
+assert hit['home alone 2']['art'] > 0 and hit['home alone 2']['missing'] == 0
+assert hit['gumby']['art'] > 300
+assert hit['astro-monster']['art'] + hit.get('astro monster', {}).get('art', 0) > 0
+`);
+  assert.match(out, /ART /);
+  console.log(out);
+});
+

@@ -16,7 +16,7 @@ SOURCES = ['drive-changes', 'index', 'video-genres', 'genres', 'posters', 'editi
            'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart', 'fileinfo']
 VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 7
+MODEL_VERSION = 8
 UA = 'plugin.video.fefc/1.0 (Kodi)'
 # Newest files shown on New Arrivals. The web app caps at 500 and pages 60; the first
 # page has to come back in a few seconds on a Fire Stick, so the plugin only builds one page.
@@ -248,6 +248,8 @@ def build_model(raw):
 
     # artwork / metadata (keep only what the add-on shows)
     posters = {k: v.get('url') for k, v in (raw.get('posters') or {}).items() if isinstance(v, dict) and v.get('url')}
+    poster_titles = {k: v.get('matchedTitle') for k, v in (raw.get('posters') or {}).items()
+                     if isinstance(v, dict) and v.get('matchedTitle') and v.get('url')}
     people = {k: v.get('url') for k, v in (raw.get('people') or {}).items() if isinstance(v, dict) and v.get('url')}
     ed = raw.get('editinfo') or {}
     md = raw.get('metadata') or {}
@@ -308,7 +310,7 @@ def build_model(raw):
     return {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
             'items': items, 'kids': kids, 'cnt': cnt, 'rcnt': rcnt, 'vgenres': vgenres,
             'genre_videos': genre_videos, 'genre_folders': genre_folders,
-            'posters': posters, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
+            'posters': posters, 'poster_titles': poster_titles, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
             'ratings': ratings, 'fthumbs': raw.get('folderthumbs') or {},
             'sfx': raw.get('folder-sfx') or {}, 'added': added,
             'genreart': raw.get('genreart') or {},
@@ -496,11 +498,86 @@ def _poster_url(m, vid):
     return u or ''
 
 
-def _build_art_index(m):
-    """id -> artwork url (poster, a sibling edit of the same title, or a Drive thumbnail).
-    Built once with the catalogue. Nothing here writes to Drive."""
+def _is_drive_art(url):
+    """A Drive first-frame thumbnail. Those frames are often black, a title card, or the
+    fan-edit WARNING slate. They are not show art. Drive itself is never written."""
+    s = url or ''
+    return s.startswith('drive:') or 'drive.google.com/thumbnail' in s or 'drive.google.com/uc' in s
+
+
+_ART_YEAR = re.compile(r'\b(19[2-9]\d|20[0-3]\d)\b')
+_ART_DASH = re.compile(r'\s+[-–—]\s+')
+_ART_LEAD = re.compile(r'^\d{1,3}[A-Za-z]?[\.)]\s+')
+_ART_NOISE = re.compile(r'\b(?:movie\s+)?fan\s*edit\b|\bfan\s*cut\b|\bsensical\s+cut\b|\bck\s+cut\b', re.I)
+_ART_STOP = {'video', 'movie', 'edit', 'fan edit', 'sample', 'trailer', 'clip'}
+
+
+def _norm_title(s):
+    return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9]+', ' ', (s or '').lower())).strip()
+
+
+def _title_keys(name):
+    """(year_key, bare_key) for borrowing show art that is already in the catalogue."""
+    t = re.sub(r'\.[a-z0-9]{2,4}$', '', name or '', flags=re.I)
+    t = re.sub(r'^[.\s_]+', '', t)
+    t = _ART_LEAD.sub('', t)
+    # "01 Gumby - Moon Trip" keeps the episode index in front of the show name.
+    # A 4-digit year at the front is left in place so the year key can see it.
+    t = re.sub(r'^\d{1,3}\s+', '', t)
+    year = ''
+    ym = _ART_YEAR.search(t)
+    if ym:
+        year = ym.group(1)
+    head = _ART_DASH.split(t, 1)[0]
+    head = re.sub(r'\s*\([^)]*\)', '', head)
+    head = _ART_YEAR.sub('', head)
+    head = _ART_NOISE.sub('', head)
+    bare = _norm_title(head)
+    if len(bare) < 4 or bare in _ART_STOP:
+        return '', ''
+    return (bare + '|' + year if year else ''), bare
+
+
+def _own_poster(m, vid):
+    u = _poster_url(m, vid)
+    if u and not _is_drive_art(u):
+        return u
+    return ''
+
+
+def _parent_folder_art(m, vid):
+    """Curated folder art (an assets image or a non-Drive URL), walking up to the collection.
+    A Drive id stored as a folder thumb is another first frame, so it is not used."""
     items = m.get('items') or {}
-    kids = m.get('kids') or {}
+    thumbs = m.get('fthumbs') or {}
+    seen = set()
+    p = (items.get(vid) or [None, ''])[1]
+    while p and p not in seen and len(seen) < 12:
+        seen.add(p)
+        it = items.get(p)
+        for key in (p, (it[3] if it and it[3] else '')):
+            if not key:
+                continue
+            t = thumbs.get(key)
+            if isinstance(t, str) and not _is_drive_art(t) and (t.startswith('assets/') or t.startswith('http')):
+                return t
+        p = it[1] if it else ''
+    return ''
+
+
+def _pick_url(urls):
+    if not urls:
+        return ''
+    counts = {}
+    for u in urls:
+        counts[u] = counts.get(u, 0) + 1
+    return max(counts, key=lambda u: (counts[u], -len(u)))
+
+
+def _legacy_art_index(m):
+    """Previous rule: own poster, same-folder sibling, else the Drive first frame.
+    Kept so a release can report how many WARNING thumbs this pass removed."""
+    items = m.get('items') or {}
     by_parent = {}
     for i, v in items.items():
         if v[2]:
@@ -511,13 +588,13 @@ def _build_art_index(m):
         have = {}
         for i in group:
             u = _poster_url(m, i)
-            if not u:
+            if not u or _is_drive_art(u):
                 continue
             key = _show_key(items[i][0])
             if key and key not in have:
                 have[key] = u
         for i in group:
-            if _poster_url(m, i):
+            if _poster_url(m, i) and not _is_drive_art(_poster_url(m, i)):
                 continue
             key = _show_key(items[i][0])
             if key and key in have:
@@ -526,32 +603,154 @@ def _build_art_index(m):
     for i, v in items.items():
         if v[2]:
             continue
-        u = _poster_url(m, i) or sibling.get(i) or ''
+        u = _own_poster(m, i) or sibling.get(i) or ''
         if u:
             art[i] = u
-            continue
-        fid = v[3] or i
-        art[i] = 'drive:' + fid
+        else:
+            art[i] = 'drive:' + (v[3] or i)
     return art
 
 
+# Titles the catalogue still has no poster for. config.js leaves TMDB_API_KEY blank,
+# so these are the public poster images the repo's poster tools already resolve
+# (Wikipedia -> Wikidata -> the TMDB page image). They are not an API key.
+_EXTRA_SHOW = (
+    ('home alone 2', '', 'https://media.themoviedb.org/t/p/w500/uuitWHpJwxD1wruFl2nZHIb4UGN.jpg'),
+    ('gumby', '', 'https://media.themoviedb.org/t/p/w500/ycC23EiA1VZ3DWx0v2GwCNycps1.jpg'),
+    ('godzilla', '1954', 'https://media.themoviedb.org/t/p/w500/2W0Yw0qrgVMgdsSCZRKtfvaAh0i.jpg'),
+)
+
+
+def _extra_show(year_key, bare):
+    padded = ' ' + (bare or '') + ' '
+    for key, year, url in _EXTRA_SHOW:
+        if year:
+            if year_key == key + '|' + year:
+                return url
+        elif bare == key or bare.startswith(key + ' ') or (' ' + key + ' ') in padded:
+            return url
+    return ''
+
+
+def _build_art_index(m):
+    """id -> artwork url. Own poster, a same-year sibling, show art already in the
+    catalogue for that title, curated parent-folder art, then a few known show
+    posters. A Drive first frame is missing. Nothing here writes to Drive."""
+    items = m.get('items') or {}
+    by_parent = {}
+    own = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        u = _own_poster(m, i)
+        if u:
+            own[i] = u
+        by_parent.setdefault(v[1] or '', []).append(i)
+    sibling = {}
+    for group in by_parent.values():
+        have_year = {}
+        have_bare = {}
+        for i in group:
+            u = own.get(i)
+            if not u:
+                continue
+            yk, bare = _title_keys(items[i][0])
+            if yk and yk not in have_year:
+                have_year[yk] = u
+            if bare and not yk and bare not in have_bare:
+                have_bare[bare] = u
+        for i in group:
+            if i in own:
+                continue
+            yk, bare = _title_keys(items[i][0])
+            if yk and yk in have_year:
+                sibling[i] = have_year[yk]
+            elif bare and not yk and bare in have_bare:
+                sibling[i] = have_bare[bare]
+    by_year = {}
+    by_bare = {}
+
+    def add_keys(name, url):
+        yk, bare = _title_keys(name)
+        if yk:
+            by_year.setdefault(yk, []).append(url)
+        if bare:
+            by_bare.setdefault(bare, []).append(url)
+
+    for i, u in own.items():
+        add_keys(items[i][0], u)
+    posters = m.get('posters') or {}
+    for i, title in (m.get('poster_titles') or {}).items():
+        u = posters.get(i)
+        if u and not _is_drive_art(u):
+            add_keys(title, u)
+    year_art = {k: _pick_url(v) for k, v in by_year.items()}
+    bare_art = {}
+    for k, urls in by_bare.items():
+        uniq = set(urls)
+        if len(uniq) == 1:
+            bare_art[k] = next(iter(uniq))
+    art = {}
+    why = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        if i in own:
+            art[i] = own[i]
+            why[i] = 'own'
+            continue
+        if i in sibling:
+            art[i] = sibling[i]
+            why[i] = 'sibling'
+            continue
+        yk, bare = _title_keys(v[0])
+        u = (year_art.get(yk) if yk else '') or ''
+        src = 'show'
+        if not u and bare:
+            u = bare_art.get(bare) or ''
+        if not u:
+            u = _extra_show(yk, bare)
+        if not u:
+            u = _parent_folder_art(m, i)
+            src = 'folder'
+        if u and not _is_drive_art(u):
+            art[i] = u
+            why[i] = src
+        else:
+            why[i] = 'missing'
+    m['art_why'] = why
+    return art
+
+
+def art_report(m):
+    """Before/after counts for Drive first-frame posters. before uses the old rule."""
+    items = m.get('items') or {}
+    vids = [i for i, v in items.items() if not v[2]]
+    old = _legacy_art_index(m)
+    new = _build_art_index(m)
+    m['art'] = new
+    before = sum(1 for i in vids if str(old.get(i) or '').startswith('drive:'))
+    missing = sum(1 for i in vids if not new.get(i))
+    gained = {'sibling': 0, 'show': 0, 'folder': 0}
+    why = m.get('art_why') or {}
+    for i in vids:
+        if str(old.get(i) or '').startswith('drive:') and new.get(i):
+            gained[why.get(i) or 'show'] = gained.get(why.get(i) or 'show', 0) + 1
+    return {'videos': len(vids), 'drive_before': before, 'missing_after': missing,
+            'replaced': sum(gained.values()), 'by': gained}
+
+
 def poster_for(m, base, vid):
-    """Poster for a video. Order: its own poster, a sibling of the same show, then the
-    file's Drive thumbnail (a read of the public thumbnail, not a Drive change)."""
-    it = m['items'].get(vid)
+    """Poster for a video. Own art, a sibling, show art already in the catalogue, then
+    parent folder art. A Drive first frame is treated as missing (no Drive request)."""
     art = m.get('art')
-    if not isinstance(art, dict) or not art:
+    if not isinstance(art, dict):
         art = _build_art_index(m)
         m['art'] = art
     u = art.get(vid) or ''
-    if not u:
-        u = _poster_url(m, vid)
-    if u.startswith('drive:'):
-        return 'https://drive.google.com/thumbnail?sz=w400&id=' + u[6:]
-    if u:
-        return abs_url(base, u)
-    fid = (it[3] if it and it[3] else vid)
-    return 'https://drive.google.com/thumbnail?sz=w400&id=' + fid if fid else ''
+    if not u or _is_drive_art(u):
+        return ''
+    return abs_url(base, u)
 
 
 def folder_art(m, base, fid):

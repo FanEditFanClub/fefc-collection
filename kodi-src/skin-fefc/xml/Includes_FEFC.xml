@@ -73,29 +73,32 @@
 		</definition>
 		<param name="focused" default="false" />
 	</include>
-	<!-- Portrait poster tile for video files (slot 242x425): poster 222x333, two-line title below -->
+	<!-- Portrait poster tile for video files. The title box is four lines of the
+	     30px face (about 42px of line height each) so a third line is not sliced
+	     through the glyphs. Group top 8 + title top 272 + title 168 = 448, inside
+	     the 3 grid rows (450) the poster reserves. -->
 	<include name="FefcPosterTile">
 		<definition>
 			<control type="image">
-				<left>0</left><top>0</top><width>222</width><height>312</height>
+				<left>0</left><top>0</top><width>222</width><height>268</height>
 				<texture border="20">fefc-tile.png</texture>
 			</control>
 			<control type="image">
-				<left>4</left><top>4</top><width>214</width><height>304</height>
+				<left>4</left><top>4</top><width>214</width><height>260</height>
 				<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
 				<aspectratio scalediffuse="false">scale</aspectratio>
 			</control>
 			<control type="image">
-				<left>0</left><top>0</top><width>222</width><height>312</height>
+				<left>0</left><top>0</top><width>222</width><height>268</height>
 				<texture border="20">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
-			<!-- 0.5.6: 30px, three lines, centered. A label control ellipsizes inside a
+			<!-- 30px, up to four full lines, centered. A label control ellipsizes inside a
 			     list even with wrapmultiline, so this is a textbox. The focused tile
-			     scrolls the full name instead. The block stays inside 3 grid rows
+			     scrolls the full name. The block stays inside 3 grid rows
 			     (shapes.SPAN) so the cells under a poster are covered, not empty. -->
 			<control type="textbox">
-				<left>-6</left><top>316</top><width>234</width><height>108</height>
+				<left>-6</left><top>272</top><width>234</width><height>168</height>
 				<align>center</align>
 				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>
@@ -103,7 +106,7 @@
 				<visible>!$PARAM[focused]</visible>
 			</control>
 			<control type="label">
-				<left>-6</left><top>316</top><width>234</width><height>108</height>
+				<left>-6</left><top>272</top><width>234</width><height>168</height>
 				<aligny>top</aligny><align>center</align>
 				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>

@@ -51,7 +51,7 @@ def open_genre_board(entries):
             n = len(chunk)
             focus = min(focus, max(0, n - 1))
             self._focus = focus
-            self.indicator.setLabel('%d / %d' % (page + 1, len(pages)))
+            self.indicator.setLabel('%d/%d' % (page + 1, max(1, len(pages))))
             self.prev_btn.setVisible(page > 0)
             self.next_btn.setVisible(page < len(pages) - 1)
             for i, (label, _key, art) in enumerate(chunk):
@@ -112,7 +112,9 @@ def open_genre_board(entries):
                 self._show(self.page - 1, i + 2)
                 return
             from .router import _dialog_back
-            if _dialog_back(action):
+            # Remote Back, the Android back key, and Backspace. _dialog_back covers
+            # the first two and plays the cue; ParentDir and Backspace still close.
+            if aid in (xbmcgui.ACTION_PARENT_DIR, 110) or _dialog_back(action):
                 self.picked = ''
                 self.close()
 

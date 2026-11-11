@@ -15,9 +15,11 @@ view (or a directory served from cache, which does not re-run the plugin)
 could also put videos back on the landscape-only panel.
 
 Both browser views are the same 6-across panel. The cell is always the
-landscape row height. A portrait poster is taller than one cell, so pack()
-reserves the cells underneath it. Those cells are not a blank band: the poster
-is drawn down across them, and the next real row starts where the poster ends.
+landscape row height. Landscape cards fill their own rows. Videos then start
+on the next row as a uniform portrait grid. A poster is taller than one cell,
+so pack() reserves the cells underneath that whole video row. Those cells are
+not a blank band: the poster and its title are drawn down across them, and the
+next video row starts where the poster ends.
 """
 
 KIND_FOLDER = 'folder'
@@ -89,49 +91,33 @@ def stamp(li, kind, art=''):
 
 
 def pack(kinds):
-    """Lay kinds into the 6-across grid without reordering them.
+    """Landscape cards first, each in its own rows. Videos start on a fresh row.
 
-    A video reserves the cells under it (SPAN - 1 rows, same column). The next
-    real item goes in the next free cell, so a folder never sits underneath a
-    poster and a poster never shares its column with the next row.
+    Back, Sort, Shuffle, folders and other actions stay in the order they were
+    added, then every video, in the order it was added. A short landscape row
+    is padded so the first video is in column 0. Each video row reserves the
+    cells under it, so posters do not overlap the next row or sit in an
+    offset column.
     """
+    land = [k for k in kinds if k != KIND_VIDEO]
+    vids = [KIND_VIDEO for k in kinds if k == KIND_VIDEO]
     rows = []
-
-    def ensure(r):
-        while len(rows) <= r:
-            rows.append([None] * COLS)
-
-    r = c = 0
-    for kind in kinds:
-        while True:
-            ensure(r)
-            if rows[r][c] is None:
-                break
-            c += 1
-            if c == COLS:
-                c = 0
-                r += 1
-        rows[r][c] = KIND_VIDEO if kind == KIND_VIDEO else kind
-        if kind == KIND_VIDEO:
-            for k in range(1, SPAN):
-                ensure(r + k)
-                if rows[r + k][c] is None:
-                    rows[r + k][c] = KIND_SPACER
-        c += 1
-        if c == COLS:
-            c = 0
-            r += 1
+    if land:
+        padded = list(land)
+        if vids and len(padded) % COLS:
+            padded.extend([KIND_SPACER] * (COLS - (len(padded) % COLS)))
+        for i in range(0, len(padded), COLS):
+            rows.append(padded[i:i + COLS])
+    for i in range(0, len(vids), COLS):
+        chunk = list(vids[i:i + COLS])
+        if len(chunk) < COLS:
+            chunk.extend([KIND_SPACER] * (COLS - len(chunk)))
+        rows.append(chunk)
+        for _ in range(SPAN - 1):
+            rows.append([KIND_SPACER] * COLS)
     flat = []
-    for ri, row in enumerate(rows):
-        last = -1
-        for i, cell in enumerate(row):
-            if cell is not None:
-                last = i
-        if last < 0:
-            continue
-        end = COLS if ri < len(rows) - 1 else last + 1
-        for i in range(end):
-            flat.append(row[i] if row[i] is not None else KIND_SPACER)
+    for row in rows:
+        flat.extend(row)
     return flat
 
 
@@ -177,6 +163,15 @@ def audit(slots):
                     break
             if covered:
                 continue
+            # The empty cells that finish a landscape row so videos start at
+            # column 0. They are not a band between the two sections.
+            line = rows[r]
+            last_real = -1
+            for i, cell in enumerate(line):
+                if cell not in (None, KIND_SPACER):
+                    last_real = i
+            if last_real >= 0 and KIND_VIDEO not in line and c > last_real:
+                continue
             later = False
             for rr in range(r + 1, len(rows)):
                 if rows[rr][c] not in (None, KIND_SPACER):
@@ -188,29 +183,69 @@ def audit(slots):
 
 
 def skip_delta(pos, origin, lookup):
-    """Where to send focus when it lands on a reserved poster cell.
+    """Where to send focus when it lands on a reserved or padding cell.
 
     pos is the absolute index. lookup(i) returns the kind, or None past either
     end. origin is the previous index (None if unknown). Returns None when the
     current cell is a real tile, a relative delta to a real tile, or 'menu'
-    when moving down off the last row.
+    when moving down off the last row. A padding cell on a landscape row moves
+    to a real tile on that row, or on to the portrait grid. Up from a poster
+    cell returns to a real tile. Down off the last poster row reaches the menu.
     """
     if lookup(pos) != KIND_SPACER:
         return None
     delta = 0 if origin is None else pos - origin
     direction = 1 if delta >= 0 else -1
-    for step in range(1, 36):
-        j = pos + direction * step
-        k = lookup(j)
-        if not k:
+    covered = False
+    for back in range(1, SPAN):
+        if lookup(pos - back * COLS) == KIND_VIDEO:
+            covered = True
             break
-        if k != KIND_SPACER:
-            return j - pos
+
+    def ahead(step_dir, limit):
+        for step in range(1, limit):
+            j = pos + step_dir * step
+            k = lookup(j)
+            if not k:
+                return None
+            if k != KIND_SPACER:
+                return j - pos
+        return None
+
+    if not covered:
+        row = (pos // COLS) * COLS
+        for step in range(1, COLS):
+            j = pos + direction * step
+            if j < row or j >= row + COLS:
+                break
+            k = lookup(j)
+            if k and k != KIND_SPACER:
+                return j - pos
+        # Nothing further that way. A video on this row (Down landed in the
+        # empty part of the poster row) or the next real row still counts.
+        found = ahead(direction, 48)
+        if found is not None:
+            return found
+        for step in range(1, COLS):
+            j = pos - direction * step
+            if j < row or j >= row + COLS:
+                break
+            k = lookup(j)
+            if k and k != KIND_SPACER:
+                return j - pos
+        if direction > 0:
+            return 'menu'
+        found = ahead(-1, 48)
+        if found is not None:
+            return found
+        return 'menu'
+
+    found = ahead(direction, 36)
+    if found is not None:
+        return found
     if direction > 0 and (origin is None or delta > 1):
         return 'menu'
-    for step in range(1, 36):
-        j = pos - direction * step
-        k = lookup(j)
-        if k and k != KIND_SPACER:
-            return j - pos
+    found = ahead(-direction, 36)
+    if found is not None:
+        return found
     return 'menu'
