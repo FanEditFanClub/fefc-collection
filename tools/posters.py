@@ -50,17 +50,31 @@ def parse(name,parent):
     base=re.sub(r'\s+',' ',base)
     if not base or re.match(r'^(S\d+E\d+|LS\d+|\d+)',base) or len(base)<3:
         pn=by.get(parent,{}).get('name','');base=re.sub(r'\(.*?\)|season \d+|complete series','',pn,flags=re.I).strip(' -')
-    return base,cut,yr
+    parent_name=by.get(parent,{}).get('name','')
+    try:
+        from series_match import wants_tv, show_query
+        tv=wants_tv(name, parent_name)
+        if tv:
+            base=show_query(name) or base
+    except Exception:
+        tv=False
+    return base,cut,yr,tv
 norm=lambda s:re.sub(r'[^a-z0-9]+',' ',re.sub(r'&','and',s.lower())).strip()
 WP='https://en.wikipedia.org/w/api.php?'
 KIND=re.compile(r'film|series|television|tv |sitcom|show|miniseries|anime|cartoon|animated',re.I)
-def wiki(base,yr):
+def wiki(base,yr,tv=False):
     best=None
-    for qq in ([f'{base} {yr} film'] if yr else [])+[f'{base} film',f'{base} television series']:
+    if tv:
+        queries=[f'{base} television series', f'{base} TV series', base]
+    else:
+        queries=([f'{base} {yr} film'] if yr else [])+[f'{base} film', f'{base} television series']
+    for qq in queries:
         r=jget(WP+urllib.parse.urlencode(dict(action='query',format='json',generator='search',gsrsearch=qq,gsrlimit=6,prop='pageimages|description',piprop='thumbnail',pilicense='any',pithumbsize=300)))
         pages=sorted((r or {}).get('query',{}).get('pages',{}).values(),key=lambda p:p.get('index',9))
         for p in pages:
             if 'thumbnail' not in p or not KIND.search(p.get('description','')): continue
+            if tv and re.search(r'\(film\)', p.get('title') or '', re.I): continue
+            if tv and re.search(r'\bfilm\b', p.get('description') or '', re.I) and not re.search(r'series|television', (p.get('description') or '')+(p.get('title') or ''), re.I): continue
             t=re.sub(r'\s*\(.*?\)$','',p['title'])
             sc=difflib.SequenceMatcher(None,norm(t),norm(base)).ratio()
             if norm(t)==norm(base) or norm(t)==re.sub(r' (1|i)$','',norm(base)) or (':' in base and norm(t)==norm(base.split(':')[0])): sc=1.0
@@ -92,8 +106,8 @@ LIMIT=int(sys.argv[1]) if len(sys.argv)>1 else 10**9
 work=vids[:LIMIT]
 P={v['id']:parse(v['name'],v.get('parent')) for v in work}
 bases=collections.OrderedDict();cuts=collections.OrderedDict()
-for b,c,y in P.values():
-    bases.setdefault((b,y),None)
+for b,c,y,tv in P.values():
+    bases.setdefault((b,y,tv),None)
     if c: cuts.setdefault((b,c),None)
 cuts=collections.OrderedDict(list(cuts.items())[:int(os.environ.get('CUTS','1500'))])
 print('videos',len(work),'bases',len(bases),'cuts',len(cuts),flush=True)
@@ -105,13 +119,13 @@ with cf.ThreadPoolExecutor(10) as ex:
 print('fanedit done',sum(1 for v in cuts.values() if v),flush=True)
 out=json.load(open('data/posters.json')) if os.environ.get('ONLY') else {};cnt=collections.Counter();doubt=[]
 for v in work:
-    b,c,y=P[v['id']];cm=cuts.get((b,c)) if c else None
+    b,c,y,tv=P[v['id']];cm=cuts.get((b,c)) if c else None
     if cm:
         try:
             key=re.sub(r'[^a-z0-9]+','-',norm(cm['matchedTitle']))[:60]
             out[v['id']]=dict(url=save(cm['src'],key),source='custom',matchedTitle=cm['matchedTitle'],link=cm['link']);cnt['custom']+=1;continue
         except Exception as e: pass
-    w=bases.get((b,y))
+    w=bases.get((b,y,tv))
     if w:
         out[v['id']]={k:w[k] for k in ('url','source','matchedTitle','link')};cnt['original']+=1
         if w['score']<1: doubt.append((v['name'],w['matchedTitle'],w['score']))

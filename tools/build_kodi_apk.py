@@ -205,6 +205,9 @@ import json as _json
 _b = _json.load(open(bj)); _vf = os.path.join(root, 'kodi-src', 'fefc-version.txt')
 if os.path.exists(_vf): _b['version'] = open(_vf).read().strip()
 _b['pkg'] = PKG
+_vc_now = re.search(r"versionCode: '?(\d+)'?", open(os.path.join(dec, 'apktool.yml'), encoding='utf-8').read())
+if _vc_now:
+    _b['versionCode'] = int(_vc_now.group(1)) + int(_b.get('build') or 0)
 open(os.path.join(A, 'fefc-build.json'), 'w').write(_json.dumps(_b) + '\n')
 shutil.copy(os.path.join(root, 'kodi-src', 'FEFC-NOTICE.txt'), os.path.join(A, 'FEFC-NOTICE.txt'))
 # versionCode must rise with every FEFC build: with the stock code (2103000) on every update, Android/Fire OS treat each

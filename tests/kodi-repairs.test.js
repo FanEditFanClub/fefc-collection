@@ -75,6 +75,27 @@ assert updateflow.label_for('up_to_date') == 'Up to date'
 assert updateflow.label_for('available') == 'Update available'
 assert updateflow.label_for('failed') == 'Unable to check'
 assert updateflow.installed_from_apk({'build': 45}, {'build': 99})['build'] == 45
+# Installed APK is build N+1 while this process still has build N cached.
+# Both phone (com.fefc.kodi) and Fire TV (org.xbmc.kodi) packages.
+published = {'version': '0.6.2 Beta', 'build': 50}
+for pkg in ('com.fefc.kodi', 'org.xbmc.kodi'):
+    running = {'version': '0.6.2 Beta', 'build': 49, 'pkg': pkg}
+    live = {'version': '0.6.2 Beta', 'build': 50, 'pkg': pkg}
+    plan = updateflow.resume_plan(running, live, published)
+    assert plan['label'] == 'up_to_date', plan
+    assert plan['prompt'] is False
+    assert plan['clear_available'] is True
+    assert plan['restart'] is True
+    assert plan['installed']['build'] == 50
+# Same package still on N: do not clear or restart. A newer publish stays a normal check.
+stale = updateflow.resume_plan(
+    {'version': '0.6.2 Beta', 'build': 49, 'pkg': 'com.fefc.kodi'},
+    {'version': '0.6.2 Beta', 'build': 49, 'pkg': 'com.fefc.kodi'},
+    published)
+assert stale['restart'] is False and stale['label'] is None
+assert updateflow.build_from_version_code(2103000 + 50) == 50
+assert updateflow.parse_pm_path('package:/data/app/com.fefc.kodi/base.apk') == '/data/app/com.fefc.kodi/base.apk'
+assert updateflow.parse_dumpsys_version_code('versionCode=2103050 minSdk=24 targetSdk=34') == 2103050
 url, size, sha = updateflow.package_download({'url': 'http://org', 'sha256': 'aaa', 'packages': {'com.fefc.kodi': {'url': 'http://phone', 'sha256': 'bbb', 'size': 3}}}, 'com.fefc.kodi')
 assert url == 'http://phone' and sha == 'bbb'
 assert updateflow.package_download({'url': 'http://org', 'sha256': 'aaa'}, 'com.fefc.kodi')[0] == ''
@@ -108,6 +129,8 @@ print('ok')
   assert.doesNotMatch(svc, /_record_installed_build\(new\)/);
   assert.match(svc, /state='checking'/);
   assert.match(svc, /release_is_newer/);
+  assert.match(svc, /maybe_refresh_installed/);
+  assert.match(svc, /RestartApp/);
   assert.match(svc, /state='failed'/);
   assert.match(svc, /UpdatePopup/);
   assert.match(svc, /popup\.render\('verifying'/);
@@ -452,13 +475,15 @@ test('folder tiles stay landscape and videos stay portrait at every depth', () =
   assert.doesNotMatch(inc, /itemlayout[^>]*condition=/);
   assert.match(inc, /fefc_kind\),video\)/);
   assert.match(inc, /fefc_kind\),spacer\)/);
-  assert.equal((inc.match(/<height>268<\/height>/g) || []).length, 2);
-  assert.equal((inc.match(/<height>168<\/height>/g) || []).length, 2);
-  // Poster block (group top 8 + title top 272 + title 168) fills the cells under it
-  // and stops before the next real row. 3 x 150 = 450. 168px holds four 30px lines,
-  // so the third line of a title is not sliced.
-  assert.ok(8 + 272 + 168 > 150 * 2 && 8 + 272 + 168 <= 150 * 3);
-  assert.ok(168 >= 30 * 4);
+  assert.equal((inc.match(/<height>270<\/height>/g) || []).length, 4);
+  assert.equal((inc.match(/<width>180<\/width>/g) || []).length, 3);
+  assert.match(inc, /<aspectratio scalediffuse="false">keep<\/aspectratio>/);
+  assert.equal((inc.match(/<height>200<\/height>/g) || []).length, 2);
+  // Poster block (group top 8 + title top 278 + title 200) stays inside the
+  // four rows reserved under it. 4 x 150 = 600. The art box is 180x270 (2:3).
+  assert.ok(8 + 278 + 200 > 150 * 2 && 8 + 278 + 200 <= 150 * 4);
+  assert.ok(270 * 2 === 180 * 3);
+  assert.ok(200 >= 30 * 5);
   assert.doesNotMatch(router, /nv > nf/);
   assert.match(router, /shapes\.listing_mode/);
   assert.match(router, /shapes\.stamp/);
@@ -1037,5 +1062,175 @@ print('ok')
 `);
   assert.match(out, /^ok$/m);
   console.log(out);
+});
+
+test('0.6.3 one file once, details, download label, series posters', () => {
+  const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const info = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/DialogVideoInfo.xml'), 'utf8');
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(skin, /FefcDownloadLabel/);
+  assert.match(info, /\$VAR\[FefcDownloadLabel\]/);
+  assert.match(router, /fefc_download_label/);
+  assert.match(skin, /<left>0<\/left><top>278<\/top><width>250<\/width><height>200<\/height>/);
+  assert.match(skin, /<width>180<\/width><height>270<\/height>/);
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+sys.path.insert(0, 'tools')
+import catalog, pagepack
+from series_match import wants_tv, show_query
+items = {
+    'orig': ['Westworld Series - Part 2 - Best Edit.mp4', 'root', 0, ''],
+    'cut1': ['Westworld Series - Part 2 - Best Edit.mp4', 'nolan', 0, 'orig'],
+    'cut2': ['Westworld Series - Part 2 - Best Edit.mp4', 'ww', 0, 'orig'],
+    'a': ['Same Title.mp4', 'p', 0, ''],
+    'b': ['Same Title.mp4', 'q', 0, ''],
+    'god': ['The Godfather Part II.mp4', 'films', 0, ''],
+}
+m = {'items': items, 'fileinfo': {'orig': {'s': 100, 'd': 50}, 'a': {'s': 5, 'd': 9}, 'b': {'s': 5, 'd': 9}}}
+got = catalog.dedupe(m, ['cut2', 'orig', 'cut1'])
+assert got == ['orig'], got
+only = catalog.dedupe(m, ['cut1', 'cut2'])
+assert len(only) == 1, only
+same = catalog.dedupe(m, ['a', 'b', 'god'])
+assert 'god' in same and len(same) == 2, same
+assert wants_tv('Westworld Series - Part 2 - Best Edit.mp4', '')
+assert show_query('Westworld Series - Part 2 - Best Edit.mp4') == 'Westworld'
+assert not wants_tv('The Godfather Part II.mp4', 'Films')
+posters = json.load(open('data/posters.json'))
+ww = posters['1TFtwyFvze46em8ABzg90SVqsycWEqnQA']
+assert ww['matchedTitle'] == 'Westworld', ww
+assert 'film' not in ww['matchedTitle'].lower()
+assert 'tvmaze.com' in (ww.get('url') or '') + (ww.get('link') or '')
+p = pagepack.shipped_path()
+def all_hits(q):
+    idx, f, base = pagepack._open(p)
+    rows = pagepack._read(p, idx['search'])['rows']
+    toks = q.lower().split()
+    out = []
+    for row in rows:
+        extra = row[4] if len(row) > 4 and isinstance(row[4], str) else ''
+        hay = ((row[1] or '') + ' ' + extra).lower()
+        if all(t in hay for t in toks):
+            out.append(row)
+    return out
+for q in ('westworld', 'godfather'):
+    rows = all_hits(q)
+    ids = [r[0] for r in rows]
+    assert len(ids) == len(set(ids)), q
+    print('SEARCH', q, len(rows))
+assert any('Part 2' in (r[1] or '') for r in all_hits('westworld'))
+part2 = [r for r in all_hits('westworld') if 'Part 2' in (r[1] or '')]
+assert len(part2) == 1, [r[1] for r in part2]
+meta = part2[0][5]
+assert isinstance(meta, list) and meta[0], meta
+assert 'Folder:' in meta[0] or 'Size:' in meta[0] or 'GB' in meta[0], meta[0][:180]
+# genres and people still populated
+menu = [row['key'] for row in json.load(open('kodi-src/plugin.video.fefc/resources/genre-menu.json'))]
+for name in menu:
+    g = pagepack.genre_page(name, 0, p)
+    assert g and g['total'] > 0, name
+people = pagepack.people_page(0, p)
+assert people and people['total'] > 0
+print('GENRES', len(menu), 'PEOPLE', people['total'])
+print('ok')
+`);
+  assert.match(out, /^ok$/m);
+  console.log(out);
+});
+
+test('folder and details sounds pick from the full set each open', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const service = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
+  const catalog = fs.readFileSync(path.join(lib, 'catalog.py'), 'utf8');
+  assert.match(router, /li\.setProperty\('fefc_sfx'/);
+  assert.match(router, /play_choice\(rel/);
+  assert.match(router, /cache=False/);
+  assert.match(catalog, /def play_choice\(rel, sound_off=False\)/);
+  const start = service.indexOf('def details_sfx');
+  const details = service.slice(start, service.indexOf('\ndef ', start + 10));
+  const off = details.indexOf('FEFC.SoundOff');
+  const play = details.indexOf('playSFX');
+  assert.ok(off > 0 && play > off);
+  const out = py(String.raw`
+import os, sys, json
+sys.path.insert(0, 'kodi-src/plugin.video.fefc/resources/lib')
+import catalog, pagepack
+pagepack._CACHE.clear()
+sfx = json.load(open('data/folder-sfx.json'))
+def bases(paths):
+    return sorted({os.path.splitext(os.path.basename(p))[0] for p in paths})
+m = {'items': {
+    'ww': ['Westworld', 'root', 1, ''],
+    'p2': ['Westworld Series - Part 2.mkv', 'ww', 0, ''],
+    'nest': ['notes.mkv', 'sub', 0, ''],
+    'sub': ['Extras', 'ww', 1, ''],
+    'st': ['Stallone', 'root', 1, ''],
+    'rk': ['clip.mkv', 'disc', 0, ''],
+    'disc': ['Disc 1', 'st', 1, ''],
+    '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg': ['Nolan', 'root', 1, ''],
+    'nv': ['tenet.mkv', '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg', 0, ''],
+    'ag': ['Armageddon', 'root', 1, ''],
+    'av': ['scene.mkv', 'inner', 0, ''],
+    'inner': ['Season 1', 'ag', 1, ''],
+    'quiet': ['Cooking', 'root', 1, ''],
+    'qv': ['recipe.mkv', 'quiet', 0, ''],
+}, 'sfx': sfx}
+ww = catalog.sfx_for(m, 'ww')
+want = {'westworld-violent', 'westworld-paint', 'westworld-theme', 'westworld-welcome'}
+assert set(bases(ww)) == want
+assert set(bases(catalog.sfx_up(m, 'p2'))) == want
+assert set(bases(catalog.sfx_up(m, 'nest'))) == want
+assert set(bases(catalog.sfx_for(m, 'sub'))) == want
+opens = {catalog.sfx_wav(ww) for _ in range(80)}
+assert opens == {'kodi-sfx/' + b + '.wav' for b in want}
+for pool in (ww, catalog.sfx_for(m, 'st'), catalog.sfx_for(m, 'ag'), catalog.sfx_for(m, '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg')):
+    assert catalog.play_choice(pool, True) == ''
+assert catalog.sfx_up(m, 'qv') == []
+st = catalog.sfx_for(m, 'st')
+assert len(st) >= 6 and set(bases(catalog.sfx_up(m, 'rk'))) == set(bases(st))
+assert len({catalog.sfx_wav(st) for _ in range(40)}) >= 4
+ag = catalog.sfx_for(m, 'ag')
+assert len(ag) >= 6 and set(bases(catalog.sfx_for(m, 'inner'))) == set(bases(ag))
+assert set(bases(catalog.sfx_up(m, 'av'))) == set(bases(ag))
+assert len({catalog.sfx_wav(ag) for _ in range(40)}) >= 4
+nlset = catalog.sfx_for(m, '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg')
+nlbases = set(bases(nlset))
+for clip in ('nolan-braaam', 'nolan-dark-knight-theme', 'nolan-dream-collapsing', 'nolan-interstellar-mountains', 'nolan-now-i-am-become-death'):
+    assert clip in nlbases, clip
+assert len(nlbases) >= 15
+assert set(bases(catalog.sfx_up(m, 'nv'))) == nlbases
+assert len({catalog.sfx_wav(nlset) for _ in range(60)}) >= 4
+p = pagepack.shipped_path()
+idx, f, base = pagepack._open(p)
+doc = pagepack._read(p, idx['folders']['1kqkGTnoOlnst6DBwnBz1phPK2hvTz5X5'])
+assert set(bases(doc['sfx'])) == want
+files = [r for r in doc['rows'] if not r[2]]
+assert len(files) == 11
+for r in files:
+    assert set(bases(r[6])) == want
+    assert catalog.sfx_wav(r[6]).startswith('kodi-sfx/westworld-')
+rows = pagepack._read(p, idx['search'])['rows']
+hits = [r for r in rows if not r[2] and 'westworld' in (r[1] or '').lower()]
+assert len(hits) == 11
+for r in hits:
+    assert set(bases(r[6])) == want
+stf = pagepack._read(p, idx['folders']['1ofrxewxyqYT_DfprG3iEmjnarIeWPJR-'])
+assert stf['name'] == 'Stallone' and len(bases(stf['sfx'])) >= 6
+assert len({catalog.sfx_wav(stf['sfx']) for _ in range(40)}) >= 4
+nested = [r for r in stf['rows'] if not r[2]]
+assert any(set(bases(r[6])) == set(bases(stf['sfx'])) for r in nested)
+nl = pagepack._read(p, idx['folders']['1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg'])
+assert set(bases(nl['sfx'])) == nlbases
+assert any(not r[2] and len(r) > 6 and set(bases(r[6])) == nlbases for r in nl['rows'])
+arm = [r for r in rows if not r[2] and 'armageddon' in (r[1] or '').lower()]
+assert len(arm) >= 1
+for r in arm:
+    assert len(bases(r[6])) >= 6
+    assert 'armageddon-theme' in bases(r[6])
+print('ok', len(files), len(bases(stf['sfx'])), len(arm))
+`);
+  assert.match(out, /^ok /m);
+  console.log(out.trim());
 });
 

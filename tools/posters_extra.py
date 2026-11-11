@@ -20,9 +20,19 @@ def src_title(name):
     seg=re.sub(r'\b(Mini-Series|Series|Saga|Supercut|Refocused|Chronological|Fan Edit|Edition|Extended|Cut)\b.*$','',seg,flags=re.I)
     seg=re.sub(r'\bS\d{1,2}E\d{1,3}\b.*$','',seg,flags=re.I);seg=re.sub(r'\bEpisode\s*\d+.*$','',seg,flags=re.I)
     seg=re.sub(r'_\d{3,4}p.*$','',seg);seg=re.sub(r'\s*:\s*$','',seg)
-    return re.sub(r'\s+',' ',seg).strip(' -:._'),bool(GAME.search(name))
-def tmdb(t):
+    try:
+        from series_match import wants_tv
+        tv = wants_tv(name)
+    except Exception:
+        tv = bool(re.search(r'\b(series|season|s\d+e\d+|episode)\b', name or '', re.I))
+    return re.sub(r'\s+',' ',seg).strip(' -:._'),bool(GAME.search(name)),tv
+def tmdb(t, tv=False):
     if not TMDB: return None
+    if tv:
+        r=j('https://api.themoviedb.org/3/search/tv?'+urllib.parse.urlencode({'api_key':TMDB,'query':t}))
+        for x in (r or {}).get('results',[]):
+            if x.get('poster_path'): return {'url':'https://image.tmdb.org/t/p/w500'+x['poster_path'],'source':'tmdb-tv','matchedTitle':x.get('name') or x.get('title') or t}
+        return None
     r=j('https://api.themoviedb.org/3/search/multi?'+urllib.parse.urlencode({'api_key':TMDB,'query':t}))
     for x in (r or {}).get('results',[]):
         if x.get('poster_path') and x.get('media_type') in ('tv','movie'): return {'url':'https://image.tmdb.org/t/p/w500'+x['poster_path'],'source':'tmdb','matchedTitle':x.get('name') or x.get('title')}
@@ -46,18 +56,29 @@ def _pick(pages,t,game):
         if sim(t,ti)<.8 and not nrm(ti).startswith(nrm(t)): continue
         if game and 'video game' not in (p.get('pageprops',{}).get('wikibase-shortdesc','')+ti).lower() and not re.search(r'game',p.get('pageprops',{}).get('wikibase-shortdesc',''),re.I): continue
         return {'url':o['source'],'source':'wikipedia','matchedTitle':ti,'link':'https://en.wikipedia.org/wiki/'+urllib.parse.quote(ti.replace(' ','_'))}
-def wiki(t,game=False):
+def wiki(t,game=False,tv=False):
     base={'action':'query','format':'json','prop':'pageimages|pageprops','piprop':'original','pilicense':'any','ppprop':'wikibase-shortdesc','redirects':1}
-    cands=[t+' (video game)',t] if game else [t+' (TV series)',t+' (film)',t]
+    if game:
+        cands=[t+' (video game)',t]
+    elif tv:
+        cands=[t+' (TV series)', t+' (television series)', t]
+    else:
+        cands=[t+' (TV series)',t+' (film)',t]
     r=j(WP+urllib.parse.urlencode(dict(base,titles='|'.join(cands))))
     hit=_pick(list(((r or {}).get('query') or {}).get('pages',{}).values()),t,game)
     if hit: return hit
     r=j(WP+urllib.parse.urlencode(dict(base,generator='search',gsrsearch=t+(' video game' if game else ''),gsrlimit=4)))
     return _pick(list(((r or {}).get('query') or {}).get('pages',{}).values()),t,game)
 def resolve(k):
-    t,game=k
+    t, game = k[0], k[1]
+    tv = k[2] if len(k) > 2 else False
     if len(t)<2: return None
-    order=[lambda:wiki(t,True),lambda:tmdb(t)] if game else [lambda:tmdb(t),lambda:omdb(t),lambda:wiki(t),lambda:tvmaze(t)]
+    if game:
+        order=[lambda:wiki(t,True),lambda:tmdb(t)]
+    elif tv:
+        order=[lambda:tmdb(t, True), lambda:wiki(t, False, True), lambda:tvmaze(t)]
+    else:
+        order=[lambda:tmdb(t),lambda:omdb(t),lambda:wiki(t),lambda:tvmaze(t)]
     for f in order:
         try: r=f()
         except Exception: r=None

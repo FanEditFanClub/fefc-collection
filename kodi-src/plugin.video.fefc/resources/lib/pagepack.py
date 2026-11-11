@@ -164,7 +164,8 @@ def search_page(query, page=0, path=None, size=LIST_PAGE, limit=300):
         _CACHE[cache_key] = rows
     hit = []
     for row in rows:
-        hay = ((row[1] or '') + ' ' + (row[4] if len(row) > 4 else '')).lower()
+        extra = row[4] if len(row) > 4 and isinstance(row[4], str) else ''
+        hay = ((row[1] or '') + ' ' + extra).lower()
         if all(t in hay for t in toks):
             hit.append(row)
             if len(hit) >= limit:
@@ -210,7 +211,26 @@ def build_pack(model, base):
         if is_dir and not (model.get('rcnt') or model['cnt']).get(fid):
             return None
         name = display(fid, item[0], parent, is_dir)
-        return [fid, name, is_dir, art_of(fid, is_dir)]
+        row = [fid, name, is_dir, art_of(fid, is_dir)]
+        if not is_dir:
+            info = catalog.video_info(model, fid)
+            # [id, name, is_dir, art, search extra, details]
+            # details: plot, editor, year, rating text, rating source, runtime minutes
+            row.append('')
+            row.append([
+                info.get('plot') or '',
+                info.get('editor') or '',
+                info.get('year') or 0,
+                info.get('rating_text') or '',
+                info.get('rating_src') or '',
+                int(info.get('runtime') or 0),
+            ])
+            # Full parent set. The listing picks one clip when the row is shown.
+            try:
+                row.append(catalog.sfx_up(model, fid) or [])
+            except Exception:
+                row.append([])
+        return row
 
     parts = []
     offset = 0
@@ -268,36 +288,47 @@ def build_pack(model, base):
         index['genres'][genre] = add({'name': genre, 'sfx': pool, 'rows': rows})
 
     recent_rows = []
-    for i in catalog.recent_ids(model):
+    for i in catalog.dedupe(model, list(catalog.recent_ids(model))):
         row = row_for(i, '')
         if row:
             recent_rows.append(row)
     index['recent'] = add({'name': 'New Arrivals', 'sfx': '', 'rows': recent_rows})
 
     tbc_ids = catalog.tbc_members(items, model.get('kids') or {})
-    search_rows = []
+    search_ids = []
     for i, item in items.items():
         if i in tbc_ids or (item[3] and item[3] in tbc_ids):
             continue
         if item[2] and not (model.get('rcnt') or model['cnt']).get(i):
             continue
+        search_ids.append(i)
+    search_rows = []
+    for i in catalog.dedupe(model, search_ids):
+        item = items[i]
         is_dir = 1 if item[2] else 0
-        name = display(i, item[0], item[1], is_dir)
-        edit = (model.get('edits') or {}).get(i) or {}
+        row = row_for(i, item[1])
+        if not row:
+            continue
+        edit = (model.get('edits') or {}).get(i) or (model.get('edits') or {}).get(item[3] or '') or {}
         extra = edit.get('title') or ''
-        row = [i, name, is_dir, art_of(i, is_dir)]
-        if extra and extra.lower() not in (name or '').lower():
-            row.append(extra)
+        if extra and extra.lower() not in (row[1] or '').lower():
+            if len(row) < 5:
+                row.append(extra)
+            else:
+                row[4] = extra
         search_rows.append(row)
     search_rows.sort(key=lambda r: (0 if r[2] else 1, catalog.natkey(r[1])))
     index['search'] = add({'rows': search_rows})
 
-    people_rows = []
+    people_ids = []
     for fid, meta in (model.get('people_meta') or {}).items():
         if fid not in items:
             continue
         if not (model.get('rcnt') or model['cnt']).get(fid):
             continue
+        people_ids.append(fid)
+    people_rows = []
+    for fid in catalog.dedupe(model, people_ids):
         row = row_for(fid, items[fid][1])
         if row:
             people_rows.append(row)

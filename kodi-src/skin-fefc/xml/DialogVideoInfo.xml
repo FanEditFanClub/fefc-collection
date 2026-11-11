@@ -169,11 +169,11 @@
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=open_drive&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>
 			</control>
-			<!-- 0.5.1: no fallback — add_video() always sets fefc_download_label, and the ',Download'
-			     fallback was rendering a second "Download" next to it ("Download Download"). -->
+			<!-- The label variable is Download when the list item has not set one,
+			     so the button is never an empty border. -->
 			<control type="button" id="15">
 				<width>250</width><height>76</height>
-				<label>$INFO[ListItem.Property(fefc_download_label)]</label>
+				<label>$VAR[FefcDownloadLabel]</label>
 				<include>FefcDetailTile</include>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=download&amp;id=$INFO[ListItem.Property(fefc_id)])</onclick>
 				<visible>!String.IsEmpty(ListItem.Property(fefc_id))</visible>

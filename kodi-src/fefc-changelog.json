@@ -1,6 +1,17 @@
 {
  "versions": [
   {
+   "version": "0.6.3 Beta",
+   "date": "2026-11-11",
+   "notes": [
+    "Search results use the same poster grid as other folders. Wrapped titles stay inside the row, with space above the menu.",
+    "Search, genres, and the other combined lists show each file once. The FEFC-hosted original is kept; a shortcut is shown only when that original is not in the list.",
+    "The details page Download button stays labeled. Synopsis, editor, ratings, and file size load with the listing, and a file with no editorial notes still shows its size and folder.",
+    "Fan edits of a TV series use the series poster. Westworld Series now uses the HBO series art instead of the 1973 film.",
+    "After an install, coming back to the app reads the package on disk. A process left running from the previous build restarts, and the button shows Up to date instead of Update available."
+   ]
+  },
+  {
    "version": "0.6.2 Beta",
    "date": "2026-11-11",
    "notes": [

@@ -10,6 +10,10 @@
 		<value condition="!String.IsEmpty(Container.PluginCategory)">$INFO[Container.PluginCategory]</value>
 		<value>$INFO[Container.FolderName]</value>
 	</variable>
+	<variable name="FefcDownloadLabel">
+		<value condition="!String.IsEmpty(ListItem.Property(fefc_download_label))">$INFO[ListItem.Property(fefc_download_label)]</value>
+		<value>Download</value>
+	</variable>
 	<variable name="FefcPosterArt">
 		<value condition="!String.IsEmpty(ListItem.Art(poster))">$INFO[ListItem.Art(poster)]</value>
 		<value condition="!String.IsEmpty(ListItem.Art(thumb))">$INFO[ListItem.Art(thumb)]</value>
@@ -73,32 +77,29 @@
 		</definition>
 		<param name="focused" default="false" />
 	</include>
-	<!-- Portrait poster tile for video files. The title box is four lines of the
-	     30px face (about 42px of line height each) so a third line is not sliced
-	     through the glyphs. Group top 8 + title top 272 + title 168 = 448, inside
-	     the 3 grid rows (450) the poster reserves. -->
+	<!-- Portrait poster tile. The art box is 180x270 (2:3) and uses keep, so the
+	     poster is not cropped into a square. Group top 8 + title top 278 + title
+	     200 = 486, inside the four rows reserved under it (600px). -->
 	<include name="FefcPosterTile">
 		<definition>
 			<control type="image">
-				<left>0</left><top>0</top><width>222</width><height>268</height>
-				<texture border="20">fefc-tile.png</texture>
+				<left>35</left><top>0</top><width>180</width><height>270</height>
+				<texture border="12">fefc-tile.png</texture>
 			</control>
 			<control type="image">
-				<left>4</left><top>4</top><width>214</width><height>260</height>
+				<left>35</left><top>0</top><width>180</width><height>270</height>
 				<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
-				<aspectratio scalediffuse="false">scale</aspectratio>
+				<aspectratio scalediffuse="false">keep</aspectratio>
 			</control>
 			<control type="image">
-				<left>0</left><top>0</top><width>222</width><height>268</height>
-				<texture border="20">fefc-tile-ring.png</texture>
+				<left>35</left><top>0</top><width>180</width><height>270</height>
+				<texture border="12">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
-			<!-- 30px, up to four full lines, centered. A label control ellipsizes inside a
-			     list even with wrapmultiline, so this is a textbox. The focused tile
-			     scrolls the full name. The block stays inside 3 grid rows
-			     (shapes.SPAN) so the cells under a poster are covered, not empty. -->
+			<!-- Up to five lines, centered, and clipped to this box. The focused
+			     tile scrolls the full name. -->
 			<control type="textbox">
-				<left>-6</left><top>272</top><width>234</width><height>168</height>
+				<left>0</left><top>278</top><width>250</width><height>200</height>
 				<align>center</align>
 				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>
@@ -106,7 +107,7 @@
 				<visible>!$PARAM[focused]</visible>
 			</control>
 			<control type="label">
-				<left>-6</left><top>272</top><width>234</width><height>168</height>
+				<left>0</left><top>278</top><width>250</width><height>200</height>
 				<aligny>top</aligny><align>center</align>
 				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>
@@ -130,7 +131,7 @@
 			<!-- Always drawn. Gating this on Container.Viewmode hid every tile on
 			     Fire TV: the device does not report 500 or 501, so both panels
 			     were invisible while the container still counted its items. -->
-			<left>96</left><top>122</top><width>1700</width><height>760</height>
+			<left>96</left><top>122</top><width>1700</width><height>720</height>
 			<onleft>$PARAM[id]</onleft><onright>60</onright>
 			<onup>9290</onup>
 			<ondown>9290</ondown>
@@ -147,7 +148,7 @@
 				</control>
 				<control type="group">
 					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
-					<left>30</left><top>8</top>
+					<left>10</left><top>8</top>
 					<include content="FefcPosterTile"></include>
 				</control>
 			</itemlayout>
@@ -163,7 +164,7 @@
 				</control>
 				<control type="group">
 					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
-					<left>30</left><top>8</top>
+					<left>10</left><top>8</top>
 					<depth>DepthContentPopout</depth>
 					<animation effect="zoom" start="100" end="105" time="180" tween="sine" easing="inout" center="111,156" reversible="true">Focus</animation>
 					<include content="FefcPosterTile">
