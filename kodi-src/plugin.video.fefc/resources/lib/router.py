@@ -1592,10 +1592,82 @@ def _short_url(u):
     return t if len(t) <= 44 else t[:42] + '...'
 
 
+def _media_file(name):
+    return os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media', name)
+
+
+def _sound_off():
+    return bool(xbmc.getInfoLabel('Window(home).Property(FEFC.SoundOff)'))
+
+
+def _add_icon_bar(win, up):
+    """The 0.5.5 Home bar: one dark pill, icon plus label on each button, ticker under it.
+    Coordinates are the 1920x1080 skin values scaled by 2/3 into this 1280x720 dialog."""
+    def s(v):
+        return int(round(v * 2 / 3.0))
+    off = _sound_off()
+    win.addControl(xbmcgui.ControlImage(s(110), s(866), s(1700), s(84), _media_file('chrome/pill.png')))
+    specs = (
+        ('HOME', 458, 474, 'fefc-ic-home.png', 147),
+        ('SEARCH', 686, 702, 'fefc-ic-search.png', 147),
+        ('SOUND OFF' if off else 'SOUND ON', 914, 930, 'fefc-ic-mute.png' if off else 'fefc-ic-sound.png', 180),
+        ('SETTINGS', 1192, 1208, 'fefc-ic-gear.png', 167),
+    )
+    buttons = []
+    sound_icon = None
+    for lab, x, ix, icon, bw in specs:
+        btn = xbmcgui.ControlButton(
+            s(x), s(878), bw, s(60), lab,
+            focusTexture=_media_file('chrome/btn-%d-on.png' % bw),
+            noFocusTexture=_media_file('chrome/btn-%d.png' % bw),
+            textOffsetX=s(52), textOffsetY=0, alignment=4,
+            font='fefc_bar', textColor='FFFFFFFF', focusedColor='FFFFFFFF')
+        win.addControl(btn)
+        buttons.append(btn)
+        img = xbmcgui.ControlImage(s(ix), s(894), s(28), s(28), icon, aspectRatio=2)
+        win.addControl(img)
+        if lab.startswith('SOUND'):
+            sound_icon = img
+    for i, b in enumerate(buttons):
+        b.controlLeft(buttons[i - 1])
+        b.controlRight(buttons[(i + 1) % len(buttons)])
+        b.controlUp(up)
+        b.controlDown(up)
+    tick = xbmc.getInfoLabel('Window(home).Property(FEFC.Ticker)') or 'Loading community news...'
+    win.addControl(xbmcgui.ControlImage(s(96), s(984), s(1728), s(44), _media_file('chrome/ticker.png')))
+    win.addControl(xbmcgui.ControlLabel(s(118), s(984), s(1660), s(44), tick, font='fefc_ticker', textColor='FFFFFFFF', alignment=4))
+    return buttons, sound_icon
+
+
+def _bar_action(win, button):
+    menu = win.menu
+    if button == menu[0]:
+        win.close()
+        xbmc.executebuiltin('ActivateWindow(Home)')
+    elif button == menu[1]:
+        win.close()
+        xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=searchbox)')
+    elif button == menu[2]:
+        xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)')
+        off = _sound_off()
+        try:
+            menu[2].setLabel('SOUND OFF' if off else 'SOUND ON')
+        except Exception:
+            pass
+        try:
+            if win.sound_icon is not None:
+                win.sound_icon.setImage('fefc-ic-mute.png' if off else 'fefc-ic-sound.png')
+        except Exception:
+            pass
+    elif button == menu[3]:
+        win.close()
+        xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=settings)')
+
+
 class SupportWindow(xbmcgui.WindowDialog):
     """Three Home-style tiles (black face, orange focus glow, same centered face).
-    Optimus stays on the left. The bottom bar and ticker match the other screens.
-    A tile press opens the square QR. The code is not drawn here. 1920x1080, no video."""
+    Optimus stays on the left. The bottom bar is the original icon menu, drawn inside
+    this opaque dialog so it is not dimmed. A tile press opens the square QR."""
     KEEP = 2
     LOGOS = {'Patreon': 'fefc-brand2-patreon.png', 'PayPal': 'fefc-brand2-paypal.png', 'Venmo': 'fefc-brand2-venmo.png'}
 
@@ -1614,13 +1686,13 @@ class SupportWindow(xbmcgui.WindowDialog):
             self._frames = optimusframes.support_frames(media)
         except Exception:
             self._frames = []
-        # Silent JPEG loop of Optimus offering the hat. Frames are 400x533.
-        # The control uses that aspect so the figure fills the panel.
+        # Silent JPEG loop of the approved hat clip. Frames are 480x640, shown 3:4.
+        # The figure ends above the menu (skin y=866, scaled) so the two never overlap.
         art = self._frames[0] if self._frames else 'fefc-optimus-begging.png'
-        art_h = 420
-        art_w = int(round(art_h * 400 / 533.0))
-        band_top, band_bot = 16, 608
-        art_y = band_top + max(0, (band_bot - band_top - art_h) // 2)
+        menu_top = int(round(866 * 2 / 3.0))
+        art_w = 300
+        art_h = int(round(art_w * 533 / 400.0))
+        art_y = max(12, (menu_top - 18 - art_h) // 2)
         self.art = xbmcgui.ControlImage(18, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
         self.addControl(self.art)
         self.btns = []
@@ -1647,27 +1719,13 @@ class SupportWindow(xbmcgui.WindowDialog):
             self.addControl(xbmcgui.ControlImage(x + side, y0 + top, plate_w, plate_h, self.LOGOS[name], aspectRatio=self.KEEP))
             self.addControl(xbmcgui.ControlLabel(x + side, y0 + top + plate_h, tw - side * 2, label_h,
                                                   name, font='font11_tile', textColor='FFFFFFFF', alignment=6))
-        self.addControl(xbmcgui.ControlImage(40, 620, 1200, 56, 'fefc-lc-pill.png', colorDiffuse='E6101418'))
-        bar = (('HOME', 70, 160), ('SEARCH', 250, 160), ('SOUND ON', 430, 200), ('SETTINGS', 650, 190))
-        self.menu = []
-        for lab, x, w in bar:
-            btn = xbmcgui.ControlButton(x, 626, w, 44, lab, font='fefc_bar', textColor='FFFFFFFF', alignment=6,
-                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-tile.png')
-            self.addControl(btn)
-            self.menu.append(btn)
         for i, b in enumerate(self.btns):
             b.controlLeft(self.btns[i - 1])
             b.controlRight(self.btns[(i + 1) % len(self.btns)])
-            b.controlDown(self.menu[0])
             b.controlUp(b)
-        for i, b in enumerate(self.menu):
-            b.controlLeft(self.menu[i - 1])
-            b.controlRight(self.menu[(i + 1) % len(self.menu)])
-            b.controlUp(self.btns[0])
-            b.controlDown(self.btns[0])
-        tick = xbmc.getInfoLabel('Window(home).Property(FEFC.Ticker)') or ''
-        self.addControl(xbmcgui.ControlImage(40, 684, 1200, 28, 'fefc-tile.png'))
-        self.addControl(xbmcgui.ControlLabel(52, 684, 1176, 28, tick, font='font12', textColor='FFFFFFFF', alignment=4))
+        self.menu, self.sound_icon = _add_icon_bar(self, self.btns[0])
+        for b in self.btns:
+            b.controlDown(self.menu[0])
         self.setFocus(self.btns[0])
 
     def _pump(self):
@@ -1707,21 +1765,7 @@ class SupportWindow(xbmcgui.WindowDialog):
             pass
 
     def _menu_go(self, c):
-        if c == self.menu[0]:
-            self.close()
-            xbmc.executebuiltin('ActivateWindow(Home)')
-        elif c == self.menu[1]:
-            self.close()
-            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=searchbox)')
-        elif c == self.menu[2]:
-            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)')
-            try:
-                self.menu[2].setLabel('SOUND OFF' if xbmc.getInfoLabel('Window(home).Property(FEFC.SoundOff)') else 'SOUND ON')
-            except Exception:
-                pass
-        elif c == self.menu[3]:
-            self.close()
-            xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=settings)')
+        _bar_action(self, c)
 
     def onControl(self, c):
         for k, b in enumerate(self.btns):
@@ -1849,26 +1893,40 @@ class OptimusWindow(xbmcgui.WindowDialog):
         from . import optimusframes
         media = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media')
         self._frames = optimusframes.frame_list(media)
-        self._still = _optimus_art()
-        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
-        self.art = xbmcgui.ControlImage(48, 110, 480, 480, self._still, aspectRatio=2)
+        # Stopped pose is the first processed frame, so the room never comes back when the loop pauses.
+        self._still = self._frames[0] if self._frames else _optimus_art()
+        # Opaque black hides the home wordmark and the skin bar behind this dialog.
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
+        menu_top = int(round(866 * 2 / 3.0))
+        art_h = menu_top - 28
+        art_w = int(round(art_h * 204 / 278.0))
+        self.art = xbmcgui.ControlImage(0, 12, art_w, art_h, self._still, aspectRatio=2)
         self.addControl(self.art)
-        self.addControl(xbmcgui.ControlLabel(560, 96, 660, 52, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
-        cue = xbmcgui.ControlTextBox(560, 160, 660, 88, font='font13', textColor='FFE8EEF6')
-        self.addControl(cue)
-        cue.setText(optimusplan.CUE)
-        # One bar: dark tile, magnifying glass, centered placeholder, the edit control.
-        self.addControl(xbmcgui.ControlImage(540, 300, 680, 84, 'fefc-ol-tile.png'))
-        self.addControl(xbmcgui.ControlImage(562, 326, 32, 32, 'fefc-ic-search.png', aspectRatio=2))
-        self.edit = xbmcgui.ControlEdit(600, 308, 600, 68, '', font='font13', textColor='FFFFFFFF',
-                                         focusTexture='fefc-ol-focus.png', noFocusTexture='')
+        x = art_w + 28
+        width = 1280 - x - 36
+        block = 48 + 16 + 36 + 28 + 72 + 18 + 32
+        y = max(24, (menu_top - 24 - block) // 2)
+        self.addControl(xbmcgui.ControlLabel(x, y, width, 48, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
+        self.addControl(xbmcgui.ControlLabel(x, y + 56, width, 36, optimusplan.CUE, font='font13', textColor='FFE8EEF6'))
+        bar_y = y + 56 + 36 + 24
+        # One border. The edit uses a transparent texture so it does not draw a second box.
+        self.addControl(xbmcgui.ControlImage(x, bar_y, width, 72, 'fefc-ol-tile.png'))
+        self.addControl(xbmcgui.ControlImage(x + 28, bar_y + 20, 32, 32, 'fefc-ic-search.png', aspectRatio=2))
+        blank = _media_file('fefc-blank.png')
+        self.edit = xbmcgui.ControlEdit(x + 72, bar_y + 8, width - 96, 56, '', font='font13', textColor='FFFFFFFF',
+                                         focusTexture=blank, noFocusTexture=blank)
         self.addControl(self.edit)
-        self.placeholder = xbmcgui.ControlLabel(600, 300, 600, 84, 'Search', font='font13_title',
+        self.placeholder = xbmcgui.ControlLabel(x, bar_y, width, 72, 'Search', font='font13_title',
                                                  textColor='FFB7C3D4', alignment=6)
         self.addControl(self.placeholder)
-        self.status = xbmcgui.ControlLabel(540, 400, 680, 48, 'Select the bar and type a title.', font='font12', textColor='FF99CCFF')
+        self.status = xbmcgui.ControlLabel(x, bar_y + 84, width, 32, 'Select the bar and type a title.', font='font12', textColor='FF99CCFF')
         self.addControl(self.status)
-        self.addControl(xbmcgui.ControlLabel(540, 460, 680, 36, 'Back returns to Home.', font='font12', textColor='FF7F8FA6'))
+        self.menu, self.sound_icon = _add_icon_bar(self, self.edit)
+        try:
+            self.edit.controlDown(self.menu[0])
+            self.edit.controlUp(self.edit)
+        except Exception:
+            pass
         self.setFocus(self.edit)
 
     def _keyboard_open(self):
@@ -1966,9 +2024,18 @@ class OptimusWindow(xbmcgui.WindowDialog):
             self.close()
             return
         if aid in (xbmcgui.ACTION_SELECT_ITEM, xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401):
+            try:
+                fid = self.getFocusId()
+            except Exception:
+                fid = 0
+            for b in self.menu:
+                if b.getId() == fid:
+                    _bar_action(self, b)
+                    return
             if self._draft() and not self._keyboard_open():
                 self._submit()
                 return
+            # Select on the bar opens the keyboard and holds the loop on the current pose.
             self._halt_anim()
 
 
