@@ -1,72 +1,64 @@
-"""Genres as a Home-style 3x3. Nine names a page, artwork or the Home tile."""
+"""Genres as a Home-style 3x3 over the Home mosaic.
 
-
-def _s(v):
-    return int(round(v * 2 / 3.0))
+The dialog is transparent. Home keeps playing the one wall video, and the top
+three mosaic cells stay visible because this screen has no wordmark. Tiles are
+solid so the names stay readable. Nine names a page.
+"""
 
 
 def open_genre_board(entries):
-    """entries: (label, key, art) already paged by the caller? Full list of tiles.
-
-    Returns the original genre key the viewer selected, or '' if they left.
-    """
+    """entries: (label, key, art). Returns the genre key, or '' if they left."""
+    import os
     import xbmc
     import xbmcgui
 
-    tw, th, gap = _s(400), _s(200), _s(12)
-    ox = (1280 - (tw * 3 + gap * 2)) // 2
-    oy = _s(200)
     pages = [entries[i:i + 9] for i in range(0, len(entries), 9)] or [[]]
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    class GenreWindow(xbmcgui.WindowDialog):
-        def __init__(self):
-            super().__init__()
+    class GenreWindow(xbmcgui.WindowXMLDialog):
+        def __init__(self, *args):
+            super().__init__(*args)
             self.picked = ''
             self.page = 0
-            self.tiles = []
             self._focus = 0
-            self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
-            self.addControl(xbmcgui.ControlImage(_s(96), _s(48), _s(220), _s(56), 'fefc-wordmark.png', aspectRatio=2))
-            self.heading = xbmcgui.ControlLabel(_s(340), _s(54), _s(800), _s(56), 'GENRES', font='font13_title', textColor='FFFFFFFF', alignment=6)
-            self.addControl(self.heading)
-            self.indicator = xbmcgui.ControlLabel(_s(1100), _s(54), _s(280), _s(56), '', font='font13_title', textColor='FFFF9C00', alignment=6)
-            self.addControl(self.indicator)
-            self.prev_btn = xbmcgui.ControlButton(ox - _s(88), oy + th, _s(64), _s(64), '<', font='font14_title', textColor='FFFFFFFF', focusedColor='FF000000', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png', alignment=6)
-            self.next_btn = xbmcgui.ControlButton(ox + tw * 3 + gap * 2 + _s(24), oy + th, _s(64), _s(64), '>', font='font14_title', textColor='FFFFFFFF', focusedColor='FF000000', focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png', alignment=6)
-            self.addControl(self.prev_btn)
-            self.addControl(self.next_btn)
-            from .router import _add_icon_bar
-            self.menu, self.sound_icon = _add_icon_bar(self, self.heading)
+            self._ready = False
+            self.tiles = []
+            self.menu = []
+
+        def onInit(self):
+            if self._ready:
+                return
+            self._ready = True
+            self.tiles = [self.getControl(9101 + i) for i in range(9)]
+            self.menu = [self.getControl(9401 + i) for i in range(4)]
+            self.indicator = self.getControl(9150)
+            off = xbmc.getInfoLabel('Window(home).Property(FEFC.SoundOff)') == '1'
+            self.menu[2].setLabel('SOUND OFF' if off else 'SOUND ON')
+            try:
+                self.getControl(9405).setImage('fefc-ic-mute.png' if off else 'fefc-ic-sound.png')
+            except Exception:
+                pass
             self._show(0, 0)
 
         def _show(self, page, focus):
             self.page = page
-            for c in self.tiles:
-                try:
-                    self.removeControl(c)
-                except Exception:
-                    pass
-            self.tiles = []
             chunk = pages[page]
             n = len(chunk)
             focus = min(focus, max(0, n - 1))
             self._focus = focus
             self.indicator.setLabel('%d/%d' % (page + 1, max(1, len(pages))))
-            self.prev_btn.setVisible(page > 0)
-            self.next_btn.setVisible(page < len(pages) - 1)
-            for i, (label, _key, art) in enumerate(chunk):
-                col, row = i % 3, i // 3
-                x = ox + col * (tw + gap)
-                y = oy + row * (th + gap)
-                nofocus = art or 'special://skin/media/fefc-ol-tile.png'
-                btn = xbmcgui.ControlButton(
-                    x, y, tw, th, label, font='font11_tile',
-                    textColor='FFFFFFFF', focusedColor='FFFFFFFF', alignment=6,
-                    focusTexture='fefc-ol-focus.png', noFocusTexture=nofocus)
-                self.addControl(btn)
-                self.tiles.append(btn)
             for i, btn in enumerate(self.tiles):
+                if i < n:
+                    btn.setLabel(chunk[i][0])
+                    btn.setVisible(True)
+                    btn.setEnabled(True)
+                else:
+                    btn.setLabel('')
+                    btn.setVisible(False)
+                    btn.setEnabled(False)
+            for i in range(n):
                 col, row = i % 3, i // 3
+                btn = self.tiles[i]
                 left = self.tiles[i - 1] if col else btn
                 right = self.tiles[i + 1] if col < 2 and i + 1 < n else btn
                 up = self.tiles[i - 3] if row else btn
@@ -74,7 +66,6 @@ def open_genre_board(entries):
                     down = self.tiles[i + 3]
                 else:
                     down = self.menu[0]
-                # Last column stays put so Right can turn the page. First column too, for Left.
                 if col == 2:
                     right = btn
                 if col == 0:
@@ -83,8 +74,7 @@ def open_genre_board(entries):
                 btn.controlRight(right)
                 btn.controlUp(up)
                 btn.controlDown(down)
-            if self.tiles:
-                self.menu[0].controlUp(self.tiles[min(self._focus, n - 1)])
+            if n:
                 for b in self.menu:
                     b.controlUp(self.tiles[min(6, n - 1)])
                 self.setFocus(self.tiles[self._focus])
@@ -102,7 +92,6 @@ def open_genre_board(entries):
             return None
 
         def onAction(self, action):
-            import xbmcgui
             aid = action.getId()
             i = self._index()
             if aid == xbmcgui.ACTION_MOVE_RIGHT and i is not None and i % 3 == 2 and self.page < len(pages) - 1:
@@ -118,24 +107,25 @@ def open_genre_board(entries):
                 self.picked = ''
                 self.close()
 
-        def onControl(self, c):
-            if c == self.next_btn and self.page < len(pages) - 1:
-                self._show(self.page + 1, 0)
-                return
-            if c == self.prev_btn and self.page > 0:
-                self._show(self.page - 1, 0)
-                return
-            for i, btn in enumerate(self.tiles):
-                if c == btn:
-                    self.picked = pages[self.page][i][1]
+        def onClick(self, cid):
+            if 9101 <= cid <= 9109:
+                i = cid - 9101
+                chunk = pages[self.page]
+                if i < len(chunk):
+                    self.picked = chunk[i][1]
                     self.close()
-                    return
-            from .router import _bar_action
-            if c in self.menu:
-                _bar_action(self, c)
+                return
+            if 9401 <= cid <= 9404:
+                from .router import _bar_action
+                _bar_action(self, self.menu[cid - 9401])
 
-    win = GenreWindow()
-    win.doModal()
-    picked = win.picked
-    del win
+    home = xbmcgui.Window(10000)
+    home.setProperty('FEFC.Genres', '1')
+    win = GenreWindow('DialogGenres.xml', root, 'Default', '1080i')
+    try:
+        win.doModal()
+        picked = win.picked
+    finally:
+        home.clearProperty('FEFC.Genres')
+        del win
     return picked

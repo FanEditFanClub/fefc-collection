@@ -651,7 +651,20 @@ test('search screen keeps the approved loop and parks the caret', () => {
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   const plan = fs.readFileSync(path.join(lib, 'optimusplan.py'), 'utf8');
   const show = fs.readFileSync(path.join(lib, 'genreshow.py'), 'utf8');
-  assert.match(plan, /TITLE = 'Search the Collection'/);
+  assert.match(plan, /TITLE = 'Search with Fan Edit Optimus'/);
+  assert.match(router, /fefc-mark-grok\.png/);
+  assert.match(router, /fefc-mark-discord\.png/);
+  assert.match(router, /fefc-mark-muse\.png/);
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  const bar = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const genres = fs.readFileSync(path.join(lib, 'genreshow.py'), 'utf8');
+  assert.match(home, /FEFC\.Genres/);
+  assert.match(genres, /FEFC\.Genres/);
+  assert.match(genres, /DialogGenres\.xml/);
+  assert.match(bar, /fefc-ic-home\.png/);
+  assert.match(bar, /<label>HOME<\/label>/);
+  assert.match(bar, /fefc-ic-search\.png/);
+  assert.match(bar, /<label>SEARCH<\/label>/);
   assert.match(plan, /Optimus is watching a fan edit\. Type to interrupt him\./);
   assert.match(plan, /FRAME_MS = 125/);
   assert.doesNotMatch(router, /Select the bar and type a title/);
@@ -661,6 +674,7 @@ test('search screen keeps the approved loop and parks the caret', () => {
   assert.match(show, /%d\/%d/);
   assert.match(show, /ACTION_PARENT_DIR/);
   assert.match(show, /self\.menu\[0\]/);
+  assert.match(genres, /self\.menu\[0\]/);
 });
 
 test('drive first frames are not used when show or folder art exists', () => {

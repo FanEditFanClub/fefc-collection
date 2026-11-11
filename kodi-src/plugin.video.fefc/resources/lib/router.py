@@ -1948,15 +1948,18 @@ class OptimusWindow(xbmcgui.WindowDialog):
         # Opaque black hides the home wordmark and the skin bar behind this dialog.
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
         menu_top = int(round(866 * 2 / 3.0))
-        art_h = menu_top - 28
+        # Room under the frame for the three small marks. The frames themselves are unchanged.
+        mark_h = 40
+        art_h = menu_top - 28 - mark_h - 8
         art_w = int(round(art_h * 222 / 278.0))
         self.art = xbmcgui.ControlImage(0, 12, art_w, art_h, self._still, aspectRatio=2)
         self.addControl(self.art)
+        self._add_optimus_marks(12 + art_h + 6, art_w)
         # Title, then the bar. Left aligned and vertically centered beside Optimus.
         # No second line: the old "Optimus is watching..." cue stays in optimusplan for the web app only.
         x = art_w + 36
         width = 1280 - x - 48
-        title_h, gap, bar_h = 56, 22, 76
+        title_h, gap, bar_h = 72, 18, 76
         block = title_h + gap + bar_h
         y = max(36, (menu_top - 24 - block) // 2)
         self.addControl(xbmcgui.ControlLabel(x, y, width, title_h, optimusplan.TITLE, font='font13_title', textColor='FFFFFFFF', alignment=0x00000004))
@@ -1993,6 +1996,18 @@ class OptimusWindow(xbmcgui.WindowDialog):
         except Exception:
             pass
         self.setFocus(self.bar_btn)
+
+    def _add_optimus_marks(self, y, art_w):
+        """Grok, Discord and Muse under the loop. Decorative only, so they take no focus.
+        The 48 frames are not modified. No link is added: Discord and Grok already have
+        addresses elsewhere in the app, and Muse does not."""
+        names = ('fefc-mark-grok.png', 'fefc-mark-discord.png', 'fefc-mark-muse.png')
+        size, gap = 36, 22
+        row = size * len(names) + gap * (len(names) - 1)
+        x0 = max(8, (art_w - row) // 2)
+        for i, name in enumerate(names):
+            self.addControl(xbmcgui.ControlImage(
+                x0 + i * (size + gap), y, size, size, name, aspectRatio=2))
 
     def _keyboard_open(self):
         return bool(xbmc.getCondVisibility('Window.IsActive(virtualkeyboard) | Window.IsVisible(virtualkeyboard) | Window.IsActive(numericinput)'))

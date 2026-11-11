@@ -618,18 +618,61 @@ _EXTRA_SHOW = (
     ('home alone 2', '', 'https://media.themoviedb.org/t/p/w500/uuitWHpJwxD1wruFl2nZHIb4UGN.jpg'),
     ('gumby', '', 'https://media.themoviedb.org/t/p/w500/ycC23EiA1VZ3DWx0v2GwCNycps1.jpg'),
     ('godzilla', '1954', 'https://media.themoviedb.org/t/p/w500/2W0Yw0qrgVMgdsSCZRKtfvaAh0i.jpg'),
+    ('godzilla', '2000', 'https://media.themoviedb.org/t/p/w500/7BrjFxV0j5VzZRfVYeYbFXMUweB.jpg'),
+    # Public page images for shows that the newest files name, resolved the same
+    # way tools/poster_fix.py does (Wikipedia, then the public poster page). No API key.
+    ('millennium', '', 'https://media.themoviedb.org/t/p/w500/vGEPm7vDTGbYNkDodLnsJyl6QIc.jpg'),
+    ('beverly hills 90210', '', 'https://media.themoviedb.org/t/p/w500/b7BYfkhu653D894krwGO1ysIKTf.jpg'),
+    ('bh90210', '', 'https://media.themoviedb.org/t/p/w500/z6Sj4dqUc5AVe66HddTN5wj7zYw.jpg'),
+    ('godzilla final wars', '', 'https://media.themoviedb.org/t/p/w500/21lWA4YyYppVnwAPOiBkGrt2FGr.jpg'),
+    ('godzilla against mechagodzilla', '', 'https://media.themoviedb.org/t/p/w500/Kg6J3qyf80cwnKkv1YorSjkNaK.jpg'),
+    ('godzilla 2000', '', 'https://media.themoviedb.org/t/p/w500/7BrjFxV0j5VzZRfVYeYbFXMUweB.jpg'),
+    ('ghidorah the three headed monster', '', 'https://media.themoviedb.org/t/p/w500/qkI5nhvxx3233gQmoQvv0W3MB7A.jpg'),
+    ('hollywood hot tubs', '', 'https://media.themoviedb.org/t/p/w500/ozJ4uhGtHPqByzS2o3CjKIWPFhh.jpg'),
+    ('exorcist 3', '', 'https://media.themoviedb.org/t/p/w500/275gw2JA5YCk10o6n84rZdZBycM.jpg'),
+    ('exorcist iii', '', 'https://media.themoviedb.org/t/p/w500/275gw2JA5YCk10o6n84rZdZBycM.jpg'),
 )
+
+
+def _art_from_folders(items, parent, year_art, bare_art):
+    """A show poster already in the catalogue, matched on a parent folder name.
+
+    Episode files often do not repeat the series title. The folder does.
+    Only a specific folder name is used, and only when that name has one poster.
+    """
+    seen = set()
+    p = parent
+    while p and p not in seen and len(seen) < 8:
+        seen.add(p)
+        it = items.get(p)
+        if not it:
+            break
+        yk, bare = _title_keys(it[0])
+        u = (year_art.get(yk) if yk else '') or ''
+        if not u and bare and len(bare) >= 8 and len(bare.split()) >= 2:
+            u = bare_art.get(bare) or ''
+        if not u:
+            u = _extra_show(yk, bare)
+        if u and not _is_drive_art(u):
+            return u
+        p = it[1]
+    return ''
 
 
 def _extra_show(year_key, bare):
     padded = ' ' + (bare or '') + ' '
+    hit = ''
+    best = -1
     for key, year, url in _EXTRA_SHOW:
         if year:
-            if year_key == key + '|' + year:
-                return url
-        elif bare == key or bare.startswith(key + ' ') or (' ' + key + ' ') in padded:
-            return url
-    return ''
+            ok = year_key == key + '|' + year or (
+                year_key.endswith('|' + year) and (bare == key or bare.startswith(key + ' ')))
+        else:
+            ok = bare == key or bare.startswith(key + ' ') or (' ' + key + ' ') in padded
+        # Longer keys win, so "godzilla final wars" beats "godzilla".
+        if ok and len(key) > best:
+            hit, best = url, len(key)
+    return hit
 
 
 def _build_art_index(m):
@@ -708,6 +751,8 @@ def _build_art_index(m):
         src = 'show'
         if not u and bare:
             u = bare_art.get(bare) or ''
+        if not u:
+            u = _art_from_folders(items, v[1], year_art, bare_art)
         if not u:
             u = _extra_show(yk, bare)
         if not u:

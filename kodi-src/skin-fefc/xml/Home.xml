@@ -16,11 +16,16 @@
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Wall)) + Player.HasVideo</visible>
 		</control>
 		<!-- Cover the three centre cells of the top row and the three centre cells of the bottom row.
-		     Those clips sat behind the wordmark and the menu bar. Corners and side cells stay visible. -->
+		     Those clips sit behind the wordmark and the menu bar. Genres has no wordmark, so it
+		     clears FEFC.Genres and these top covers hide, revealing the same three clips.
+		     Corners and side cells stay visible. The bottom three stay covered. -->
 		<control type="group">
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 			<control type="image"><left>348</left><top>0</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
 			<control type="image"><left>760</left><top>0</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
 			<control type="image"><left>1172</left><top>0</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+		</control>
+		<control type="group">
 			<control type="image"><left>348</left><top>848</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
 			<control type="image"><left>760</left><top>848</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
 			<control type="image"><left>1172</left><top>848</top><width>400</width><height>200</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
@@ -39,6 +44,7 @@
 		<control type="image">
 			<left>324</left><top>192</top><width>1272</width><height>664</height>
 			<texture colordiffuse="FF000000">colors/white.png</texture>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 		</control>
 		<control type="button" id="8990">
 			<left>0</left><top>0</top><width>1920</width><height>1080</height>
@@ -53,6 +59,7 @@
 			<left>680</left><top>54</top><width>520</width><height>76</height>
 			<texture>fefc-wordmark.png</texture>
 			<aspectratio>keep</aspectratio>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 		</control>
 		<!-- 0.5.1: tagline moved down (134 -> 152) — it sat 4px under the wordmark with a 42px empty
 		     gap below it; now it sits centred in the gap between wordmark and tile grid. -->
@@ -62,6 +69,7 @@
 			<font>font12_title</font>
 			<textcolor>FF99CCFF</textcolor>
 			<label>A Community for Creators, Editors &amp; Fans dedicated to the art of The Fan Edit.</label>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 		</control>
 
 		<!-- 3 x 3 tiles, same order as the web app home -->
@@ -233,6 +241,7 @@
 		<control type="image">
 			<left>110</left><top>866</top><width>1700</width><height>84</height>
 			<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 		</control>
 		<control type="group">
 			<left>110</left><top>878</top>
@@ -255,6 +264,7 @@
 		</control>
 		<control type="group">
 			<left>110</left><top>878</top>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 			<animation effect="slide" end="165,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
 			<control type="button" id="9031">
 				<left>204</left><top>0</top><width>220</width><height>60</height>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Transparent dialog over Home. The Home wall player stays the only video.
+     The top three mosaic cells stay visible because Genres has no wordmark.
+     Tiles are solid so the names stay readable. -->
+<window type="dialog">
+	<defaultcontrol always="true">9101</defaultcontrol>
+	<backgroundcolor>0</backgroundcolor>
+	<controls>
+		<control type="image">
+			<left>336</left><top>206</top><width>1248</width><height>632</height>
+			<texture colordiffuse="FF000000">fefc-white.png</texture>
+		</control>
+		<control type="button" id="9101">
+			<left>348</left><top>212</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+		</control>
+		<control type="button" id="9102">
+			<left>760</left><top>212</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+		</control>
+		<control type="button" id="9103">
+			<left>1172</left><top>212</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+		</control>
+		<control type="button" id="9104">
+			<left>348</left><top>424</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+		</control>
+		<control type="button" id="9105">
+			<left>760</left><top>424</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+		</control>
+		<control type="button" id="9106">
+			<left>1172</left><top>424</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+		</control>
+		<control type="button" id="9107">
+			<left>348</left><top>636</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+			<ondown>9401</ondown>
+		</control>
+		<control type="button" id="9108">
+			<left>760</left><top>636</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+			<ondown>9401</ondown>
+		</control>
+		<control type="button" id="9109">
+			<left>1172</left><top>636</top><width>400</width><height>200</height>
+			<font>font11_tile</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FFFFFFFF</focusedcolor>
+			<align>center</align><aligny>center</aligny>
+			<texturefocus border="24">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="24">fefc-ol-tile.png</texturenofocus>
+			<label></label>
+			<ondown>9401</ondown>
+		</control>
+		<control type="label">
+			<left>360</left><top>840</top><width>140</width><height>24</height>
+			<aligny>center</aligny>
+			<font>font12</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<label>GENRES</label>
+		</control>
+		<control type="label" id="9150">
+			<left>500</left><top>840</top><width>120</width><height>24</height>
+			<aligny>center</aligny>
+			<font>font12_title</font>
+			<textcolor>FFFF9C00</textcolor>
+			<label></label>
+		</control>
+		<control type="image">
+			<left>110</left><top>866</top><width>1700</width><height>84</height>
+			<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
+		</control>
+		<control type="button" id="9401">
+			<left>458</left><top>878</top><width>220</width><height>60</height>
+			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
+			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
+			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<label>HOME</label>
+			<onleft>9404</onleft><onright>9402</onright><onup>9107</onup>
+		</control>
+		<control type="image"><left>474</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
+		<control type="button" id="9402">
+			<left>686</left><top>878</top><width>220</width><height>60</height>
+			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
+			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
+			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<label>SEARCH</label>
+			<onleft>9401</onleft><onright>9403</onright><onup>9108</onup>
+		</control>
+		<control type="image"><left>702</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+		<control type="button" id="9403">
+			<left>914</left><top>878</top><width>270</width><height>60</height>
+			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
+			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
+			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<label>SOUND ON</label>
+			<onleft>9402</onleft><onright>9404</onright><onup>9108</onup>
+		</control>
+		<control type="image" id="9405"><left>930</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture></control>
+		<control type="button" id="9404">
+			<left>1192</left><top>878</top><width>250</width><height>60</height>
+			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
+			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
+			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<label>SETTINGS</label>
+			<onleft>9403</onleft><onright>9401</onright><onup>9109</onup>
+		</control>
+		<control type="image"><left>1208</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+	</controls>
+</window>
