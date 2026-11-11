@@ -113,12 +113,98 @@ def frame_pose(rgb):
     return head, cut, cols
 
 
-def _taper_caps(canvas, rgb, place):
-    """Feather a tall pose's thigh into the shin.
+def _outer_span(row, x0, x1, thresh=90, join=14):
+    """Outer silhouette, including the rounded cap's corners.
 
-    The rounded cap is a little brighter than the shin. A short vertical mix
-    across the join evens that out, and the cap's extra width is carried down
-    a few pixels using the edge pixel itself. Bowed frames never call this.
+    A corner that sits a few pixels off the thigh still counts. A one-pixel
+    speck farther out does not.
+    """
+    sl = row[x0:x1 + 1]
+    xs = np.where(sl.sum(axis=1) > thresh)[0] if sl.ndim == 2 else np.where(sl > thresh)[0]
+    if len(xs) == 0:
+        return None
+    runs = []
+    start = prev = int(xs[0])
+    for x in list(xs[1:]) + [None]:
+        if x is None or int(x) - prev > 2:
+            runs.append((start, prev))
+            if x is None:
+                break
+            start = int(x)
+        if x is not None:
+            prev = int(x)
+    if not runs:
+        return None
+    main = max(runs, key=lambda r: r[1] - r[0])
+    if main[1] - main[0] < 10:
+        return None
+    left, right = main
+    for a, b in runs:
+        if b - a < 1:
+            continue
+        if a > right and a - right <= join:
+            right = b
+        elif b < left and left - b <= join:
+            left = a
+    return x0 + left, x0 + right
+
+
+def _nearest_white(row, x, limit=16):
+    """The thigh's own shade nearest to x, one pixel in from the grey fringe."""
+    width = row.shape[0]
+    found = None
+    for dist in range(limit + 1):
+        for xx in ((x,) if dist == 0 else (x - dist, x + dist)):
+            if xx < 0 or xx >= width:
+                continue
+            if row[xx].sum() > 110:
+                found = xx
+                break
+        if found is not None:
+            break
+    if found is None:
+        return None
+    for step in (1, -1):
+        xx = found + step
+        if 0 <= xx < width and row[xx].sum() > row[found].sum() + 25:
+            return row[xx]
+    return row[found]
+
+
+def _fill_outline(canvas, y, left, right):
+    """Fill black pixels inside the outline with that row's own thigh shade."""
+    width = canvas.shape[1]
+    row = canvas[y]
+    x_from = max(0, int(np.floor(left)))
+    x_to = min(width - 1, int(np.ceil(right)))
+    for x in range(x_from, x_to + 1):
+        if row[x].sum() > 80:
+            continue
+        if x < left:
+            cover = max(0.0, min(1.0, (x + 1) - left))
+        elif x > right:
+            cover = max(0.0, min(1.0, (right + 1) - x))
+        else:
+            cover = 1.0
+        if cover <= 0.04:
+            continue
+        if left + 1.2 < x < right - 1.2:
+            cover = 1.0
+        else:
+            cover = min(cover, 0.72)
+        sample = _nearest_white(row, x)
+        if sample is None:
+            continue
+        canvas[y, x] = sample * cover
+
+
+def _taper_caps(canvas, rgb, place):
+    """Close the step where a tall pose's rounded cap meets the shin.
+
+    The outline is interpolated from the cap's outer edge to the shin edge
+    over 26px. Only black pixels inside that outline are filled, using the
+    white of the nearest real thigh pixel on that row. The outermost pixel is
+    partial so the edge is soft against the black. Bowed frames never call this.
     """
     ink = rgb.sum(axis=2) > 48
     height, width = canvas.shape[:2]
@@ -131,18 +217,48 @@ def _taper_caps(canvas, rgb, place):
         if len(bottoms) < 6:
             continue
         cap_y = int(np.median(bottoms))
-        y0 = max(2, cap_y - 10)
-        y1 = min(height - 3, cap_y + 16)
-        xa = max(0, x0 - 4)
-        xb = min(width - 1, x1 + 4)
-        band = canvas[y0:y1 + 1, xa:xb + 1].copy()
-        # Vertical feather of the pixels that are already the leg.
-        blur = band.copy()
-        blur[2:-2] = (band[:-4] + 2 * band[1:-3] + 3 * band[2:-2] + 2 * band[3:-1] + band[4:]) / 9.0
-        leg = band.sum(axis=2) > 70
-        mixed = band * 0.45 + blur * 0.55
-        band[leg] = mixed[leg]
-        canvas[y0:y1 + 1, xa:xb + 1] = band
+        xa = max(0, x0 - 24)
+        xb = min(width - 1, x1 + 24)
+        bulge = None
+        best = 0
+        y_lo = max(0, cap_y - 48)
+        y_hi = min(height, cap_y + 2)
+        for y in range(y_lo, y_hi):
+            span = _outer_span(canvas[y], xa, xb)
+            if span and span[1] - span[0] > best:
+                best = span[1] - span[0]
+                bulge = (y, span[0], span[1])
+        if not bulge:
+            continue
+        by, bl, br = bulge
+        edges = []
+        for y in range(min(height, by + 22), min(height, by + 36)):
+            span = _outer_span(canvas[y], xa, xb)
+            if span:
+                edges.append(span)
+        if len(edges) < 4:
+            continue
+        shin_l = int(round(float(np.median([e[0] for e in edges]))))
+        shin_r = int(round(float(np.median([e[1] for e in edges]))))
+        if (br - bl) <= (shin_r - shin_l) + 1:
+            continue
+        fade = 26
+        # Connect the cap's corners to the thigh on the rows just above the
+        # widest point. That pass does not move the outline outward.
+        for y in range(max(0, by - 6), by + 1):
+            span = _outer_span(canvas[y], xa, xb)
+            if not span:
+                continue
+            _fill_outline(canvas, y, span[0], span[1])
+        for i in range(fade + 1):
+            y = by + i
+            if y >= height:
+                break
+            t = i / float(fade)
+            t = t * t * (3.0 - 2.0 * t)
+            left = bl + (shin_l - bl) * t
+            right = br + (shin_r - br) * t
+            _fill_outline(canvas, y, left, right)
 
 
 def extend_all(source_dir=None, preview=None):
