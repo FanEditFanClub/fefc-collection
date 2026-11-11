@@ -469,8 +469,8 @@ def check_update(manual=False, prompt=True):
             xbmcgui.Dialog().ok('FEFC', 'This is not the FEFC app build, so there is no app update to check. Add-on updates arrive automatically.')
         return
     set_update_state(cur, state='checking')
-    prog = xbmcgui.DialogProgressBG()
-    prog.create('FEFC', 'Checking for updates')
+    # The Home button already reads Checking for updates. The background progress
+    # dialog is the top-left line and the corner notification, so the check skips it.
     try:
         req = urllib.request.Request(VERSION_URL + '?t=%d' % int(time.time()), headers={'User-Agent': 'FEFC-Kodi'})
         new = json.loads(urllib.request.urlopen(req, timeout=15).read().decode('utf-8'))
@@ -480,11 +480,6 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Dialog().ok('FEFC', 'Unable to check for updates right now.')
         return
-    finally:
-        try:
-            prog.close()
-        except Exception:
-            pass
     from resources.lib.updateflow import release_is_newer
     avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
     set_update_state(cur, new, avail)

@@ -115,6 +115,7 @@ print('ok')
   assert.match(svc, /popup\.render\('failed'/);
   assert.doesNotMatch(svc, /Downloading %s: %d%% \(%d \/ %d MB\)/);
   assert.doesNotMatch(svc, /Already downloading the update/);
+  assert.doesNotMatch(svc, /DialogProgressBG/);
 });
 
 test('back cue respects mute and does not double', () => {
@@ -960,6 +961,8 @@ test('0.6.2 search, genres, back, update popup, home speed', () => {
   assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search,return\)/);
   assert.match(router, /osinput\.get_text\('Search'/);
   assert.match(router, /_go\('push', _url\(self\.url, action='search', q=q\)\)/);
+  assert.match(router, /def _bar_leave/);
+  assert.match(router, /elif not _bar_left\(\)/);
   assert.match(resync, /video_genres\.py --no-net/);
   assert.match(resync, /build_page_pack\.py/);
   assert.doesNotMatch(resync, /tools\/genres\.py/);

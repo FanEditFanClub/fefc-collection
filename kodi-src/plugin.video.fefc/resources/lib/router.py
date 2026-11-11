@@ -754,6 +754,7 @@ class Router:
         A directory launch (the add-on root) lists the same names as folders.
         Either way the window is an FEFC plugin path. A failed directory is
         what used to drop the screen onto the stock Videos root."""
+        xbmcgui.Window(10000).clearProperty('FEFC.BarLeave')
         entries = self._genre_entries()
         if self.handle < 0:
             _go('activate', _url('plugin://plugin.video.fefc/', action='genres'))
@@ -771,7 +772,7 @@ class Router:
         picked = open_genre_board(entries)
         if picked:
             _go('push', _url('plugin://plugin.video.fefc/', action='genre', genre=picked))
-        else:
+        elif not _bar_left():
             xbmc.executebuiltin('Action(Back)')
 
     def genre(self):
@@ -896,7 +897,10 @@ class Router:
             win = OptimusWindow()
             win.doModal()
             q = (win.query or '').strip()
+            left = bool(getattr(win, 'leave', False))
             del win
+            if left:
+                return
             if not q:
                 xbmc.executebuiltin('Action(Back)')
                 return
@@ -2009,12 +2013,31 @@ def _marquee_loop(label, text, closed):
             return
 
 
+def _bar_leave(win):
+    """The bar is opening another screen. The caller must not then press Back,
+    or that Back closes the screen the bar just opened."""
+    try:
+        win.leave = True
+    except Exception:
+        pass
+    xbmcgui.Window(10000).setProperty('FEFC.BarLeave', '1')
+
+
+def _bar_left():
+    home = xbmcgui.Window(10000)
+    left = home.getProperty('FEFC.BarLeave') == '1'
+    home.clearProperty('FEFC.BarLeave')
+    return left
+
+
 def _bar_action(win, button):
     menu = win.menu
     if button == menu[0]:
+        _bar_leave(win)
         win.close()
         xbmc.executebuiltin('ActivateWindow(Home)')
     elif button == menu[1]:
+        _bar_leave(win)
         xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)')
         win.close()
     elif button == menu[2]:
@@ -2030,6 +2053,7 @@ def _bar_action(win, button):
         except Exception:
             pass
     elif button == menu[3]:
+        _bar_leave(win)
         win.close()
         xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=settings)')
 
