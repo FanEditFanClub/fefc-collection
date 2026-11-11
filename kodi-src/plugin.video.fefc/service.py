@@ -294,56 +294,78 @@ def _install_update(new):
         except OSError:
             pass
         _cue('start')
-        prog = xbmcgui.DialogProgressBG()
-        prog.create('FEFC update', 'Downloading %s...' % version_label(new))
-        tries = 0
-        while tries < 8 and not ok:
-            tries += 1
-            try:
-                have = os.path.getsize(part) if os.path.exists(part) else 0
-                if want and have >= want:
-                    have = 0
-                hdr = {'User-Agent': 'FEFC-Kodi'}
-                if have:
-                    hdr['Range'] = 'bytes=%d-' % have
-                with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
-                    if have and r.status != 206:
+        from resources.lib.updatepopup import UpdatePopup
+        popup = UpdatePopup(version_label(new))
+        popup.render('downloading', 0, 0, want or 0)
+        finished = {'done': False}
+
+        def work():
+            nonlocal ok
+            tries = 0
+            while tries < 8 and not ok:
+                tries += 1
+                try:
+                    have = os.path.getsize(part) if os.path.exists(part) else 0
+                    if want and have >= want:
                         have = 0
-                    total = want or (have + int(r.headers.get('Content-Length') or 0))
-                    with open(part, 'ab' if have else 'wb') as f:
-                        done = have
-                        while True:
-                            chunk = r.read(256 * 1024)
-                            if not chunk:
-                                break
-                            f.write(chunk)
-                            done += len(chunk)
-                            if total:
-                                pct = min(99, int(done * 100 / total))
-                                prog.update(pct, 'FEFC update',
-                                            'Downloading %s: %d%% (%d / %d MB)' % (version_label(new), pct, done >> 20, total >> 20))
-                size = os.path.getsize(part)
-                if want and size < want:
-                    raise RuntimeError('short download %d/%d' % (size, want))
-                if sha:
-                    prog.update(99, 'FEFC update', 'Checking the download...')
-                    h = hashlib.sha256()
-                    with open(part, 'rb') as f:
-                        for c in iter(lambda: f.read(1 << 20), b''):
-                            h.update(c)
-                    if h.hexdigest() != sha:
-                        os.remove(part)
-                        raise RuntimeError('checksum mismatch')
-                os.replace(part, dst)
-                ok = True
-            except Exception as e:
-                log('update download attempt %d failed: %s' % (tries, e))
-                prog.update(0, 'FEFC update', 'Connection problem, retrying (%d/8)...' % tries)
-                xbmc.sleep(min(30, 3 * tries) * 1000)
-        prog.close()
+                    hdr = {'User-Agent': 'FEFC-Kodi'}
+                    if have:
+                        hdr['Range'] = 'bytes=%d-' % have
+                    with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
+                        if have and r.status != 206:
+                            have = 0
+                        total = want or (have + int(r.headers.get('Content-Length') or 0))
+                        with open(part, 'ab' if have else 'wb') as f:
+                            done = have
+                            while True:
+                                chunk = r.read(256 * 1024)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                                done += len(chunk)
+                                if total:
+                                    pct = min(99, int(done * 100 / total))
+                                    popup.render('downloading', pct, done, total)
+                    size = os.path.getsize(part)
+                    if want and size < want:
+                        raise RuntimeError('short download %d/%d' % (size, want))
+                    if sha:
+                        popup.render('verifying', 100, size, want or size)
+                        h = hashlib.sha256()
+                        with open(part, 'rb') as f:
+                            for c in iter(lambda: f.read(1 << 20), b''):
+                                h.update(c)
+                        if h.hexdigest() != sha:
+                            os.remove(part)
+                            raise RuntimeError('checksum mismatch')
+                    os.replace(part, dst)
+                    ok = True
+                except Exception as e:
+                    log('update download attempt %d failed: %s' % (tries, e))
+                    popup.render('downloading', 0, 0, want or 0, 'Connection problem, retrying (%d/8)...' % tries)
+                    xbmc.sleep(min(30, 3 * tries) * 1000)
+            finished['done'] = True
+            try:
+                popup.close()
+            except Exception:
+                pass
+
+        threading.Thread(target=work, daemon=True).start()
+        while not finished['done']:
+            if popup.dismissed:
+                if xbmcgui.Window(10000).getProperty('FEFC.UpdateReveal') == '1':
+                    xbmcgui.Window(10000).clearProperty('FEFC.UpdateReveal')
+                    popup.dismissed = False
+                else:
+                    xbmc.sleep(200)
+                    continue
+            popup.doModal()
     if not ok:
         _cue('error')
-        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again; it will continue where it stopped.')
+        popup.render('failed', 0, 0, want or 0, 'The download did not finish after several tries. Check the connection and pick Retry. It continues where it stopped.')
+        popup.doModal()
+        if popup.retry:
+            _install_update(new)
         return
     if not url:
         _cue('error')
@@ -373,6 +395,13 @@ def _install_update(new):
         xbmcgui.Dialog().ok('FEFC update', 'The installer could not be opened.')
         return
     _cue('verified')
+    try:
+        popup.render('ready', 100, os.path.getsize(dst), want or os.path.getsize(dst))
+        popup.show()
+        xbmc.sleep(700)
+        popup.close()
+    except Exception:
+        pass
     log('launching installer: %s' % builtin)
     # Do not close every dialog (that flashed the screen black) and do not record success
     # before Android's own confirmation. The running process stays the old build until a full restart.
@@ -461,7 +490,7 @@ def check_update(manual=False, prompt=True):
     set_update_state(cur, new, avail)
     if _updating():
         if manual:
-            xbmcgui.Dialog().notification('FEFC update', 'Already downloading the update...', time=3000)
+            xbmcgui.Window(10000).setProperty('FEFC.UpdateReveal', '1')
         return
     if avail and manual:   # the Home update button: always a fresh check, then install straight away
         install_update(new)

@@ -156,7 +156,7 @@
 				<label>GENRES</label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9008</onleft><onright>9007</onright><onup>9006</onup><ondown>9031</ondown>
-				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=genres)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=genres,return)</onclick>
 			</control>
 			<control type="label">
 				<left>9</left><top>359</top><width>382</width><height>38</height>
@@ -272,7 +272,7 @@
 				<label>SEARCH</label>
 				<onleft condition="Control.IsVisible(9022)">9022</onleft><onleft>9023</onleft>
 				<onright>9032</onright><onup>9008</onup><ondown>9008</ondown>
-				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)</onclick>
 			</control>
 			<control type="image"><left>16</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 			<control type="button" id="9032">

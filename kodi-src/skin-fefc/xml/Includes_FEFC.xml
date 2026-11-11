@@ -183,8 +183,10 @@
 		<value>SOUND ON</value>
 	</variable>
 	<include name="FefcSmallButton">
-		<texturenofocus border="26">fefc-tile.png</texturenofocus>
-		<texturefocus border="26">fefc-tile-focus.png</texturefocus>
+		<!-- border 16 on a 64px-tall bar leaves a real center. border 26 on the old
+		     square tile collapsed the stroke, worst on the 240px SOUND button. -->
+		<texturenofocus border="16">fefc-bar.png</texturenofocus>
+		<texturefocus border="16">fefc-bar-focus.png</texturefocus>
 		<!-- 0.5.0: the bar font (20px) lives here, not overridden per button — the per-button override
 		     was not reliably winning over this 27px font, so Update / Sound / Settings text rendered
 		     too wide for their buttons and got cut off (4th report). One font, one place. -->
@@ -295,7 +297,7 @@
 					<ondown condition="Control.IsVisible(501)">501</ondown>
 					<ondown condition="Control.IsVisible(500)">500</ondown>
 					<ondown>$PARAM[down]</ondown>
-					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
+					<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)</onclick>
 				</control>
 				<control type="image"><left>244</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 				<control type="button" id="9294">

@@ -202,6 +202,13 @@ def _url(handle_url, **kw):
     return handle_url + '?' + urlencode(kw)
 
 
+def _go(kind, url):
+    """Open a plugin URL. kind is activate, push, or replace. & is escaped."""
+    from .navopen import activate_videos, push_child, replace_same
+    cmd = {'activate': activate_videos, 'push': push_child, 'replace': replace_same}[kind](url)
+    xbmc.executebuiltin(cmd)
+
+
 def _play_queue(entries, note):
     """Start playback after the plugin call has returned. Player.play while Kodi's busy dialog is up aborts the app."""
     def go():
@@ -586,7 +593,15 @@ class Router:
                           action='sort', id=fid)
             self.add_tool('Shuffle Play', 'Play a random mix of edits from this collection.', 'DefaultMusicPlaylists.png', action='shuffle', id=fid)
         if not page and action == 'genre':
-            self.add_tool('Shuffle Play', 'Play a random mix of edits from this genre.', 'DefaultMusicPlaylists.png', action='shuffle', genre=kw.get('genre') or '')
+            gname = kw.get('genre') or ''
+            key = _sort_get('genre:' + gname)
+            self.add_tool('Sort: %s   (select to change)' % dict(SORTS).get(key, 'Name A-Z'),
+                          'Change how this genre is sorted.',
+                          action='sort', id='genre:' + gname)
+            self.add_tool('Shuffle Play', 'Play a random mix of edits from this genre.', 'DefaultMusicPlaylists.png', action='shuffle', genre=gname)
+            self.add_folder('Support Us', 'special://skin/media/fefc-ol-tile.png', 'Patreon, PayPal and Venmo.',
+                            landscape='special://skin/media/fefc-ol-tile.png', action='support',
+                            props={'fefc_kind': 'action'})
         for row in doc.get('rows') or []:
             self._add_pack_row(row)
         size = pagepack.LIST_PAGE
@@ -741,11 +756,7 @@ class Router:
         what used to drop the screen onto the stock Videos root."""
         entries = self._genre_entries()
         if self.handle < 0:
-            from .genreshow import open_genre_board
-            picked = open_genre_board(entries)
-            if picked:
-                xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(
-                    'plugin://plugin.video.fefc/', action='genre', genre=picked))
+            _go('activate', _url('plugin://plugin.video.fefc/', action='genres'))
             return
         dark = 'special://skin/media/fefc-ol-tile.png'
         if not entries:
@@ -755,6 +766,13 @@ class Router:
         for label, key, img in entries:
             self.add_folder(label, img or dark, '', landscape=dark, action='genre', genre=key, props={'fefc_kind': 'folder'})
         self.end()
+        _close_busy()
+        from .genreshow import open_genre_board
+        picked = open_genre_board(entries)
+        if picked:
+            _go('push', _url('plugin://plugin.video.fefc/', action='genre', genre=picked))
+        else:
+            xbmc.executebuiltin('Action(Back)')
 
     def genre(self):
         """Collections and files in a genre, main collection only, one short page.
@@ -766,12 +784,29 @@ class Router:
         dark = 'special://skin/media/fefc-ol-tile.png'
         from . import pagepack
         if pagepack.available():
-            doc = pagepack.genre_page(g, page)
-            if doc is not None:
-                if not doc['rows'] and page == 0:
+            full = pagepack.genre_all(g)
+            if full is not None:
+                rows = list(full.get('rows') or [])
+                key = _sort_get('genre:' + g)
+                if key == 'za':
+                    rows = list(reversed(rows))
+                if not rows and page == 0:
                     self.add_folder('Nothing in the main collection', dark, 'To Be Catalogued is not listed here.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
                     self.end()
                     return
+                start = page * pagepack.LIST_PAGE
+                doc = {
+                    'name': full.get('name') or g,
+                    'sfx': '',
+                    'total': len(rows),
+                    'rows': rows[start:start + pagepack.LIST_PAGE],
+                }
+                pool = full.get('sfx') or []
+                if isinstance(pool, list) and pool:
+                    import random
+                    doc['sfx'] = random.choice(pool)
+                elif isinstance(pool, str):
+                    doc['sfx'] = pool
                 self._emit_pack_page(doc, page, 'genre', genre=g)
                 return
         try:
@@ -848,18 +883,24 @@ class Router:
         from . import searchflow
         q = self.params.get('q')
         if q is None:
-            # End the directory before the dialog. Leaving it open holds Kodi's
-            # busy dialog for the whole time the search window is on screen.
-            if self.handle >= 0:
-                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            if self.handle < 0:
+                _go('activate', _url(self.url, action='search'))
+                return
+            # This directory is the Search page. Results are pushed under it,
+            # so Back from the results returns here instead of to Home.
+            self.add_folder('Search', 'special://skin/media/fefc-ol-tile.png', 'Search the main collection.',
+                            landscape='special://skin/media/fefc-ol-tile.png', action='search',
+                            props={'fefc_kind': 'action'})
+            self.end(cache=False)
             _close_busy()
             win = OptimusWindow()
             win.doModal()
             q = (win.query or '').strip()
             del win
             if not q:
+                xbmc.executebuiltin('Action(Back)')
                 return
-            xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='search', q=q))
+            _go('push', _url(self.url, action='search', q=q))
             return
         from . import pagepack
         page = int(self.params.get('page') or 0)
@@ -868,7 +909,13 @@ class Router:
             if doc is not None:
                 msg = searchflow.result_message(q, doc.get('total') or 0, False)
                 if msg and page == 0:
-                    xbmcgui.Dialog().notification('FEFC', msg, xbmcgui.NOTIFICATION_INFO, 3000)
+                    xbmcgui.Dialog().notification('FEFC', msg, xbmcgui.NOTIFICATION_INFO, 4000)
+                    if not doc.get('rows'):
+                        self.add_folder(msg, 'special://skin/media/fefc-ol-tile.png', msg,
+                                        landscape='special://skin/media/fefc-ol-tile.png', action='search',
+                                        props={'fefc_kind': 'action'})
+                        self.end(cache=False)
+                        return
                 self._emit_pack_page(doc, page, 'search', q=q)
                 return
         try:
@@ -893,15 +940,17 @@ class Router:
         self.end(cache=False)
 
     def searchbox(self):
-        """Home Search tile (RunPlugin, no directory handle): the Optimus card collects the text, then the results list opens.
-        The keyboard is not opened underneath the still-open card."""
+        """One press opens Search. A second plugin call is not required.
+
+        From Home this is a new Videos window. From a folder it is pushed, so
+        Back returns to that folder, then Home. The keyboard opens with the page.
+        """
         _close_busy()
-        win = OptimusWindow()
-        win.doModal()
-        q = (win.query or '').strip()
-        del win
-        if q:
-            xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(self.url, action='search', q=q))
+        url = _url('plugin://plugin.video.fefc/', action='search')
+        if xbmc.getCondVisibility('Window.IsActive(videos)'):
+            _go('push', url)
+        else:
+            _go('activate', url)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
@@ -916,8 +965,14 @@ class Router:
         return None
 
     def mylist(self):
-        m = _model()
         ml = self.mydb()
+        from . import pagepack
+        by = pagepack.id_index() if pagepack.available() else {}
+        wanted = list(ml.continue_ids()) + list(ml.ids())
+        if by and all(sid in by for sid in wanted):
+            self._mylist_from_pack(ml, by)
+            return
+        m = _model()
         if ml.linked and not self.params.get('nosync'):
             err = ml.sync(timeout=4)
             if err:
@@ -969,6 +1024,52 @@ class Router:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
         self.end(cache=False)
 
+    def _mylist_from_pack(self, ml, by):
+        """My List from the shipped index. Skips the full catalogue build."""
+        if ml.linked and not self.params.get('nosync'):
+            err = ml.sync(timeout=4)
+            if err:
+                _log('mylist sync: %s' % err)
+        dark = 'special://skin/media/fefc-ol-tile.png'
+        who = ml.db.get('user') or 'linked'
+        link_plot = 'Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.'
+        if ml.linked:
+            link_plot += ' Signed in as %s.' % who
+        self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
+        sortk = self.params.get('sort') or _pref('_mylist', 'date')
+        if sortk not in ('date', 'az', 'za'):
+            sortk = 'date'
+        sort_name = {'date': 'Date added', 'az': 'Name A-Z', 'za': 'Name Z-A'}[sortk]
+        self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
+        self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
+        self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
+        try:
+            ndl = _dl().count()
+        except Exception:
+            ndl = 0
+        self.add_folder('Downloads' if not ndl else 'Downloads · %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
+        shown = set()
+        ids = list(ml.ids())
+        if sortk in ('az', 'za'):
+            ids = sorted(ids, key=lambda x: catalog.natkey((by.get(x) or ['', ''])[1]))
+            if sortk == 'za':
+                ids.reverse()
+        else:
+            for sid in ml.continue_ids():
+                row = by.get(sid)
+                if row and not row[2] and sid not in shown:
+                    self._add_pack_row(row)
+                    shown.add(sid)
+        for sid in ids:
+            row = by.get(sid)
+            if not row or sid in shown:
+                continue
+            shown.add(sid)
+            self._add_pack_row(row)
+        if not shown:
+            xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
+        self.end(cache=False)
+
     def mylist_sortswitch(self):
         opts = [('date', 'Date added'), ('az', 'Name A-Z'), ('za', 'Name Z-A')]
         cur = self.params.get('cur') or _pref('_mylist', 'date')
@@ -977,7 +1078,7 @@ class Router:
         k = xbmcgui.Dialog().select('Sort My List', [n for _, n in opts], preselect=[i for i, _ in opts].index(cur))
         if k >= 0:
             _sort_set('_mylist', opts[k][0])
-            xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='mylist', sort=opts[k][0], nosync='1'))
+            _go('replace', _url(self.url, action='mylist', sort=opts[k][0], nosync='1'))
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
@@ -1033,7 +1134,10 @@ class Router:
         k = xbmcgui.Dialog().select('Sort this collection', names, preselect=[k for k, n in SORTS].index(cur))
         if k >= 0:
             _sort_set(fid, SORTS[k][0])
-            xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='folder', id=fid))
+            if str(fid).startswith('genre:'):
+                _go('replace', _url(self.url, action='genre', genre=str(fid)[6:]))
+            else:
+                _go('replace', _url(self.url, action='folder', id=fid))
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def shuffle(self):
@@ -1054,7 +1158,15 @@ class Router:
 
     def people(self):
         """Flat actor/director list. Original Drive folder names, A–Z. Metadata full names are not shown.
-        end() sets SORT_METHOD_UNSORTED so Kodi does not re-sort the labels."""
+        end() sets SORT_METHOD_UNSORTED so Kodi does not re-sort the labels.
+        The shipped page is used so this does not build the whole catalogue."""
+        from . import pagepack
+        page = int(self.params.get('page') or 0)
+        if pagepack.available():
+            doc = pagepack.people_page(page)
+            if doc is not None:
+                self._emit_pack_page(doc, page, 'people')
+                return
         m = _model()
         meta = m.get('people_meta') or {}
         role = self.params.get('role')
@@ -1903,8 +2015,8 @@ def _bar_action(win, button):
         win.close()
         xbmc.executebuiltin('ActivateWindow(Home)')
     elif button == menu[1]:
+        xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)')
         win.close()
-        xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=searchbox)')
     elif button == menu[2]:
         xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)')
         off = _sound_off()
@@ -2222,9 +2334,10 @@ class OptimusWindow(xbmcgui.WindowDialog):
 
     def _add_optimus_marks(self, y, art_w):
         """Grok, Discord and Muse under the loop. Decorative only, so they take no focus.
-        The 48 frames are not modified. Discord's mark is the Clyde face from its brand
-        page. Grok is the current iOS app glyph (App Store id 6670324846). Muse is
-        Meta's creature avatar, from the Muse from Meta App Store listing."""
+        The 48 frames are not modified. Discord is Clyde, white on transparent.
+        Grok is a flat black rounded square with the white ring-and-slash, the
+        same mark as the Grok iOS app icon, redrawn here so it stays sharp at 30px.
+        Muse is Meta's white creature."""
         marks = (
             (_media_file('fefc-mark-grok.png'), 'Grok'),
             (_media_file('fefc-mark-discord.png'), 'Discord'),
@@ -2276,11 +2389,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
                 if self._anim:
                     self._halt_anim()
             elif self._saw_keyboard:
-                # Keyboard just closed. A title runs the search; an empty cancel resumes the loop.
                 self._saw_keyboard = False
-                if self._draft():
-                    self._submit()
-                    return
                 self._park_edit()
                 self._resume_anim()
             if self._anim and self._frames:
@@ -2366,28 +2475,38 @@ class OptimusWindow(xbmcgui.WindowDialog):
         except Exception:
             pass
 
+    def onInit(self):
+        # One press of SEARCH opens this page and the keyboard together.
+        if not self._opening and not self.query:
+            self._open_keyboard()
+
     def _open_keyboard(self):
-        """Move the field into the bar and open the keyboard."""
+        """Fire TV system keyboard and the Kodi keyboard both return the text here.
+
+        Enter/Done is kb.isConfirmed() / the Android activity result, on this
+        thread. A background poll of ControlEdit never saw that Done on device.
+        """
         if self._opening or self._closed:
             return
         self._opening = True
         self._halt_anim()
+        text = None
         try:
-            ex, ey, ew, eh = self._edit_home
-            self.edit.setPosition(ex, ey)
-            self.edit.setVisible(True)
-            self.setFocus(self.edit)
+            from . import osinput
+            text = osinput.get_text('Search', self.query or '')
         except Exception:
-            self._opening = False
+            text = None
+        self._opening = False
+        if self._closed:
             return
-
-        def kick():
-            xbmc.sleep(120)
-            self._opening = False
-            if not self._closed:
-                xbmc.executebuiltin('Action(Select)')
-
-        threading.Thread(target=kick, daemon=True).start()
+        from . import searchflow
+        got = searchflow.submit(text or '')
+        if not got['ok']:
+            self._park_edit()
+            self._resume_anim()
+            return
+        self.query = got['query']
+        self.close()
 
 
 ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'genre': 'genre', 'recent': 'recent',

@@ -6,7 +6,13 @@
    "notes": [
     "Folder, genre, person, My List and search screens show their tiles again. The grid no longer hides when the TV does not report view 500 or 501.",
     "While the news ticker is still loading, the bar says Loading Fan Edit Fan Club Ticker, centered and still. It scrolls once the items arrive.",
-    "Sound off takes effect immediately. The button and the ambience no longer wait for the settings file."
+    "Sound off takes effect immediately. The button and the ambience no longer wait for the settings file.",
+    "Search opens on the first press. Enter or Done on the keyboard opens the results. Back from the results returns to Search.",
+    "Genre folders list the main collection, with Sort, Shuffle Play and Support Us. Back from a genre returns to Genres.",
+    "The Genres page has no wordmark or tagline. The title sits between two mosaic tiles on each side.",
+    "An app update shows a centered progress popup: percent and megabytes, Verifying, Ready to install, and Failed with Retry.",
+    "Actors and Directors opens from the saved page instead of rebuilding the whole catalogue.",
+    "The SOUND button uses the same outlined bar as the other menu buttons. The Grok mark is the flat iOS icon."
    ]
   },
   {

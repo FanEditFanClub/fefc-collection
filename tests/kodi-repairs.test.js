@@ -109,7 +109,12 @@ print('ok')
   assert.match(svc, /state='checking'/);
   assert.match(svc, /release_is_newer/);
   assert.match(svc, /state='failed'/);
-  assert.match(svc, /Downloading %s: %d%% \(%d \/ %d MB\)/);
+  assert.match(svc, /UpdatePopup/);
+  assert.match(svc, /popup\.render\('verifying'/);
+  assert.match(svc, /popup\.render\('ready'/);
+  assert.match(svc, /popup\.render\('failed'/);
+  assert.doesNotMatch(svc, /Downloading %s: %d%% \(%d \/ %d MB\)/);
+  assert.doesNotMatch(svc, /Already downloading the update/);
 });
 
 test('back cue respects mute and does not double', () => {
@@ -804,8 +809,8 @@ test('regressions: back key, menu words, genre list, nav gain', () => {
   const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
   const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
   const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
-  assert.match(home, /RunPlugin\(plugin:\/\/plugin\.video\.fefc\/\?action=genres\)/);
-  assert.doesNotMatch(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=genres/);
+  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=genres,return\)/);
+  assert.doesNotMatch(home, /RunPlugin\(plugin:\/\/plugin\.video\.fefc\/\?action=genres\)/);
   assert.doesNotMatch(nav, /Video add-ons/);
   assert.doesNotMatch(nav, /Playlists/);
   assert.doesNotMatch(home, /Video add-ons/);
@@ -884,9 +889,13 @@ test('page pack, ticker windows, search open, marks, shared bar', () => {
   assert.match(genres, /id="9404"[\s\S]{0,120}<width>220<\/width>/);
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   const searchFn = router.slice(router.indexOf('def search('), router.indexOf('\n    def searchbox('));
-  const endAt = searchFn.indexOf('endOfDirectory');
+  const endAt = searchFn.indexOf('self.end(');
   const winAt = searchFn.indexOf('OptimusWindow');
   assert.ok(endAt >= 0 && winAt > endAt, 'directory must end before the search window');
+  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search,return\)/);
+  assert.match(skin, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search,return\)/);
+  assert.match(searchFn, /_go\('push'/);
+  assert.match(router, /osinput\.get_text\('Search'/);
   assert.match(router, /_close_busy\(\)/);
   assert.match(router, /_media_file\('fefc-mark-grok\.png'\)/);
   assert.match(router, /_media_file\('fefc-mark-discord\.png'\)/);
@@ -930,6 +939,100 @@ print('TIMES folder %.2f genre %.2f recent %.2f search %.2f frames %.2f rows %d'
     folder_ms, genre_ms, recent_ms, search_ms, open_ms, doc['total']))
 `);
   assert.match(out, /TIMES /);
+  console.log(out);
+});
+
+test('0.6.2 search, genres, back, update popup, home speed', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const genresXml = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/skins/Default/1080i/DialogGenres.xml'), 'utf8');
+  const resync = fs.readFileSync(path.join(root, 'tools/daily_resync.py'), 'utf8');
+  assert.match(skin, /fefc-bar\.png/);
+  assert.match(skin, /border="16">fefc-bar\.png/);
+  assert.ok(fs.existsSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/media/chrome/btn-160.png')));
+  assert.ok(fs.existsSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/media/chrome/btn-160-on.png')));
+  assert.match(genresXml, /SetProperty\(FEFC\.Genres,1,home\)/);
+  assert.match(genresXml, /<label>GENRES<\/label>/);
+  assert.doesNotMatch(genresXml, /fefc-wordmark\.png/);
+  assert.doesNotMatch(genresXml, /dedicated to the art of The Fan Edit/);
+  assert.match(genresXml, /border="16">fefc-bar\.png/);
+  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search,return\)/);
+  assert.match(router, /osinput\.get_text\('Search'/);
+  assert.match(router, /_go\('push', _url\(self\.url, action='search', q=q\)\)/);
+  assert.match(resync, /video_genres\.py --no-net/);
+  assert.match(resync, /build_page_pack\.py/);
+  assert.doesNotMatch(resync, /tools\/genres\.py/);
+  const out = py(`
+import json, sys, time
+sys.path.insert(0, ${JSON.stringify(lib)})
+import navopen, updateflow, pagepack
+order = ['genre','genres','folder','person','people','details','search-results','search','mylist','recent','readme','support','collections','main','tbc']
+expect = {
+    'genre': 'genres', 'genres': 'home', 'folder': 'parent', 'person': 'people',
+    'people': 'home', 'details': 'folder', 'search-results': 'search', 'search': 'home',
+    'mylist': 'home', 'recent': 'home', 'readme': 'home', 'support': 'home',
+    'collections': 'home', 'main': 'home', 'tbc': 'home',
+}
+for screen in order:
+    got = navopen.parent(screen)
+    print('BACK', screen, got)
+    assert got == expect[screen], (screen, got)
+try:
+    navopen.parent('nope')
+    raise SystemExit('unknown screen should fail')
+except KeyError:
+    pass
+opened = navopen.push_child('plugin://plugin.video.fefc/?action=search&q=godfather')
+assert 'action=search&&q=godfather' in opened, opened
+assert opened.startswith('Container.Update(')
+act = navopen.activate_videos('plugin://plugin.video.fefc/?action=search')
+assert 'return' in act and '&' not in act.split('search',1)[-1]
+view = updateflow.progress_view('downloading', '0.6.2 Beta', 85, 93<<20, 109<<20)
+assert view['title'] == 'Updating FEFC' and view['line'] == '85%' and view['sub'] == '93 / 109 MB'
+assert updateflow.progress_view('verifying', '0.6.2 Beta', 100, 1, 1)['line'] == 'Verifying…'
+assert updateflow.progress_view('ready', '0.6.2 Beta')['line'] == 'Ready to install'
+failed = updateflow.progress_view('failed', '0.6.2 Beta', 10, 0, 0, 'disk full')
+assert failed['title'] == 'Update failed' and failed['retry'] and failed['line'] == 'disk full'
+p = pagepack.shipped_path()
+TBC = '1503Wl56hzRppaIFcQisvQksOaeYOEjnk'
+MAIN = '1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB'
+menu = [row['key'] for row in json.load(open('kodi-src/plugin.video.fefc/resources/genre-menu.json'))]
+assert len(menu) == 17, len(menu)
+for name in menu:
+    g = pagepack.genre_page(name, 0, p)
+    assert g and g['total'] > 0, name
+    assert all(r[0] != TBC for r in g['rows']), name
+    print('PACK', name, g['total'])
+for q in ('godfather', 'Godfather', 'star wars'):
+    t = time.perf_counter()
+    s = pagepack.search_page(q, 0, p)
+    ms = (time.perf_counter() - t) * 1000
+    assert s and s['total'] > 0, q
+    assert all(r[0] != TBC for r in s['rows'])
+    dirs = sum(1 for r in s['rows'] if r[2])
+    vids = sum(1 for r in s['rows'] if not r[2])
+    print('SEARCH', q, s['total'], 'dirs', dirs, 'vids', vids, 'ms', round(ms, 1))
+    assert dirs or vids
+t = time.perf_counter()
+people = pagepack.people_page(0, p)
+people_ms = (time.perf_counter() - t) * 1000
+assert people and people['total'] > 0 and len(people['rows']) > 0
+assert people_ms < 2000, people_ms
+print('PEOPLE', people['total'], 'ms', round(people_ms, 1))
+checks = {
+    'root': pagepack.folder_page(pagepack.root_id(p), 0, p),
+    'main': pagepack.folder_page(MAIN, 0, p),
+    'tbc': pagepack.folder_page(TBC, 0, p),
+    'recent': pagepack.recent_page(0, p),
+    'people': people,
+}
+for label, doc in checks.items():
+    assert doc and doc.get('total', 0) > 0 and len(doc.get('rows') or []) > 0, label
+    print('HOME', label, doc['total'], 'shown', len(doc['rows']))
+print('ok')
+`);
+  assert.match(out, /^ok$/m);
   console.log(out);
 });
 
