@@ -137,10 +137,11 @@ jobs:
           if-no-files-found: error
 
   # Samsung only. Mac and webOS have no publish job. The old FEFC_PUBLISH_NEW_PLATFORMS
-  # variable does not publish them. This job runs only for an explicit Tizen publish.
+  # variable does not publish them. A push uploads the unsigned widget. A dispatch
+  # does the same only when publish_tizen is true.
   publish-tizen:
     needs: [tizen]
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_tizen == true) || vars.FEFC_PUBLISH_TIZEN == 'true' }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_tizen == true) || vars.FEFC_PUBLISH_TIZEN == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
