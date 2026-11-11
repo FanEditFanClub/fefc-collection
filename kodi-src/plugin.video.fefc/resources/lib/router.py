@@ -1899,7 +1899,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
         menu_top = int(round(866 * 2 / 3.0))
         art_h = menu_top - 28
-        art_w = int(round(art_h * 204 / 278.0))
+        art_w = int(round(art_h * 222 / 278.0))
         self.art = xbmcgui.ControlImage(0, 12, art_w, art_h, self._still, aspectRatio=2)
         self.addControl(self.art)
         x = art_w + 28
