@@ -1,6 +1,7 @@
 """Update-tile labels and the install handoff checks. No xbmc import, so tests can run them."""
 import io
 import json
+import re
 import zipfile
 
 LABEL_CHECKING = 'Checking for updates'
@@ -10,6 +11,32 @@ LABEL_UNABLE = 'Unable to check'
 
 # Kodi's StartAndroidActivity always setPackage(first arg). An empty package cannot resolve.
 INSTALLER_PACKAGES = ('com.google.android.packageinstaller', 'com.android.packageinstaller')
+
+
+def version_key(label):
+    """Numeric key for an app version label. '0.6 Beta' and '0.6.0' compare equal.
+    Missing pieces are zeros, so 0.6 is (0, 6, 0) and 0.6.1 is (0, 6, 1)."""
+    text = re.sub(r'(?i)\s*beta\s*$', '', str(label or '').strip())
+    nums = [int(part) for part in re.findall(r'\d+', text)]
+    if not nums:
+        return (0, 0, 0)
+    while len(nums) < 3:
+        nums.append(0)
+    return tuple(nums)
+
+
+def release_is_newer(new_version, new_build, cur_version, cur_build):
+    """True when the published release is newer. The version label decides first
+    (0.6 is newer than 0.5.5; 0.6 and 0.6.0 are the same release). A higher build
+    number is newer only when the version labels are the same."""
+    new_key = version_key(new_version)
+    cur_key = version_key(cur_version)
+    if new_key != cur_key:
+        return new_key > cur_key
+    try:
+        return int(new_build or 0) > int(cur_build or 0)
+    except (TypeError, ValueError):
+        return False
 
 
 def label_for(state):

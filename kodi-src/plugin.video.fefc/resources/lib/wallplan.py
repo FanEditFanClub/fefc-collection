@@ -13,12 +13,18 @@ MENU_Y = (212, 424, 636)
 
 
 def mosaic_cells():
+    """Perimeter cells, minus the three centre cells of the top row and the three
+    centre cells of the bottom row. Those sit behind the wordmark and the menu bar."""
     cols = (MENU_X[0] - TW - GP,) + MENU_X + (MENU_X[2] + TW + GP,)
     rows = (MENU_Y[0] - TH - GP,) + MENU_Y + (MENU_Y[2] + TH + GP,)
+    top, bot = rows[0], rows[-1]
+    mid = set(MENU_X)
     cells = []
     for y in rows:
         for x in cols:
-            if x in MENU_X and y in MENU_Y:
+            if x in mid and y in MENU_Y:
+                continue
+            if y in (top, bot) and x in mid:
                 continue
             cells.append((x, y, TW, TH))
     return cells

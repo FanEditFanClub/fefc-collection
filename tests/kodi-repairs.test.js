@@ -92,6 +92,14 @@ assert built.startswith('StartAndroidActivity(com.android.packageinstaller,')
 phone = updateflow.installer_builtin('content://com.fefc.kodi.fefcupdate/ext/FEFC-update.apk', updateflow.installer_package_for('com.fefc.kodi'))
 assert phone.startswith('StartAndroidActivity(com.google.android.packageinstaller,')
 assert updateflow.installer_builtin('') == ''
+assert updateflow.version_key('0.6 Beta') == (0, 6, 0)
+assert updateflow.version_key('0.6') == updateflow.version_key('0.6.0')
+assert updateflow.release_is_newer('0.6 Beta', 1, '0.5.5 Beta', 99)
+assert updateflow.release_is_newer('0.6.1', 2, '0.6 Beta', 50)
+assert updateflow.release_is_newer('0.6.10', 3, '0.6.9', 80)
+assert not updateflow.release_is_newer('0.6 Beta', 4, '0.6.0', 4)
+assert updateflow.release_is_newer('0.6.0', 5, '0.6', 4)
+assert not updateflow.release_is_newer('0.5.5 Beta', 100, '0.6 Beta', 1)
 print('ok')
 `);
   assert.equal(out, 'ok');
@@ -99,6 +107,7 @@ print('ok')
   assert.doesNotMatch(svc, /Dialog\.Close\(all,true\)/);
   assert.doesNotMatch(svc, /_record_installed_build\(new\)/);
   assert.match(svc, /state='checking'/);
+  assert.match(svc, /release_is_newer/);
   assert.match(svc, /state='failed'/);
   assert.match(svc, /Downloading %s: %d%% \(%d \/ %d MB\)/);
 });
@@ -129,8 +138,9 @@ print('ok')
   assert.match(xml, /<name>previousmenu<\/name><file>back\.wav<\/file>/);
   assert.match(xml, /<name>parentdir<\/name><file>back\.wav<\/file>/);
   const keymap = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/keymaps/fefc-nav.xml'), 'utf8');
-  assert.match(keymap, /action=armback/);
-  assert.match(keymap, /\\nBack/);
+  assert.doesNotMatch(keymap, /action=armback/);
+  assert.doesNotMatch(keymap, /\\nBack/);
+  assert.match(keymap, /action=fefcmenu/);
   assert.ok(fs.existsSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/ui-back.wav')));
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   assert.match(router, /playSFX\(p, False\)/);
@@ -143,15 +153,17 @@ import sys
 sys.path.insert(0, ${JSON.stringify(lib)})
 import wallplan
 cells = wallplan.mosaic_cells()
-assert len(cells) == 16
+assert len(cells) == 10
 xs = sorted({c[0] for c in cells})
 ys = sorted({c[1] for c in cells})
-assert len(xs) == 5 and len(ys) == 5
+assert len(xs) == 2 and len(ys) == 5
 top = [c for c in cells if c[1] == ys[0]]
 bot = [c for c in cells if c[1] == ys[-1]]
 left = [c for c in cells if c[0] == xs[0]]
 right = [c for c in cells if c[0] == xs[-1]]
-assert len(top) == 5 and len(bot) == 5 and len(left) == 5 and len(right) == 5
+assert len(top) == 2 and len(bot) == 2 and len(left) == 5 and len(right) == 5
+assert (348, ys[0], 400, 200) not in cells
+assert (760, ys[-1], 400, 200) not in cells
 assert all(c[2] == 400 and c[3] == 200 for c in cells)
 # centre 3x3 is not a video cell
 assert (348, 212, 400, 200) not in cells
@@ -304,13 +316,41 @@ print('ok', len(frames))
   assert.doesNotMatch(router, /optimus-popcorn-search\.mp4/);
 });
 
+test('support animation is the approved 24 fps clip as silent frames', () => {
+  const media = path.join(root, 'kodi-src/plugin.video.fefc/resources/media/optimus-support');
+  const frames = fs.readdirSync(media).filter((n) => /^f\d+\.jpg$/.test(n)).sort();
+  assert.equal(frames.length, 265);
+  assert.equal(frames[0], 'f001.jpg');
+  assert.equal(frames[264], 'f265.jpg');
+  const bytes = frames.reduce((n, f) => n + fs.statSync(path.join(media, f)).size, 0);
+  assert.ok(bytes < 8000000, bytes);
+  const out = py(`
+import os, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import optimusframes
+media = ${JSON.stringify(path.join(root, 'kodi-src/plugin.video.fefc/resources/media'))}
+frames = optimusframes.support_frames(media)
+assert len(frames) == 265
+assert all(p.endswith('.jpg') for p in frames)
+assert not any(p.lower().endswith(('.mp4', '.m4a', '.aac', '.wav')) for p in frames)
+print('ok', len(frames))
+`);
+  assert.match(out, /^ok /);
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(router, /support_frames/);
+  assert.match(router, /1\.0 \/ 24\.0/);
+  assert.match(router, /def _pump/);
+  assert.doesNotMatch(router, /Player\(\)\.play\([^)]*optimus/);
+});
+
 test('item kind, my list actions, and opening sfx stay off the wall player', () => {
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
   assert.match(router, /fefc_kind', 'video'/);
   assert.match(router, /fefc_kind', 'folder'/);
-  assert.match(router, /fefc_kind', 'action'/);
-  assert.match(nav, /String\.IsEqual\(ListItem\.Property\(fefc_kind\),video\)/);
+  assert.match(router, /shapes\.stamp\(li, 'action'/);
+  const inc = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  assert.match(inc, /String\.IsEqual\(ListItem\.Property\(fefc_kind\),video\)/);
   assert.match(router, /def mylist_shuffle/);
   assert.match(router, /No starred videos to shuffle/);
   assert.match(router, /Name Z-A/);
@@ -320,3 +360,361 @@ test('item kind, my list actions, and opening sfx stay off the wall player', () 
   assert.match(nav, /fefc-star\.png/);
   assert.match(nav, /Container\.PluginCategory,My List/);
 });
+
+test('folder tiles stay landscape and videos stay portrait at every depth', () => {
+  const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
+  const inc = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(nav, /Container\.SetViewMode\(501\)/);
+  assert.match(nav, /content="FefcBrowser"/);
+  assert.match(nav, /value="501"/);
+  assert.match(nav, /value="500"/);
+  assert.doesNotMatch(nav, /wraplist/);
+  assert.doesNotMatch(nav, /Container\.Content\(movies\)/);
+  assert.match(inc, /include name="FefcBrowser"/);
+  assert.match(inc, /itemlayout width="283" height="150"/);
+  assert.doesNotMatch(inc, /itemlayout[^>]*condition=/);
+  assert.match(inc, /fefc_kind\),video\)/);
+  assert.match(inc, /fefc_kind\),spacer\)/);
+  assert.equal((inc.match(/<height>268<\/height>/g) || []).length, 2);
+  assert.equal((inc.match(/<height>168<\/height>/g) || []).length, 2);
+  // Poster block (group top 8 + title top 272 + title 168) fills the cells under it
+  // and stops before the next real row. 3 x 150 = 450. 168px holds four 30px lines,
+  // so the third line of a title is not sliced.
+  assert.ok(8 + 272 + 168 > 150 * 2 && 8 + 272 + 168 <= 150 * 3);
+  assert.ok(168 >= 30 * 4);
+  assert.doesNotMatch(router, /nv > nf/);
+  assert.match(router, /shapes\.listing_mode/);
+  assert.match(router, /shapes\.stamp/);
+  assert.match(router, /shapes\.pack/);
+  assert.match(router, /def _enqueue/);
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog, shapes
+from webcounts import FOLD
+
+class LI:
+    def __init__(self):
+        self.props = {}
+        self.art = {}
+    def setProperty(self, k, v):
+        self.props[k] = v
+    def setArt(self, art):
+        self.art = dict(art)
+
+v = LI(); shapes.stamp(v, 'video', 'poster.jpg')
+assert v.props['fefc_kind'] == 'video' and v.art['poster'] == 'poster.jpg' and v.art['landscape'] == ''
+f = LI(); shapes.stamp(f, 'folder', 'wide.jpg')
+assert f.props['fefc_kind'] == 'folder' and f.art['landscape'] == 'wide.jpg' and f.art['poster'] == ''
+a = LI(); shapes.stamp(a, 'action', 'tool.jpg')
+assert a.props['fefc_kind'] == 'action' and a.art['landscape'] == 'tool.jpg' and a.art.get('poster') == ''
+# Utilities are landscape. Only a video file is portrait. Blank is the Back/Up row.
+utilities = [
+    ('Back / Up', ''),
+    ('Sort', 'action'),
+    ('Shuffle Play', 'action'),
+    ('Support Us', 'action'),
+    ('Read Me', 'action'),
+    ('Read First', 'folder'),
+    ('Check for update', 'action'),
+    ('Link My List', 'folder'),
+    ('Sync My List', 'folder'),
+    ('Recently Opened', 'folder'),
+    ('Downloads', 'folder'),
+    ('Next page', 'folder'),
+]
+for label, kind in utilities:
+    assert shapes.shape_for_kind(kind) == 'landscape', label
+    assert shapes.shape_for_kind(kind) != 'portrait', label
+assert shapes.shape_for_kind('video') == 'portrait'
+for kind in ('', 'folder', 'action', 'spacer', 'tool', 'button'):
+    assert shapes.shape_for_kind(kind) != 'portrait', kind
+# Landscape cards come first, in their own rows. Videos start on a fresh row.
+mixed_kinds = ['folder', 'video', 'action', 'video', 'folder']
+mixed_slots = shapes.pack(mixed_kinds)
+assert [s for s in mixed_slots if s != 'spacer'] == ['folder', 'action', 'folder', 'video', 'video']
+assert mixed_slots.index('video') % shapes.COLS == 0
+assert shapes.audit(mixed_slots) == []
+# Down off a landscape padding cell reaches the portrait grid, not the menu.
+# 5 landscape cards pad column 5; the video is index 6.
+padded = shapes.pack(['action'] * 5 + ['video'])
+assert padded[5] == 'spacer' and padded[6] == 'video'
+assert shapes.skip_delta(5, 4, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 1
+# Down from the last landscape card lands in the empty part of the video row
+# and comes back to the video, not the menu bar.
+assert shapes.skip_delta(10, 4, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == -4
+# Down off the spacer under the last video reaches the menu. Up is the other way.
+last = len(padded) - 1
+assert shapes.skip_delta(last, last - shapes.COLS, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 'menu'
+assert shapes.skip_delta(1, 0, lambda i: {0: 'video', 1: 'spacer', 2: 'spacer', 3: 'folder'}.get(i)) == 2
+assert shapes.skip_delta(0, None, lambda i: 'folder' if i == 0 else None) is None
+assert shapes.skip_delta(2, 1, lambda i: {0: 'folder', 1: 'video', 2: 'spacer'}.get(i)) == -1
+assert shapes.skip_delta(8, 2, lambda i: {2: 'video', 8: 'spacer'}.get(i)) == 'menu'
+idx = json.load(open('data/index.json'))
+added = json.load(open('data/added.json'))
+m = catalog.build_model({'index': idx, 'added': added})
+
+def child_key(fid):
+    it = m['items'].get(fid)
+    return (it[3] if it and it[3] else fid)
+
+def kids(fid):
+    return [k for k in m['kids'].get(child_key(fid), []) if k in m['items']]
+
+def kinds_for(fid, actions=0):
+    out = ['action'] * actions
+    key = child_key(fid)
+    for _did, _name, kind in (m.get('docs') or {}).get(key, []):
+        out.append('action' if kind == 'support' else 'folder')
+    for k in kids(fid):
+        if m['items'][k][2]:
+            if (m.get('rcnt') or m['cnt']).get(k):
+                out.append('folder')
+        else:
+            out.append('video')
+    return out
+
+def grouped(kinds):
+    return [k for k in kinds if k != 'video'] + ['video' for k in kinds if k == 'video']
+
+def check(name, kinds):
+    assert kinds, name + ' empty'
+    mode = shapes.listing_mode('video' in kinds)
+    assert mode['view'] == 501 and mode['wrap'] is False, name
+    assert mode['content'] == ('movies' if 'video' in kinds else 'files'), name
+    slots = shapes.pack(kinds)
+    real = [s for s in slots if s != 'spacer']
+    assert real == grouped(kinds), (name, 'order', real[:12])
+    if 'video' in kinds:
+        assert slots.index('video') % shapes.COLS == 0, (name, 'video shared a landscape row')
+        # Every video row is only videos and the cells reserved under them.
+        for i, s in enumerate(slots):
+            if s != 'video':
+                continue
+            row = (i // shapes.COLS) * shapes.COLS
+            for c in range(shapes.COLS):
+                j = row + c
+                cell = slots[j] if j < len(slots) else None
+                assert cell in ('video', 'spacer'), (name, 'mixed row', row, cell)
+    for k in kinds:
+        shape = shapes.shape_for_kind(k)
+        if k == 'video':
+            assert shape == 'portrait', (name, k, shape)
+        else:
+            assert shape == 'landscape', (name, k, shape)
+    problems = shapes.audit(slots)
+    assert not problems, (name, problems[:6])
+    # A poster fills the cells under it: the next real row is SPAN cells down,
+    # which is the poster block, not an empty band.
+    if 'video' in kinds:
+        assert shapes.SPAN * shapes.CELL_H == shapes.ROW_H['portrait']
+        assert shapes.ROW_H['landscape'] == shapes.CELL_H
+    print('PASS', name, 'items', len(kinds), 'videos', kinds.count('video'), 'slots', len(slots), 'view', mode['view'])
+
+# A folder page: Back, then Sort, Shuffle, and Support Us, then its own rows.
+# Back is the parent row (no kind). Sort and Shuffle are action. Support Us is action.
+check('Folder with Back, Sort, Shuffle, Support Us', ['', 'action', 'action', 'action', 'folder', 'video'])
+# Collections, including that same utility row
+check('Collections', ['action', 'action'] + kinds_for(FOLD['collections']))
+# Actors & Directors, then one person folder
+people = kids(FOLD['directors'])
+assert people, 'no directors'
+check('Actors and Directors', ['folder'] * len(kids(FOLD['actors'])[:8] + people[:8]))
+person = next(k for k in people if any(not m['items'][c][2] for c in kids(k)))
+check('Director folder', kinds_for(person))
+# Nested mixed folder, two or more levels under Collections
+mixed = None
+stack = [(FOLD['collections'], 1)]
+seen = set()
+while stack:
+    fid, depth = stack.pop()
+    if fid in seen:
+        continue
+    seen.add(fid)
+    ks = kinds_for(fid)
+    if depth >= 2 and 'folder' in ks and 'video' in ks:
+        mixed = fid
+        break
+    if depth < 4:
+        for k in kids(fid):
+            if m['items'][k][2]:
+                stack.append((k, depth + 1))
+assert mixed, 'no mixed nested folder'
+check('Nested mixed folder', kinds_for(mixed))
+# New Arrivals
+recent = [i for i in catalog.recent_ids(m)[:60] if i in m['items']]
+check('New Arrivals', ['video' if not m['items'][i][2] else 'folder' for i in recent] + ['folder'])
+# My List: Back, then Link, Sort, Shuffle, Recently Opened, Downloads (landscape), then videos
+starred = [i for i in recent if not m['items'][i][2]][:5]
+mylist = ['', 'folder', 'folder', 'folder', 'folder', 'folder'] + ['video'] * len(starred)
+check('My List', mylist)
+assert sum(1 for k in mylist if shapes.shape_for_kind(k) == 'landscape') == 6
+assert all(shapes.shape_for_kind(k) == 'portrait' for k in mylist if k == 'video')
+# Search results
+found = catalog.search(m, 'star')
+assert found, 'search empty'
+check('Search results', ['folder' if m['items'][i][2] else 'video' for i in found])
+# Plugin root: Collections, New Arrivals, Genres, My List, Search, Read Me,
+# Support Us, Check for update. All are action cards, none are videos.
+check('Plugin root', ['action'] * 8)
+print('PASS Utilities', len(utilities))
+print('IDS', json.dumps({'director': person, 'mixed': mixed, 'mixed_name': m['items'][mixed][0], 'director_name': m['items'][person][0]}))
+`);
+  assert.match(out, /PASS Utilities/);
+  assert.match(out, /PASS Folder with Back, Sort, Shuffle, Support Us/);
+  assert.match(out, /PASS Collections/);
+  assert.match(out, /PASS Director folder/);
+  assert.match(out, /PASS Nested mixed folder/);
+  assert.match(out, /PASS New Arrivals/);
+  assert.match(out, /PASS My List/);
+  assert.match(out, /PASS Search results/);
+  assert.match(out, /PASS Plugin root/);
+  const ids = out.split('IDS ').pop();
+  fs.writeFileSync('/tmp/shape-ids.json', ids.trim() + '\n');
+});
+
+test('genre lists leave out To Be Catalogued', () => {
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog
+idx = json.load(open('data/index.json'))
+added = json.load(open('data/added.json'))
+m = catalog.build_model({
+    'index': idx,
+    'added': added,
+    'genres': json.load(open('data/genres.json')),
+    'video-genres': json.load(open('data/video-genres.json')),
+})
+tbc = catalog.tbc_members(m['items'], m['kids'])
+assert catalog.TBC_ID in tbc
+col = '1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB'
+assert col not in tbc, 'main collection was treated as To Be Catalogued'
+listed = []
+for g, ids in list(m['genre_videos'].items()) + list(m['genre_folders'].items()):
+    for i in ids:
+        if i in tbc or (m['items'][i][3] and m['items'][i][3] in tbc):
+            listed.append((g, i))
+assert not listed, ('tbc still listed', len(listed))
+# Before = current lists plus catalogued items under TBC that carry the genre.
+def carries(i, g):
+    return g in (m['vgenres'].get(i) or [])
+want = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi']
+print('GENRE videos_before videos_after videos_excluded folders_after')
+for g in want:
+    after_v = set(catalog.dedupe(m, m['genre_videos'].get(g) or []))
+    after_f = catalog.dedupe(m, m['genre_folders'].get(g) or [])
+    extra = [i for i in tbc if i in m['items'] and not m['items'][i][2] and carries(i, g) and i not in after_v]
+    print('%s %d %d %d %d' % (g, len(after_v) + len(extra), len(after_v), len(extra), len(after_f)))
+print('TBC_MEMBERS', len(tbc))
+print('TBC_LEFT', len(listed))
+`);
+  assert.match(out, /TBC_LEFT 0/);
+  const horror = out.split('\n').find((line) => line.startsWith('Horror '));
+  const parts = horror.trim().split(/\s+/);
+  assert.ok(Number(parts[2]) > 0, horror);
+  assert.ok(Number(parts[3]) > 0, horror);
+  console.log(out);
+});
+
+test('genre tiles are clean names on pages of nine', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.doesNotMatch(router, /%s  \(%d\)' % \(g,/);
+  const out = py(`
+import sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import genrepages
+assert genrepages.clean_genre_name('01 - Horror') == 'Horror'
+assert genrepages.clean_genre_name('12. Sci-Fi') == 'Sci-Fi'
+assert genrepages.clean_genre_name('Comedy  (42)') == 'Comedy'
+assert genrepages.clean_genre_name('Drama (7)') == 'Drama'
+assert genrepages.clean_genre_name('Action #3') == 'Action'
+assert genrepages.clean_genre_name('Fantasy') == 'Fantasy'
+names = ['01 - Horror', 'Comedy  (42)', 'Unsorted', 'Uncategorized', 'Adventure', 'animation']
+pages = genrepages.genre_pages(names, 9)
+flat = [p for page in pages for p in page]
+labels = [a for a, _ in flat]
+assert labels == ['Adventure', 'animation', 'Comedy', 'Horror', 'Uncategorized'], labels
+assert all(k == 'Unsorted' or 'Unsorted' not in labels for k in labels)
+# Nine per page, last page short, no empty slots in the data.
+many = ['G%02d' % i for i in range(20)]
+ps = genrepages.genre_pages(many)
+assert [len(p) for p in ps] == [9, 9, 2]
+assert sum(len(p) for p in ps) == 20
+print('ok', len(ps))
+`);
+  assert.equal(out, 'ok 3');
+});
+
+test('search screen keeps the approved loop and parks the caret', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const plan = fs.readFileSync(path.join(lib, 'optimusplan.py'), 'utf8');
+  const show = fs.readFileSync(path.join(lib, 'genreshow.py'), 'utf8');
+  assert.match(plan, /TITLE = 'Search with Fan Edit Optimus'/);
+  assert.match(router, /optimusplan\.TITLE, font='font13'/);
+  assert.doesNotMatch(router, /title_h, gap, bar_h/);
+  assert.match(router, /fefc-mark-grok\.png/);
+  assert.match(router, /fefc-mark-discord\.png/);
+  assert.match(router, /fefc-mark-muse\.png/);
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  const bar = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const genres = fs.readFileSync(path.join(lib, 'genreshow.py'), 'utf8');
+  assert.match(home, /FEFC\.Genres/);
+  assert.match(genres, /FEFC\.Genres/);
+  assert.match(genres, /DialogGenres\.xml/);
+  assert.match(bar, /fefc-ic-home\.png/);
+  assert.match(bar, /<label>HOME<\/label>/);
+  assert.match(bar, /fefc-ic-search\.png/);
+  assert.match(bar, /<label>SEARCH<\/label>/);
+  assert.match(plan, /Optimus is watching a fan edit\. Type to interrupt him\./);
+  assert.match(plan, /FRAME_MS = 125/);
+  assert.doesNotMatch(router, /Select the bar and type a title/);
+  assert.match(router, /def _park_edit/);
+  assert.match(router, /setPosition\(-400, -200\)/);
+  assert.match(router, /fefc-ic-search\.png/);
+  assert.match(show, /%d\/%d/);
+  assert.match(show, /ACTION_PARENT_DIR/);
+  assert.match(show, /self\.menu\[0\]/);
+  assert.match(genres, /self\.menu\[0\]/);
+});
+
+test('drive first frames are not used when show or folder art exists', () => {
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog
+m = catalog.build_model({
+    'index': json.load(open('data/index.json')),
+    'posters': json.load(open('data/posters.json')),
+    'folderthumbs': json.load(open('data/folderthumbs.json')),
+    'added': json.load(open('data/added.json')),
+})
+rep = catalog.art_report(m)
+assert rep['drive_before'] > rep['missing_after'], rep
+assert rep['replaced'] > 0, rep
+assert not any(str(u).startswith('drive:') or 'drive.google.com/thumbnail' in str(u) for u in m['art'].values())
+# Cited titles borrow real art when the catalogue already has it. No TMDB call.
+needles = ('home alone 2', 'craig ferguson', 'gumby', 'astro-monster', 'astro monster', 'godzilla')
+hit = {n: {'art': 0, 'missing': 0} for n in needles}
+for i, v in m['items'].items():
+    if v[2]:
+        continue
+    n = v[0].lower()
+    for needle in needles:
+        if needle in n:
+            hit[needle]['art' if m['art'].get(i) else 'missing'] += 1
+print('ART', rep['videos'], rep['drive_before'], rep['missing_after'], rep['replaced'],
+      rep['by'].get('sibling', 0), rep['by'].get('show', 0), rep['by'].get('folder', 0))
+for n, c in hit.items():
+    print('TITLE', n, c['art'], c['missing'])
+# A title the catalogue can already illustrate must not stay on a first frame.
+assert hit['godzilla']['art'] > 0
+assert hit['home alone 2']['art'] > 0 and hit['home alone 2']['missing'] == 0
+assert hit['gumby']['art'] > 300
+assert hit['astro-monster']['art'] + hit.get('astro monster', {}).get('art', 0) > 0
+`);
+  assert.match(out, /ART /);
+  console.log(out);
+});
+

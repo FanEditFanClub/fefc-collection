@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- FEFC library / add-on view inside the 5% TV-safe margin (96..1824 x 54..1026).
-     0.3.22: every grid is 6 tiles wide. View 500: landscape tiles (collections, genres). View 501: portrait posters (video files). -->
+     0.3.22: every grid is 6 tiles wide. Views 500 and 501 are the same panel: a folder is a landscape card, a video is a portrait poster. The cell height does not follow the focused item. -->
 <window id="25">
-	<defaultcontrol always="true">500</defaultcontrol>
+	<defaultcontrol always="true">501</defaultcontrol>
+	<onload>Container.SetViewMode(501)</onload>
 	<!-- 0.5.0: black background on every screen -->
 	<backgroundcolor>FF000000</backgroundcolor>
-	<views>500,501</views>
+	<views>501,500</views>
 	<controls>
 		<!-- Outside the content zoom. Inside it, a videowindow parked at a negative x is scaled back onto the left edge. -->
 		<include>FefcWallKeep</include>
@@ -40,90 +41,15 @@
 			<scroll>true</scroll>
 			<visible>String.IsEqual(Container.PluginCategory,My List)</visible>
 		</control>
-		<!-- landscape tiles -->
-		<control type="panel" id="500">
-			<visible>!Container.Content(movies)</visible>
-			<left>96</left><top>122</top><width>1700</width><height>760</height>
-			<onleft>500</onleft><onright>60</onright>
-			<onup>9290</onup>
-			<viewtype label="31102">icon</viewtype>
-			<pagecontrol>60</pagecontrol>
-			<scrolltime tween="cubic" easing="out">300</scrolltime>
-			<preloaditems>2</preloaditems>
-			<orientation>vertical</orientation>
-			<itemlayout width="283" height="150">
-				<control type="group">
-					<left>10</left><top>8</top>
-					<include content="FefcGridTile"></include>
-				</control>
-			</itemlayout>
-			<focusedlayout width="283" height="150">
-				<control type="group">
-					<left>10</left><top>8</top>
-					<depth>DepthContentPopout</depth>
-					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
-					<include content="FefcGridTile">
-						<param name="focused" value="true" />
-					</include>
-				</control>
-			</focusedlayout>
-		</control>
-		<!-- portrait posters -->
-		<control type="panel" id="501">
-			<visible>Container.Content(movies)</visible>
-			<left>96</left><top>122</top><width>1700</width><height>760</height>
-			<onleft>501</onleft><onright>60</onright>
-			<onup>9290</onup>
-			<viewtype label="31102">icon</viewtype>
-			<pagecontrol>60</pagecontrol>
-			<scrolltime tween="cubic" easing="out">300</scrolltime>
-			<preloaditems>2</preloaditems>
-			<orientation>vertical</orientation>
-			<!-- 0.3.22: folders / tools / docs inside a list that also has files keep their landscape card -->
-			<!-- 0.4.2: folder rows are 150px like view 500 (a 138px card in a 430px slot left ~292px of dead space between folder rows) -->
-			<!-- 0.5.1: landscape condition uses the built-in !ListItem.IsPlayable boolean, not a string
-			     comparison on the IsPlayable property — the string form was not reliably keeping tools
-			     (Sort, storage row) landscape in the Downloads folder; they flipped to portrait with the videos. -->
-			<!-- One cell size. Layout conditions were not applied per item, so every file drew as a folder card.
-			     Visibility is per item: folders and actions stay landscape, files use the poster. -->
-			<itemlayout width="283" height="430">
-				<control type="group">
-					<visible>!String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
-					<left>9</left><top>8</top>
-					<include content="FefcGridTile"></include>
-				</control>
-				<control type="group">
-					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
-					<left>30</left><top>8</top>
-					<include content="FefcPosterTile"></include>
-				</control>
-			</itemlayout>
-			<focusedlayout width="283" height="430">
-				<control type="group">
-					<visible>!String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
-					<left>9</left><top>8</top>
-					<depth>DepthContentPopout</depth>
-					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
-					<include content="FefcGridTile">
-						<param name="focused" value="true" />
-					</include>
-				</control>
-				<control type="group">
-					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
-					<left>30</left><top>8</top>
-					<depth>DepthContentPopout</depth>
-					<animation effect="zoom" start="100" end="105" time="180" tween="sine" easing="inout" center="111,166" reversible="true">Focus</animation>
-					<include content="FefcPosterTile">
-						<param name="focused" value="true" />
-					</include>
-				</control>
-			</focusedlayout>
-		</control>
+		<!-- Same panel twice. Kodi remembers a view per path; either id still
+		     draws folders landscape and videos portrait. onload asks for 501. -->
+		<include content="FefcBrowser"><param name="id" value="501"/></include>
+		<include content="FefcBrowser"><param name="id" value="500"/></include>
 		<control type="scrollbar" id="60">
 			<left>1806</left><top>130</top><width>10</width><height>750</height>
 			<orientation>vertical</orientation>
 			<showonepage>false</showonepage>
-			<onleft>500</onleft>
+			<onleft>501</onleft>
 		</control>
 			</control>
 		<!-- footer: full title of the focused item + position -->
@@ -140,7 +66,7 @@
 			<align>right</align><aligny>center</aligny>
 			<font>font10</font>
 			<textcolor>FFFF9C00</textcolor>
-			<label>$INFO[Container.NumItems] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</label>
+			<label>$VAR[FefcCount]</label>
 		</control>
 		<include content="FefcTopBar"><param name="down" value="500"/><param name="up" value="500"/></include>
 		<include>FefcTicker</include>

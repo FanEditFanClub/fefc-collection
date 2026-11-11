@@ -16,15 +16,71 @@ SOURCES = ['drive-changes', 'index', 'video-genres', 'genres', 'posters', 'editi
            'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart', 'fileinfo']
 VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 6
+MODEL_VERSION = 8
 UA = 'plugin.video.fefc/1.0 (Kodi)'
+# Newest files shown on New Arrivals. The web app caps at 500 and pages 60; the first
+# page has to come back in a few seconds on a Fire Stick, so the plugin only builds one page.
+RECENT_CAP = 180
+RECENT_PAGE = 60
+# In-process model so a second folder open in the same Kodi session skips the marshal read.
+_MEM = {}
 
 
 def natkey(s):
     return [((0, int(t), '') if t.isdigit() else (1, 0, t)) for t in re.split(r'(\d+)', (s or '').lower().strip()) if t != ''] or [(1, 0, '')]
 
 
-def _fetch(base, name, etag=None, lm=None, timeout=60):
+# 04 - To Be Catalogued. Genre lists are the main catalogued tree only.
+TBC_ID = '1503Wl56hzRppaIFcQisvQksOaeYOEjnk'
+
+
+def tbc_members(items, kids, tbc=TBC_ID):
+    """Ids that live in To Be Catalogued or any subfolder. Shortcuts to that tree count too.
+
+    Parent links cycle between the collection root and Fan Edit Collections, so the walk
+    stops when it repeats an id. Drive is never written.
+    """
+    members = set()
+    stack = [tbc]
+    while stack:
+        i = stack.pop()
+        if not i or i in members:
+            continue
+        members.add(i)
+        for k in kids.get(i, ()):
+            stack.append(k)
+        v = items.get(i)
+        if v and v[2] and v[3] and v[3] != i:
+            for k in kids.get(v[3], ()):
+                stack.append(k)
+    memo = {}
+
+    def hit(i, guard=0):
+        if not i or guard > 40:
+            return False
+        if i in memo:
+            return memo[i]
+        if i in members:
+            memo[i] = True
+            return True
+        v = items.get(i)
+        if not v:
+            memo[i] = False
+            return False
+        memo[i] = False
+        parent = v[1]
+        target = v[3] if v[3] and v[3] != i else ''
+        found = hit(parent, guard + 1) or (hit(target, guard + 1) if target else False)
+        memo[i] = found
+        return found
+
+    for i in list(items):
+        if hit(i):
+            members.add(i)
+    return members
+
+
+def _fetch(base, name, etag=None, lm=None, timeout=15):
     """Conditional GET -> (status, bytes|None, etag, last_modified). 304 -> (304, None, ...)."""
     req = urllib.request.Request(base.rstrip('/') + '/data/' + name + '.json?ts=1', headers={
         'User-Agent': UA, 'Accept-Encoding': 'gzip'})
@@ -160,6 +216,7 @@ def build_model(raw):
     genre_videos = {}
     genre_folders = {}
     vgenres = {}
+    tbc_ids = tbc_members(items, kids)
     for i, v in items.items():
         g = set(own.get(i, ()))
         p = v[1]
@@ -175,6 +232,10 @@ def build_model(raw):
             g.add('Uncategorized')
         if g:
             vgenres[i] = sorted(g)
+            # Genre folders list the main catalogued tree only. To Be Catalogued
+            # (and everything under it) is left out even when the genre matches.
+            if i in tbc_ids or (v[3] and v[3] in tbc_ids):
+                continue
             for x in g:
                 if v[2]:
                     if i in own and x in own[i] and cnt.get(i):
@@ -187,6 +248,8 @@ def build_model(raw):
 
     # artwork / metadata (keep only what the add-on shows)
     posters = {k: v.get('url') for k, v in (raw.get('posters') or {}).items() if isinstance(v, dict) and v.get('url')}
+    poster_titles = {k: v.get('matchedTitle') for k, v in (raw.get('posters') or {}).items()
+                     if isinstance(v, dict) and v.get('matchedTitle') and v.get('url')}
     people = {k: v.get('url') for k, v in (raw.get('people') or {}).items() if isinstance(v, dict) and v.get('url')}
     ed = raw.get('editinfo') or {}
     md = raw.get('metadata') or {}
@@ -247,7 +310,7 @@ def build_model(raw):
     return {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
             'items': items, 'kids': kids, 'cnt': cnt, 'rcnt': rcnt, 'vgenres': vgenres,
             'genre_videos': genre_videos, 'genre_folders': genre_folders,
-            'posters': posters, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
+            'posters': posters, 'poster_titles': poster_titles, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
             'ratings': ratings, 'fthumbs': raw.get('folderthumbs') or {},
             'sfx': raw.get('folder-sfx') or {}, 'added': added,
             'genreart': raw.get('genreart') or {},
@@ -255,11 +318,52 @@ def build_model(raw):
             'people_meta': {k: (v.get('name') or '', v.get('role') or '') for k, v in (raw.get('people') or {}).items() if isinstance(v, dict)}}
 
 
-def load_model(base, cache_dir, refresh_minutes=180, log=None):
+def _mark_refresh_due(cache_dir):
+    try:
+        open(os.path.join(cache_dir, 'refresh.due'), 'a').close()
+    except Exception:
+        pass
+
+
+def refresh_due(cache_dir):
+    return os.path.exists(os.path.join(cache_dir, 'refresh.due'))
+
+
+def clear_refresh_due(cache_dir):
+    try:
+        os.remove(os.path.join(cache_dir, 'refresh.due'))
+    except OSError:
+        pass
+
+
+def _decorate(model):
+    """Fill derived lists that old on-disk models do not have yet."""
+    if not isinstance(model.get('recent'), list) or not model.get('recent'):
+        model['recent'] = _compute_recent(model)
+    if not isinstance(model.get('art'), dict) or not model.get('art'):
+        model['art'] = _build_art_index(model)
+    return model
+
+
+def load_model(base, cache_dir, refresh_minutes=180, log=None, force=False):
+    """Return the catalogue. A model already on disk is returned immediately, even if it
+    is older than refresh_minutes (stale-while-revalidate). The service refreshes it in
+    the background. `force=True` does the network check on this call."""
     log = log or (lambda m: None)
     os.makedirs(cache_dir, exist_ok=True)
     mpath = os.path.join(cache_dir, 'model.bin')
     meta_path = os.path.join(cache_dir, 'meta.json')
+    key = (os.path.abspath(cache_dir), base or '')
+    now = time.time()
+    try:
+        mtime = os.path.getmtime(mpath)
+    except OSError:
+        mtime = 0
+    slot = _MEM.get(key)
+    if slot and not force and slot.get('mtime') == mtime and slot.get('model'):
+        if now - float(slot.get('checked') or 0) >= refresh_minutes * 60:
+            _mark_refresh_due(cache_dir)
+        return slot['model']
     meta = {}
     try:
         meta = _load_json(meta_path)
@@ -273,20 +377,30 @@ def load_model(base, cache_dir, refresh_minutes=180, log=None):
             have = None
     except Exception:
         have = None
-    now = time.time()
-    if have and now - meta.get('checked', 0) < refresh_minutes * 60:
+    if have and not force:
+        have = _decorate(have)
+        _MEM[key] = {'model': have, 'mtime': mtime, 'checked': meta.get('checked') or 0}
+        if now - float(meta.get('checked') or 0) >= refresh_minutes * 60:
+            _mark_refresh_due(cache_dir)
         return have
     changed = have is None
     files = meta.get('files', {})
     if meta.get('base') != base:
         files = {}
     errors = []
+    # A cold open (nothing on disk) must not sit on fourteen slow downloads. The service
+    # refresh (force=True, cache already present) may take longer because the UI is not waiting.
+    deadline = time.time() + (90 if have else 20)
     for name in SOURCES:
+        if time.time() > deadline and name != 'index':
+            errors.append('%s: skipped (time budget)' % name)
+            continue
         p = os.path.join(cache_dir, name + '.json')
         st = files.get(name, {})
         try:
             status, raw, etag, lm = _fetch(base, name, st.get('etag') if os.path.exists(p) else None,
-                                           st.get('lm') if os.path.exists(p) else None)
+                                           st.get('lm') if os.path.exists(p) else None,
+                                           timeout=20 if have else 8)
         except Exception as e:  # network failure: keep whatever we have
             errors.append('%s: %s' % (name, e))
             continue
@@ -310,16 +424,23 @@ def load_model(base, cache_dir, refresh_minutes=180, log=None):
                     pass
         if 'index' not in raw:
             if have:
-                return have
+                return _decorate(have)
             raise RuntimeError('catalogue unavailable: ' + '; '.join(errors)[:200])
         have = build_model(raw)
         tmp = mpath + '.tmp'
         with open(tmp, 'wb') as f:
             marshal.dump(have, f)
         os.replace(tmp, mpath)
+    try:
+        mtime = os.path.getmtime(mpath)
+    except OSError:
+        mtime = 0
+    have = _decorate(have)
     meta = {'checked': now, 'files': files, 'base': base}
     with open(meta_path, 'w') as f:
         json.dump(meta, f)
+    clear_refresh_due(cache_dir)
+    _MEM[key] = {'model': have, 'mtime': mtime, 'checked': now}
     return have
 
 
@@ -340,9 +461,340 @@ def stream_url(base, vid, name):
     return base.rstrip('/') + '/api/stream/' + vid + '/' + quote(nm)
 
 
-def poster_for(m, base, vid):
+def _show_key(name):
+    """Title used to borrow artwork: drop the extension, a leading episode number,
+    season/episode marks, a year, and a trailing 'Fan Edit'."""
+    base = re.sub(r'\.[a-z0-9]{2,4}$', '', name or '', flags=re.I)
+    base = re.sub(r'^\s*\d{1,4}[A-Za-z]?\s+', '', base)
+    base = re.sub(r'\bS\d{1,2}\s*E\d{1,3}\b.*$', '', base, flags=re.I)
+    base = re.sub(r'\b(?:Ep|Episode)\s*\d+\b.*$', '', base, flags=re.I)
+    base = re.sub(r'\s*\(\d{4}\)\s*.*$', '', base)
+    base = re.sub(r'\s*-\s*Fan Edit\s*$', '', base, flags=re.I)
+    return re.sub(r'\s+', ' ', base).strip().lower()
+
+
+def _compute_recent(m):
+    added = m.get('added') or {}
+    items = m.get('items') or {}
+    vids = [i for i in added if i in items and not items[i][2]]
+    vids = dedupe(m, vids)
+    vids.sort(key=lambda i: added.get(i) or '', reverse=True)
+    return vids[:RECENT_CAP]
+
+
+def recent_ids(m, limit=None):
+    limit = RECENT_CAP if limit is None else int(limit)
+    cached = m.get('recent')
+    if not isinstance(cached, list) or not cached:
+        cached = _compute_recent(m)
+        m['recent'] = cached
+    return cached[:limit]
+
+
+def _poster_url(m, vid):
     it = m['items'].get(vid)
-    u = m['posters'].get(vid) or (m['posters'].get(it[3]) if it and it[3] else None)
+    posters = m.get('posters') or {}
+    u = posters.get(vid) or (posters.get(it[3]) if it and it[3] else None)
+    return u or ''
+
+
+def _is_drive_art(url):
+    """A Drive first-frame thumbnail. Those frames are often black, a title card, or the
+    fan-edit WARNING slate. They are not show art. Drive itself is never written."""
+    s = url or ''
+    return s.startswith('drive:') or 'drive.google.com/thumbnail' in s or 'drive.google.com/uc' in s
+
+
+_ART_YEAR = re.compile(r'\b(19[2-9]\d|20[0-3]\d)\b')
+_ART_DASH = re.compile(r'\s+[-–—]\s+')
+_ART_LEAD = re.compile(r'^\d{1,3}[A-Za-z]?[\.)]\s+')
+_ART_NOISE = re.compile(r'\b(?:movie\s+)?fan\s*edit\b|\bfan\s*cut\b|\bsensical\s+cut\b|\bck\s+cut\b', re.I)
+_ART_STOP = {'video', 'movie', 'edit', 'fan edit', 'sample', 'trailer', 'clip'}
+
+
+def _norm_title(s):
+    return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9]+', ' ', (s or '').lower())).strip()
+
+
+def _title_keys(name):
+    """(year_key, bare_key) for borrowing show art that is already in the catalogue."""
+    t = re.sub(r'\.[a-z0-9]{2,4}$', '', name or '', flags=re.I)
+    t = re.sub(r'^[.\s_]+', '', t)
+    t = _ART_LEAD.sub('', t)
+    # "01 Gumby - Moon Trip" keeps the episode index in front of the show name.
+    # A 4-digit year at the front is left in place so the year key can see it.
+    t = re.sub(r'^\d{1,3}\s+', '', t)
+    year = ''
+    ym = _ART_YEAR.search(t)
+    if ym:
+        year = ym.group(1)
+    head = _ART_DASH.split(t, 1)[0]
+    head = re.sub(r'\s*\([^)]*\)', '', head)
+    head = _ART_YEAR.sub('', head)
+    head = _ART_NOISE.sub('', head)
+    bare = _norm_title(head)
+    if len(bare) < 4 or bare in _ART_STOP:
+        return '', ''
+    return (bare + '|' + year if year else ''), bare
+
+
+def _own_poster(m, vid):
+    u = _poster_url(m, vid)
+    if u and not _is_drive_art(u):
+        return u
+    return ''
+
+
+def _parent_folder_art(m, vid):
+    """Curated folder art (an assets image or a non-Drive URL), walking up to the collection.
+    A Drive id stored as a folder thumb is another first frame, so it is not used."""
+    items = m.get('items') or {}
+    thumbs = m.get('fthumbs') or {}
+    seen = set()
+    p = (items.get(vid) or [None, ''])[1]
+    while p and p not in seen and len(seen) < 12:
+        seen.add(p)
+        it = items.get(p)
+        for key in (p, (it[3] if it and it[3] else '')):
+            if not key:
+                continue
+            t = thumbs.get(key)
+            if isinstance(t, str) and not _is_drive_art(t) and (t.startswith('assets/') or t.startswith('http')):
+                return t
+        p = it[1] if it else ''
+    return ''
+
+
+def _pick_url(urls):
+    if not urls:
+        return ''
+    counts = {}
+    for u in urls:
+        counts[u] = counts.get(u, 0) + 1
+    return max(counts, key=lambda u: (counts[u], -len(u)))
+
+
+def _legacy_art_index(m):
+    """Previous rule: own poster, same-folder sibling, else the Drive first frame.
+    Kept so a release can report how many WARNING thumbs this pass removed."""
+    items = m.get('items') or {}
+    by_parent = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        by_parent.setdefault(v[1] or '', []).append(i)
+    sibling = {}
+    for group in by_parent.values():
+        have = {}
+        for i in group:
+            u = _poster_url(m, i)
+            if not u or _is_drive_art(u):
+                continue
+            key = _show_key(items[i][0])
+            if key and key not in have:
+                have[key] = u
+        for i in group:
+            if _poster_url(m, i) and not _is_drive_art(_poster_url(m, i)):
+                continue
+            key = _show_key(items[i][0])
+            if key and key in have:
+                sibling[i] = have[key]
+    art = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        u = _own_poster(m, i) or sibling.get(i) or ''
+        if u:
+            art[i] = u
+        else:
+            art[i] = 'drive:' + (v[3] or i)
+    return art
+
+
+# Titles the catalogue still has no poster for. config.js leaves TMDB_API_KEY blank,
+# so these are the public poster images the repo's poster tools already resolve
+# (Wikipedia -> Wikidata -> the TMDB page image). They are not an API key.
+_EXTRA_SHOW = (
+    ('home alone 2', '', 'https://media.themoviedb.org/t/p/w500/uuitWHpJwxD1wruFl2nZHIb4UGN.jpg'),
+    ('gumby', '', 'https://media.themoviedb.org/t/p/w500/ycC23EiA1VZ3DWx0v2GwCNycps1.jpg'),
+    ('godzilla', '1954', 'https://media.themoviedb.org/t/p/w500/2W0Yw0qrgVMgdsSCZRKtfvaAh0i.jpg'),
+    ('godzilla', '2000', 'https://media.themoviedb.org/t/p/w500/7BrjFxV0j5VzZRfVYeYbFXMUweB.jpg'),
+    # Public page images for shows that the newest files name, resolved the same
+    # way tools/poster_fix.py does (Wikipedia, then the public poster page). No API key.
+    ('millennium', '', 'https://media.themoviedb.org/t/p/w500/vGEPm7vDTGbYNkDodLnsJyl6QIc.jpg'),
+    ('beverly hills 90210', '', 'https://media.themoviedb.org/t/p/w500/b7BYfkhu653D894krwGO1ysIKTf.jpg'),
+    ('bh90210', '', 'https://media.themoviedb.org/t/p/w500/z6Sj4dqUc5AVe66HddTN5wj7zYw.jpg'),
+    ('godzilla final wars', '', 'https://media.themoviedb.org/t/p/w500/21lWA4YyYppVnwAPOiBkGrt2FGr.jpg'),
+    ('godzilla against mechagodzilla', '', 'https://media.themoviedb.org/t/p/w500/Kg6J3qyf80cwnKkv1YorSjkNaK.jpg'),
+    ('godzilla 2000', '', 'https://media.themoviedb.org/t/p/w500/7BrjFxV0j5VzZRfVYeYbFXMUweB.jpg'),
+    ('ghidorah the three headed monster', '', 'https://media.themoviedb.org/t/p/w500/qkI5nhvxx3233gQmoQvv0W3MB7A.jpg'),
+    ('hollywood hot tubs', '', 'https://media.themoviedb.org/t/p/w500/ozJ4uhGtHPqByzS2o3CjKIWPFhh.jpg'),
+    ('exorcist 3', '', 'https://media.themoviedb.org/t/p/w500/275gw2JA5YCk10o6n84rZdZBycM.jpg'),
+    ('exorcist iii', '', 'https://media.themoviedb.org/t/p/w500/275gw2JA5YCk10o6n84rZdZBycM.jpg'),
+)
+
+
+def _art_from_folders(items, parent, year_art, bare_art):
+    """A show poster already in the catalogue, matched on a parent folder name.
+
+    Episode files often do not repeat the series title. The folder does.
+    Only a specific folder name is used, and only when that name has one poster.
+    """
+    seen = set()
+    p = parent
+    while p and p not in seen and len(seen) < 8:
+        seen.add(p)
+        it = items.get(p)
+        if not it:
+            break
+        yk, bare = _title_keys(it[0])
+        u = (year_art.get(yk) if yk else '') or ''
+        if not u and bare and len(bare) >= 8 and len(bare.split()) >= 2:
+            u = bare_art.get(bare) or ''
+        if not u:
+            u = _extra_show(yk, bare)
+        if u and not _is_drive_art(u):
+            return u
+        p = it[1]
+    return ''
+
+
+def _extra_show(year_key, bare):
+    padded = ' ' + (bare or '') + ' '
+    hit = ''
+    best = -1
+    for key, year, url in _EXTRA_SHOW:
+        if year:
+            ok = year_key == key + '|' + year or (
+                year_key.endswith('|' + year) and (bare == key or bare.startswith(key + ' ')))
+        else:
+            ok = bare == key or bare.startswith(key + ' ') or (' ' + key + ' ') in padded
+        # Longer keys win, so "godzilla final wars" beats "godzilla".
+        if ok and len(key) > best:
+            hit, best = url, len(key)
+    return hit
+
+
+def _build_art_index(m):
+    """id -> artwork url. Own poster, a same-year sibling, show art already in the
+    catalogue for that title, curated parent-folder art, then a few known show
+    posters. A Drive first frame is missing. Nothing here writes to Drive."""
+    items = m.get('items') or {}
+    by_parent = {}
+    own = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        u = _own_poster(m, i)
+        if u:
+            own[i] = u
+        by_parent.setdefault(v[1] or '', []).append(i)
+    sibling = {}
+    for group in by_parent.values():
+        have_year = {}
+        have_bare = {}
+        for i in group:
+            u = own.get(i)
+            if not u:
+                continue
+            yk, bare = _title_keys(items[i][0])
+            if yk and yk not in have_year:
+                have_year[yk] = u
+            if bare and not yk and bare not in have_bare:
+                have_bare[bare] = u
+        for i in group:
+            if i in own:
+                continue
+            yk, bare = _title_keys(items[i][0])
+            if yk and yk in have_year:
+                sibling[i] = have_year[yk]
+            elif bare and not yk and bare in have_bare:
+                sibling[i] = have_bare[bare]
+    by_year = {}
+    by_bare = {}
+
+    def add_keys(name, url):
+        yk, bare = _title_keys(name)
+        if yk:
+            by_year.setdefault(yk, []).append(url)
+        if bare:
+            by_bare.setdefault(bare, []).append(url)
+
+    for i, u in own.items():
+        add_keys(items[i][0], u)
+    posters = m.get('posters') or {}
+    for i, title in (m.get('poster_titles') or {}).items():
+        u = posters.get(i)
+        if u and not _is_drive_art(u):
+            add_keys(title, u)
+    year_art = {k: _pick_url(v) for k, v in by_year.items()}
+    bare_art = {}
+    for k, urls in by_bare.items():
+        uniq = set(urls)
+        if len(uniq) == 1:
+            bare_art[k] = next(iter(uniq))
+    art = {}
+    why = {}
+    for i, v in items.items():
+        if v[2]:
+            continue
+        if i in own:
+            art[i] = own[i]
+            why[i] = 'own'
+            continue
+        if i in sibling:
+            art[i] = sibling[i]
+            why[i] = 'sibling'
+            continue
+        yk, bare = _title_keys(v[0])
+        u = (year_art.get(yk) if yk else '') or ''
+        src = 'show'
+        if not u and bare:
+            u = bare_art.get(bare) or ''
+        if not u:
+            u = _art_from_folders(items, v[1], year_art, bare_art)
+        if not u:
+            u = _extra_show(yk, bare)
+        if not u:
+            u = _parent_folder_art(m, i)
+            src = 'folder'
+        if u and not _is_drive_art(u):
+            art[i] = u
+            why[i] = src
+        else:
+            why[i] = 'missing'
+    m['art_why'] = why
+    return art
+
+
+def art_report(m):
+    """Before/after counts for Drive first-frame posters. before uses the old rule."""
+    items = m.get('items') or {}
+    vids = [i for i, v in items.items() if not v[2]]
+    old = _legacy_art_index(m)
+    new = _build_art_index(m)
+    m['art'] = new
+    before = sum(1 for i in vids if str(old.get(i) or '').startswith('drive:'))
+    missing = sum(1 for i in vids if not new.get(i))
+    gained = {'sibling': 0, 'show': 0, 'folder': 0}
+    why = m.get('art_why') or {}
+    for i in vids:
+        if str(old.get(i) or '').startswith('drive:') and new.get(i):
+            gained[why.get(i) or 'show'] = gained.get(why.get(i) or 'show', 0) + 1
+    return {'videos': len(vids), 'drive_before': before, 'missing_after': missing,
+            'replaced': sum(gained.values()), 'by': gained}
+
+
+def poster_for(m, base, vid):
+    """Poster for a video. Own art, a sibling, show art already in the catalogue, then
+    parent folder art. A Drive first frame is treated as missing (no Drive request)."""
+    art = m.get('art')
+    if not isinstance(art, dict):
+        art = _build_art_index(m)
+        m['art'] = art
+    u = art.get(vid) or ''
+    if not u or _is_drive_art(u):
+        return ''
     return abs_url(base, u)
 
 
@@ -366,10 +818,10 @@ def folder_art(m, base, fid):
                         # instead of its portrait poster, so folder cards stay landscape. (Only 369/1803
                         # folders have a curated fthumb; the rest hit this fallback.)
                         vk = (m['items'].get(k) or [0, 0, 0, ''])[3] or k
-                        return 'https://drive.google.com/thumbnail?sz=w500&id=' + vk
+                        return 'https://drive.google.com/thumbnail?sz=w320&id=' + vk
             q = nq[:40]
     if t:
-        return abs_url(base, t) if t.startswith('assets/') else 'https://drive.google.com/thumbnail?sz=w500&id=' + t
+        return abs_url(base, t) if t.startswith('assets/') else 'https://drive.google.com/thumbnail?sz=w320&id=' + t
     return ''
 
 
@@ -573,19 +1025,22 @@ def sfx_up(m, vid):
     0.5.2: also match the video's OWN name first — a file like "Armageddon - Revisited" sitting in the root has no
     Armageddon ancestor folder, so without this it would never get the Armageddon clips. sfx_for() already checks
     the name plus ancestors (for path rules), so trying it on the video itself covers both."""
+    cache = m.get('_sfxup')
+    if isinstance(cache, dict) and vid in cache:
+        return cache[vid]
     r = sfx_for(m, vid)
-    if r:
-        return r
-    it = m['items'].get(vid)
-    p = it[1] if it else ''
-    n = 0
-    while p and n < 30:
-        r = sfx_for(m, p)
-        if r:
-            return r
-        p = (m['items'].get(p) or ['', ''])[1]
-        n += 1
-    return ''
+    if not r:
+        it = m['items'].get(vid)
+        p = it[1] if it else ''
+        n = 0
+        while p and n < 30:
+            r = sfx_for(m, p)
+            if r:
+                break
+            p = (m['items'].get(p) or ['', ''])[1]
+            n += 1
+    m.setdefault('_sfxup', {})[vid] = r or ''
+    return r or ''
 
 
 def sfx_for(m, fid):
@@ -616,7 +1071,7 @@ def sfx_for(m, fid):
     while p and len(anc) < 30:
         anc.append(m['items'].get(p, ['', ''])[0])
         p = m['items'].get(p, ['', ''])[1]
-    for rule in sfx.get('_rules') or []:
+    for rule, rx in _compiled_rules(sfx):
         try:
             hit = False
             names = [name] + (anc if rule.get('path') else [])
@@ -624,8 +1079,7 @@ def sfx_for(m, fid):
                 hit = True
             if rule.get('match'):
                 hit = hit or any(rule['match'].lower() in n.lower() for n in names)
-            if rule.get('regex'):
-                rx = re.compile(rule['regex'], re.I)
+            if rx is not None:
                 hit = hit or any(rx.search(n) for n in names)
             if hit:
                 r = pick(rule)
@@ -634,6 +1088,28 @@ def sfx_for(m, fid):
         except Exception:
             continue
     return ''
+
+
+_RULE_CACHE = {}
+
+
+def _compiled_rules(sfx):
+    """Compile folder-sfx regexes once per process. Compiling them per video made large folders stall."""
+    key = id(sfx)
+    hit = _RULE_CACHE.get(key)
+    if hit is not None:
+        return hit
+    out = []
+    for rule in sfx.get('_rules') or []:
+        rx = None
+        if isinstance(rule, dict) and rule.get('regex'):
+            try:
+                rx = re.compile(rule['regex'], re.I)
+            except re.error:
+                rx = None
+        out.append((rule, rx))
+    _RULE_CACHE[key] = out
+    return out
 
 
 def search(m, query, limit=300):

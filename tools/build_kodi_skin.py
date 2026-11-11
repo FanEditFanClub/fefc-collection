@@ -205,6 +205,26 @@ def make_textures(media):
         im.alpha_composite(lg, ((256 - lg.width) // 2, (256 - lg.height) // 2))
         im.resize((128, 128), Image.LANCZOS).save(media / name)
         lg2 = Image.open(OVER / 'brand' / src).convert('RGBA'); lg2.save(media / ('fefc-logo-' + src))
+
+    def support_plate(src, name, size, bg, pad=0.12):
+        """Brand plate for the upper part of a Support Us tile.
+        The official mark is centered, with padding on every side of the plate."""
+        lg = Image.open(OVER / 'brand' / src).convert('RGBA')
+        bb = lg.getbbox()
+        if bb:
+            lg = lg.crop(bb)
+        w, h = size
+        canvas = Image.new('RGBA', size, (0, 0, 0, 0))
+        d = ImageDraw.Draw(canvas)
+        d.rounded_rectangle((0, 0, w - 1, h - 1), max(8, h // 6), fill=bg + (255,))
+        lg.thumbnail((int(w * (1 - 2 * pad)), int(h * (1 - 2 * pad))), Image.LANCZOS)
+        canvas.alpha_composite(lg, ((w - lg.width) // 2, (h - lg.height) // 2))
+        canvas.save(media / name)
+    # Plates are 2x the dialog control (234x90). Patreon is the official lockup
+    # (symbol + PATREON) on white. PayPal and Venmo are the wordmarks on white.
+    support_plate('patreon-lockup.png', 'fefc-brand2-patreon.png', (468, 178), (255, 255, 255), 0.12)
+    support_plate('paypal.png', 'fefc-brand2-paypal.png', (468, 178), (255, 255, 255), 0.12)
+    support_plate('venmo.png', 'fefc-brand2-venmo.png', (468, 178), (255, 255, 255), 0.14)
     brand_logo('patreon.png', 'fefc-ic-patreon.png')
     brand_logo('paypal.png', 'fefc-ic-paypal.png')
     brand_logo('venmo.png', 'fefc-ic-venmo.png')
@@ -372,6 +392,10 @@ def patch_fonts(xml_dir):
     # 0.5.1: even smaller poster-tile font (15px) — long file names were still clipping at 17px
     extra += ('\t\t<font>\n\t\t\t<name>font_tile_xs</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
               '\t\t\t<size>15</size>\n\t\t</font>\n')
+    # 0.5.6: poster titles. 30px is the couch-readable size already used for font13_title;
+    # this alias is here so a skin that drops the numbered fonts still has the poster face.
+    extra += ('\t\t<font>\n\t\t\t<name>font_poster</name>\n\t\t\t<filename>NotoSans-Bold.ttf</filename>\n'
+              '\t\t\t<size>30</size>\n\t\t</font>\n')
     # add to every fontset
     if not (xml_dir.parent / 'fonts' / 'NotoSans-Bold.ttf').exists():
         extra = extra.replace('NotoSans-Bold.ttf', 'NotoSans-Regular.ttf')

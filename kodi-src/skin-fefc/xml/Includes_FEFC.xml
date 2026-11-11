@@ -73,36 +73,108 @@
 		</definition>
 		<param name="focused" default="false" />
 	</include>
-	<!-- Portrait poster tile for video files (slot 242x425): poster 222x333, two-line title below -->
+	<!-- Portrait poster tile for video files. The title box is four lines of the
+	     30px face (about 42px of line height each) so a third line is not sliced
+	     through the glyphs. Group top 8 + title top 272 + title 168 = 448, inside
+	     the 3 grid rows (450) the poster reserves. -->
 	<include name="FefcPosterTile">
 		<definition>
 			<control type="image">
-				<left>0</left><top>0</top><width>222</width><height>333</height>
+				<left>0</left><top>0</top><width>222</width><height>268</height>
 				<texture border="20">fefc-tile.png</texture>
 			</control>
 			<control type="image">
-				<left>4</left><top>4</top><width>214</width><height>325</height>
+				<left>4</left><top>4</top><width>214</width><height>260</height>
 				<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
 				<aspectratio scalediffuse="false">scale</aspectratio>
 			</control>
 			<control type="image">
-				<left>0</left><top>0</top><width>222</width><height>333</height>
+				<left>0</left><top>0</top><width>222</width><height>268</height>
 				<texture border="20">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
-			<!-- 0.4.2: year label removed from poster tiles -->
-			<!-- 0.5.1: 15px label (was 17px) so long file names fit instead of clipping -->
-			<control type="label">
-				<left>-6</left><top>337</top><width>234</width><height>92</height>
-				<aligny>top</aligny><align>center</align>
-				<font>font_tile_xs</font>
+			<!-- 30px, up to four full lines, centered. A label control ellipsizes inside a
+			     list even with wrapmultiline, so this is a textbox. The focused tile
+			     scrolls the full name. The block stays inside 3 grid rows
+			     (shapes.SPAN) so the cells under a poster are covered, not empty. -->
+			<control type="textbox">
+				<left>-6</left><top>272</top><width>234</width><height>168</height>
+				<align>center</align>
+				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<label>$INFO[ListItem.Label]</label>
-				<wrapmultiline>true</wrapmultiline>
+				<visible>!$PARAM[focused]</visible>
+			</control>
+			<control type="label">
+				<left>-6</left><top>272</top><width>234</width><height>168</height>
+				<aligny>top</aligny><align>center</align>
+				<font>font13_title</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<label>$INFO[ListItem.Label]</label>
+				<scroll>true</scroll>
+				<scrollspeed>40</scrollspeed>
+				<visible>$PARAM[focused]</visible>
 			</control>
 		</definition>
 		<param name="focused" default="false" />
 	</include>
+	<!-- Both browser views include this. The cell height never changes with the
+	     focused item. Landscape card: a folder, and every utility (Sort, Shuffle,
+	     Support Us, Read Me, Check for update, and the Back/Up row, which has no
+	     fefc_kind). Portrait poster: a video file only. A spacer is the cell under
+	     a poster and draws nothing. View id and Container.Content do not choose the shape. -->
+	<include name="FefcBrowser">
+		<param name="id" default="501"/>
+		<definition>
+		<control type="panel" id="$PARAM[id]">
+			<left>96</left><top>122</top><width>1700</width><height>760</height>
+			<onleft>$PARAM[id]</onleft><onright>60</onright>
+			<onup>9290</onup>
+			<ondown>9290</ondown>
+			<viewtype label="31102">icon</viewtype>
+			<pagecontrol>60</pagecontrol>
+			<scrolltime tween="cubic" easing="out">300</scrolltime>
+			<preloaditems>2</preloaditems>
+			<orientation>vertical</orientation>
+			<itemlayout width="283" height="150">
+				<control type="group">
+					<visible>!String.IsEqual(ListItem.Property(fefc_kind),video) + !String.IsEqual(ListItem.Property(fefc_kind),spacer)</visible>
+					<left>10</left><top>8</top>
+					<include content="FefcGridTile"></include>
+				</control>
+				<control type="group">
+					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
+					<left>30</left><top>8</top>
+					<include content="FefcPosterTile"></include>
+				</control>
+			</itemlayout>
+			<focusedlayout width="283" height="150">
+				<control type="group">
+					<visible>!String.IsEqual(ListItem.Property(fefc_kind),video) + !String.IsEqual(ListItem.Property(fefc_kind),spacer)</visible>
+					<left>10</left><top>8</top>
+					<depth>DepthContentPopout</depth>
+					<animation effect="zoom" start="100" end="104" time="180" tween="sine" easing="inout" center="132,69" reversible="true">Focus</animation>
+					<include content="FefcGridTile">
+						<param name="focused" value="true" />
+					</include>
+				</control>
+				<control type="group">
+					<visible>String.IsEqual(ListItem.Property(fefc_kind),video)</visible>
+					<left>30</left><top>8</top>
+					<depth>DepthContentPopout</depth>
+					<animation effect="zoom" start="100" end="105" time="180" tween="sine" easing="inout" center="111,156" reversible="true">Focus</animation>
+					<include content="FefcPosterTile">
+						<param name="focused" value="true" />
+					</include>
+				</control>
+			</focusedlayout>
+		</control>
+		</definition>
+	</include>
+	<variable name="FefcCount">
+		<value condition="!String.IsEmpty(Window(Home).Property(FEFC.Shown))">$INFO[Window(Home).Property(FEFC.Shown)] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</value>
+		<value>$INFO[Container.NumItems] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</value>
+	</variable>
 	<variable name="FefcSoundLabel">
 		<value condition="!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))">SOUND OFF</value>
 		<value>SOUND ON</value>
@@ -149,81 +221,112 @@
 	<include name="FefcTopBar">
 		<param name="down">noop</param>
 		<param name="up">noop</param>
+		<param name="show">!Window.IsActive(home) + !Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</param>
 		<definition>
 		<control type="group">
-			<visible>!Window.IsActive(home) + !Window.IsActive(fullscreenvideo) + !Window.IsActive(visualisation)</visible>
+			<visible>$PARAM[show]</visible>
 			<control type="image">
-				<left>110</left><top>866</top><width>1700</width><height>84</height>
+				<left>348</left><top>866</top><width>1224</width><height>84</height>
 				<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
 			</control>
-			<!-- Fixed coordinates. Nested grouplist groups were collapsing HOME to the icon and the letter H. -->
+			<!-- Pill matches the Home 3x3 (348..1572). Buttons stay centered inside it. -->
 			<control type="group">
-				<left>110</left><top>878</top>
+				<left>356</left><top>878</top>
 				<control type="button" id="9295">
-					<left>16</left><top>0</top><width>170</width><height>60</height>
+					<left>0</left><top>0</top><width>120</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<label>RESUME</label>
 					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 					<onleft>9292</onleft><onright>9296</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup>
+					<ondown condition="Control.IsVisible(501)">501</ondown>
+					<ondown condition="Control.IsVisible(500)">500</ondown>
+					<ondown>$PARAM[down]</ondown>
 					<onclick>ActivateWindow(fullscreenvideo)</onclick>
 				</control>
 				<control type="button" id="9296">
-					<left>194</left><top>0</top><width>140</width><height>60</height>
+					<left>128</left><top>0</top><width>100</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<label>STOP</label>
 					<visible>Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))</visible>
 					<onleft>9295</onleft><onright>9290</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup>
+					<ondown condition="Control.IsVisible(501)">501</ondown>
+					<ondown condition="Control.IsVisible(500)">500</ondown>
+					<ondown>$PARAM[down]</ondown>
 					<onclick>PlayerControl(Stop)</onclick>
 				</control>
 			</control>
 			<control type="group">
-				<left>110</left><top>878</top>
-				<animation effect="slide" end="165,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
+				<left>543</left><top>878</top>
+				<animation effect="slide" end="41,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
 				<control type="button" id="9290">
-					<left>348</left><top>0</top><width>220</width><height>60</height>
+					<left>0</left><top>0</top><width>220</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>HOME</label>
 					<onleft condition="Control.IsVisible(9296)">9296</onleft><onleft>9292</onleft>
 					<onright>9291</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup>
+					<ondown condition="Control.IsVisible(501)">501</ondown>
+					<ondown condition="Control.IsVisible(500)">500</ondown>
+					<ondown>$PARAM[down]</ondown>
 					<onclick>ActivateWindow(Home)</onclick>
 				</control>
-				<control type="image"><left>364</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
+				<control type="image"><left>16</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
 				<control type="button" id="9291">
-					<left>576</left><top>0</top><width>220</width><height>60</height>
+					<left>228</left><top>0</top><width>220</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>SEARCH</label>
 					<onleft>9290</onleft><onright>9294</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup>
+					<ondown condition="Control.IsVisible(501)">501</ondown>
+					<ondown condition="Control.IsVisible(500)">500</ondown>
+					<ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=searchbox)</onclick>
 				</control>
-				<control type="image"><left>592</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+				<control type="image"><left>244</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 				<control type="button" id="9294">
-					<left>804</left><top>0</top><width>270</width><height>60</height>
+					<left>456</left><top>0</top><width>190</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>$VAR[FefcSoundLabel]</label>
 					<onleft>9291</onleft><onright>9292</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup>
+					<ondown condition="Control.IsVisible(501)">501</ondown>
+					<ondown condition="Control.IsVisible(500)">500</ondown>
+					<ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)</onclick>
 				</control>
-				<control type="image"><left>820</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
-				<control type="image"><left>820</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>472</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
+				<control type="image"><left>472</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 				<control type="button" id="9292">
-					<left>1082</left><top>0</top><width>250</width><height>60</height>
+					<left>654</left><top>0</top><width>180</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>SETTINGS</label>
 					<onleft>9294</onleft>
 					<onright condition="Control.IsVisible(9295)">9295</onright><onright>9290</onright>
-					<onup>$PARAM[down]</onup><ondown>$PARAM[down]</ondown>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(501)">501</onup>
+					<onup condition="!Window.IsVisible(movieinformation) + Control.IsVisible(500)">500</onup>
+					<onup>$PARAM[up]</onup>
+					<ondown condition="Control.IsVisible(501)">501</ondown>
+					<ondown condition="Control.IsVisible(500)">500</ondown>
+					<ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 				</control>
-				<control type="image"><left>1098</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+				<control type="image"><left>670</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 		</control>
 		</definition>

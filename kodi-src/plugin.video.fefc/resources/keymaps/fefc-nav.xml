@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Physical Back plays the FEFC back cue (armback) and then does the normal Back. -->
+<!-- 0.5.6: do not bind Back. The old keymap ran armback and then the Back action,
+     which re-entered the keymap and Kodi dropped the real Back. Remote Back,
+     Android KEYCODE_BACK and Backspace did nothing on every screen.
+     Back stays on Kodi's own mapping.
+     The menu key and a long-press of Select open the FEFC menu, which has no
+     Add to favourites / Remove from favourites entry. -->
 <keymap>
-  <global>
-    <keyboard>
-      <backspace>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</backspace>
-      <browser_back>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</browser_back>
-    </keyboard>
-    <remote>
-      <back>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</back>
-    </remote>
-    <gamepad>
-      <back>RunPlugin(plugin://plugin.video.fefc/?action=armback)\nBack</back>
-    </gamepad>
-  </global>
+	<global>
+		<keyboard>
+			<menu>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</menu>
+			<c>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</c>
+		</keyboard>
+		<remote>
+			<menu>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</menu>
+			<title>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</title>
+			<select mod="longpress">RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</select>
+		</remote>
+	</global>
 </keymap>

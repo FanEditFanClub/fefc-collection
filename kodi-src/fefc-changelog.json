@@ -1,6 +1,23 @@
 {
  "versions": [
   {
+   "version": "0.6 Beta",
+   "date": "2026-11-10",
+   "notes": [
+    "Back returns to the previous screen again on Home, Search, folders, My List, New Arrivals, details, Support Us and Settings.",
+    "Down from the last row of a folder reaches HOME, SEARCH, SOUND and SETTINGS. Up from that bar returns to the list.",
+    "Search is one bar. Optimus keeps looping until you type, then starts again if you leave the bar empty.",
+    "Folders that mix subfolders and videos no longer leave a blank band between the two.",
+    "The home mosaic no longer plays video behind the title or behind the bottom menu. The corner and side tiles stay.",
+    "New Arrivals opens the newest files instead of trying to list the whole catalogue.",
+    "Poster titles are larger, centered, and wrap. The focused title scrolls the full name.",
+    "Videos without a poster use a sibling poster or the file's own thumbnail.",
+    "The feedback code is the Google Form address. Every code has the FEFC mark in the center and still scans.",
+    "The PayPal code opens the PayPal profile page directly. It no longer uses the paypal.biz redirect.",
+    "The long-press menu no longer offers Add to favourites. Add to My List is the list action."
+   ]
+  },
+  {
    "version": "0.5.5 Beta",
    "date": "2026-11-09",
    "notes": [

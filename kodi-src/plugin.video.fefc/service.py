@@ -456,7 +456,8 @@ def check_update(manual=False, prompt=True):
             prog.close()
         except Exception:
             pass
-    avail = int(new.get('build', 0)) > int(cur.get('build', 0))
+    from resources.lib.updateflow import release_is_newer
+    avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
     set_update_state(cur, new, avail)
     if _updating():
         if manual:
@@ -1074,18 +1075,76 @@ def apply_nav_sound(on):
     except Exception as e:
         log('nav sound: %s' % e)
     try:
-        src = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'keymaps', 'fefc-nav.xml')
         d = xbmcvfs.translatePath('special://profile/keymaps')
-        os.makedirs(d, exist_ok=True)
         dst = os.path.join(d, 'fefc-nav.xml')
-        if os.path.exists(src):
-            data = open(src, encoding='utf-8').read()
-            prev = open(dst, encoding='utf-8').read() if os.path.exists(dst) else ''
-            if prev != data:
-                open(dst, 'w', encoding='utf-8').write(data)
-                xbmc.executebuiltin('ReloadKeymaps')
+        if os.path.exists(dst):
+            os.remove(dst)
+            xbmc.executebuiltin('ReloadKeymaps')
+            log('removed back-swallowing keymap')
     except Exception as e:
         log('nav keymap: %s' % e)
+
+
+def _grid_pad_loop(monitor):
+    """Move focus off a cell reserved under a portrait poster.
+
+    The panel cannot skip an item by itself. This only runs while that cell is
+    focused, and it never touches playback."""
+    import sys
+    lib = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'lib')
+    if lib not in sys.path:
+        sys.path.insert(0, lib)
+    from shapes import skip_delta
+    origin = None
+    seen_path = ''
+    while not monitor.abortRequested():
+        try:
+            cid = xbmc.getInfoLabel('System.CurrentControlId') or ''
+            on_grid = cid in ('500', '501') and xbmc.getCondVisibility('Window.IsActive(videos)')
+            if not on_grid:
+                origin = None
+                if monitor.waitForAbort(0.25):
+                    return
+                continue
+            path = xbmc.getInfoLabel('Container.FolderPath') or ''
+            total = int(xbmc.getInfoLabel('Container.NumItems') or '0')
+            if path != seen_path and total:
+                seen_path = path
+                if total <= 2500:
+                    shown = 0
+                    for i in range(total):
+                        k = xbmc.getInfoLabel('Container.ListItemAbsolute(%d).Property(fefc_kind)' % i)
+                        if k != 'spacer':
+                            shown += 1
+                    if shown:
+                        xbmcgui.Window(10000).setProperty('FEFC.Shown', str(shown))
+            cur = int(xbmc.getInfoLabel('Container.CurrentItem') or '0')
+            pos = cur - 1 if cur else 0
+
+            def lookup(i, pos=pos):
+                off = i - pos
+                if off == 0:
+                    k = xbmc.getInfoLabel('Container.ListItem.Property(fefc_kind)')
+                else:
+                    k = xbmc.getInfoLabel('Container.ListItem(%d).Property(fefc_kind)' % off)
+                return k or None
+
+            step = skip_delta(pos, origin, lookup)
+            if step is None:
+                origin = pos
+                if monitor.waitForAbort(0.2):
+                    return
+                continue
+            if step == 'menu':
+                xbmc.executebuiltin('SetFocus(9290)')
+                origin = None
+            else:
+                xbmc.executebuiltin('SetFocus(%s,%d)' % (cid, pos + step))
+                origin = pos
+        except Exception as e:
+            log('grid pad: %s' % e)
+        if monitor.waitForAbort(0.05):
+            return
 
 
 def main():
@@ -1178,6 +1237,8 @@ def main():
     next_feed = 0.0
     next_counts = 0.0
     next_new_files = 0.0
+    next_catalog = time.time() + 25
+    next_due = 0.0
     ticker_shown = ['']
     t_start = time.time()
     checked = False
@@ -1187,6 +1248,7 @@ def main():
     except Exception as e:
         log('notify prefs start: %s' % e)
     perm_asked = [False]
+    threading.Thread(target=_grid_pad_loop, args=(monitor,), daemon=True).start()
     while not monitor.abortRequested():
         now = time.time()
         try:
@@ -1207,6 +1269,30 @@ def main():
             except Exception:
                 pass
             next_new_files = now + 900  # 15 min; feed is published with the 9am ET social posts
+        due_path = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('profile')), 'cache', 'refresh.due')
+        if os.path.exists(due_path) and now >= next_due:
+            next_catalog = min(next_catalog, now)
+            next_due = now + 45
+        if now >= next_catalog:
+            def refresh_catalog():
+                try:
+                    import catalog
+                    base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
+                    prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
+                    cache = os.path.join(prof, 'cache')
+                    try:
+                        mins = int(ADDON.getSetting('refresh_minutes') or 180)
+                    except ValueError:
+                        mins = 180
+                    catalog.load_model(base, cache, mins, log, force=True)
+                except Exception as e:
+                    log('catalogue refresh: %s' % e)
+            threading.Thread(target=refresh_catalog, daemon=True).start()
+            try:
+                mins = int(ADDON.getSetting('refresh_minutes') or 180)
+            except ValueError:
+                mins = 180
+            next_catalog = now + max(60, mins * 60)
         if now >= next_feed:
             def refresh():
                 try:

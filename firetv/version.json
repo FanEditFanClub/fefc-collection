@@ -1,8 +1,8 @@
 {
     "versionCode": 34,
-    "versionName": "0.8.25",
+    "versionName": "0.8.26",
     "url": "https://collection.faneditfanclub.com/firetv/FEFC-Collection.apk",
-    "notes": "0.8.25 — Every fan edit's details page plays a sound from its franchise folder (e.g. any Terminator file plays a Terminator clip).",
+    "notes": "0.8.26 — PayPal support opens the profile page directly, with no redirect.",
     "size": 105741526,
     "sha256": "783a8bc101f62f3a52a65ef49b6a21e2192d12a03b58afa52a9f69ccee799e54"
 }
