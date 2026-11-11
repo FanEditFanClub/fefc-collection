@@ -639,17 +639,24 @@ class Router:
         threading.Thread(target=go, daemon=True).start()
 
     def genres(self):
+        """Home-style 3x3. The tile is the genre name only: no count, no number prefix."""
+        from . import genrepages
+        from .genreshow import open_genre_board
         m = _model()
         art = m.get('genreart') or {}
         gk = set(m['genre_videos']) | set(m.get('genre_folders') or {})
-        names = sorted(gk - {'Uncategorized', 'Unsorted'}) + (['Uncategorized'] if 'Uncategorized' in gk else [])
-        for g in names:
-            a = art.get(g) or {}
+        pages = genrepages.genre_pages(gk)
+        flat = [pair for page in pages for pair in page]
+        entries = []
+        for label, key in flat:
+            a = art.get(key) or art.get(label) or {}
             img = catalog.abs_url(_base(), (a.get('img') or '').split('?')[0]) if a.get('img') else ''
-            # 0.5.1: dedupe the folders too — duplicate folder shortcuts were all being counted, so the
-            # genre totals ran high. Same one-entry-per-underlying-item logic as the home tile counts.
-            self.add_folder('%s  (%d)' % (g, len(catalog.dedupe(m, m['genre_videos'].get(g, []))) + len(catalog.dedupe(m, m['genre_folders'].get(g, [])))), '', landscape=img, action='genre', genre=g)
-        self.end()
+            entries.append((label, key, img))
+        picked = open_genre_board(entries)
+        if picked:
+            xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(self.url, action='genre', genre=picked))
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def genre(self):
         """Collections and files in a genre (like the web app), collections first, then files A-Z; paged."""
@@ -1945,32 +1952,40 @@ class OptimusWindow(xbmcgui.WindowDialog):
         art_w = int(round(art_h * 222 / 278.0))
         self.art = xbmcgui.ControlImage(0, 12, art_w, art_h, self._still, aspectRatio=2)
         self.addControl(self.art)
-        x = art_w + 28
-        width = 1280 - x - 36
-        block = 48 + 16 + 36 + 28 + 72 + 18 + 32
-        y = max(24, (menu_top - 24 - block) // 2)
-        self.addControl(xbmcgui.ControlLabel(x, y, width, 48, optimusplan.TITLE, font='font14_title', textColor='FFFFFFFF'))
-        self.addControl(xbmcgui.ControlLabel(x, y + 56, width, 36, optimusplan.CUE, font='font13', textColor='FFE8EEF6'))
-        bar_y = y + 56 + 36 + 24
-        # One border. The edit uses a transparent texture so it does not draw a second box.
-        self.addControl(xbmcgui.ControlImage(x, bar_y, width, 72, 'fefc-ol-tile.png'))
-        self.addControl(xbmcgui.ControlImage(x + 28, bar_y + 20, 32, 32, 'fefc-ic-search.png', aspectRatio=2))
+        # One left margin for the whole block, vertically centered beside Optimus.
+        x = art_w + 36
+        width = 1280 - x - 48
+        title_h, gap, bar_h = 50, 28, 76
+        block = title_h + gap + bar_h
+        y = max(28, (menu_top - 20 - block) // 2)
+        self.addControl(xbmcgui.ControlLabel(x, y, width, title_h, optimusplan.TITLE, font='font11_tile', textColor='FFFFFFFF', alignment=0x00000001))
+        bar_y = y + title_h + gap
+        # The button is the bar. Focus starts here, so the text caret stays hidden until Select.
+        self.bar_btn = xbmcgui.ControlButton(
+            x, bar_y, width, bar_h, '',
+            focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png',
+            textColor='00FFFFFF', focusedColor='00FFFFFF')
+        self.addControl(self.bar_btn)
+        icon = 32
+        self.addControl(xbmcgui.ControlImage(x + 28, bar_y + (bar_h - icon) // 2, icon, icon, 'fefc-ic-search.png', aspectRatio=2))
         blank = _media_file('fefc-blank.png')
-        self.edit = xbmcgui.ControlEdit(x + 72, bar_y + 8, width - 96, 56, '', font='font13', textColor='FFFFFFFF',
-                                         focusTexture=blank, noFocusTexture=blank)
+        # The edit starts to the right of the icon, so a caret cannot sit on the bar's left edge.
+        self.edit = xbmcgui.ControlEdit(x + 28 + icon + 16, bar_y + (bar_h - 48) // 2, width - 28 - icon - 40, 48, '',
+                                         font='font13', textColor='FFFFFFFF', focusTexture=blank, noFocusTexture=blank)
         self.addControl(self.edit)
-        self.placeholder = xbmcgui.ControlLabel(x, bar_y, width, 72, 'Search', font='font13_title',
+        self.placeholder = xbmcgui.ControlLabel(x, bar_y, width, bar_h, 'Search', font='font13_title',
                                                  textColor='FFB7C3D4', alignment=6)
         self.addControl(self.placeholder)
-        self.status = xbmcgui.ControlLabel(x, bar_y + 84, width, 32, 'Select the bar and type a title.', font='font12', textColor='FF99CCFF')
-        self.addControl(self.status)
-        self.menu, self.sound_icon = _add_icon_bar(self, self.edit)
+        self._opening = False
+        self.menu, self.sound_icon = _add_icon_bar(self, self.bar_btn)
         try:
+            self.bar_btn.controlDown(self.menu[0])
+            self.bar_btn.controlUp(self.bar_btn)
             self.edit.controlDown(self.menu[0])
-            self.edit.controlUp(self.edit)
+            self.edit.controlUp(self.bar_btn)
         except Exception:
             pass
-        self.setFocus(self.edit)
+        self.setFocus(self.bar_btn)
 
     def _keyboard_open(self):
         return bool(xbmc.getCondVisibility('Window.IsActive(virtualkeyboard) | Window.IsVisible(virtualkeyboard) | Window.IsActive(numericinput)'))
@@ -2012,6 +2027,10 @@ class OptimusWindow(xbmcgui.WindowDialog):
                 if self._draft():
                     self._submit()
                     return
+                try:
+                    self.setFocus(self.bar_btn)
+                except Exception:
+                    pass
                 self._resume_anim()
             if self._anim and self._frames:
                 try:
@@ -2040,8 +2059,9 @@ class OptimusWindow(xbmcgui.WindowDialog):
         from . import searchflow
         r = searchflow.submit(self._draft())
         if not r['ok']:
+            xbmcgui.Dialog().notification('Search', r['status'], xbmcgui.NOTIFICATION_INFO, 3000)
             try:
-                self.status.setLabel(r['status'])
+                self.setFocus(self.bar_btn)
             except Exception:
                 pass
             self._resume_anim()
@@ -2075,11 +2095,34 @@ class OptimusWindow(xbmcgui.WindowDialog):
                 if b.getId() == fid:
                     _bar_action(self, b)
                     return
+            if getattr(self, 'bar_btn', None) and fid == self.bar_btn.getId():
+                self._open_keyboard()
+                return
             if self._draft() and not self._keyboard_open():
                 self._submit()
                 return
-            # Select on the bar opens the keyboard and holds the loop on the current pose.
+            # Select on the field opens the keyboard and holds the loop on the current pose.
             self._halt_anim()
+
+    def _open_keyboard(self):
+        """Move into the field and open the keyboard. Idle focus stays on the bar, so no caret shows."""
+        if self._opening or self._closed:
+            return
+        self._opening = True
+        self._halt_anim()
+        try:
+            self.setFocus(self.edit)
+        except Exception:
+            self._opening = False
+            return
+
+        def kick():
+            xbmc.sleep(120)
+            self._opening = False
+            if not self._closed:
+                xbmc.executebuiltin('Action(Select)')
+
+        threading.Thread(target=kick, daemon=True).start()
 
 
 ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'genre': 'genre', 'recent': 'recent',

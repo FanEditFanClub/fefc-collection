@@ -544,3 +544,76 @@ print('IDS', json.dumps({'director': person, 'mixed': mixed, 'mixed_name': m['it
   const ids = out.split('IDS ').pop();
   fs.writeFileSync('/tmp/shape-ids.json', ids.trim() + '\n');
 });
+
+test('genre lists leave out To Be Catalogued', () => {
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog
+idx = json.load(open('data/index.json'))
+added = json.load(open('data/added.json'))
+m = catalog.build_model({
+    'index': idx,
+    'added': added,
+    'genres': json.load(open('data/genres.json')),
+    'video-genres': json.load(open('data/video-genres.json')),
+})
+tbc = catalog.tbc_members(m['items'], m['kids'])
+assert catalog.TBC_ID in tbc
+col = '1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB'
+assert col not in tbc, 'main collection was treated as To Be Catalogued'
+listed = []
+for g, ids in list(m['genre_videos'].items()) + list(m['genre_folders'].items()):
+    for i in ids:
+        if i in tbc or (m['items'][i][3] and m['items'][i][3] in tbc):
+            listed.append((g, i))
+assert not listed, ('tbc still listed', len(listed))
+# Before = current lists plus catalogued items under TBC that carry the genre.
+def carries(i, g):
+    return g in (m['vgenres'].get(i) or [])
+want = ['Action', 'Comedy', 'Drama', 'Horror', 'Sci-Fi']
+print('GENRE videos_before videos_after videos_excluded folders_after')
+for g in want:
+    after_v = set(catalog.dedupe(m, m['genre_videos'].get(g) or []))
+    after_f = catalog.dedupe(m, m['genre_folders'].get(g) or [])
+    extra = [i for i in tbc if i in m['items'] and not m['items'][i][2] and carries(i, g) and i not in after_v]
+    print('%s %d %d %d %d' % (g, len(after_v) + len(extra), len(after_v), len(extra), len(after_f)))
+print('TBC_MEMBERS', len(tbc))
+print('TBC_LEFT', len(listed))
+`);
+  assert.match(out, /TBC_LEFT 0/);
+  const horror = out.split('\n').find((line) => line.startsWith('Horror '));
+  const parts = horror.trim().split(/\s+/);
+  assert.ok(Number(parts[2]) > 0, horror);
+  assert.ok(Number(parts[3]) > 0, horror);
+  console.log(out);
+});
+
+test('genre tiles are clean names on pages of nine', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.doesNotMatch(router, /%s  \(%d\)' % \(g,/);
+  const out = py(`
+import sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import genrepages
+assert genrepages.clean_genre_name('01 - Horror') == 'Horror'
+assert genrepages.clean_genre_name('12. Sci-Fi') == 'Sci-Fi'
+assert genrepages.clean_genre_name('Comedy  (42)') == 'Comedy'
+assert genrepages.clean_genre_name('Drama (7)') == 'Drama'
+assert genrepages.clean_genre_name('Action #3') == 'Action'
+assert genrepages.clean_genre_name('Fantasy') == 'Fantasy'
+names = ['01 - Horror', 'Comedy  (42)', 'Unsorted', 'Uncategorized', 'Adventure', 'animation']
+pages = genrepages.genre_pages(names, 9)
+flat = [p for page in pages for p in page]
+labels = [a for a, _ in flat]
+assert labels == ['Adventure', 'animation', 'Comedy', 'Horror', 'Uncategorized'], labels
+assert all(k == 'Unsorted' or 'Unsorted' not in labels for k in labels)
+# Nine per page, last page short, no empty slots in the data.
+many = ['G%02d' % i for i in range(20)]
+ps = genrepages.genre_pages(many)
+assert [len(p) for p in ps] == [9, 9, 2]
+assert sum(len(p) for p in ps) == 20
+print('ok', len(ps))
+`);
+  assert.equal(out, 'ok 3');
+});

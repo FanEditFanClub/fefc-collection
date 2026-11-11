@@ -1,6 +1,6 @@
-"""Copy shown on the Kodi search dialog. Same words as the web spotlight."""
+"""Copy shown on the Kodi search dialog. The web spotlight still uses CUE."""
 CUE = 'Optimus is watching a fan edit. Type to interrupt him.'
-TITLE = 'Fan Edit Optimus'
+TITLE = 'Search the Collection'
 SEARCH_LABEL = 'Search'
 IMAGE_NAME = 'optimus-watch.webp'
 # Silent JPEG frames from the reviewed clip. Not played through Kodi's video player,

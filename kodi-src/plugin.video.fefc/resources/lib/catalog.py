@@ -16,7 +16,7 @@ SOURCES = ['drive-changes', 'index', 'video-genres', 'genres', 'posters', 'editi
            'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart', 'fileinfo']
 VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 6
+MODEL_VERSION = 7
 UA = 'plugin.video.fefc/1.0 (Kodi)'
 # Newest files shown on New Arrivals. The web app caps at 500 and pages 60; the first
 # page has to come back in a few seconds on a Fire Stick, so the plugin only builds one page.
@@ -28,6 +28,56 @@ _MEM = {}
 
 def natkey(s):
     return [((0, int(t), '') if t.isdigit() else (1, 0, t)) for t in re.split(r'(\d+)', (s or '').lower().strip()) if t != ''] or [(1, 0, '')]
+
+
+# 04 - To Be Catalogued. Genre lists are the main catalogued tree only.
+TBC_ID = '1503Wl56hzRppaIFcQisvQksOaeYOEjnk'
+
+
+def tbc_members(items, kids, tbc=TBC_ID):
+    """Ids that live in To Be Catalogued or any subfolder. Shortcuts to that tree count too.
+
+    Parent links cycle between the collection root and Fan Edit Collections, so the walk
+    stops when it repeats an id. Drive is never written.
+    """
+    members = set()
+    stack = [tbc]
+    while stack:
+        i = stack.pop()
+        if not i or i in members:
+            continue
+        members.add(i)
+        for k in kids.get(i, ()):
+            stack.append(k)
+        v = items.get(i)
+        if v and v[2] and v[3] and v[3] != i:
+            for k in kids.get(v[3], ()):
+                stack.append(k)
+    memo = {}
+
+    def hit(i, guard=0):
+        if not i or guard > 40:
+            return False
+        if i in memo:
+            return memo[i]
+        if i in members:
+            memo[i] = True
+            return True
+        v = items.get(i)
+        if not v:
+            memo[i] = False
+            return False
+        memo[i] = False
+        parent = v[1]
+        target = v[3] if v[3] and v[3] != i else ''
+        found = hit(parent, guard + 1) or (hit(target, guard + 1) if target else False)
+        memo[i] = found
+        return found
+
+    for i in list(items):
+        if hit(i):
+            members.add(i)
+    return members
 
 
 def _fetch(base, name, etag=None, lm=None, timeout=15):
@@ -166,6 +216,7 @@ def build_model(raw):
     genre_videos = {}
     genre_folders = {}
     vgenres = {}
+    tbc_ids = tbc_members(items, kids)
     for i, v in items.items():
         g = set(own.get(i, ()))
         p = v[1]
@@ -181,6 +232,10 @@ def build_model(raw):
             g.add('Uncategorized')
         if g:
             vgenres[i] = sorted(g)
+            # Genre folders list the main catalogued tree only. To Be Catalogued
+            # (and everything under it) is left out even when the genre matches.
+            if i in tbc_ids or (v[3] and v[3] in tbc_ids):
+                continue
             for x in g:
                 if v[2]:
                     if i in own and x in own[i] and cnt.get(i):
