@@ -39,6 +39,41 @@ def release_is_newer(new_version, new_build, cur_version, cur_build):
         return False
 
 
+def progress_view(state, version, pct=0, done_bytes=0, total_bytes=0, detail=''):
+    """Copy for the centered update popup. state: downloading, verifying, ready, failed."""
+    version = (version or '').strip()
+    try:
+        pct = max(0, min(100, int(pct)))
+    except (TypeError, ValueError):
+        pct = 0
+    done_mb = max(0, int(done_bytes or 0)) >> 20
+    total_mb = max(0, int(total_bytes or 0)) >> 20
+    if state == 'verifying':
+        line = 'Verifying…'
+        sub = version
+        bar = 100
+    elif state == 'ready':
+        line = 'Ready to install'
+        sub = version
+        bar = 100
+    elif state == 'failed':
+        line = detail or 'The download did not finish. Check the connection.'
+        sub = version
+        bar = pct
+    else:
+        line = '%d%%' % pct
+        sub = ('%d / %d MB' % (done_mb, total_mb)) if total_mb else version
+        bar = pct
+    return {
+        'title': 'Updating FEFC' if state != 'failed' else 'Update failed',
+        'version': version,
+        'line': line,
+        'sub': sub,
+        'pct': bar,
+        'retry': state == 'failed',
+    }
+
+
 def label_for(state):
     return {
         'checking': LABEL_CHECKING,

@@ -5,7 +5,14 @@
 <window type="dialog">
 	<defaultcontrol always="true">9101</defaultcontrol>
 	<backgroundcolor>0</backgroundcolor>
+	<onload>SetProperty(FEFC.Genres,1,home)</onload>
+	<onunload>ClearProperty(FEFC.Genres,home)</onunload>
 	<controls>
+		<!-- Covers only the centre cell, where the wordmark used to sit. The two tiles on each side stay visible. -->
+		<control type="image">
+			<left>760</left><top>0</top><width>400</width><height>200</height>
+			<texture colordiffuse="FF000000">fefc-white.png</texture>
+		</control>
 		<control type="image">
 			<left>336</left><top>198</top><width>1248</width><height>630</height>
 			<texture colordiffuse="FF000000">fefc-white.png</texture>
@@ -127,8 +134,8 @@
 			<left>498</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
-			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
-			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<texturefocus border="16">fefc-bar-focus.png</texturefocus>
+			<texturenofocus border="16">fefc-bar.png</texturenofocus>
 			<label>HOME</label>
 			<onleft>9404</onleft><onright>9402</onright><onup>9107</onup>
 		</control>
@@ -137,8 +144,8 @@
 			<left>726</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
-			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
-			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<texturefocus border="16">fefc-bar-focus.png</texturefocus>
+			<texturenofocus border="16">fefc-bar.png</texturenofocus>
 			<label>SEARCH</label>
 			<onleft>9401</onleft><onright>9403</onright><onup>9108</onup>
 		</control>
@@ -147,8 +154,8 @@
 			<left>954</left><top>878</top><width>240</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
-			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
-			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<texturefocus border="16">fefc-bar-focus.png</texturefocus>
+			<texturenofocus border="16">fefc-bar.png</texturenofocus>
 			<label>SOUND ON</label>
 			<onleft>9402</onleft><onright>9404</onright><onup>9108</onup>
 		</control>
@@ -157,8 +164,8 @@
 			<left>1202</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
-			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
-			<texturenofocus border="26">fefc-tile.png</texturenofocus>
+			<texturefocus border="16">fefc-bar-focus.png</texturefocus>
+			<texturenofocus border="16">fefc-bar.png</texturenofocus>
 			<label>SETTINGS</label>
 			<onleft>9403</onleft><onright>9401</onright><onup>9109</onup>
 		</control>
@@ -170,6 +177,16 @@
 			<scroll>true</scroll>
 			<scrollspeed>48</scrollspeed>
 			<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
+		</control>
+		<control type="label" id="9502">
+			<left>96</left><top>984</top><width>1728</width><height>44</height>
+			<align>center</align>
+			<aligny>center</aligny>
+			<font>font12</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<label>Loading Fan Edit Fan Club Ticker</label>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 		</control>
 	</controls>
 </window>

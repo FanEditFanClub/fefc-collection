@@ -294,56 +294,78 @@ def _install_update(new):
         except OSError:
             pass
         _cue('start')
-        prog = xbmcgui.DialogProgressBG()
-        prog.create('FEFC update', 'Downloading %s...' % version_label(new))
-        tries = 0
-        while tries < 8 and not ok:
-            tries += 1
-            try:
-                have = os.path.getsize(part) if os.path.exists(part) else 0
-                if want and have >= want:
-                    have = 0
-                hdr = {'User-Agent': 'FEFC-Kodi'}
-                if have:
-                    hdr['Range'] = 'bytes=%d-' % have
-                with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
-                    if have and r.status != 206:
+        from resources.lib.updatepopup import UpdatePopup
+        popup = UpdatePopup(version_label(new))
+        popup.render('downloading', 0, 0, want or 0)
+        finished = {'done': False}
+
+        def work():
+            nonlocal ok
+            tries = 0
+            while tries < 8 and not ok:
+                tries += 1
+                try:
+                    have = os.path.getsize(part) if os.path.exists(part) else 0
+                    if want and have >= want:
                         have = 0
-                    total = want or (have + int(r.headers.get('Content-Length') or 0))
-                    with open(part, 'ab' if have else 'wb') as f:
-                        done = have
-                        while True:
-                            chunk = r.read(256 * 1024)
-                            if not chunk:
-                                break
-                            f.write(chunk)
-                            done += len(chunk)
-                            if total:
-                                pct = min(99, int(done * 100 / total))
-                                prog.update(pct, 'FEFC update',
-                                            'Downloading %s: %d%% (%d / %d MB)' % (version_label(new), pct, done >> 20, total >> 20))
-                size = os.path.getsize(part)
-                if want and size < want:
-                    raise RuntimeError('short download %d/%d' % (size, want))
-                if sha:
-                    prog.update(99, 'FEFC update', 'Checking the download...')
-                    h = hashlib.sha256()
-                    with open(part, 'rb') as f:
-                        for c in iter(lambda: f.read(1 << 20), b''):
-                            h.update(c)
-                    if h.hexdigest() != sha:
-                        os.remove(part)
-                        raise RuntimeError('checksum mismatch')
-                os.replace(part, dst)
-                ok = True
-            except Exception as e:
-                log('update download attempt %d failed: %s' % (tries, e))
-                prog.update(0, 'FEFC update', 'Connection problem, retrying (%d/8)...' % tries)
-                xbmc.sleep(min(30, 3 * tries) * 1000)
-        prog.close()
+                    hdr = {'User-Agent': 'FEFC-Kodi'}
+                    if have:
+                        hdr['Range'] = 'bytes=%d-' % have
+                    with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
+                        if have and r.status != 206:
+                            have = 0
+                        total = want or (have + int(r.headers.get('Content-Length') or 0))
+                        with open(part, 'ab' if have else 'wb') as f:
+                            done = have
+                            while True:
+                                chunk = r.read(256 * 1024)
+                                if not chunk:
+                                    break
+                                f.write(chunk)
+                                done += len(chunk)
+                                if total:
+                                    pct = min(99, int(done * 100 / total))
+                                    popup.render('downloading', pct, done, total)
+                    size = os.path.getsize(part)
+                    if want and size < want:
+                        raise RuntimeError('short download %d/%d' % (size, want))
+                    if sha:
+                        popup.render('verifying', 100, size, want or size)
+                        h = hashlib.sha256()
+                        with open(part, 'rb') as f:
+                            for c in iter(lambda: f.read(1 << 20), b''):
+                                h.update(c)
+                        if h.hexdigest() != sha:
+                            os.remove(part)
+                            raise RuntimeError('checksum mismatch')
+                    os.replace(part, dst)
+                    ok = True
+                except Exception as e:
+                    log('update download attempt %d failed: %s' % (tries, e))
+                    popup.render('downloading', 0, 0, want or 0, 'Connection problem, retrying (%d/8)...' % tries)
+                    xbmc.sleep(min(30, 3 * tries) * 1000)
+            finished['done'] = True
+            try:
+                popup.close()
+            except Exception:
+                pass
+
+        threading.Thread(target=work, daemon=True).start()
+        while not finished['done']:
+            if popup.dismissed:
+                if xbmcgui.Window(10000).getProperty('FEFC.UpdateReveal') == '1':
+                    xbmcgui.Window(10000).clearProperty('FEFC.UpdateReveal')
+                    popup.dismissed = False
+                else:
+                    xbmc.sleep(200)
+                    continue
+            popup.doModal()
     if not ok:
         _cue('error')
-        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again; it will continue where it stopped.')
+        popup.render('failed', 0, 0, want or 0, 'The download did not finish after several tries. Check the connection and pick Retry. It continues where it stopped.')
+        popup.doModal()
+        if popup.retry:
+            _install_update(new)
         return
     if not url:
         _cue('error')
@@ -373,6 +395,13 @@ def _install_update(new):
         xbmcgui.Dialog().ok('FEFC update', 'The installer could not be opened.')
         return
     _cue('verified')
+    try:
+        popup.render('ready', 100, os.path.getsize(dst), want or os.path.getsize(dst))
+        popup.show()
+        xbmc.sleep(700)
+        popup.close()
+    except Exception:
+        pass
     log('launching installer: %s' % builtin)
     # Do not close every dialog (that flashed the screen black) and do not record success
     # before Android's own confirmation. The running process stays the old build until a full restart.
@@ -440,8 +469,8 @@ def check_update(manual=False, prompt=True):
             xbmcgui.Dialog().ok('FEFC', 'This is not the FEFC app build, so there is no app update to check. Add-on updates arrive automatically.')
         return
     set_update_state(cur, state='checking')
-    prog = xbmcgui.DialogProgressBG()
-    prog.create('FEFC', 'Checking for updates')
+    # The Home button already reads Checking for updates. The background progress
+    # dialog is the top-left line and the corner notification, so the check skips it.
     try:
         req = urllib.request.Request(VERSION_URL + '?t=%d' % int(time.time()), headers={'User-Agent': 'FEFC-Kodi'})
         new = json.loads(urllib.request.urlopen(req, timeout=15).read().decode('utf-8'))
@@ -451,17 +480,12 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Dialog().ok('FEFC', 'Unable to check for updates right now.')
         return
-    finally:
-        try:
-            prog.close()
-        except Exception:
-            pass
     from resources.lib.updateflow import release_is_newer
     avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
     set_update_state(cur, new, avail)
     if _updating():
         if manual:
-            xbmcgui.Dialog().notification('FEFC update', 'Already downloading the update...', time=3000)
+            xbmcgui.Window(10000).setProperty('FEFC.UpdateReveal', '1')
         return
     if avail and manual:   # the Home update button: always a fresh check, then install straight away
         install_update(new)
@@ -847,6 +871,23 @@ class HomeWall(object):
     def playing(self):
         return xbmcgui.Window(10000).getProperty('FEFC.Wall') == '1'
 
+    def switch_sound(self, sound):
+        """Swap the audible and silent loops now. Does not touch a real film."""
+        pl = xbmc.Player()
+        try:
+            if pl.isPlaying():
+                cur = pl.getPlayingFile() or ''
+                if cur and 'home-wall' not in cur and 'fefc-intro' not in cur:
+                    self.cur_sound = sound
+                    return
+                try:
+                    self.pos = pl.getTime()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        self._start(pl, bool(sound), self.pos)
+
     def stop(self):
         home = xbmcgui.Window(10000)
         home.clearProperty('FEFC.WallSeam')
@@ -947,7 +988,7 @@ class HomeWall(object):
                 except Exception:
                     pass
             if sound != self.cur_sound:
-                self._start(pl, sound, self.pos)
+                self.switch_sound(sound)
                 return
             # RepeatOne does not loop a file that is not in a playlist, so the player hits EOF and
             # the next start is a new OpenFile. Seek the same player back to the start instead.
@@ -1018,11 +1059,7 @@ def details_sfx():
     if not url or key == _last_info[0]:
         return
     _last_info[0] = key
-    try:
-        from sfxpref import sfx_enabled as _sfx_on
-    except Exception:
-        _sfx_on = lambda raw: str(raw).strip().lower() != 'false'
-    if not _sfx_on(ADDON.getSetting('play_sfx')) or _foreground_video():
+    if xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1' or _foreground_video():
         return
     def go():
         try:
@@ -1072,6 +1109,28 @@ def _drop_stale_back_keymap():
             log('removed profile keymap that swallowed Back')
     except Exception as e:
         log('nav keymap: %s' % e)
+
+
+_wall = None
+
+
+def apply_sound_now(on):
+    """Flip the live mute and the wall audio. No settings write and no keymap reload."""
+    home = xbmcgui.Window(10000)
+    home.setProperty('FEFC.SoundOff', '' if on else '1')
+    home.setProperty('FEFC.GuiSound', 'always' if on else 'off')
+    if not on:
+        try:
+            stop = getattr(xbmc, 'stopSFX', None)
+            if stop:
+                stop()
+        except Exception:
+            pass
+    if _wall is not None:
+        try:
+            _wall.switch_sound(bool(on))
+        except Exception as e:
+            log('sound now: %s' % e)
 
 
 def apply_nav_sound(on):
@@ -1247,7 +1306,8 @@ def main():
     # main loop: news ticker, pause-on-back, daily app update notice
     watcher = Watcher()
     tracker = Tracker()
-    wall = HomeWall()
+    global _wall
+    wall = _wall = HomeWall()
     next_feed = 0.0
     next_counts = 0.0
     next_new_files = 0.0

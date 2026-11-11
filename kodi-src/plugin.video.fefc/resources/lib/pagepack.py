@@ -86,10 +86,53 @@ def folder_page(fid, page=0, path=None, size=LIST_PAGE):
     return _slice(_read(path, ref), page, size)
 
 
-def genre_page(name, page=0, path=None, size=LIST_PAGE):
-    path = path or shipped_path()
+def _genre_doc(name, path):
     index, _f, _base = _open(path)
     ref = (index.get('genres') or {}).get(name)
+    if not ref:
+        return None
+    return _read(path, ref)
+
+
+def genre_page(name, page=0, path=None, size=LIST_PAGE):
+    path = path or shipped_path()
+    doc = _genre_doc(name, path)
+    if doc is None:
+        return None
+    out = _slice(doc, page, size)
+    pool = doc.get('sfx') or []
+    if isinstance(pool, list):
+        import random
+        files = [p for p in pool if isinstance(p, str) and p]
+        out['sfx'] = random.choice(files) if files else ''
+    return out
+
+
+def genre_all(name, path=None):
+    """Every row in a genre, not one page. Used when the user changes the sort."""
+    path = path or shipped_path()
+    return _genre_doc(name, path)
+
+
+def id_index(path=None):
+    """id -> search row. One parse of the shipped search slice, not the whole model."""
+    path = path or shipped_path()
+    key = path + '::byid'
+    hit = _CACHE.get(key)
+    if hit is not None:
+        return hit
+    index, _f, _base = _open(path)
+    ref = index.get('search')
+    rows = _read(path, ref).get('rows') or [] if ref else []
+    by = {r[0]: r for r in rows if r}
+    _CACHE[key] = by
+    return by
+
+
+def people_page(page=0, path=None, size=LIST_PAGE):
+    path = path or shipped_path()
+    index, _f, _base = _open(path)
+    ref = index.get('people')
     if not ref:
         return None
     return _slice(_read(path, ref), page, size)
@@ -209,7 +252,20 @@ def build_pack(model, base):
             row = row_for(i, '')
             if row:
                 rows.append(row)
-        index['genres'][genre] = add({'name': genre, 'sfx': '', 'rows': rows})
+        pool = []
+        seen = set()
+        for i in ids:
+            rel = catalog.sfx_up(model, i)
+            files = rel if isinstance(rel, list) else ([rel] if rel else [])
+            for one in files:
+                if isinstance(one, str) and one not in seen:
+                    seen.add(one)
+                    pool.append(one)
+                    if len(pool) >= 24:
+                        break
+            if len(pool) >= 24:
+                break
+        index['genres'][genre] = add({'name': genre, 'sfx': pool, 'rows': rows})
 
     recent_rows = []
     for i in catalog.recent_ids(model):
@@ -218,8 +274,11 @@ def build_pack(model, base):
             recent_rows.append(row)
     index['recent'] = add({'name': 'New Arrivals', 'sfx': '', 'rows': recent_rows})
 
+    tbc_ids = catalog.tbc_members(items, model.get('kids') or {})
     search_rows = []
     for i, item in items.items():
+        if i in tbc_ids or (item[3] and item[3] in tbc_ids):
+            continue
         if item[2] and not (model.get('rcnt') or model['cnt']).get(i):
             continue
         is_dir = 1 if item[2] else 0
@@ -232,6 +291,18 @@ def build_pack(model, base):
         search_rows.append(row)
     search_rows.sort(key=lambda r: (0 if r[2] else 1, catalog.natkey(r[1])))
     index['search'] = add({'rows': search_rows})
+
+    people_rows = []
+    for fid, meta in (model.get('people_meta') or {}).items():
+        if fid not in items:
+            continue
+        if not (model.get('rcnt') or model['cnt']).get(fid):
+            continue
+        row = row_for(fid, items[fid][1])
+        if row:
+            people_rows.append(row)
+    people_rows.sort(key=lambda r: namesort.folder_sort_key(r[1]))
+    index['people'] = add({'name': 'Actors & Directors', 'sfx': '', 'rows': people_rows})
 
     head = json.dumps(index, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
     return MAGIC + struct.pack('<I', len(head)) + head + b''.join(parts)

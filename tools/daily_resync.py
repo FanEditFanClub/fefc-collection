@@ -172,10 +172,27 @@ def main():
     except Exception as e:
         print(f"Warning during shuffle: {e}", flush=True)
 
+    # Genre assignment is read-only on Drive. video_genres unions the pinned
+    # title rules, metadata already on disk, and ancestor propagation. It does
+    # not rewrite genres.json and it does not upload anything. --no-net skips
+    # the optional Wikidata lookup so a DNS blip cannot stall the nightly job.
+    # A new file under an already-tagged folder inherits that folder's genre.
+    try:
+        run_cmd("python3 tools/video_genres.py --no-net")
+    except Exception as e:
+        print(f"Warning during video_genres: {e}", flush=True)
+
     try:
         run_cmd("python3 tools/genre_collections.py")
     except Exception as e:
         print(f"Warning during genre_collections: {e}", flush=True)
+
+    # The Kodi app reads resources/shipped/pages.pack. Rebuild it from the
+    # catalogue this job just refreshed so the next app build has the genres.
+    try:
+        run_cmd("python3 tools/build_page_pack.py")
+    except Exception as e:
+        print(f"Warning during build_page_pack: {e}", flush=True)
 
     try:
         run_cmd("python3 tools/ai_titles.py")

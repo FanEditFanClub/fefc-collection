@@ -81,6 +81,29 @@ def rrect_tile(size, border, fill_top, fill_bot, line, lw, radius, glow=None):
     return Image.alpha_composite(img, ol)
 
 
+def rrect_bar(w, h, fill_top, fill_bot, line, lw, radius):
+    """Wide button face. The stroke sits inside the 9-slice border so it survives stretching."""
+    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    grad = Image.new('RGBA', (w, h))
+    px = grad.load()
+    for y in range(h):
+        t = y / max(1, h - 1)
+        c = tuple(int(fill_top[i] * (1 - t) + fill_bot[i] * t) for i in range(4))
+        for x in range(w):
+            px[x, y] = c
+    scale = 4
+    m = Image.new('L', (w * scale, h * scale), 0)
+    ImageDraw.Draw(m).rounded_rectangle((2 * scale, 2 * scale, (w - 3) * scale, (h - 3) * scale), radius * scale, fill=255)
+    m = m.resize((w, h), Image.LANCZOS)
+    body = Image.new('RGBA', (w, h), (0, 0, 0, 0))
+    body.paste(grad, (0, 0), m)
+    img = Image.alpha_composite(img, body)
+    ol = Image.new('RGBA', (w * scale, h * scale), (0, 0, 0, 0))
+    ImageDraw.Draw(ol).rounded_rectangle((2 * scale, 2 * scale, (w - 3) * scale, (h - 3) * scale), radius * scale, outline=line, width=lw * scale)
+    ol = ol.resize((w, h), Image.LANCZOS)
+    return Image.alpha_composite(img, ol)
+
+
 def background(path):
     w, h = 1920, 1080
     img = Image.new('RGB', (w, h))
@@ -107,6 +130,10 @@ def make_textures(media):
     media.mkdir(parents=True, exist_ok=True)
     rrect_tile(128, 26, (24, 42, 68, 235), (6, 10, 18, 245), (153, 204, 255, 90), 2, 22).save(media / 'fefc-tile.png')
     rrect_tile(128, 26, (30, 62, 104, 245), (8, 18, 34, 250), (47, 168, 255, 255), 4, 22, glow=(47, 168, 255, 200)).save(media / 'fefc-tile-focus.png')
+    # Bottom-bar buttons, including the wider SOUND button. Taller than the old
+    # 9-slice so the outline stays visible at 60px.
+    rrect_bar(240, 64, (24, 42, 68, 235), (6, 10, 18, 245), (186, 214, 255, 230), 3, 18).save(media / 'fefc-bar.png')
+    rrect_bar(240, 64, (30, 62, 104, 245), (8, 18, 34, 250), (47, 168, 255, 255), 3, 18).save(media / 'fefc-bar-focus.png')
     rrect_tile(128, 26, (0, 0, 0, 0), (0, 0, 0, 0), (47, 168, 255, 255), 4, 22, glow=(47, 168, 255, 200)).save(media / 'fefc-tile-ring.png')
     sh = Image.new('RGBA', (4, 64))
     for y in range(64):

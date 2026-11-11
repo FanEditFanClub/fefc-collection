@@ -111,6 +111,10 @@ def _cta(i):
     return '%s  %s' % (_BADGE.get(src, src.upper()), text)
 
 
+# Shown centered and still until the first real line is ready. Not a marquee.
+TICKER_LOADING = 'Loading Fan Edit Fan Club Ticker'
+
+
 def build_text(new_items, community, limit=MAX_LEN):
     items = list(new_items or []) + list(community or [])
     parts = []
