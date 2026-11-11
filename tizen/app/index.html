@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>FEFC</title>
+<link rel="stylesheet" href="css/shell.css">
+</head>
+<body>
+<object id="av-player" type="application/avplayer"></object>
+<iframe id="site" title="FEFC Collection" tabindex="0"
+  src="https://collection.faneditfanclub.com/?tv=1&amp;tizen=1"
+  allow="autoplay; fullscreen"></iframe>
+<div id="update" hidden role="dialog" aria-label="FEFC update">
+  <h1>FEFC update</h1>
+  <p id="update-text"></p>
+  <div class="row">
+    <button id="update-later" type="button" tabindex="0">Later</button>
+    <button id="update-go" type="button" tabindex="0">How to install</button>
+  </div>
+</div>
+<div id="stage" hidden>
+  <p id="stage-title"></p>
+  <p id="stage-status"></p>
+  <div class="row">
+    <button id="stage-back" type="button" tabindex="0">Back</button>
+    <button id="stage-rew" type="button" tabindex="0">-10s</button>
+    <button id="stage-pp" type="button" tabindex="0">Pause</button>
+    <button id="stage-fwd" type="button" tabindex="0">+10s</button>
+  </div>
+</div>
+<script src="js/version.js"></script>
+<script src="js/shell.js"></script>
+</body>
+</html>

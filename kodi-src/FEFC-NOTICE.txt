@@ -11,6 +11,7 @@ License 1.1, see LICENSE-FEFC.txt in the skin).
 The plugin.video.fefc add-on bundles the segno QR-code library (BSD-3-Clause, resources/lib/segno/LICENSE) and resource.uisounds.fefc
 contains the FEFC navigation sounds.
 The app can download its own updates (from this project's server) and hands them to Android's installer; you confirm each install.
+macOS and webOS packages of this same unofficial build use the same add-ons, skin, and version.json. They are not signed by Apple or by LG. Samsung Tizen is a separate web package of the FEFC site, listed in that same version.json. See platforms/README.md in the source repository.
 
 Source code:
   Kodi (upstream, same version as this build): https://github.com/xbmc/xbmc  (tag 21.3-Omega)

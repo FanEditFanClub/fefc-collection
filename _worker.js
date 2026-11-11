@@ -777,6 +777,31 @@ export default {
       } else if (obj.size != null) h.set('content-length', String(obj.size));
       return new Response(req.method === 'HEAD' ? null : obj.body, { status, headers: h });
     }
+    // macOS / webOS / Tizen packages. Nothing is uploaded here until Carson turns publishing on.
+    // A missing R2 object is a 404. The Android APK paths above are unchanged.
+    {
+      const platformFile = {
+        '/kodi-app/FEFC-macOS-arm64.dmg': ['kodi/FEFC-macOS-arm64.dmg', 'application/x-apple-diskimage', 'FEFC-macOS-arm64.dmg'],
+        '/kodi-app/FEFC-macOS-x86_64.dmg': ['kodi/FEFC-macOS-x86_64.dmg', 'application/x-apple-diskimage', 'FEFC-macOS-x86_64.dmg'],
+        '/kodi-app/FEFC-webOS.ipk': ['kodi/FEFC-webOS.ipk', 'application/vnd.webos.ipk', 'FEFC-webOS.ipk'],
+        '/kodi-app/FEFC.wgt': ['kodi/FEFC.wgt', 'application/widget', 'FEFC.wgt'],
+      }[url.pathname];
+      if (platformFile) {
+        if (!env.MEDIA) return new Response('unavailable', { status: 503 });
+        const obj = await env.MEDIA.get(platformFile[0], { range: req.headers });
+        if (!obj) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
+        const h = new Headers({ 'content-type': platformFile[1], 'accept-ranges': 'bytes', 'cache-control': 'no-store',
+          'content-disposition': 'attachment; filename="' + platformFile[2] + '"', 'access-control-allow-origin': '*' });
+        if (obj.httpEtag) h.set('etag', obj.httpEtag);
+        let status = 200;
+        if (obj.range && obj.size != null) {
+          const r = obj.range; const off = r.offset != null ? r.offset : (r.suffix != null ? obj.size - r.suffix : 0);
+          const len = r.length != null ? r.length : (obj.size - off);
+          h.set('content-range', 'bytes ' + off + '-' + (off + len - 1) + '/' + obj.size); h.set('content-length', String(len)); status = 206;
+        } else if (obj.size != null) h.set('content-length', String(obj.size));
+        return new Response(req.method === 'HEAD' ? null : obj.body, { status, headers: h });
+      }
+    }
     // Fire TV APK: tolerate typed aliases; body may live in R2 (MEDIA) or GitHub Releases when >25MiB Pages limit.
     {
       const lp = url.pathname.toLowerCase().replace(/\/+$/, '');
@@ -812,6 +837,20 @@ export default {
       } else if (lp.endsWith('.apk')) {
         return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
       }
+    }
+    if (url.pathname === '/samsung' || url.pathname === '/samsung/') {
+      const page = await env.ASSETS.fetch(new Request(new URL('/samsung.html', url), req));
+      const h = new Headers(page.headers);
+      h.set('content-type', 'text/html; charset=utf-8');
+      h.set('cache-control', 'no-cache, must-revalidate');
+      return new Response(page.body, { status: page.status, headers: h });
+    }
+    if (url.pathname === '/lg-update' || url.pathname === '/lg-update/') {
+      const page = await env.ASSETS.fetch(new Request(new URL('/lg-update.html', url), req));
+      const h = new Headers(page.headers);
+      h.set('content-type', 'text/html; charset=utf-8');
+      h.set('cache-control', 'no-cache, must-revalidate');
+      return new Response(page.body, { status: page.status, headers: h });
     }
     const res = await env.ASSETS.fetch(req);
     const path = url.pathname;

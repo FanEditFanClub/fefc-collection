@@ -360,7 +360,200 @@ def poll_new_files_feed():
 
 
 
+def _host_flags():
+    """Visibility labels from this Kodi. probed stays false when the labels cannot be read,
+    and the installer then stays on the Android path."""
+    flags = {'android': False, 'darwin': False, 'osx': False, 'webos': False,
+             'machine': '', 'build': '', 'os': '', 'xbmc_path': '', 'probed': False}
+    try:
+        flags['android'] = bool(xbmc.getCondVisibility('System.Platform.Android'))
+        flags['darwin'] = bool(xbmc.getCondVisibility('System.Platform.Darwin'))
+        flags['osx'] = bool(xbmc.getCondVisibility('System.Platform.OSX'))
+        flags['webos'] = bool(xbmc.getCondVisibility('System.Platform.WebOS'))
+        flags['probed'] = True
+    except Exception:
+        return flags
+    try:
+        flags['build'] = xbmc.getInfoLabel('System.BuildVersion') or ''
+        flags['os'] = xbmc.getInfoLabel('System.OsVersionInfo') or ''
+    except Exception:
+        pass
+    try:
+        flags['xbmc_path'] = xbmcvfs.translatePath('special://xbmc/') or ''
+    except Exception:
+        pass
+    try:
+        import platform as _py
+        flags['machine'] = _py.machine()
+    except Exception:
+        pass
+    return flags
+
+
+def _host_platform():
+    from resources.lib.updateflow import classify_platform
+    flags = _host_flags()
+    if not flags.get('probed'):
+        return 'android'
+    return classify_platform(flags)
+
+
+def _host_arch(platform):
+    from resources.lib.updateflow import platform_arch
+    machine = ''
+    try:
+        import platform as _py
+        machine = _py.machine()
+    except Exception:
+        pass
+    return platform_arch(platform, machine)
+
+
+def _show_webos_guide(new, rec):
+    """Full-screen skin dialog with the Dev Manager steps. A text page is the fallback."""
+    from resources.lib import webosguide
+    url = rec.get('url') if rec and rec.get('available') else ''
+    body = '\n\n'.join(webosguide.tv_steps(url))
+    foot = 'If Install fails, turn Key Server off and on, then check the passphrase.'
+    skin = xbmcvfs.translatePath('special://skin')
+    qr = webosguide.write_qr(xbmcvfs.translatePath('special://temp/fefc-lg-qr.png'))
+    try:
+        dlg = _WebOSGuide(webosguide.DIALOG_XML, skin, 'default', '1080i')
+        dlg.step_text = body
+        dlg.foot_text = foot
+        dlg.qr_path = qr
+        dlg.doModal()
+        del dlg
+        return
+    except Exception as e:
+        log('webos guide dialog: %s' % e)
+    xbmcgui.Dialog().textviewer(webosguide.TITLE, webosguide.tv_text(url))
+
+
+class _WebOSGuide(xbmcgui.WindowXMLDialog):
+    """DialogFEFCWebOSUpdate.xml in skin.fefc. Close on the button or Back."""
+
+    def onInit(self):
+        try:
+            self.getControl(7000).setLabel(self._line(getattr(self, 'title_text', '') or 'A new FEFC is ready'))
+        except Exception:
+            pass
+        try:
+            self.getControl(7001).setText(getattr(self, 'step_text', '') or '')
+        except Exception:
+            pass
+        try:
+            self.getControl(7004).setLabel(getattr(self, 'foot_text', '') or '')
+        except Exception:
+            pass
+        qr = getattr(self, 'qr_path', '') or ''
+        try:
+            if qr:
+                self.getControl(7002).setImage(qr)
+        except Exception:
+            pass
+        try:
+            self.setFocusId(9000)
+        except Exception:
+            pass
+
+    def _line(self, text):
+        return text
+
+    def onClick(self, controlId):
+        if controlId == 9000:
+            self.close()
+
+    def onAction(self, action):
+        aid = action.getId()
+        if aid in (10, 92, 110):
+            self.close()
+
+
+def _install_platform_update(new, plat):
+    """Download the macOS package named in version.json and hand it to the OS.
+    webOS shows the Dev Manager guide instead of trying to install from inside the app.
+    Android never reaches this. A missing platforms entry does not download the APK."""
+    if plat == 'webos':
+        from resources.lib.updateflow import platform_download
+        _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
+        return
+    import hashlib
+    import shutil
+    import subprocess
+    from resources.lib.updateflow import (platform_download, platform_install_message,
+                                           platform_unavailable_message, allowed_update_url)
+    rec = platform_download(new, plat, _host_arch(plat))
+    if not rec.get('available') or not allowed_update_url(rec.get('url')):
+        _cue('error')
+        xbmcgui.Dialog().ok('FEFC update', platform_unavailable_message(plat, version_label(new)))
+        return
+    name = rec.get('filename') or ('FEFC-macOS-update.dmg' if plat == 'macos' else 'FEFC-webOS-update.ipk')
+    dst = xbmcvfs.translatePath('special://temp/' + name)
+    part = dst + '.part'
+    url, want, sha = rec['url'], rec.get('size') or 0, rec.get('sha256') or ''
+    ok = False
+    _cue('start')
+    log('downloading %s' % version_label(new))
+    tries = 0
+    while tries < 8 and not ok:
+        tries += 1
+        try:
+            try:
+                os.remove(part)
+            except OSError:
+                pass
+            req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
+            with urllib.request.urlopen(req, timeout=60) as r, open(part, 'wb') as f:
+                done = 0
+                total = want or int(r.headers.get('Content-Length') or 0)
+                while True:
+                    chunk = r.read(256 * 1024)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    done += len(chunk)
+            if want and os.path.getsize(part) != want and os.path.getsize(part) < want:
+                raise RuntimeError('short download')
+            log('checking the download')
+            h = hashlib.sha256()
+            with open(part, 'rb') as f:
+                for c in iter(lambda: f.read(1 << 20), b''):
+                    h.update(c)
+            if h.hexdigest() != sha:
+                raise RuntimeError('checksum mismatch')
+            os.replace(part, dst)
+            ok = True
+        except Exception as e:
+            log('platform update attempt %d failed: %s' % (tries, e))
+            xbmc.sleep(min(30, 3 * tries) * 1000)
+    if not ok:
+        _cue('error')
+        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again.')
+        return
+    opened = False
+    if plat == 'macos':
+        try:
+            opened = subprocess.call(['open', dst]) == 0
+        except Exception as e:
+            log('open dmg: %s' % e)
+    elif plat == 'webos':
+        luna = shutil.which('luna-send')
+        if luna:
+            try:
+                payload = json.dumps({'id': 'org.xbmc.kodi', 'ipkUrl': dst, 'subscribe': False})
+                subprocess.call([luna, '-n', '1', 'luna://com.webos.appInstallService/dev/install', payload])
+            except Exception as e:
+                log('webos install: %s' % e)
+    _cue('verified')
+    xbmcgui.Dialog().ok('FEFC update', platform_install_message(plat, dst, opened, rec.get('abi') or ''))
+
+
 def _install_update(new):
+    plat = _host_platform()
+    if plat != 'android':
+        _install_platform_update(new, plat)
+        return
     import hashlib
     url, want, sha = _for_my_package(new)
     dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
@@ -565,9 +758,19 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Dialog().ok('FEFC', 'Unable to check for updates right now.')
         return
-    from resources.lib.updateflow import release_is_newer
+    from resources.lib.updateflow import release_is_newer, platform_download, platform_unavailable_message
     avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
     set_update_state(cur, new, avail)
+    plat = _host_platform()
+    if plat == 'webos' and avail and (manual or prompt):
+        _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
+        return
+    if plat != 'android' and avail:
+        rec = platform_download(new, plat, _host_arch(plat))
+        if not rec.get('available'):
+            if manual or prompt:
+                xbmcgui.Dialog().ok('FEFC update', platform_unavailable_message(plat, version_label(new)))
+            return
     if _updating():
         if manual:
             xbmcgui.Window(10000).setProperty('FEFC.UpdateReveal', '1')

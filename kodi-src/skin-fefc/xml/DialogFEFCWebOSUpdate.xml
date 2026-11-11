@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- webOS only. Opened by plugin.video.fefc when version.json is newer.
+     font_title_big is 56px and font14_title is 42px, so the steps can be read from a couch. -->
+<window type="dialog" id="11192">
+	<defaultcontrol always="true">9000</defaultcontrol>
+	<controls>
+		<control type="image">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<texture>fefc-white.png</texture>
+			<colordiffuse>F003060C</colordiffuse>
+		</control>
+		<control type="image">
+			<left>70</left><top>40</top><width>1780</width><height>1000</height>
+			<texture border="28">fefc-tile.png</texture>
+		</control>
+		<control type="label" id="7000">
+			<left>110</left><top>64</top><width>1700</width><height>68</height>
+			<font>font_title_big</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<align>left</align>
+			<label>A new FEFC is ready</label>
+		</control>
+		<control type="label" id="7005">
+			<left>110</left><top>138</top><width>1180</width><height>52</height>
+			<font>font13_title</font>
+			<textcolor>FF99CCFF</textcolor>
+			<align>left</align>
+			<label>This TV cannot install it alone. Use a computer on the same Wi-Fi.</label>
+		</control>
+		<control type="textbox" id="7001">
+			<left>110</left><top>210</top><width>1180</width><height>620</height>
+			<font>font14_title</font>
+			<textcolor>FFF0F0F0</textcolor>
+			<align>left</align>
+		</control>
+		<control type="image">
+			<left>1348</left><top>210</top><width>420</width><height>420</height>
+			<texture>fefc-white.png</texture>
+			<colordiffuse>FFF4F7FB</colordiffuse>
+		</control>
+		<control type="image" id="7002">
+			<left>1378</left><top>240</top><width>360</width><height>360</height>
+			<aspectratio>keep</aspectratio>
+		</control>
+		<control type="label" id="7003">
+			<left>1320</left><top>644</top><width>480</width><height>90</height>
+			<font>font12_title</font>
+			<textcolor>FF99CCFF</textcolor>
+			<align>center</align>
+			<aligny>center</aligny>
+			<wrapmultiline>true</wrapmultiline>
+			<label>collection.faneditfanclub.com/lg-update</label>
+		</control>
+		<control type="label" id="7004">
+			<left>110</left><top>850</top><width>1680</width><height>80</height>
+			<font>font12_title</font>
+			<textcolor>FF8E9BB0</textcolor>
+			<align>left</align>
+			<wrapmultiline>true</wrapmultiline>
+			<label></label>
+		</control>
+		<control type="button" id="9000">
+			<left>1500</left><top>948</top><width>280</width><height>68</height>
+			<font>font14_title</font>
+			<label>Close</label>
+			<textcolor>FFFFFFFF</textcolor>
+			<focusedcolor>FF0B1220</focusedcolor>
+			<align>center</align>
+			<textoffsetx>0</textoffsetx>
+			<texturefocus border="20">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="20">fefc-ol-tile.png</texturenofocus>
+			<onleft>9000</onleft>
+			<onright>9000</onright>
+			<onup>9000</onup>
+			<ondown>9000</ondown>
+		</control>
+	</controls>
+</window>

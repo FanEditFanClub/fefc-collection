@@ -185,20 +185,9 @@ jobs:
           set -euo pipefail
           SHA=$(sha256sum FEFC-Kodi.apk | cut -d' ' -f1); SIZE=$(stat -c%s FEFC-Kodi.apk)
           SHA2=$(sha256sum FEFC.apk | cut -d' ' -f1); SIZE2=$(stat -c%s FEFC.apk)
-          SHA="$SHA" SIZE="$SIZE" SHA2="$SHA2" SIZE2="$SIZE2" python3 - <<'PY'
-          import json, os, datetime
-          cl = json.load(open('kodi-src/fefc-changelog.json', encoding='utf-8')).get('versions', [])
-          v = {"kodi": os.environ['KODI_VER'], "build": int(os.environ['NEXT_BUILD']), "version": os.environ['APP_VERSION'],
-               "src": os.environ['SRC_HASH'], "sha256": os.environ['SHA'], "size": int(os.environ['SIZE']),
-               "url": "https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk",
-               "built": datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-               "notes": "FEFC app %s on Kodi %s" % (os.environ['APP_VERSION'], os.environ['KODI_VER']),
-               "packages": {
-                 "org.xbmc.kodi": {"url": "https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk", "sha256": os.environ['SHA'], "size": int(os.environ['SIZE'])},
-                 "com.fefc.kodi": {"url": "https://fefc-collection.pages.dev/kodi-app/FEFC.apk", "sha256": os.environ['SHA2'], "size": int(os.environ['SIZE2'])}},
-               "changelog": cl}
-          json.dump(v, open('version.json', 'w'), ensure_ascii=False)
-          PY
+          # Same Android fields as before. If a platforms object is already on the server, it is copied
+          # onto the new file. This step still uploads only the two APKs and version.json.
+          SHA="$SHA" SIZE="$SIZE" SHA2="$SHA2" SIZE2="$SIZE2" python3 tools/fefc_release_manifest.py write-android --out version.json
           npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
           npx wrangler r2 object put fan-edit-media/kodi/FEFC-Kodi.apk --file=FEFC-Kodi.apk --content-type=application/vnd.android.package-archive --remote
           npx wrangler r2 object put fan-edit-media/kodi/FEFC.apk --file=FEFC.apk --content-type=application/vnd.android.package-archive --remote

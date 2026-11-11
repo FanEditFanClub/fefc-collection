@@ -12,3 +12,9 @@ firetv/app/src/main/assets/www/
 # APK exceeds GitHub 100MB; ship via R2 + GH release assets
 firetv/FEFC-Collection.apk
 firetv/app/build/outputs/**/*.apk
+
+# Local platform build output (macOS dmg, webOS ipk, Tizen wgt). CI uploads these as artifacts.
+dist/
+
+# Samsung author/distributor certificates. Each TV signs with its own free profile.
+*.p12

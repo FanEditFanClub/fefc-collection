@@ -1,0 +1,193 @@
+name: kodi-platforms
+
+# Builds FEFC macOS disk images, the LG webOS IPK, and the Samsung Tizen widget from the same
+# add-on, skin, and version as the Android Kodi app. Runs on push to main. Does not publish.
+#
+# Publishing is off until Carson sets the repository variable FEFC_PUBLISH_NEW_PLATFORMS to the
+# exact string true. The publish job is skipped otherwise. It does not replace the Android APKs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish_tizen:
+        description: "Publish the unsigned Tizen widget only. Does not publish Mac or webOS."
+        type: boolean
+        default: false
+      force:
+        description: "Rebuild even if the checkout is unchanged"
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - 'kodi-src/**'
+      - 'tools/build_kodi_macos.py'
+      - 'tools/build_kodi_webos.py'
+      - 'tools/build_tizen_wgt.py'
+      - 'tools/fefc_kodi_bundle.py'
+      - 'tools/fefc_release_manifest.py'
+      - 'tools/kodi_upstream.py'
+      - 'tools/kodi_brand.py'
+      - 'tools/kodi_navsfx.py'
+      - 'tools/build_kodi_skin.py'
+      - 'tizen/**'
+      - 'assets/intro-tv.mp4'
+      - 'assets/fefc-logo.png'
+      - 'assets/sfx/ui-back.wav'
+      - '.github/workflows/kodi-platforms.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kodi-platforms
+  cancel-in-progress: false
+
+jobs:
+  webos:
+    # Artifacts only. A Tizen publish dispatch does not build or upload this package.
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          pip install pillow numpy scipy
+      - name: Build unsigned webOS IPK
+        run: python3 tools/build_kodi_webos.py --out dist/FEFC-webOS.ipk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fefc-webos
+          path: |
+            dist/FEFC-webOS.ipk
+            dist/FEFC-webOS.report.json
+          if-no-files-found: error
+
+  macos:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: macos-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: |
+          brew install ffmpeg
+          brew install libicns || true
+          pip install pillow numpy scipy
+      - name: Build unsigned macOS disk images
+        run: |
+          mkdir -p "$RUNNER_TEMP/kodi"
+          python3 - <<'PY'
+          import os, sys, urllib.request
+          sys.path.insert(0, 'tools')
+          import kodi_upstream
+          html_arm = urllib.request.urlopen('https://mirrors.kodi.tv/releases/osx/arm64/', timeout=60).read().decode('utf-8', 'ignore')
+          html_x64 = urllib.request.urlopen('https://mirrors.kodi.tv/releases/osx/x86_64/', timeout=60).read().decode('utf-8', 'ignore')
+          import re
+          names = re.findall(r'kodi-[^"<> ]+\.dmg', html_arm + '\n' + html_x64)
+          found = kodi_upstream.stable_dmgs(names)
+          cache = os.environ['RUNNER_TEMP'] + '/kodi'
+          for arch in ('arm64', 'x86_64'):
+              ver = kodi_upstream.choose_version({v: n for (v, a), n in found.items() if a == arch}, '21.3')
+              name = found[(ver, arch)]
+              dest = os.path.join(cache, name)
+              url = kodi_upstream.dmg_url(arch, name)
+              print('get', url)
+              urllib.request.urlretrieve(url, dest)
+          PY
+          python3 tools/build_kodi_macos.py --arch all --cache "$RUNNER_TEMP/kodi" --kodi-version 21.3 --out dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fefc-macos
+          path: |
+            dist/FEFC-macOS-arm64.dmg
+            dist/FEFC-macOS-arm64.dmg.report.json
+            dist/FEFC-macOS-x86_64.dmg
+            dist/FEFC-macOS-x86_64.dmg.report.json
+          if-no-files-found: error
+
+  tizen:
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_tizen == true) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: pip install pillow
+      - name: Build unsigned Tizen widget
+        run: python3 tools/build_tizen_wgt.py --out dist/FEFC.wgt --build 51
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fefc-tizen
+          path: |
+            dist/FEFC.wgt
+            dist/FEFC.report.json
+          if-no-files-found: error
+
+  # Samsung only. Mac and webOS have no publish job. The old FEFC_PUBLISH_NEW_PLATFORMS
+  # variable does not publish them. This job runs only for an explicit Tizen publish.
+  publish-tizen:
+    needs: [tizen]
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.publish_tizen == true) || vars.FEFC_PUBLISH_TIZEN == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      FEFC_PUBLISH_PLATFORM: tizen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/download-artifact@v4
+        with:
+          name: fefc-tizen
+          path: dist/incoming
+      - name: Check the widget, then add platforms.tizen without touching Android fields
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          report = json.load(open('dist/incoming/FEFC.report.json'))
+          assert report['widget_version'] == '0.6.51', report
+          assert report['fefc_version'] == '0.6.3 Beta', report
+          assert report['signed'] is False, report
+          print('widget', report['widget_version'], report['sha256'], report['bytes'])
+          PY
+          python3 tools/publish_kodi_platforms.py \
+            --tizen dist/incoming/FEFC.wgt \
+            --out dist/version.json
+          python3 - <<'PY'
+          import json
+          doc = json.load(open('dist/version.json'))
+          names = set((doc.get('platforms') or {}))
+          assert names <= {'tizen'} or 'macos' not in names and 'webos' not in names
+          assert 'macos' not in names and 'webos' not in names
+          block = doc['platforms']['tizen']
+          assert block['filename'] == 'FEFC.wgt'
+          assert block['url'].endswith('/kodi-app/FEFC.wgt')
+          assert len(block['sha256']) == 64 and block['size'] > 0
+          print('platforms', sorted(names))
+          PY
+      - name: Upload the unsigned widget and version.json to R2
+        run: |
+          set -euo pipefail
+          npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
+          npx wrangler r2 object put fan-edit-media/kodi/FEFC.wgt --file=dist/incoming/FEFC.wgt --content-type=application/widget --remote
+          npx wrangler r2 object put fan-edit-media/kodi/version.json --file=dist/version.json --content-type=application/json --remote
