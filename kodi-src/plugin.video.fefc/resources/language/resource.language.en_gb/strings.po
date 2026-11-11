@@ -55,3 +55,15 @@ msgstr ""
 msgctxt "#30021"
 msgid "Open Kodi system settings"
 msgstr ""
+
+msgctxt "#30030"
+msgid "About"
+msgstr ""
+
+msgctxt "#30031"
+msgid "About"
+msgstr ""
+
+msgctxt "#30032"
+msgid "Check for software update"
+msgstr ""

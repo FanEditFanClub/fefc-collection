@@ -53,6 +53,20 @@
           <data>RunPlugin(plugin://plugin.video.fefc/?action=notify_perm)</data>
           <control type="button" format="action"/>
         </setting>
+        <setting id="check_update_btn" type="action" label="30032">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=update)</data>
+          <control type="button" format="action"/>
+        </setting>
+      </group>
+    </category>
+    <category id="about" label="30030">
+      <group id="1">
+        <setting id="about_btn" type="action" label="30031">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=about)</data>
+          <control type="button" format="action"/>
+        </setting>
       </group>
     </category>
     <category id="system" label="30020">

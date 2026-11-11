@@ -976,7 +976,8 @@ class Router:
         return re.sub(r'\n{3,}', '\n\n', re.sub(r'[ \t]+', ' ', txt)).strip()
 
     def settings(self):
-        """Menu-bar SETTINGS opens the FEFC settings (Notifications etc.); Kodi system settings are one entry away."""
+        """Menu-bar SETTINGS opens the FEFC settings. About and Check for software update are entries there.
+        About runs the same about() screen as the old Home button (action=about)."""
         xbmc.executebuiltin('Addon.OpenSettings(plugin.video.fefc)')
 
     def kodi_settings(self):

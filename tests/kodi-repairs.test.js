@@ -147,7 +147,7 @@ print('ok')
   assert.doesNotMatch(router, /Player\(\)\.stop\(\)/);
 });
 
-test('mosaic cells, skip safe area, cast color, ticker, home-only about', () => {
+test('mosaic cells, skip safe area, cast color, ticker, about lives in settings', () => {
   const out = py(`
 import sys
 sys.path.insert(0, ${JSON.stringify(lib)})
@@ -182,10 +182,22 @@ print('ok', x, y, w, h)
   assert.match(wall, /mosaic_cells\(\)/);
   const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
   assert.match(home, /<control type="videowindow">\s*<left>0<\/left><top>0<\/top><width>1920<\/width><height>1080<\/height>/);
-  assert.match(home, /<label>ABOUT<\/label>/);
+  assert.doesNotMatch(home, /<label>ABOUT<\/label>/);
+  assert.doesNotMatch(home, /action=about/);
+  assert.doesNotMatch(home, /id="9034"/);
+  assert.match(home, /id="9033"[\s\S]{0,280}<onright>9023<\/onright>/);
+  assert.match(home, /id="9023"[\s\S]{0,360}<onleft>9033<\/onleft>/);
+  assert.match(home, /id="9023"[\s\S]{0,420}action=update/);
   assert.match(home, /FEFC\.UpdateLabel/);
   assert.match(home, /id="9031"[\s\S]{0,180}<width>220<\/width>/);
-  assert.match(home, /<width>360<\/width>/);
+  assert.match(home, /id="9023"[\s\S]{0,200}<width>360<\/width>/);
+  const settingsXml = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/settings.xml'), 'utf8');
+  const strings = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/language/resource.language.en_gb/strings.po'), 'utf8');
+  assert.match(settingsXml, /id="about_btn"[\s\S]{0,240}action=about/);
+  assert.match(settingsXml, /id="check_update_btn"[\s\S]{0,240}action=update/);
+  assert.match(strings, /msgctxt "#30030"\nmsgid "About"/);
+  assert.match(strings, /msgctxt "#30031"\nmsgid "About"/);
+  assert.match(strings, /msgctxt "#30032"\nmsgid "Check for software update"/);
   assert.match(home, /id="8990"/);
   assert.match(home, /<label>ACTORS &amp;<\/label>/);
   assert.match(home, /<label>DIRECTORS<\/label>/);

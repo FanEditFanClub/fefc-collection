@@ -261,7 +261,8 @@
 			</control>
 		</control>
 		<control type="group">
-			<left>359</left><top>878</top>
+			<!-- Centered in the 348..1572 pill after About left this bar. About opens from Settings. -->
+			<left>428</left><top>878</top>
 			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 			<animation effect="slide" end="28,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
 			<control type="button" id="9031">
@@ -289,22 +290,15 @@
 				<include>FefcSmallButton</include>
 				<textoffsetx>52</textoffsetx><align>left</align>
 				<label>SETTINGS</label>
-				<onleft>9032</onleft><onright>9034</onright><onup>9008</onup><ondown>9008</ondown>
+				<onleft>9032</onleft><onright>9023</onright><onup>9008</onup><ondown>9008</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 			</control>
 			<control type="image"><left>492</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
-			<control type="button" id="9034">
-				<left>704</left><top>0</top><width>130</width><height>60</height>
-				<include>FefcSmallButton</include>
-				<label>ABOUT</label>
-				<onleft>9033</onleft><onright>9023</onright><onup>9008</onup><ondown>9008</ondown>
-				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
-			</control>
 			<control type="button" id="9023">
-				<left>842</left><top>0</top><width>360</width><height>60</height>
+				<left>704</left><top>0</top><width>360</width><height>60</height>
 				<include>FefcSmallButton</include>
 				<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
-				<onleft>9034</onleft>
+				<onleft>9033</onleft>
 				<onright condition="Control.IsVisible(9021)">9021</onright><onright>9031</onright>
 				<onup>9008</onup><ondown>9008</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
