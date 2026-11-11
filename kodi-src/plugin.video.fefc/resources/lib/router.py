@@ -553,16 +553,17 @@ class Router:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def _add_pack_row(self, row):
-        """One shipped-index row: [id, name, is_dir, art] plus an optional short plot."""
+        """One shipped-index row: [id, name, is_dir, art, search extra, details]."""
         fid, name, is_dir, art = row[0], row[1], int(row[2]), row[3] or ''
-        plot = row[4] if len(row) > 4 else ''
+        details = row[5] if len(row) > 5 and isinstance(row[5], list) else None
+        plot = (details[0] if details else '') or ''
         tbc = '1503Wl56hzRppaIFcQisvQksOaeYOEjnk'
         if is_dir and fid == tbc:
             tile = 'special://skin/media/fefc-tbc-tile.png'
             self.add_folder('To Be Catalogued', tile, plot, landscape=tile, action='folder', id=tbc)
             return
         if is_dir:
-            self.add_folder(name, art, plot, action='folder', id=fid)
+            self.add_folder(name, art, '', action='folder', id=fid)
             return
         li = xbmcgui.ListItem(name, offscreen=True)
         from . import shapes
@@ -571,13 +572,41 @@ class Router:
             on = self.mydb().has(fid)
         except Exception:
             on = False
+        try:
+            got = _dl().has(fid)
+        except Exception:
+            got = False
         li.setProperty('fefc_id', fid)
         li.setProperty('fefc_mylabel', 'Remove from My List' if on else 'Add to My List')
+        li.setProperty('fefc_download_label', 'Downloaded' if got else 'Download')
         li.setProperty('IsPlayable', 'true')
         tag = li.getVideoInfoTag()
         tag.setTitle(name)
+        tag.setMediaType('movie')
         if plot:
             tag.setPlot(plot)
+        if details:
+            editor = details[1] if len(details) > 1 else ''
+            year = details[2] if len(details) > 2 else 0
+            rating_text = details[3] if len(details) > 3 else ''
+            rating_src = details[4] if len(details) > 4 else ''
+            runtime = details[5] if len(details) > 5 else 0
+            if editor:
+                tag.setStudios([editor])
+            if year:
+                try:
+                    tag.setYear(int(year))
+                except (TypeError, ValueError):
+                    pass
+            if runtime:
+                try:
+                    tag.setDuration(int(runtime) * 60)
+                except (TypeError, ValueError):
+                    pass
+            if rating_text:
+                li.setProperty('fefc_rating_text', rating_text)
+            if rating_src:
+                li.setProperty('fefc_rating_src', rating_src)
         url = _url(self.url, action='play', id=fid, n=name)
         self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
 

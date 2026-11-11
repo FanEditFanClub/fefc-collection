@@ -34,9 +34,10 @@ PORTRAIT = 'portrait'
 COLS = 6
 CELL_W = 283
 CELL_H = 150
-# A poster is taller than one row and shorter than this many rows, so the
-# reserved cells below it are covered by the poster instead of left empty.
-SPAN = 3
+# A poster plus up to five wrapped title lines is taller than one row.
+# Four rows keep that block inside the cells reserved under the poster,
+# with a gap before the next poster so the titles cannot overlap it.
+SPAN = 4
 VIEW_ID = 501
 
 ROW_H = {LANDSCAPE: CELL_H, PORTRAIT: CELL_H * SPAN}

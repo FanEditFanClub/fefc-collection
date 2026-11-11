@@ -54,12 +54,97 @@ BUILD_FILE = 'special://xbmc/fefc-build.json'
 
 
 def installed_build():
-    """The APK's own fefc-build.json. A record written before the user confirms install is not the installed build."""
+    """fefc-build.json from the APK this process was started from.
+
+    A record written before the user confirms install is not the installed build.
+    After an update, Android can keep this process alive, so this file can still
+    be the previous build. read_installed_identity() reads the package on disk.
+    """
     try:
         with xbmcvfs.File(BUILD_FILE) as f:
             return json.loads(f.read())
     except Exception:
         return None
+
+
+def read_installed_identity(pkg):
+    """fefc-build.json inside the APK PackageManager has installed for pkg.
+
+    `pm path` points at the new base.apk even while this process is still the old
+    one. dumpsys versionCode is the fallback (stock Kodi code plus the FEFC build).
+    """
+    import subprocess
+    from resources.lib.updateflow import (
+        build_from_version_code, parse_dumpsys_version_code, parse_pm_path, read_apk_identity)
+    text = ''
+    try:
+        text = subprocess.check_output(['pm', 'path', pkg], stderr=subprocess.DEVNULL, timeout=4, text=True)
+    except Exception:
+        text = ''
+    path = parse_pm_path(text)
+    if path:
+        ident = read_apk_identity(path)
+        if ident and int(ident.get('build') or 0):
+            if not ident.get('pkg'):
+                ident['pkg'] = pkg
+            return ident
+    dump = ''
+    try:
+        dump = subprocess.check_output(['dumpsys', 'package', pkg], stderr=subprocess.DEVNULL, timeout=4, text=True)
+    except Exception:
+        dump = ''
+    code = parse_dumpsys_version_code(dump)
+    build = build_from_version_code(code)
+    if not build:
+        return None
+    running = installed_build() or {}
+    return {'pkg': pkg, 'build': build, 'version': str(running.get('version') or '')}
+
+
+_restarted_for_build = {'build': 0}
+
+
+def maybe_refresh_installed():
+    """If the installed APK is newer than this process, clear the update badge and restart.
+
+    The Home button otherwise keeps 'Update available' until the user force-quits,
+    because the check keeps reading the build baked into the running process.
+    """
+    from resources.lib.updateflow import resume_plan
+    running = installed_build()
+    if not running:
+        return
+    try:
+        live = read_installed_identity(my_package())
+    except Exception as e:
+        log('installed identity: %s' % e)
+        return
+    try:
+        live_build = int((live or {}).get('build') or 0)
+        running_build = int(running.get('build') or 0)
+    except (TypeError, ValueError):
+        return
+    if not live or live_build <= running_build:
+        return
+    published = None
+    try:
+        req = urllib.request.Request(VERSION_URL + '?t=%d' % int(time.time()), headers={'User-Agent': 'FEFC-Kodi'})
+        published = json.loads(urllib.request.urlopen(req, timeout=15).read().decode('utf-8'))
+    except Exception as e:
+        log('resume update check: %s' % e)
+    plan = resume_plan(running, live, published)
+    home = xbmcgui.Window(10000)
+    if plan.get('clear_available'):
+        home.clearProperty('FEFC.UpdateAvail')
+        home.clearProperty('FEFC.UpdatePrompt')
+    if plan.get('label') == 'up_to_date':
+        set_update_state(plan.get('installed'), published, False)
+    elif plan.get('label') == 'available':
+        set_update_state(plan.get('installed'), published, True)
+    if plan.get('restart') and _restarted_for_build['build'] != live_build:
+        _restarted_for_build['build'] = live_build
+        log('installed build %s is newer than running %s; restarting' % (live_build, running_build))
+        xbmc.executebuiltin('RestartApp')
 
 
 def version_label(b):
@@ -1317,6 +1402,8 @@ def main():
     t_start = time.time()
     checked = False
     last_check = 0.0
+    next_install_check = 0.0
+    was_home = False
     try:
         sync_notify_prefs()
     except Exception as e:
@@ -1397,6 +1484,16 @@ def main():
             tracker.tick()
         except Exception as e:
             log('tracker: %s' % e)
+        # The process can survive an APK replace. On Home, and every few seconds,
+        # compare it with the package on disk and drop a stale Update available badge.
+        home_now = bool(xbmc.getCondVisibility('Window.IsActive(home)'))
+        if (home_now and not was_home) or now >= next_install_check:
+            next_install_check = now + 5
+            try:
+                maybe_refresh_installed()
+            except Exception as e:
+                log('resume install check: %s' % e)
+        was_home = home_now
         # update check right after the intro (every launch), popup once; re-checked every 6 h to keep the tile badge current
         if not checked and now - t_start > 4 and (xbmc.getCondVisibility('Window.IsActive(home)') or now - t_start > 120):
             checked = True

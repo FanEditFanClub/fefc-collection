@@ -45,7 +45,7 @@
 		<!-- The only grid. It stays visible even when Container.Viewmode is not 501. -->
 		<include content="FefcBrowser"><param name="id" value="501"/></include>
 		<control type="scrollbar" id="60">
-			<left>1806</left><top>130</top><width>10</width><height>750</height>
+			<left>1806</left><top>130</top><width>10</width><height>700</height>
 			<orientation>vertical</orientation>
 			<showonepage>false</showonepage>
 			<onleft>501</onleft>

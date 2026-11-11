@@ -109,6 +109,11 @@ def build_model(raw):
     """raw: dict source-name -> parsed JSON. Returns a marshal-able dict."""
     idx = raw['index']
     root = idx.get('root')
+    root_name = ''
+    for it in idx.get('items') or []:
+        if it.get('id') == root:
+            root_name = it.get('name') or ''
+            break
     items = {}
     kids = {}
     docs = {}
@@ -307,7 +312,7 @@ def build_model(raw):
         if lines:
             changes[k] = lines[:60]
     added = {k: v for k, v in (raw.get('added') or {}).items() if isinstance(v, str)}
-    return {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'generated': idx.get('generated') or '', 'built': int(time.time()),
+    return {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'root_name': root_name, 'generated': idx.get('generated') or '', 'built': int(time.time()),
             'items': items, 'kids': kids, 'cnt': cnt, 'rcnt': rcnt, 'vgenres': vgenres,
             'genre_videos': genre_videos, 'genre_folders': genre_folders,
             'posters': posters, 'poster_titles': poster_titles, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
@@ -880,8 +885,15 @@ def video_info(m, vid):
         fl.append('Format: ' + xm.group(1).upper())
     if fi.get('o'):
         fl.append('Host: ' + fi['o'].split('@')[0])
+    par_name = (m['items'].get(par) or [''])[0] if par else ''
+    if not par_name and par and par == m.get('root'):
+        par_name = m.get('root_name') or ''
+    if par_name:
+        fl.append('Folder: ' + par_name)
     if fl:
         plot.append('[COLOR FF99FFCC]FILE INFO[/COLOR]\n' + '   |   '.join(fl))
+    elif not plot:
+        plot.append('No editorial notes for this file.' + ((' Folder: ' + par_name) if par_name else ''))
     if f.get('plot'):
         plot.append('[COLOR FFFFCC66]SOURCE FILM%s[/COLOR]\n' % (': ' + f['title'] if f.get('title') else '') + f['plot'])
     links = [u for u in (e.get('url'), r.get('ifdb_url'), r.get('mrdb_url')) if u]
@@ -902,9 +914,17 @@ def video_info(m, vid):
         year = int(str(year)[:4]) if year else 0
     except ValueError:
         year = 0
+    rating_text = ''
+    rating_src = ''
+    if ratings:
+        shown = {'FEFC-IFDb': ('ifdb', 'FanEdit.org'), 'MRDb': ('mrdb', 'MRDb'), 'imdb': ('imdb', 'IMDb')}
+        lab, sc, _votes = ratings[0]
+        rating_src, rating_name = shown.get(lab, ('imdb', lab))
+        rating_text = '%s %s/10' % (rating_name, sc)
     return {'plot': '\n\n'.join(plot), 'year': year, 'director': f.get('director') or [], 'cast': f.get('cast') or [],
             'runtime': (round(int(fi['d']) / 60) if fi.get('d') else f.get('runtime') or 0), 'ratings': ratings, 'trailer': f.get('trailer'),
-            'editor': e.get('editor') or '', 'title': e.get('title') or '', 'film': f.get('title') or ''}
+            'editor': e.get('editor') or '', 'title': e.get('title') or '', 'film': f.get('title') or '',
+            'rating_text': rating_text, 'rating_src': rating_src}
 
 
 def display_title(name):
@@ -986,26 +1006,79 @@ def _depth(m, i):
     return d
 
 
+def _norm_title(name):
+    text = display_title(name).lower()
+    text = re.sub(r'[^a-z0-9]+', ' ', text)
+    return re.sub(r'\s+', ' ', text).strip()
+
+
 def dedupe(m, ids):
-    """One entry per underlying file. A Drive shortcut (named as shown in the FEFC collection) wins over its original
-    file (which carries the uploader's own file name); among shortcuts the one nearest the top of the tree wins."""
+    """One row per underlying file in an aggregated list.
+
+    A shortcut and its original share the target id. The original file (no
+    target id) is the FEFC-hosted copy and is the one shown. A shortcut is
+    kept only when that original is not in the list. Separate uploads of the
+    same title still collapse when the normalized title and the size or the
+    duration match. A single folder's own children are not passed through here,
+    so a shortcut stays visible in the folder it was filed in.
+    """
+    items = m.get('items') or {}
+    fileinfo = m.get('fileinfo') or {}
+
+    def target_of(i):
+        v = items.get(i)
+        if not v:
+            return i
+        return v[3] or i
+
+    def hosted(i):
+        v = items.get(i)
+        return bool(v) and not v[3]
+
+    def rank(i):
+        return (0 if hosted(i) else 1, _depth(m, i))
+
+    def signature(i):
+        v = items.get(i)
+        if not v or v[2]:
+            return None
+        key = target_of(i)
+        fi = fileinfo.get(key) or fileinfo.get(i) or {}
+        size = int(fi.get('s') or 0)
+        dur = int(fi.get('d') or 0)
+        if not size and not dur:
+            return None
+        return (_norm_title(v[0]), size, dur)
+
     best = {}
     for i in ids:
-        v = m['items'].get(i)
-        if not v:
+        if i not in items:
             continue
-        key = v[3] or i
-        sc = (0 if v[3] else 1, _depth(m, i))
+        key = target_of(i)
+        sc = rank(i)
         if key not in best or sc < best[key][0]:
             best[key] = (sc, i)
-    keep = set(b[1] for b in best.values())
+    keep = set(pair[1] for pair in best.values())
+    chosen = []
     seen = set()
-    out = []
     for i in ids:
         if i in keep and i not in seen:
             seen.add(i)
-            out.append(i)
-    return out
+            chosen.append(i)
+    best_sig = {}
+    for i in chosen:
+        sig = signature(i)
+        if sig is None:
+            continue
+        sc = rank(i)
+        if sig not in best_sig or sc < best_sig[sig][0]:
+            best_sig[sig] = (sc, i)
+    drop = set()
+    winners = set(pair[1] for pair in best_sig.values())
+    for i in chosen:
+        if signature(i) is not None and i not in winners:
+            drop.add(i)
+    return [i for i in chosen if i not in drop]
 
 
 def sfx_wav(rel):

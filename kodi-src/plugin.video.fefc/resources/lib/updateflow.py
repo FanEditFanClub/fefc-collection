@@ -88,6 +88,72 @@ def installed_from_apk(apk_record, recorded_record):
     return apk_record
 
 
+# Stock Kodi 21 versionCode. The FEFC build number is added to it for both APKs
+# (com.fefc.kodi and org.xbmc.kodi), so a dumpsys versionCode can be turned back into a build.
+VERSIONCODE_BASE = 2103000
+
+
+def parse_pm_path(text):
+    """`pm path <pkg>` prints `package:/data/app/.../base.apk`."""
+    for line in (text or '').splitlines():
+        line = line.strip()
+        if line.startswith('package:'):
+            return line.split(':', 1)[1].strip()
+    return ''
+
+
+def parse_dumpsys_version_code(text):
+    match = re.search(r'versionCode=(\d+)', text or '')
+    return int(match.group(1)) if match else None
+
+
+def build_from_version_code(version_code, base=VERSIONCODE_BASE):
+    try:
+        code = int(version_code)
+    except (TypeError, ValueError):
+        return None
+    if code < int(base):
+        return None
+    return code - int(base)
+
+
+def resume_plan(running, live, published):
+    """Decide the update button after the app comes back from an install.
+
+    `running` is fefc-build.json from the process that is still in memory.
+    `live` is fefc-build.json from the APK PackageManager currently has installed.
+    Android often leaves the old process running across the replace, so those two
+    differ until Kodi is restarted. A published release that matches the installed
+    APK is Up to date and must not prompt. A stale process is restarted.
+    """
+    idle = {'restart': False, 'clear_available': False, 'label': None, 'prompt': None, 'installed': running}
+    if not isinstance(running, dict) or not isinstance(live, dict):
+        return idle
+    live_pkg = str(live.get('pkg') or '')
+    run_pkg = str(running.get('pkg') or '')
+    if live_pkg and run_pkg and live_pkg != run_pkg:
+        return idle
+    try:
+        live_build = int(live.get('build') or 0)
+        running_build = int(running.get('build') or 0)
+    except (TypeError, ValueError):
+        return idle
+    if live_build <= running_build:
+        return idle
+    live_version = str(live.get('version') or running.get('version') or '')
+    installed = {'build': live_build, 'version': live_version, 'pkg': live_pkg or run_pkg}
+    newer = False
+    if isinstance(published, dict):
+        newer = release_is_newer(published.get('version'), published.get('build'), live_version, live_build)
+    return {
+        'restart': True,
+        'clear_available': not newer,
+        'label': 'available' if newer else 'up_to_date',
+        'prompt': False,
+        'installed': installed,
+    }
+
+
 def package_download(manifest, pkg):
     """URL, size, sha256 for this install. com.fefc.kodi never falls back to the org.xbmc.kodi APK."""
     entry = ((manifest or {}).get('packages') or {}).get(pkg) or {}
