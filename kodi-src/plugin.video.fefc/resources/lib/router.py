@@ -1189,7 +1189,7 @@ class Router:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     SUPPORT = [('Patreon', 'https://www.patreon.com/cw/FanEditFanClub', 'From $1 / month'),
-               ('PayPal', 'https://www.paypal.biz/faneditfanclub', 'One-time donation'),
+               ('PayPal', 'https://www.paypal.com/biz/profile/faneditfanclub', 'One-time donation'),
                ('Venmo', 'https://venmo.com/u/FanEditFanClub', '@FanEditFanClub')]
 
     def support(self):

@@ -859,7 +859,7 @@ var __spreadValues = (a, b) => {
     }
   }
   const FOLD = { readFirst: "1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT", collections: "1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB", tbc: "1503Wl56hzRppaIFcQisvQksOaeYOEjnk", actors: "1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS", directors: "1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib" };
-  const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<img class="sup-logo" src="assets/brand/patreon.png" alt="Patreon" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }, { name: "PayPal", url: "https://www.paypal.biz/faneditfanclub", sub: "One-time donation", logo: '<img class="sup-logo" src="assets/brand/paypal.png" alt="PayPal" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: '<img class="sup-logo" src="assets/brand/venmo.png" alt="Venmo" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }];
+  const SUPPORT = [{ name: "Patreon", url: "https://www.patreon.com/cw/FanEditFanClub", sub: "From $1 / month", logo: '<img class="sup-logo" src="assets/brand/patreon.png" alt="Patreon" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }, { name: "PayPal", url: "https://www.paypal.com/biz/profile/faneditfanclub", sub: "One-time donation", logo: '<img class="sup-logo" src="assets/brand/paypal.png" alt="PayPal" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }, { name: "Venmo", url: "https://venmo.com/u/FanEditFanClub", sub: "@FanEditFanClub", logo: '<img class="sup-logo" src="assets/brand/venmo.png" alt="Venmo" style="width:100%;height:100%;object-fit:contain;background:#fff;border-radius:50%;padding:12%;box-sizing:border-box">' }];
   let posters = {}, people = {}, mosaicList = [], mosaicTimer = null, genreMap = {}, fthumbs = {};
   const GORDER = ["Action", "Sci-Fi", "Horror", "Comedy", "Animation", "Drama", "Fantasy", "Superhero", "Thriller", "Crime", "Adventure", "War", "Western", "Family", "Musical", "Documentary", "Uncategorized"];
   let _tfC = /* @__PURE__ */ new Map(), _tfN = -1;
@@ -5865,7 +5865,7 @@ var __spreadValues = (a, b) => {
     }, 50);
   };
   if (isTvEnv()) document.body.classList.add("tv");
-  const HOME_VER_FALLBACK = "0.4.1";
+  const HOME_VER_FALLBACK = "0.8.26";
   function formatHomeVer(name) {
     const n = String(name || "").trim();
     if (!n) return "";
