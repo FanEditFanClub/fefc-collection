@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Transparent dialog over Home. The Home wall player stays the only video.
-     The top three mosaic cells stay visible because Genres has no wordmark.
-     Tiles are solid so the names stay readable. -->
+     Only the single top-centre mosaic cell is covered, for the GENRES title.
+     The cells beside it keep playing. Tiles are solid so the names stay readable. -->
 <window type="dialog">
 	<defaultcontrol always="true">9101</defaultcontrol>
 	<backgroundcolor>0</backgroundcolor>
@@ -10,18 +10,18 @@
 			<left>336</left><top>198</top><width>1248</width><height>630</height>
 			<texture colordiffuse="FF000000">fefc-white.png</texture>
 		</control>
-		<!-- Page line sits under the top mosaic row and above the tiles, clear of the menu. -->
+		<!-- Title sits on the one covered top-centre cell. The page count is under it, clear of the menu. -->
 		<control type="label">
-			<left>900</left><top>204</top><width>360</width><height>36</height>
-			<align>right</align><aligny>center</aligny>
-			<font>font12_title</font>
+			<left>760</left><top>28</top><width>400</width><height>88</height>
+			<align>center</align><aligny>center</aligny>
+			<font>font_title_big</font>
 			<textcolor>FFFFFFFF</textcolor>
 			<label>GENRES</label>
 		</control>
 		<control type="label" id="9150">
-			<left>1270</left><top>204</top><width>300</width><height>36</height>
-			<align>right</align><aligny>center</aligny>
-			<font>font12_title</font>
+			<left>760</left><top>118</top><width>400</width><height>48</height>
+			<align>center</align><aligny>center</aligny>
+			<font>font14_title</font>
 			<textcolor>FFFF9C00</textcolor>
 			<label></label>
 		</control>
@@ -101,11 +101,11 @@
 			<ondown>9401</ondown>
 		</control>
 		<control type="image">
-			<left>110</left><top>866</top><width>1700</width><height>84</height>
+			<left>348</left><top>866</top><width>1224</width><height>84</height>
 			<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
 		</control>
 		<control type="button" id="9401">
-			<left>458</left><top>878</top><width>220</width><height>60</height>
+			<left>543</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -113,9 +113,9 @@
 			<label>HOME</label>
 			<onleft>9404</onleft><onright>9402</onright><onup>9107</onup>
 		</control>
-		<control type="image"><left>474</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
+		<control type="image"><left>559</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
 		<control type="button" id="9402">
-			<left>686</left><top>878</top><width>220</width><height>60</height>
+			<left>771</left><top>878</top><width>220</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -123,9 +123,9 @@
 			<label>SEARCH</label>
 			<onleft>9401</onleft><onright>9403</onright><onup>9108</onup>
 		</control>
-		<control type="image"><left>702</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
+		<control type="image"><left>787</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 		<control type="button" id="9403">
-			<left>914</left><top>878</top><width>270</width><height>60</height>
+			<left>999</left><top>878</top><width>190</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -133,9 +133,9 @@
 			<label>SOUND ON</label>
 			<onleft>9402</onleft><onright>9404</onright><onup>9108</onup>
 		</control>
-		<control type="image" id="9405"><left>930</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture></control>
+		<control type="image" id="9405"><left>1015</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture></control>
 		<control type="button" id="9404">
-			<left>1192</left><top>878</top><width>250</width><height>60</height>
+			<left>1197</left><top>878</top><width>180</width><height>60</height>
 			<font>fefc_bar</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
 			<align>left</align><aligny>center</aligny><textoffsetx>52</textoffsetx>
 			<texturefocus border="26">fefc-tile-focus.png</texturefocus>
@@ -143,6 +143,6 @@
 			<label>SETTINGS</label>
 			<onleft>9403</onleft><onright>9401</onright><onup>9109</onup>
 		</control>
-		<control type="image"><left>1208</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+		<control type="image"><left>1213</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 	</controls>
 </window>

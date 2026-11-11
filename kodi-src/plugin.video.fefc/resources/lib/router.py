@@ -1656,12 +1656,13 @@ def _add_icon_bar(win, up):
     def s(v):
         return int(round(v * 2 / 3.0))
     off = _sound_off()
-    win.addControl(xbmcgui.ControlImage(s(110), s(866), s(1700), s(84), _media_file('chrome/pill.png')))
+    # Same pill as the skin: the Home 3x3 runs from x=348 to x=1572.
+    win.addControl(xbmcgui.ControlImage(s(348), s(866), s(1224), s(84), _media_file('chrome/pill.png')))
     specs = (
-        ('HOME', 458, 474, 'fefc-ic-home.png', 147),
-        ('SEARCH', 686, 702, 'fefc-ic-search.png', 147),
-        ('SOUND OFF' if off else 'SOUND ON', 914, 930, 'fefc-ic-mute.png' if off else 'fefc-ic-sound.png', 180),
-        ('SETTINGS', 1192, 1208, 'fefc-ic-gear.png', 167),
+        ('HOME', 468, 484, 'fefc-ic-home.png', 147),
+        ('SEARCH', 696, 712, 'fefc-ic-search.png', 147),
+        ('SOUND OFF' if off else 'SOUND ON', 924, 940, 'fefc-ic-mute.png' if off else 'fefc-ic-sound.png', 180),
+        ('SETTINGS', 1202, 1218, 'fefc-ic-gear.png', 167),
     )
     buttons = []
     sound_icon = None
@@ -1996,9 +1997,9 @@ class OptimusWindow(xbmcgui.WindowDialog):
 
     def _add_optimus_marks(self, y, art_w):
         """Grok, Discord and Muse under the loop. Decorative only, so they take no focus.
-        The 48 frames are not modified. Discord's mark is from its brand page. Grok's
-        slash is the public-domain xAI mark. Muse is a labeled placeholder: this
-        project does not name a Muse product."""
+        The 48 frames are not modified. Discord's mark is the Clyde face from its brand
+        page. Grok is the current iOS app glyph (App Store id 6670324846). Muse is
+        Meta's creature avatar, from the Muse from Meta App Store listing."""
         marks = (
             ('fefc-mark-grok.png', 'Grok'),
             ('fefc-mark-discord.png', 'Discord'),
