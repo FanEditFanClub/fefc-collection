@@ -652,6 +652,8 @@ test('search screen keeps the approved loop and parks the caret', () => {
   const plan = fs.readFileSync(path.join(lib, 'optimusplan.py'), 'utf8');
   const show = fs.readFileSync(path.join(lib, 'genreshow.py'), 'utf8');
   assert.match(plan, /TITLE = 'Search with Fan Edit Optimus'/);
+  assert.match(router, /optimusplan\.TITLE, font='font13'/);
+  assert.doesNotMatch(router, /title_h, gap, bar_h/);
   assert.match(router, /fefc-mark-grok\.png/);
   assert.match(router, /fefc-mark-discord\.png/);
   assert.match(router, /fefc-mark-muse\.png/);

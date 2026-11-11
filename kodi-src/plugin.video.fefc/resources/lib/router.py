@@ -1955,15 +1955,12 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self.art = xbmcgui.ControlImage(0, 12, art_w, art_h, self._still, aspectRatio=2)
         self.addControl(self.art)
         self._add_optimus_marks(12 + art_h + 6, art_w)
-        # Title, then the bar. Left aligned and vertically centered beside Optimus.
-        # No second line: the old "Optimus is watching..." cue stays in optimusplan for the web app only.
+        # The phrase lives in the bar. No heading above it.
+        # The old "Optimus is watching..." cue stays in optimusplan for the web app only.
         x = art_w + 36
         width = 1280 - x - 48
-        title_h, gap, bar_h = 72, 18, 76
-        block = title_h + gap + bar_h
-        y = max(36, (menu_top - 24 - block) // 2)
-        self.addControl(xbmcgui.ControlLabel(x, y, width, title_h, optimusplan.TITLE, font='font13_title', textColor='FFFFFFFF', alignment=0x00000004))
-        bar_y = y + title_h + gap
+        bar_h = 76
+        bar_y = max(36, (menu_top - bar_h) // 2)
         # The button is the bar. Focus starts here. The edit is parked off screen so no caret shows.
         self.bar_btn = xbmcgui.ControlButton(
             x, bar_y, width, bar_h, '',
@@ -1983,7 +1980,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
         except Exception:
             pass
         ph_x = x + pad + icon + 18
-        self.placeholder = xbmcgui.ControlLabel(ph_x, bar_y, width - (ph_x - x) - 28, bar_h, 'Search', font='font13',
+        self.placeholder = xbmcgui.ControlLabel(ph_x, bar_y, width - (ph_x - x) - 28, bar_h, optimusplan.TITLE, font='font13',
                                                  textColor='FFB7C3D4', alignment=0x00000004)
         self.addControl(self.placeholder)
         self._opening = False
