@@ -156,7 +156,7 @@
 				<label>GENRES</label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9008</onleft><onright>9007</onright><onup>9006</onup><ondown>9031</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=genres,return)</onclick>
+				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=genres)</onclick>
 			</control>
 			<control type="label">
 				<left>9</left><top>359</top><width>382</width><height>38</height>
@@ -261,7 +261,7 @@
 			</control>
 		</control>
 		<control type="group">
-			<left>384</left><top>878</top>
+			<left>359</left><top>878</top>
 			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 			<animation effect="slide" end="28,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
 			<control type="button" id="9031">
@@ -275,7 +275,7 @@
 			</control>
 			<control type="image"><left>16</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 			<control type="button" id="9032">
-				<left>228</left><top>0</top><width>200</width><height>60</height>
+				<left>228</left><top>0</top><width>240</width><height>60</height>
 				<include>FefcSmallButton</include>
 				<textoffsetx>52</textoffsetx><align>left</align>
 				<label>$VAR[FefcSoundLabel]</label>
@@ -285,23 +285,23 @@
 			<control type="image"><left>244</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 			<control type="image"><left>244</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 			<control type="button" id="9033">
-				<left>436</left><top>0</top><width>190</width><height>60</height>
+				<left>476</left><top>0</top><width>220</width><height>60</height>
 				<include>FefcSmallButton</include>
 				<textoffsetx>52</textoffsetx><align>left</align>
 				<label>SETTINGS</label>
 				<onleft>9032</onleft><onright>9034</onright><onup>9008</onup><ondown>9008</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 			</control>
-			<control type="image"><left>452</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+			<control type="image"><left>492</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			<control type="button" id="9034">
-				<left>634</left><top>0</top><width>150</width><height>60</height>
+				<left>704</left><top>0</top><width>130</width><height>60</height>
 				<include>FefcSmallButton</include>
 				<label>ABOUT</label>
 				<onleft>9033</onleft><onright>9023</onright><onup>9008</onup><ondown>9008</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=about)</onclick>
 			</control>
 			<control type="button" id="9023">
-				<left>792</left><top>0</top><width>360</width><height>60</height>
+				<left>842</left><top>0</top><width>360</width><height>60</height>
 				<include>FefcSmallButton</include>
 				<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
 				<onleft>9034</onleft>

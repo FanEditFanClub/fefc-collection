@@ -30,6 +30,17 @@ def open_genre_board(entries):
                 return
             self._ready = True
             self.tiles = [self.getControl(9101 + i) for i in range(9)]
+            self.arts = []
+            self.names = []
+            for i in range(9):
+                try:
+                    self.arts.append(self.getControl(9201 + i))
+                except Exception:
+                    self.arts.append(None)
+                try:
+                    self.names.append(self.getControl(9301 + i))
+                except Exception:
+                    self.names.append(None)
             self.menu = [self.getControl(9401 + i) for i in range(4)]
             self.indicator = self.getControl(9150)
             off = xbmc.getInfoLabel('Window(home).Property(FEFC.SoundOff)') == '1'
@@ -48,14 +59,28 @@ def open_genre_board(entries):
             self._focus = focus
             self.indicator.setLabel('%d/%d' % (page + 1, max(1, len(pages))))
             for i, btn in enumerate(self.tiles):
+                art = self.arts[i] if i < len(self.arts) else None
+                name = self.names[i] if i < len(self.names) else None
                 if i < n:
                     btn.setLabel(chunk[i][0])
                     btn.setVisible(True)
                     btn.setEnabled(True)
+                    if name is not None:
+                        name.setLabel(chunk[i][0])
+                        name.setVisible(True)
+                    if art is not None:
+                        art.setImage(chunk[i][2] or '')
+                        art.setVisible(bool(chunk[i][2]))
                 else:
                     btn.setLabel('')
                     btn.setVisible(False)
                     btn.setEnabled(False)
+                    if name is not None:
+                        name.setLabel('')
+                        name.setVisible(False)
+                    if art is not None:
+                        art.setImage('')
+                        art.setVisible(False)
             for i in range(n):
                 col, row = i % 3, i // 3
                 btn = self.tiles[i]

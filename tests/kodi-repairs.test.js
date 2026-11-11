@@ -718,3 +718,70 @@ assert hit['astro-monster']['art'] + hit.get('astro monster', {}).get('art', 0) 
   console.log(out);
 });
 
+test('regressions: back key, menu words, genre list, nav gain', () => {
+  const keymap = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/keymaps/fefc-nav.xml'), 'utf8');
+  assert.match(keymap, /<back>PreviousMenu<\/back>/);
+  assert.match(keymap, /<escape>PreviousMenu<\/escape>/);
+  assert.match(keymap, /<backspace>PreviousMenu<\/backspace>/);
+  assert.match(keymap, /<browser_back>PreviousMenu<\/browser_back>/);
+  assert.doesNotMatch(keymap, /armback/);
+  assert.doesNotMatch(keymap, /<back>[^<]*RunPlugin/);
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
+  const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
+  assert.match(home, /RunPlugin\(plugin:\/\/plugin\.video\.fefc\/\?action=genres\)/);
+  assert.doesNotMatch(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=genres/);
+  assert.doesNotMatch(nav, /Video add-ons/);
+  assert.doesNotMatch(nav, /Playlists/);
+  assert.doesNotMatch(home, /Video add-ons/);
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  assert.match(router, /GENRE_PAGE = 60/);
+  assert.match(router, /genre-menu\.json/);
+  const genresFn = router.slice(router.indexOf('def genres('), router.indexOf('\n    def genre('));
+  assert.doesNotMatch(genresFn, /endOfDirectory\(/);
+  assert.match(genresFn, /action='genre'/);
+  const nvs = fs.readFileSync(path.join(root, 'tools/kodi_navsfx.py'), 'utf8');
+  assert.match(nvs, /NAV_QUIET = 0\.85/);
+  assert.match(nvs, /NAV_QUIET_NAMES = \('move', 'back'\)/);
+  assert.match(router, /art_w \* 640 \/ 480/);
+  const out = py(`
+import json, sys
+sys.path.insert(0, ${JSON.stringify(lib)})
+import catalog
+from PIL import ImageFont
+font = ImageFont.truetype('/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf', 20)
+need = {
+    'SOUND ON': font.getbbox('SOUND ON')[2] + 52 + 26,
+    'SOUND OFF': font.getbbox('SOUND OFF')[2] + 52 + 26,
+    'SETTINGS': font.getbbox('SETTINGS')[2] + 52 + 26,
+    'Checking for updates': font.getbbox('Checking for updates')[2] + 52,
+}
+# Shared bar buttons, from the skin include. SOUND is 240, SETTINGS is 220.
+assert need['SOUND OFF'] <= 240, need
+assert need['SETTINGS'] <= 220, need
+assert need['Checking for updates'] <= 360, need
+raw = {}
+for n in catalog.SOURCES:
+    p = 'data/' + n + '.json'
+    try:
+        raw[n] = json.load(open(p))
+    except FileNotFoundError:
+        pass
+m = catalog.build_model(raw)
+tbc = catalog.tbc_members(m['items'], m['kids'])
+menu = json.load(open('kodi-src/plugin.video.fefc/resources/genre-menu.json'))
+bad = []
+for row in menu:
+    g = row['key']
+    folders = [i for i in catalog.dedupe(m, m['genre_folders'].get(g) or []) if i not in tbc]
+    vids = [i for i in catalog.dedupe(m, m['genre_videos'].get(g) or []) if i not in tbc]
+    print('GENRE', g, len(folders), len(vids))
+    if not folders and not vids:
+        bad.append(g)
+assert not bad, bad
+print('ok', len(menu))
+`);
+  assert.match(out, /^ok /m);
+  console.log(out);
+});
+

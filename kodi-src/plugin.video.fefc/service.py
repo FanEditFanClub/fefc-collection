@@ -1058,6 +1058,21 @@ def _foreground_video():
     return True
 
 
+def _drop_stale_back_keymap():
+    """An older build copied a keymap into the profile that ran a plugin on Back
+    and then the Back action. That file still swallows the Fire TV key after the
+    add-on keymap was corrected. Remove it on every start."""
+    try:
+        d = xbmcvfs.translatePath('special://profile/keymaps')
+        dst = os.path.join(d, 'fefc-nav.xml')
+        if os.path.exists(dst):
+            os.remove(dst)
+            xbmc.executebuiltin('ReloadKeymaps')
+            log('removed profile keymap that swallowed Back')
+    except Exception as e:
+        log('nav keymap: %s' % e)
+
+
 def apply_nav_sound(on):
     """Sound On: GUI sounds play during the wall video (mode 2) and the FEFC sound skin stays selected.
     Sound Off: GUI sounds off so Back does not ignore the mute. Does not stop the wall player."""
@@ -1074,15 +1089,7 @@ def apply_nav_sound(on):
             _set('lookandfeel.soundskin', 'resource.uisounds.fefc')
     except Exception as e:
         log('nav sound: %s' % e)
-    try:
-        d = xbmcvfs.translatePath('special://profile/keymaps')
-        dst = os.path.join(d, 'fefc-nav.xml')
-        if os.path.exists(dst):
-            os.remove(dst)
-            xbmc.executebuiltin('ReloadKeymaps')
-            log('removed back-swallowing keymap')
-    except Exception as e:
-        log('nav keymap: %s' % e)
+    _drop_stale_back_keymap()
 
 
 def _grid_pad_loop(monitor):
@@ -1155,6 +1162,7 @@ def main():
     monitor = xbmc.Monitor()
     ensure_source()
     set_select_action()
+    _drop_stale_back_keymap()
     cb = installed_build()
     if cb:
         xbmcgui.Window(10000).setProperty('FEFC.Version', 'FEFC app ' + version_label(cb))

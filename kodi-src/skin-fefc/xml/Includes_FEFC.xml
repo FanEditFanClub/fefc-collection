@@ -262,7 +262,7 @@
 				</control>
 			</control>
 			<control type="group">
-				<left>543</left><top>878</top>
+				<left>498</left><top>878</top>
 				<animation effect="slide" end="41,0" time="0" condition="Player.HasVideo + !String.IsEmpty(Window(Home).Property(FEFC.PausedTitle))">Conditional</animation>
 				<control type="button" id="9290">
 					<left>0</left><top>0</top><width>220</width><height>60</height>
@@ -296,7 +296,7 @@
 				</control>
 				<control type="image"><left>244</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 				<control type="button" id="9294">
-					<left>456</left><top>0</top><width>190</width><height>60</height>
+					<left>456</left><top>0</top><width>240</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>$VAR[FefcSoundLabel]</label>
@@ -312,7 +312,7 @@
 				<control type="image"><left>472</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-sound.png</texture><visible>String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 				<control type="image"><left>472</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-mute.png</texture><visible>!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))</visible></control>
 				<control type="button" id="9292">
-					<left>654</left><top>0</top><width>180</width><height>60</height>
+					<left>704</left><top>0</top><width>220</width><height>60</height>
 					<include>FefcSmallButton</include>
 					<textoffsetx>52</textoffsetx><align>left</align>
 					<label>SETTINGS</label>
@@ -326,7 +326,7 @@
 					<ondown>$PARAM[down]</ondown>
 					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=settings)</onclick>
 				</control>
-				<control type="image"><left>670</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+				<control type="image"><left>720</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 			</control>
 		</control>
 		</definition>

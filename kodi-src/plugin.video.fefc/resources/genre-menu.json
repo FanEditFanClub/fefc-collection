@@ -1,0 +1,87 @@
+[
+ {
+  "label": "Action",
+  "key": "Action",
+  "img": "assets/genres/action.webp"
+ },
+ {
+  "label": "Adventure",
+  "key": "Adventure",
+  "img": "assets/genres/adventure.jpg"
+ },
+ {
+  "label": "Animation",
+  "key": "Animation",
+  "img": "assets/genres/animation.jpg"
+ },
+ {
+  "label": "Comedy",
+  "key": "Comedy",
+  "img": "assets/genres/comedy.webp"
+ },
+ {
+  "label": "Crime",
+  "key": "Crime",
+  "img": "assets/genres/thriller.jpg"
+ },
+ {
+  "label": "Documentary",
+  "key": "Documentary",
+  "img": "assets/genres/documentary.jpg"
+ },
+ {
+  "label": "Drama",
+  "key": "Drama",
+  "img": "assets/genres/drama.jpg"
+ },
+ {
+  "label": "Family",
+  "key": "Family",
+  "img": "assets/genres/family.jpg"
+ },
+ {
+  "label": "Fantasy",
+  "key": "Fantasy",
+  "img": "assets/genres/fantasy.webp"
+ },
+ {
+  "label": "Horror",
+  "key": "Horror",
+  "img": "assets/genres/horror.jpg"
+ },
+ {
+  "label": "Musical",
+  "key": "Musical",
+  "img": "assets/genres/musical.jpg"
+ },
+ {
+  "label": "Sci-Fi",
+  "key": "Sci-Fi",
+  "img": "assets/genres/scifi.webp"
+ },
+ {
+  "label": "Superhero",
+  "key": "Superhero",
+  "img": "assets/genres/superhero.webp"
+ },
+ {
+  "label": "Thriller",
+  "key": "Thriller",
+  "img": "assets/genres/thriller.jpg"
+ },
+ {
+  "label": "War",
+  "key": "War",
+  "img": "assets/genres/war.jpg"
+ },
+ {
+  "label": "Western",
+  "key": "Western",
+  "img": "assets/genres/western.webp"
+ },
+ {
+  "label": "Uncategorized",
+  "key": "Uncategorized",
+  "img": "assets/genres/uncategorized.webp"
+ }
+]

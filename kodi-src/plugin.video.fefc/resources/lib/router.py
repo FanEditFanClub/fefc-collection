@@ -19,6 +19,10 @@ from .webcounts import FOLD
 
 ADDON = xbmcaddon.Addon()
 PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
+# A genre can hold thousands of files. Building a list item for every one of them
+# never returns on a Fire Stick, and a failed directory drops Kodi onto the stock
+# Videos root (Files / Playlists / Video add-ons). One page, then Next page.
+GENRE_PAGE = 60
 CONTACT_EMAIL = 'faneditfanclub@gmail.com'
 # Direct Google Form. is.gd/UVko0K only redirects here; the QR encodes this address.
 FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform'
@@ -638,36 +642,76 @@ class Router:
 
         threading.Thread(target=go, daemon=True).start()
 
+    def _genre_entries(self):
+        """Genre names and artwork from the add-on file. Does not load the catalogue.
+
+        The board only needs the seventeen names. Unmarshalling the whole model here
+        is what made Genres sit on the busy dialog. The folder opened afterwards is
+        the one that reads the catalogue."""
+        import json
+        path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'genre-menu.json')
+        try:
+            rows = json.load(open(path, encoding='utf-8'))
+        except Exception as e:
+            _log('genre menu: %s' % e)
+            rows = []
+        out = []
+        for row in rows:
+            label = row.get('label') or ''
+            key = row.get('key') or label
+            img = catalog.abs_url(_base(), (row.get('img') or '').split('?')[0])
+            if label and key:
+                out.append((label, key, img))
+        return out
+
     def genres(self):
-        """Home-style 3x3. The tile is the genre name only: no count, no number prefix."""
-        from . import genrepages
-        from .genreshow import open_genre_board
-        m = _model()
-        art = m.get('genreart') or {}
-        gk = set(m['genre_videos']) | set(m.get('genre_folders') or {})
-        pages = genrepages.genre_pages(gk)
-        flat = [pair for page in pages for pair in page]
-        entries = []
-        for label, key in flat:
-            a = art.get(key) or art.get(label) or {}
-            img = catalog.abs_url(_base(), (a.get('img') or '').split('?')[0]) if a.get('img') else ''
-            entries.append((label, key, img))
-        picked = open_genre_board(entries)
-        if picked:
-            xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(self.url, action='genre', genre=picked))
-        if self.handle >= 0:
-            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+        """Home-style 3x3 when launched from Home (RunPlugin, no directory).
+
+        A directory launch (the add-on root) lists the same names as folders.
+        Either way the window is an FEFC plugin path. A failed directory is
+        what used to drop the screen onto the stock Videos root."""
+        entries = self._genre_entries()
+        if self.handle < 0:
+            from .genreshow import open_genre_board
+            picked = open_genre_board(entries)
+            if picked:
+                xbmc.executebuiltin('ActivateWindow(Videos,"%s",return)' % _url(
+                    'plugin://plugin.video.fefc/', action='genre', genre=picked))
+            return
+        dark = 'special://skin/media/fefc-ol-tile.png'
+        if not entries:
+            self.add_folder('Genres could not be read', dark, 'Open Genres again.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
+            self.end()
+            return
+        for label, key, img in entries:
+            self.add_folder(label, img or dark, '', landscape=dark, action='genre', genre=key, props={'fefc_kind': 'folder'})
+        self.end()
 
     def genre(self):
-        """Collections and files in a genre (like the web app), collections first, then files A-Z; paged."""
-        m = _model()
-        g = self.params['genre']
+        """Collections and files in a genre, main collection only, one short page.
+
+        Succeeds even when the catalogue is missing, so Kodi stays on this plugin
+        path instead of falling back to Files / Playlists / Video add-ons."""
+        g = self.params.get('genre') or ''
         page = int(self.params.get('page') or 0)
+        dark = 'special://skin/media/fefc-ol-tile.png'
+        try:
+            m = _model()
+        except Exception as e:
+            _log('genre catalogue: %s' % e)
+            xbmcgui.Dialog().notification('Genres', 'Could not load the collection. Check the connection and try again.', xbmcgui.NOTIFICATION_ERROR, 5000)
+            self.add_folder('Try again', dark, '', landscape=dark, action='genre', genre=g, props={'fefc_kind': 'action'})
+            self.end()
+            return
         nk = lambda i: catalog.natkey(m['items'][i][0])
         folders = sorted(catalog.dedupe(m, m['genre_folders'].get(g, [])), key=nk)
         vids = sorted(catalog.dedupe(m, m['genre_videos'].get(g, [])), key=nk)
         rows = folders + vids
-        chunk = rows[page * PAGE:(page + 1) * PAGE]
+        if not rows and page == 0:
+            self.add_folder('Nothing in the main collection', dark, 'To Be Catalogued is not listed here.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
+            self.end()
+            return
+        chunk = rows[page * GENRE_PAGE:(page + 1) * GENRE_PAGE]
         if not page:
             self._maybe_sfx(catalog.sfx_genre(m, g))
             if vids:
@@ -680,8 +724,8 @@ class Router:
             else:
                 self.add_video(m, k)
                 nv += 1
-        if (page + 1) * PAGE < len(rows):
-            self.add_folder('Next page (%d more) >>' % (len(rows) - (page + 1) * PAGE), '', action='genre', genre=g, page=page + 1)
+        if (page + 1) * GENRE_PAGE < len(rows):
+            self.add_folder('Next page (%d more) >>' % (len(rows) - (page + 1) * GENRE_PAGE), '', action='genre', genre=g, page=page + 1)
         self.end()
 
     def recent(self):
@@ -1659,10 +1703,10 @@ def _add_icon_bar(win, up):
     # Same pill as the skin: the Home 3x3 runs from x=348 to x=1572.
     win.addControl(xbmcgui.ControlImage(s(348), s(866), s(1224), s(84), _media_file('chrome/pill.png')))
     specs = (
-        ('HOME', 468, 484, 'fefc-ic-home.png', 147),
-        ('SEARCH', 696, 712, 'fefc-ic-search.png', 147),
-        ('SOUND OFF' if off else 'SOUND ON', 924, 940, 'fefc-ic-mute.png' if off else 'fefc-ic-sound.png', 180),
-        ('SETTINGS', 1202, 1218, 'fefc-ic-gear.png', 167),
+        ('HOME', 498, 514, 'fefc-ic-home.png', 147),
+        ('SEARCH', 726, 742, 'fefc-ic-search.png', 147),
+        ('SOUND OFF' if off else 'SOUND ON', 954, 970, 'fefc-ic-mute.png' if off else 'fefc-ic-sound.png', 160),
+        ('SETTINGS', 1202, 1218, 'fefc-ic-gear.png', 147),
     )
     buttons = []
     sound_icon = None
@@ -1741,10 +1785,12 @@ class SupportWindow(xbmcgui.WindowDialog):
         # The figure ends above the menu (skin y=866, scaled) so the two never overlap.
         art = self._frames[0] if self._frames else 'fefc-optimus-begging.png'
         menu_top = int(round(866 * 2 / 3.0))
-        art_w = 300
-        art_h = int(round(art_w * 533 / 400.0))
-        art_y = max(12, (menu_top - 18 - art_h) // 2)
-        self.art = xbmcgui.ControlImage(18, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
+        # Frames are 480x640. KEEP fits the whole frame inside the box, including the
+        # lowest row, where the low bob reaches. The box sits on the menu, not above a gap.
+        art_w = 280
+        art_h = int(round(art_w * 640 / 480.0))
+        art_y = max(8, menu_top - 8 - art_h)
+        self.art = xbmcgui.ControlImage(12, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
         self.addControl(self.art)
         self.btns = []
         # Home-tile cards beside Optimus. Taller than 2:1 so the logo plate and the

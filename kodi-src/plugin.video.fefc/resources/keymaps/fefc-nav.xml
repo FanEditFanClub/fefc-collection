@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 0.5.6: do not bind Back. The old keymap ran armback and then the Back action,
-     which re-entered the keymap and Kodi dropped the real Back. Remote Back,
-     Android KEYCODE_BACK and Backspace did nothing on every screen.
-     Back stays on Kodi's own mapping.
+<!-- Back is PreviousMenu and nothing else. The old keymap ran a plugin call and
+     then Back, which re-entered this file and Kodi dropped the key, so the Fire
+     TV remote did nothing. Do not call a plugin from back.
      The menu key and a long-press of Select open the FEFC menu, which has no
      Add to favourites / Remove from favourites entry. -->
 <keymap>
@@ -10,11 +9,20 @@
 		<keyboard>
 			<menu>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</menu>
 			<c>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</c>
+			<!-- Fire TV and Android send Back as keyboard escape / browser back.
+			     The action is PreviousMenu only. A plugin call here swallows the key. -->
+			<escape>PreviousMenu</escape>
+			<backspace>PreviousMenu</backspace>
+			<browser_back>PreviousMenu</browser_back>
 		</keyboard>
 		<remote>
 			<menu>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</menu>
 			<title>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</title>
 			<select mod="longpress">RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</select>
+			<back>PreviousMenu</back>
 		</remote>
+		<gamepad>
+			<back>PreviousMenu</back>
+		</gamepad>
 	</global>
 </keymap>

@@ -11,6 +11,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SR = 48000
 MASTER = 0.6
 TARGET_LUFS, TP_MAX = -16.0, -1.5
+# Focus-move and Back only. Select (click) and open stay at the matched level.
+# 0.85x amplitude is about -1.4 dB. Intro, wall and clips are not built here.
+NAV_QUIET = 0.85
+NAV_QUIET_NAMES = ('move', 'back')
 
 
 def osc(kind, f0, f1, n):
@@ -173,6 +177,12 @@ def build(out, version='1.0.0'):
         g = gcd(SR, sr)
         raw = resample_poly(raw, SR // g, sr // g)
     report['back'] = normalise(res / 'back.wav', raw)
+    for n in NAV_QUIET_NAMES:
+        p = res / (n + '.wav')
+        with wave.open(str(p)) as w:
+            x = np.frombuffer(w.readframes(w.getnframes()), '<i2').astype(float) / 32768
+        write(p, x * NAV_QUIET)
+        report[n] = measure(p)
     return report
 
 

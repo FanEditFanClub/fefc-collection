@@ -1,6 +1,18 @@
 {
  "versions": [
   {
+   "version": "0.6.1 Beta",
+   "date": "2026-11-11",
+   "notes": [
+    "Genres opens on the Home mosaic instead of the stock Videos menu. The top-centre cell reads GENRES. The other mosaic cells keep playing.",
+    "Each genre tile shows its artwork again. Opening a genre lists that genre's main-collection folders and files, one page at a time. To Be Catalogued stays out.",
+    "Fire TV Back is PreviousMenu again on every screen.",
+    "SOUND ON and SETTINGS fit on the menu bar.",
+    "Support Us shows the whole Optimus frame, down to the lowest row of the clip, above the menu.",
+    "The focus-move sound and the Back sound are a little quieter. The intro, the wall and the clips are unchanged."
+   ]
+  },
+  {
    "version": "0.6 Beta",
    "date": "2026-11-10",
    "notes": [
