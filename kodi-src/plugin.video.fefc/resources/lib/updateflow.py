@@ -209,3 +209,120 @@ def installer_builtin(uri, package=INSTALLER_PACKAGES[0]):
         return ''
     return ('StartAndroidActivity(%s,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)'
             % (package, uri))
+
+
+UPDATE_HOSTS = ('fefc-collection.pages.dev', 'collection.faneditfanclub.com')
+
+
+def classify_platform(flags):
+    """Android wins when the device says it is Android. macOS and webOS are explicit.
+    An empty probe stays 'other' so the caller can keep the Android installer for an unprobed Kodi."""
+    flags = flags or {}
+    if flags.get('android') and not flags.get('webos'):
+        return 'android'
+    blob = ' '.join(str(flags.get(k) or '') for k in ('build', 'os', 'xbmc_path')).lower()
+    if flags.get('webos') or 'webos' in blob or 'web0s' in blob or '/palm/' in blob:
+        return 'webos'
+    if flags.get('android'):
+        return 'android'
+    if flags.get('darwin') or flags.get('osx'):
+        return 'macos'
+    return 'other'
+
+
+def platform_arch(platform, machine):
+    """CPU family used to pick a download. macOS never guesses across Intel and Apple Silicon."""
+    m = (machine or '').lower()
+    if platform == 'macos':
+        if 'arm' in m or 'aarch64' in m:
+            return 'arm64'
+        return 'x86_64'
+    if platform == 'webos':
+        if m in ('aarch64', 'arm64'):
+            return 'aarch64'
+        return 'arm'
+    return ''
+
+
+def allowed_update_url(url):
+    """New platform packages must be https on the FEFC host, under /kodi-app/.
+    The Android updater does not use this; it keeps reading packages[] and the top-level url."""
+    try:
+        from urllib.parse import urlparse
+        u = urlparse(url or '')
+    except Exception:
+        return False
+    host = (u.hostname or '').lower()
+    return u.scheme == 'https' and host in UPDATE_HOSTS and (u.path or '').startswith('/kodi-app/')
+
+
+def platform_download(manifest, platform, arch=''):
+    """URL, size, sha256 and filename for macOS, webOS or Tizen.
+    Never falls back to the Android APK. A missing entry is not available."""
+    block = ((manifest or {}).get('platforms') or {}).get(platform) or {}
+    if not isinstance(block, dict):
+        block = {}
+    archs = block.get('arch') or {}
+    if not isinstance(archs, dict):
+        archs = {}
+    entry = {}
+    if platform == 'macos':
+        entry = archs.get(arch) or {}
+    elif arch and archs.get(arch):
+        entry = archs.get(arch) or {}
+    elif archs.get('all'):
+        entry = archs.get('all') or {}
+    elif block.get('url'):
+        entry = block
+    if not isinstance(entry, dict):
+        entry = {}
+    url = entry.get('url') or ''
+    try:
+        size = int(entry.get('size') or 0)
+    except (TypeError, ValueError):
+        size = 0
+    return {
+        'url': url,
+        'size': size,
+        'sha256': entry.get('sha256') or '',
+        'filename': entry.get('filename') or '',
+        'abi': entry.get('abi') or block.get('abi') or '',
+        'available': bool(url and entry.get('sha256') and allowed_update_url(url)),
+    }
+
+
+def platform_unavailable_message(platform, version_label):
+    names = {'macos': 'Mac', 'webos': 'LG webOS', 'tizen': 'Samsung Tizen', 'other': 'this system'}
+    who = names.get(platform, platform)
+    return ('FEFC %s is published. The %s package is not on the server yet, so nothing was downloaded. '
+            'Android keeps using its own packages. When the %s package is published it will use this same version.'
+            % (version_label or 'update', who, who))
+
+
+def platform_install_message(platform, path, opened=False, abi=''):
+    if platform == 'macos':
+        opened_txt = 'The disk image was opened. ' if opened else ''
+        return (
+            'The update is verified. This build is not signed with an Apple Developer ID, so macOS will warn the first time it opens.\n\n'
+            'Disk image:\n%s\n\n'
+            '%sDrag FEFC.app to Applications and replace the old app.\n'
+            'If macOS says the app is damaged or cannot be checked, run:\n'
+            'codesign --remove-signature /Applications/FEFC.app\n'
+            'xattr -dr com.apple.quarantine /Applications/FEFC.app\n'
+            'Then right-click FEFC.app, choose Open, then Open.\n'
+            'Then fully quit FEFC and open it again.'
+        ) % (path, opened_txt)
+    if platform == 'webos':
+        abi_txt = ''
+        if abi and abi != 'arm':
+            abi_txt = 'The published file is marked %s.\n' % abi
+        elif abi == 'arm':
+            abi_txt = 'This is the 32-bit arm package (the stable Kodi webOS build). A TV that only runs 64-bit apps cannot install it.\n'
+        return (
+            'The update is verified. webOS installs it only while Developer Mode is on.\n'
+            '%s\n'
+            'Package:\n%s\n\n'
+            'If no install prompt appears, install that file with webOS Dev Manager, or: ares-install -d <tv> <file>\n'
+            'Then fully quit FEFC and open it again. Developer Mode has to stay enabled or the app will not start.'
+        ) % (abi_txt, path)
+    return 'No FEFC installer is available for this system.'
