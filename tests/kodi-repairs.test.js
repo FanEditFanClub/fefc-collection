@@ -475,11 +475,14 @@ test('folder tiles stay landscape and videos stay portrait at every depth', () =
   assert.doesNotMatch(inc, /itemlayout[^>]*condition=/);
   assert.match(inc, /fefc_kind\),video\)/);
   assert.match(inc, /fefc_kind\),spacer\)/);
-  assert.equal((inc.match(/<height>240<\/height>/g) || []).length, 2);
+  assert.equal((inc.match(/<height>270<\/height>/g) || []).length, 4);
+  assert.equal((inc.match(/<width>180<\/width>/g) || []).length, 3);
+  assert.match(inc, /<aspectratio scalediffuse="false">keep<\/aspectratio>/);
   assert.equal((inc.match(/<height>200<\/height>/g) || []).length, 2);
-  // Poster block (group top 8 + title top 248 + title 200) stays inside the
-  // four rows reserved under it. 4 x 150 = 600. 200px holds five 30px lines.
-  assert.ok(8 + 248 + 200 > 150 * 2 && 8 + 248 + 200 <= 150 * 4);
+  // Poster block (group top 8 + title top 278 + title 200) stays inside the
+  // four rows reserved under it. 4 x 150 = 600. The art box is 180x270 (2:3).
+  assert.ok(8 + 278 + 200 > 150 * 2 && 8 + 278 + 200 <= 150 * 4);
+  assert.ok(270 * 2 === 180 * 3);
   assert.ok(200 >= 30 * 5);
   assert.doesNotMatch(router, /nv > nf/);
   assert.match(router, /shapes\.listing_mode/);

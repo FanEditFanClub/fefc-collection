@@ -77,29 +77,29 @@
 		</definition>
 		<param name="focused" default="false" />
 	</include>
-	<!-- Portrait poster tile. The title stays inside the four grid rows reserved
-	     under the poster (shapes.SPAN = 4, 600px). Group top 8 + title top 248
-	     + title 200 = 456, so a wrapped name cannot reach the next poster. -->
+	<!-- Portrait poster tile. The art box is 180x270 (2:3) and uses keep, so the
+	     poster is not cropped into a square. Group top 8 + title top 278 + title
+	     200 = 486, inside the four rows reserved under it (600px). -->
 	<include name="FefcPosterTile">
 		<definition>
 			<control type="image">
-				<left>0</left><top>0</top><width>250</width><height>240</height>
-				<texture border="20">fefc-tile.png</texture>
+				<left>35</left><top>0</top><width>180</width><height>270</height>
+				<texture border="12">fefc-tile.png</texture>
 			</control>
 			<control type="image">
-				<left>4</left><top>4</top><width>242</width><height>232</height>
+				<left>35</left><top>0</top><width>180</width><height>270</height>
 				<texture fallback="DefaultVideo.png">$VAR[FefcPosterArt]</texture>
-				<aspectratio scalediffuse="false">scale</aspectratio>
+				<aspectratio scalediffuse="false">keep</aspectratio>
 			</control>
 			<control type="image">
-				<left>0</left><top>0</top><width>250</width><height>240</height>
-				<texture border="20">fefc-tile-ring.png</texture>
+				<left>35</left><top>0</top><width>180</width><height>270</height>
+				<texture border="12">fefc-tile-ring.png</texture>
 				<visible>$PARAM[focused]</visible>
 			</control>
 			<!-- Up to five lines, centered, and clipped to this box. The focused
 			     tile scrolls the full name. -->
 			<control type="textbox">
-				<left>4</left><top>248</top><width>242</width><height>200</height>
+				<left>0</left><top>278</top><width>250</width><height>200</height>
 				<align>center</align>
 				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>
@@ -107,7 +107,7 @@
 				<visible>!$PARAM[focused]</visible>
 			</control>
 			<control type="label">
-				<left>4</left><top>248</top><width>242</width><height>200</height>
+				<left>0</left><top>278</top><width>250</width><height>200</height>
 				<aligny>top</aligny><align>center</align>
 				<font>font13_title</font>
 				<textcolor>FFFFFFFF</textcolor>
