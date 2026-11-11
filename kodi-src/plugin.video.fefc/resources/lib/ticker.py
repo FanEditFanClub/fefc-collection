@@ -101,12 +101,14 @@ def _piece(it):
     return ('%s: %s' % (src.upper(), t)) if src else t
 
 
+_BADGE = {'discord': 'DISCORD', 'x': 'X', 'facebook': 'FACEBOOK', 'reddit': 'REDDIT'}
+
+
 def _cta(i):
+    """Network name plus the sentence. The sentence already says Join or Follow,
+    and the private-use glyph does not draw, so a JOIN prefix read as 'JOIN Join'."""
     src, text = CTA[i % len(CTA)]
-    ic = ICONS.get(src)
-    if not ic:
-        return 'JOIN  ' + text
-    return '[COLOR %s]%s[/COLOR]  JOIN  %s' % (ic[1], ic[0], text)
+    return '%s  %s' % (_BADGE.get(src, src.upper()), text)
 
 
 def build_text(new_items, community, limit=MAX_LEN):
@@ -129,5 +131,9 @@ def build_text(new_items, community, limit=MAX_LEN):
             break
     if not parts:
         text = '   •   '.join(_cta(i) for i in range(len(CTA))) + '   •   '
-        return text[:limit]
-    return '   •   '.join(parts) + '   •   '
+    else:
+        text = '   •   '.join(parts) + '   •   '
+    # Kodi only scrolls a label that is wider than its box. Repeat a short line.
+    while len(text) < 280 and len(text) * 2 <= limit:
+        text += text
+    return text[:limit]

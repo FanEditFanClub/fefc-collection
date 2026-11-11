@@ -521,8 +521,9 @@ TICKER_ICONS = {'discord': ('\ue001', 'FF5865F2'), 'facebook': ('\ue002', 'FF187
 
 
 def _cta(c):
-    ic = TICKER_ICONS.get(c[0].split()[0].lower())
-    return ('[COLOR %s]%s[/COLOR]  JOIN  %s' % (ic[1], ic[0], c[1])) if ic else 'JOIN  ' + c[1]
+    """Unused by the live ticker (that is ticker.build_text). Kept in step with it:
+    the network name, then the sentence, with no extra JOIN."""
+    return '%s  %s' % (c[0].split()[0].upper(), c[1])
 
 
 def _new_files_ticker_items():
@@ -1136,13 +1137,18 @@ def _grid_pad_loop(monitor):
                     k = xbmc.getInfoLabel('Container.ListItem(%d).Property(fefc_kind)' % off)
                 return k or None
 
-            step = skip_delta(pos, origin, lookup)
+            home = xbmcgui.Window(10000)
+            from_menu = home.getProperty('FEFC.GridFromMenu') == '1'
+            step = skip_delta(pos, origin, lookup, from_menu=from_menu)
+            if from_menu:
+                home.clearProperty('FEFC.GridFromMenu')
             if step is None:
                 origin = pos
                 if monitor.waitForAbort(0.2):
                     return
                 continue
             if step == 'menu':
+                home.setProperty('FEFC.GridFromMenu', '1')
                 xbmc.executebuiltin('SetFocus(9290)')
                 origin = None
             else:

@@ -163,5 +163,13 @@
 			<onleft>9403</onleft><onright>9401</onright><onup>9109</onup>
 		</control>
 		<control type="image"><left>1218</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
+		<control type="label" id="9501">
+			<left>96</left><top>984</top><width>1728</width><height>44</height>
+			<font>font12</font>
+			<textcolor>FFFFFFFF</textcolor>
+			<scroll>true</scroll>
+			<scrollspeed>48</scrollspeed>
+			<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
+		</control>
 	</controls>
 </window>

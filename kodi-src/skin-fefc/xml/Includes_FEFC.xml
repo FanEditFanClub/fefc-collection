@@ -127,6 +127,8 @@
 		<param name="id" default="501"/>
 		<definition>
 		<control type="panel" id="$PARAM[id]">
+			<!-- One view at a time. Both panels used to draw the same items, so posters sat on top of each other. -->
+			<visible>Integer.IsEqual(Container.Viewmode,$PARAM[id])</visible>
 			<left>96</left><top>122</top><width>1700</width><height>760</height>
 			<onleft>$PARAM[id]</onleft><onright>60</onright>
 			<onup>9290</onup>
@@ -348,8 +350,7 @@
 				<textcolor>FFFFFFFF</textcolor>
 				<scroll>true</scroll>
 				<scrollspeed>48</scrollspeed>
-				<!-- Keeps the marquee dirty on windows that are not redrawing a video, so My List and folders keep scrolling. -->
-				<animation effect="fade" start="100" end="99" time="700" pulse="true" condition="true">Conditional</animation>
+				<!-- No pulse animation here. A repeating fade restarts the label every cycle, so the marquee never moves. -->
 				<label>$INFO[Window(Home).Property(FEFC.Ticker)]</label>
 				<visible>!String.IsEmpty(Window(Home).Property(FEFC.Ticker))</visible>
 			</control>

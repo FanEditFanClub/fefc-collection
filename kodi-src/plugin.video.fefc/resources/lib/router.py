@@ -18,7 +18,10 @@ from . import namesort
 from .webcounts import FOLD
 
 ADDON = xbmcaddon.Addon()
-PAGE = 100000  # 0.4.0: no pagination - every item on one scrollable page (Kodi loads art lazily)
+# Listings are one short page. Building a list item for every file in a folder
+# (some hold thousands) never returns on a Fire Stick. The shipped page pack
+# serves that page without unmarshalling the whole catalogue.
+PAGE = 60
 # A genre can hold thousands of files. Building a list item for every one of them
 # never returns on a Fire Stick, and a failed directory drops Kodi onto the stock
 # Videos root (Files / Playlists / Video add-ons). One page, then Next page.
@@ -542,7 +545,74 @@ class Router:
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
+    def _add_pack_row(self, row):
+        """One shipped-index row: [id, name, is_dir, art] plus an optional short plot."""
+        fid, name, is_dir, art = row[0], row[1], int(row[2]), row[3] or ''
+        plot = row[4] if len(row) > 4 else ''
+        tbc = '1503Wl56hzRppaIFcQisvQksOaeYOEjnk'
+        if is_dir and fid == tbc:
+            tile = 'special://skin/media/fefc-tbc-tile.png'
+            self.add_folder('To Be Catalogued', tile, plot, landscape=tile, action='folder', id=tbc)
+            return
+        if is_dir:
+            self.add_folder(name, art, plot, action='folder', id=fid)
+            return
+        li = xbmcgui.ListItem(name, offscreen=True)
+        from . import shapes
+        shapes.stamp(li, 'video', art or 'special://skin/media/fefc-video-poster.png')
+        try:
+            on = self.mydb().has(fid)
+        except Exception:
+            on = False
+        li.setProperty('fefc_id', fid)
+        li.setProperty('fefc_mylabel', 'Remove from My List' if on else 'Add to My List')
+        li.setProperty('IsPlayable', 'true')
+        tag = li.getVideoInfoTag()
+        tag.setTitle(name)
+        if plot:
+            tag.setPlot(plot)
+        url = _url(self.url, action='play', id=fid, n=name)
+        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
+
+    def _emit_pack_page(self, doc, page, action, **kw):
+        from . import pagepack
+        if not page and doc.get('sfx'):
+            self._maybe_sfx(doc.get('sfx'))
+        if not page and action == 'folder' and doc.get('total'):
+            fid = kw.get('id') or ''
+            key = _sort_get(fid)
+            self.add_tool('Sort: %s   (select to change)' % dict(SORTS).get(key, 'Name A-Z'),
+                          'Change how this collection is sorted. Same options as the FEFC web app.',
+                          action='sort', id=fid)
+            self.add_tool('Shuffle Play', 'Play a random mix of edits from this collection.', 'DefaultMusicPlaylists.png', action='shuffle', id=fid)
+        if not page and action == 'genre':
+            self.add_tool('Shuffle Play', 'Play a random mix of edits from this genre.', 'DefaultMusicPlaylists.png', action='shuffle', genre=kw.get('genre') or '')
+        for row in doc.get('rows') or []:
+            self._add_pack_row(row)
+        size = pagepack.LIST_PAGE
+        if (page + 1) * size < int(doc.get('total') or 0):
+            more = int(doc['total']) - (page + 1) * size
+            self.add_folder('Next page (%d more) >>' % more, '', action=action, page=page + 1, **kw)
+        self.end(cache=action != 'search')
+
     def folder(self):
+        from . import pagepack
+        page = int(self.params.get('page') or 0)
+        fid = self.params.get('id') or ''
+        if str(fid).startswith('pt:'):
+            return self.testing_folder(fid)
+        if pagepack.available():
+            if not fid:
+                fid = pagepack.root_id()
+            key = _sort_get(fid)
+            if key == 'az':
+                doc = pagepack.folder_page(fid, page)
+                if doc is not None:
+                    if fid == '1503Wl56hzRppaIFcQisvQksOaeYOEjnk' and not page:
+                        tile = 'special://skin/media/fefc-testing-tile.png'
+                        self.add_folder('01 - Testing', tile, 'App-only provider links. 2 verified videos.', landscape=tile, action='folder', id='pt:testing')
+                    self._emit_pack_page(doc, page, 'folder', id=fid)
+                    return
         m = _model()
         fid = self.params.get('id') or m['root']
         if str(fid).startswith('pt:'):
@@ -695,6 +765,16 @@ class Router:
         g = self.params.get('genre') or ''
         page = int(self.params.get('page') or 0)
         dark = 'special://skin/media/fefc-ol-tile.png'
+        from . import pagepack
+        if pagepack.available():
+            doc = pagepack.genre_page(g, page)
+            if doc is not None:
+                if not doc['rows'] and page == 0:
+                    self.add_folder('Nothing in the main collection', dark, 'To Be Catalogued is not listed here.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
+                    self.end()
+                    return
+                self._emit_pack_page(doc, page, 'genre', genre=g)
+                return
         try:
             m = _model()
         except Exception as e:
@@ -732,6 +812,17 @@ class Router:
         """New Arrivals. The added-date list covers the whole catalogue (13k files). Building a
         list item for every one of them never returns on a Fire Stick, so the busy dialog stays
         up. This shows one page of the precomputed newest files and always closes the dialog."""
+        from . import pagepack
+        page = int(self.params.get('page') or 0)
+        if pagepack.available():
+            doc = pagepack.recent_page(page)
+            if doc is not None:
+                if not doc['rows'] and page == 0:
+                    xbmcgui.Dialog().notification('New Arrivals', 'No new files yet.', xbmcgui.NOTIFICATION_INFO, 4000)
+                    self.end(cache=False)
+                    return
+                self._emit_pack_page(doc, page, 'recent')
+                return
         try:
             m = _model()
         except Exception as e:
@@ -758,17 +849,29 @@ class Router:
         from . import searchflow
         q = self.params.get('q')
         if q is None:
+            # End the directory before the dialog. Leaving it open holds Kodi's
+            # busy dialog for the whole time the search window is on screen.
+            if self.handle >= 0:
+                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            _close_busy()
             win = OptimusWindow()
             win.doModal()
             q = (win.query or '').strip()
             del win
             if not q:
-                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
                 return
-            # re-enter with the query so back/refresh works
             xbmc.executebuiltin('Container.Update(%s,replace)' % _url(self.url, action='search', q=q))
-            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
             return
+        from . import pagepack
+        page = int(self.params.get('page') or 0)
+        if pagepack.available():
+            doc = pagepack.search_page(q, page)
+            if doc is not None:
+                msg = searchflow.result_message(q, doc.get('total') or 0, False)
+                if msg and page == 0:
+                    xbmcgui.Dialog().notification('FEFC', msg, xbmcgui.NOTIFICATION_INFO, 3000)
+                self._emit_pack_page(doc, page, 'search', q=q)
+                return
         try:
             m = _model()
         except Exception as e:
@@ -793,6 +896,7 @@ class Router:
     def searchbox(self):
         """Home Search tile (RunPlugin, no directory handle): the Optimus card collects the text, then the results list opens.
         The keyboard is not opened underneath the still-open card."""
+        _close_busy()
         win = OptimusWindow()
         win.doModal()
         q = (win.query or '').strip()
@@ -1403,10 +1507,12 @@ class Router:
         xbmcplugin.setResolvedUrl(self.handle, True, li)
 
     def play(self):
-        m = _model()
         vid = self.params['id']
-        v = m['items'].get(vid)
-        name = v[0] if v else 'video.mp4'
+        name = self.params.get('n') or ''
+        if not name:
+            m = _model()
+            v = m['items'].get(vid)
+            name = v[0] if v else 'video.mp4'
         url = catalog.stream_url(_base(), vid, name)
         li = xbmcgui.ListItem(path=url)
         low = name.lower()
@@ -1691,36 +1797,47 @@ def _media_file(name):
     return os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media', name)
 
 
+def _close_busy():
+    """Drop Kodi's working dialog so a RunPlugin window can paint. The script is still
+    inside doModal, and that dialog stays up until something closes it."""
+    xbmc.executebuiltin('Dialog.Close(busydialog,true)')
+    xbmc.executebuiltin('Dialog.Close(busydialognocancel,true)')
+
+
 def _sound_off():
     return bool(xbmc.getInfoLabel('Window(home).Property(FEFC.SoundOff)'))
 
 
 def _add_icon_bar(win, up):
-    """The 0.5.5 Home bar: one dark pill, icon plus label on each button, ticker under it.
-    Coordinates are the 1920x1080 skin values scaled by 2/3 into this 1280x720 dialog."""
+    """Same bottom bar as Includes_FEFC.xml FefcTopBar, in this dialog's 1280x720 space.
+
+    Skin widths are HOME 220, SEARCH 220, SOUND 240, SETTINGS 220, group left 498.
+    s() is 2/3 because a WindowDialog is laid out on 1280x720 and scaled to 1080p.
+    The button textures are generated at those skin widths, so the filename stays
+    the scaled pixel width."""
     def s(v):
         return int(round(v * 2 / 3.0))
     off = _sound_off()
     # Same pill as the skin: the Home 3x3 runs from x=348 to x=1572.
     win.addControl(xbmcgui.ControlImage(s(348), s(866), s(1224), s(84), _media_file('chrome/pill.png')))
     specs = (
-        ('HOME', 498, 514, 'fefc-ic-home.png', 147),
-        ('SEARCH', 726, 742, 'fefc-ic-search.png', 147),
-        ('SOUND OFF' if off else 'SOUND ON', 954, 970, 'fefc-ic-mute.png' if off else 'fefc-ic-sound.png', 160),
-        ('SETTINGS', 1202, 1218, 'fefc-ic-gear.png', 147),
+        ('HOME', 498, 220, 'fefc-ic-home.png'),
+        ('SEARCH', 726, 220, 'fefc-ic-search.png'),
+        ('SOUND OFF' if off else 'SOUND ON', 954, 240, 'fefc-ic-mute.png' if off else 'fefc-ic-sound.png'),
+        ('SETTINGS', 1202, 220, 'fefc-ic-gear.png'),
     )
     buttons = []
     sound_icon = None
-    for lab, x, ix, icon, bw in specs:
+    for lab, x, bw, icon in specs:
         btn = xbmcgui.ControlButton(
-            s(x), s(878), bw, s(60), lab,
-            focusTexture=_media_file('chrome/btn-%d-on.png' % bw),
-            noFocusTexture=_media_file('chrome/btn-%d.png' % bw),
+            s(x), s(878), s(bw), s(60), lab,
+            focusTexture=_media_file('chrome/btn-%d-on.png' % s(bw)),
+            noFocusTexture=_media_file('chrome/btn-%d.png' % s(bw)),
             textOffsetX=s(52), textOffsetY=0, alignment=4,
             font='fefc_bar', textColor='FFFFFFFF', focusedColor='FFFFFFFF')
         win.addControl(btn)
         buttons.append(btn)
-        img = xbmcgui.ControlImage(s(ix), s(894), s(28), s(28), icon, aspectRatio=2)
+        img = xbmcgui.ControlImage(s(x + 16), s(894), s(28), s(28), icon, aspectRatio=2)
         win.addControl(img)
         if lab.startswith('SOUND'):
             sound_icon = img
@@ -1731,8 +1848,29 @@ def _add_icon_bar(win, up):
         b.controlDown(up)
     tick = xbmc.getInfoLabel('Window(home).Property(FEFC.Ticker)') or 'Loading community news...'
     win.addControl(xbmcgui.ControlImage(s(96), s(984), s(1728), s(44), _media_file('chrome/ticker.png')))
-    win.addControl(xbmcgui.ControlLabel(s(118), s(984), s(1660), s(44), tick, font='fefc_ticker', textColor='FFFFFFFF', alignment=4))
+    tick_label = xbmcgui.ControlLabel(s(118), s(984), s(1660), s(44), tick, font='fefc_ticker', textColor='FFFFFFFF', alignment=4)
+    win.addControl(tick_label)
+    win._ticker_text = tick
+    win._ticker_label = tick_label
     return buttons, sound_icon
+
+
+def _marquee_loop(label, text, closed):
+    """Slide the ticker by rotating the string. A Python ControlLabel has no scroll flag."""
+    text = text or ''
+    if len(text) < 80:
+        text = (text + '   •   ') * 4
+    i = 0
+    mon = xbmc.Monitor()
+    n = max(1, len(text))
+    while not closed() and not mon.abortRequested():
+        try:
+            label.setLabel(text[i:] + '    ' + text[:i])
+        except Exception:
+            return
+        i = (i + 1) % n
+        if mon.waitForAbort(0.15):
+            return
 
 
 def _bar_action(win, button):
@@ -1786,10 +1924,16 @@ class SupportWindow(xbmcgui.WindowDialog):
         # The figure ends above the menu (skin y=866, scaled) so the two never overlap.
         art = self._frames[0] if self._frames else 'fefc-optimus-begging.png'
         menu_top = int(round(866 * 2 / 3.0))
-        # Frames are 480x640. KEEP fits the whole frame inside the box, including the
-        # lowest row, where the low bob reaches. The box sits on the menu, not above a gap.
-        art_w = 280
-        art_h = int(round(art_w * 640 / 480.0))
+        # Frames are 480x1031 after the shoes were composited on. KEEP fits the
+        # whole frame, and the box is shortened so it stays above the menu.
+        from . import optimusframes
+        # Full frame, shoes included, fitted above the menu. The old 640/480 box
+        # cropped the extended frames.
+        max_h = menu_top - 16
+        art_h = int(round(280 * optimusframes.SUPPORT_H / float(optimusframes.SUPPORT_W)))
+        if art_h > max_h:
+            art_h = max_h
+        art_w = int(round(art_h * optimusframes.SUPPORT_W / float(optimusframes.SUPPORT_H)))
         art_y = max(8, menu_top - 8 - art_h)
         self.art = xbmcgui.ControlImage(12, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
         self.addControl(self.art)
@@ -1850,6 +1994,8 @@ class SupportWindow(xbmcgui.WindowDialog):
         self._closed = False
         if self._frames:
             threading.Thread(target=self._pump, daemon=True).start()
+        if getattr(self, '_ticker_label', None) is not None:
+            threading.Thread(target=_marquee_loop, args=(self._ticker_label, self._ticker_text, lambda: self._closed), daemon=True).start()
         try:
             super(SupportWindow, self).doModal()
         finally:
@@ -2015,11 +2161,19 @@ class OptimusWindow(xbmcgui.WindowDialog):
             focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png',
             textColor='00FFFFFF', focusedColor='00FFFFFF')
         self.addControl(self.bar_btn)
+        # fefc-ol-focus.png is 200x100 and Python stretches it (no 9-slice). The orange
+        # stroke starts 12px in and is 3px thick, so on a wide bar it sits near 7.5% of
+        # the width. A fixed 36px pad lands the icon on that stroke. Mockups drew a
+        # fixed border, which is why they did not match the device.
         icon = 36
-        pad = 36
-        self.addControl(xbmcgui.ControlImage(x + pad, bar_y + (bar_h - icon) // 2, icon, icon, 'fefc-ic-search.png', aspectRatio=2))
+        pad = int(round(width * 15 / 200.0)) + 8
+        vpad = int(round(bar_h * 15 / 100.0)) + 2
+        if icon > bar_h - vpad * 2:
+            icon = max(24, bar_h - vpad * 2)
+        self._icon_pad = pad
+        self.addControl(xbmcgui.ControlImage(x + pad, bar_y + max(vpad, (bar_h - icon) // 2), icon, icon, 'fefc-ic-search.png', aspectRatio=2))
         blank = _media_file('fefc-blank.png')
-        self._edit_home = (x + pad + icon + 18, bar_y + (bar_h - 48) // 2, width - pad - icon - 56, 48)
+        self._edit_home = (x + pad + icon + 18, bar_y + (bar_h - 48) // 2, max(80, width - pad - icon - 56), 48)
         self.edit = xbmcgui.ControlEdit(-400, -200, self._edit_home[2], self._edit_home[3], '',
                                          font='font13', textColor='FFFFFFFF', focusTexture=blank, noFocusTexture=blank)
         self.addControl(self.edit)
@@ -2048,9 +2202,9 @@ class OptimusWindow(xbmcgui.WindowDialog):
         page. Grok is the current iOS app glyph (App Store id 6670324846). Muse is
         Meta's creature avatar, from the Muse from Meta App Store listing."""
         marks = (
-            ('fefc-mark-grok.png', 'Grok'),
-            ('fefc-mark-discord.png', 'Discord'),
-            ('fefc-mark-muse.png', 'Muse'),
+            (_media_file('fefc-mark-grok.png'), 'Grok'),
+            (_media_file('fefc-mark-discord.png'), 'Discord'),
+            (_media_file('fefc-mark-muse.png'), 'Muse'),
         )
         col, icon, gap = 78, 30, 10
         row = col * len(marks) + gap * (len(marks) - 1)
@@ -2122,6 +2276,8 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self._closed = False
         self._anim = bool(self._frames)
         threading.Thread(target=self._pump, daemon=True).start()
+        if getattr(self, '_ticker_label', None) is not None:
+            threading.Thread(target=_marquee_loop, args=(self._ticker_label, self._ticker_text, lambda: self._closed), daemon=True).start()
         try:
             super(OptimusWindow, self).doModal()
         finally:
