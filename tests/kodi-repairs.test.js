@@ -1194,7 +1194,13 @@ ag = catalog.sfx_for(m, 'ag')
 assert len(ag) >= 6 and set(bases(catalog.sfx_for(m, 'inner'))) == set(bases(ag))
 assert set(bases(catalog.sfx_up(m, 'av'))) == set(bases(ag))
 assert len({catalog.sfx_wav(ag) for _ in range(40)}) >= 4
-assert bases(catalog.sfx_up(m, 'nv')) == ['nolan-braaam']
+nlset = catalog.sfx_for(m, '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg')
+nlbases = set(bases(nlset))
+for clip in ('nolan-braaam', 'nolan-dark-knight-theme', 'nolan-dream-collapsing', 'nolan-interstellar-mountains', 'nolan-now-i-am-become-death'):
+    assert clip in nlbases, clip
+assert len(nlbases) >= 15
+assert set(bases(catalog.sfx_up(m, 'nv'))) == nlbases
+assert len({catalog.sfx_wav(nlset) for _ in range(60)}) >= 4
 p = pagepack.shipped_path()
 idx, f, base = pagepack._open(p)
 doc = pagepack._read(p, idx['folders']['1kqkGTnoOlnst6DBwnBz1phPK2hvTz5X5'])
@@ -1215,8 +1221,8 @@ assert len({catalog.sfx_wav(stf['sfx']) for _ in range(40)}) >= 4
 nested = [r for r in stf['rows'] if not r[2]]
 assert any(set(bases(r[6])) == set(bases(stf['sfx'])) for r in nested)
 nl = pagepack._read(p, idx['folders']['1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg'])
-assert bases(nl['sfx']) == ['nolan-braaam']
-assert any(not r[2] and len(r) > 6 and bases(r[6]) == ['nolan-braaam'] for r in nl['rows'])
+assert set(bases(nl['sfx'])) == nlbases
+assert any(not r[2] and len(r) > 6 and set(bases(r[6])) == nlbases for r in nl['rows'])
 arm = [r for r in rows if not r[2] and 'armageddon' in (r[1] or '').lower()]
 assert len(arm) >= 1
 for r in arm:
