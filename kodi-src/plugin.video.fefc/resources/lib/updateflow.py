@@ -299,6 +299,45 @@ def platform_unavailable_message(platform, version_label):
             % (version_label or 'update', who, who))
 
 
+PHONE_APK = 'https://fefc-collection.pages.dev/kodi-app/FEFC.apk'
+PHONE_SHORT = 'https://is.gd/8la6gb'
+SAMSUNG_WGT = 'https://fefc-collection.pages.dev/kodi-app/FEFC.wgt'
+SAMSUNG_GUIDE = 'https://collection.faneditfanclub.com/samsung'
+WEB_APP = 'https://collection.faneditfanclub.com'
+_BANNED_DOWNLOAD = ('FEFC-Kodi.apk', 'org.xbmc.kodi', 'macos', 'webos')
+
+
+def manual_downloads(manifest):
+    """One link per published platform.
+
+    Fire TV and Android share the separate-ID APK (com.fefc.kodi). Samsung is
+    the widget plus the install guide. Web is the site. Mac and webOS are not
+    listed. The org.xbmc.kodi build is never listed.
+    """
+    info = manifest or {}
+    version = str(info.get('version') or '')
+    packages = info.get('packages') or {}
+    phone = packages.get('com.fefc.kodi') or {}
+    apk = str(phone.get('url') or '')
+    if not apk.endswith('/FEFC.apk') or any(bad.lower() in apk.lower() for bad in _BANNED_DOWNLOAD):
+        apk = PHONE_APK
+    tizen = platform_download(info, 'tizen')
+    wgt = str(tizen.get('url') or '')
+    if not wgt.endswith('/FEFC.wgt') or any(bad.lower() in wgt.lower() for bad in _BANNED_DOWNLOAD):
+        wgt = SAMSUNG_WGT
+    rows = [
+        {'platform': 'Fire TV & Android', 'version': version, 'url': apk, 'short': PHONE_SHORT},
+        {'platform': 'Samsung TV', 'version': version, 'url': wgt, 'short': ''},
+        {'platform': 'Samsung TV guide', 'version': version, 'url': SAMSUNG_GUIDE, 'short': ''},
+        {'platform': 'Web', 'version': version, 'url': WEB_APP, 'short': ''},
+    ]
+    for row in rows:
+        blob = (row['url'] + ' ' + row['short']).lower()
+        if any(bad.lower() in blob for bad in _BANNED_DOWNLOAD):
+            raise ValueError('manual download lists a banned package')
+    return rows
+
+
 def platform_install_message(platform, path, opened=False, abi=''):
     if platform == 'macos':
         opened_txt = 'The disk image was opened. ' if opened else ''

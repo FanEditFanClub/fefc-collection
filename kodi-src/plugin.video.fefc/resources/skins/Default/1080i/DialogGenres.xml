@@ -117,15 +117,25 @@
 		<control type="image" id="9207"><left>376</left><top>660</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
 		<control type="image" id="9208"><left>788</left><top>660</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
 		<control type="image" id="9209"><left>1200</left><top>660</top><width>344</width><height>124</height><aspectratio>scale</aspectratio></control>
-		<control type="label" id="9301"><left>376</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9302"><left>788</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9303"><left>1200</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9304"><left>376</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9305"><left>788</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9306"><left>1200</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9307"><left>376</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9308"><left>788</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
-		<control type="label" id="9309"><left>1200</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor></control>
+		<!-- Dark band behind every name so a bright still (Crime, sky) stays readable. -->
+		<control type="image"><left>376</left><top>340</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>788</left><top>340</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>1200</left><top>340</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>376</left><top>532</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>788</left><top>532</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>1200</left><top>532</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>376</left><top>724</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>788</left><top>724</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="image"><left>1200</left><top>724</top><width>344</width><height>60</height><texture colordiffuse="CC000000">fefc-white.png</texture></control>
+		<control type="label" id="9301"><left>376</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9302"><left>788</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9303"><left>1200</left><top>276</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9304"><left>376</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9305"><left>788</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9306"><left>1200</left><top>468</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9307"><left>376</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9308"><left>788</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<control type="label" id="9309"><left>1200</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
 		<control type="image">
 			<left>348</left><top>866</top><width>1224</width><height>84</height>
 			<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>

@@ -53,6 +53,11 @@
           <data>RunPlugin(plugin://plugin.video.fefc/?action=notify_perm)</data>
           <control type="button" format="action"/>
         </setting>
+        <setting id="manual_download_btn" type="action" label="30034">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=downloads)</data>
+          <control type="button" format="action"/>
+        </setting>
         <setting id="check_update_btn" type="action" label="30032">
           <level>0</level>
           <data>RunPlugin(plugin://plugin.video.fefc/?action=update)</data>

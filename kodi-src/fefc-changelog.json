@@ -5,7 +5,12 @@
    "date": "2026-11-12",
    "notes": [
     "Selecting a file, folder, or action plays the click again, and Back and Home play the back cue. Sound off stays silent.",
-    "Opening a file or its folder plays a random clip from that title. Westworld files play a Westworld clip. The details page retries if the clip address is not ready on the first look."
+    "Opening a file or its folder plays a random clip from that title. Westworld files play a Westworld clip. The details page retries if the clip address is not ready on the first look.",
+    "If an update fails, the popup and Settings list a manual download for Fire TV and Android (FEFC.apk only), Samsung TV (the widget and the guide), and the web app.",
+    "Genres hides the folder list behind the board. The four wall tiles stay visible. Genre names sit on a dark band. Drama uses the Godfather still of Brando and Pacino.",
+    "The back tile says Back and shows one folder icon. Search shows the Grok, Discord, and Muse marks with no captions.",
+    "Genre folders list only files and collections in the Drive root, once each, using IMDb genres when the title has an IMDb id. Patton is Biography, Drama, and War.",
+    "Folder grids line up with the Back tile. Every folder has Support Us and an Add to My List star."
    ]
   },
   {

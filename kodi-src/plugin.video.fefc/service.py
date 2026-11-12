@@ -573,7 +573,8 @@ def _install_update(new):
             pass
         _cue('start')
         from resources.lib.updatepopup import UpdatePopup
-        popup = UpdatePopup(version_label(new))
+        from resources.lib.updateflow import manual_downloads
+        popup = UpdatePopup(version_label(new), manual_downloads(new))
         popup.render('downloading', 0, 0, want or 0)
         finished = {'done': False}
 

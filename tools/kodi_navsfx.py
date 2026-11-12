@@ -112,6 +112,7 @@ def normalise(path, x):
     return measure(path)
 
 
+# cues.sounds_xml() writes <name>back</name><file>back.wav</file> <name>previousmenu</name><file>back.wav</file> <name>parentdir</name><file>back.wav</file>
 def _sounds_xml():
     """The skin file is generated from cues.SKIN_ACTIONS so it cannot drift from Python."""
     import sys

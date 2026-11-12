@@ -91,7 +91,7 @@ def stamp(li, kind, art=''):
     })
 
 
-def pack(kinds):
+def pack(kinds, leading=0):
     """Landscape cards first, each in its own rows. Videos start on a fresh row.
 
     Back, Sort, Shuffle, folders and other actions stay in the order they were
@@ -99,14 +99,21 @@ def pack(kinds):
     is padded so the first video is in column 0. Each video row reserves the
     cells under it, so posters do not overlap the next row or sit in an
     offset column.
+
+    leading is the Kodi parent row (".."), which this list does not build.
+    It occupies column 0, so the padding has to count it or the first video
+    row starts one cell to the left of the row above it.
     """
     land = [k for k in kinds if k != KIND_VIDEO]
     vids = [KIND_VIDEO for k in kinds if k == KIND_VIDEO]
+    lead = int(leading or 0) % COLS
     rows = []
-    if land:
+    if land or (vids and lead):
         padded = list(land)
-        if vids and len(padded) % COLS:
-            padded.extend([KIND_SPACER] * (COLS - (len(padded) % COLS)))
+        if vids:
+            used = (lead + len(padded)) % COLS
+            if used:
+                padded.extend([KIND_SPACER] * (COLS - used))
         for i in range(0, len(padded), COLS):
             rows.append(padded[i:i + COLS])
     for i in range(0, len(vids), COLS):

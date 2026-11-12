@@ -56,7 +56,7 @@ jobs:
       - name: Sound cues
         run: |
           set -euo pipefail
-          node --test tests/sound-cues.test.js
+          node --test tests/sound-cues.test.js tests/release-064.test.js
       - name: Tools
         timeout-minutes: 10
         run: |
