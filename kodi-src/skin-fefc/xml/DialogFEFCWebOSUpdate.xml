@@ -42,14 +42,20 @@
 			<left>1378</left><top>240</top><width>360</width><height>360</height>
 			<aspectratio>keep</aspectratio>
 		</control>
-		<control type="label" id="7003">
+		<control type="button" id="7003">
 			<left>1320</left><top>644</top><width>480</width><height>90</height>
 			<font>font12_title</font>
 			<textcolor>FF99CCFF</textcolor>
+			<focusedcolor>FF0B1220</focusedcolor>
 			<align>center</align>
 			<aligny>center</aligny>
-			<wrapmultiline>true</wrapmultiline>
-			<label>collection.faneditfanclub.com/lg-update</label>
+			<label>https://collection.faneditfanclub.com/lg-update</label>
+			<texturefocus border="16">fefc-ol-focus.png</texturefocus>
+			<texturenofocus border="16">fefc-ol-tile.png</texturenofocus>
+			<onleft>7003</onleft>
+			<onright>7003</onright>
+			<onup>7003</onup>
+			<ondown>9000</ondown>
 		</control>
 		<control type="label" id="7004">
 			<left>110</left><top>850</top><width>1680</width><height>80</height>
@@ -71,7 +77,7 @@
 			<texturenofocus border="20">fefc-ol-tile.png</texturenofocus>
 			<onleft>9000</onleft>
 			<onright>9000</onright>
-			<onup>9000</onup>
+			<onup>7003</onup>
 			<ondown>9000</ondown>
 		</control>
 	</controls>

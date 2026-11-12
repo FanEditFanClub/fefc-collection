@@ -453,7 +453,11 @@ class _WebOSGuide(xbmcgui.WindowXMLDialog):
         except Exception:
             pass
         try:
-            self.setFocusId(9000)
+            self.getControl(7003).setLabel('https://collection.faneditfanclub.com/lg-update')
+        except Exception:
+            pass
+        try:
+            self.setFocusId(7003)
         except Exception:
             pass
 
@@ -461,6 +465,10 @@ class _WebOSGuide(xbmcgui.WindowXMLDialog):
         return text
 
     def onClick(self, controlId):
+        if controlId == 7003:
+            from resources.lib import shorturl
+            shorturl.open_browser(xbmc.executebuiltin, 'https://collection.faneditfanclub.com/lg-update')
+            return
         if controlId == 9000:
             self.close()
 

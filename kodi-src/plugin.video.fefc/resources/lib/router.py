@@ -1410,14 +1410,15 @@ class Router:
         return '\n'.join(out).strip() or 'No release notes published yet.'
 
     def feedback(self):
-        """Feedback form QR (same remote-QR pattern as the Support and link windows).
-        0.5.1: the QR code and the short URL are tappable — either opens the form in the browser."""
+        """Feedback form QR. The picture encodes the full form URL. The line under it is the short link."""
+        from . import shorturl
+        shown = shorturl.display(FEEDBACK_FORM_URL)
         qr_path = _qr_for(FEEDBACK_FORM_URL)
         lines = ['Give feedback on the FEFC app',
-                 'Scan the code with your phone, or tap it to open the feedback form in your browser.',
+                 'Scan the code with your phone, or select the link to open the form in your browser.',
                  'Or email us: %s' % CONTACT_EMAIL,
-                 FEEDBACK_FORM_URL.replace('https://', '')]
-        LinkWindow(lines, qr_path, open_url=FEEDBACK_FORM_URL).doModal()
+                 shown]
+        LinkWindow(lines, qr_path, open_url=shown).doModal()
 
     def mylist_toggle(self):
         m = _model()
@@ -1506,24 +1507,26 @@ class Router:
             if mode == 'qr':
                 j = ml.qr_start()
                 url, qid, secret, verify = j['url'], j['id'], j['secret'], j.get('verify', '')
-                lines = ['Link My List', 'Scan the QR code with your phone (or open the address below).',
+                from . import shorturl
+                shown = shorturl.display(url)
+                lines = ['Link My List', 'Scan the QR code with your phone (or select the link below).',
                          'On the phone, sign in with Google (or use a sync code) and tap Approve.',
-                         'Check that the phone shows this confirm code: %s' % verify, url]
+                         'Check that the phone shows this confirm code: %s' % verify, shown]
                 ttl = int(j.get('expires_in') or 300)
             else:
                 j = ml.device_start()
                 url = j['verification_url']
                 did = j['id']
-                lines = ['Sign in with Google', 'On your phone or computer open: %s' % _short_url(url),
-                         'Enter this code: %s' % j['user_code'], 'Then choose your Google account and allow.', _short_url(url)]
+                from . import shorturl
+                shown = shorturl.display(url)
+                lines = ['Sign in with Google', 'On your phone or computer open: %s' % shown,
+                         'Enter this code: %s' % j['user_code'], 'Then choose your Google account and allow.', shown]
                 ttl = int(j.get('expires_in') or 600)
         except Exception as e:
             xbmcgui.Dialog().ok('My List', 'Could not start linking: %s' % e)
             return
         qr_path = _qr_for(url)
-        if mode == 'qr':
-            lines[-1] = url.replace('https://', '')  # full link, own line, so it can be typed if needed
-        win = LinkWindow(lines, qr_path)
+        win = LinkWindow(lines, qr_path, open_url=shown)
         win.show()
         mon = xbmc.Monitor()
         t0 = time.time()
@@ -2308,18 +2311,24 @@ class PayQrWindow(xbmcgui.WindowDialog):
         self.addControl(xbmcgui.ControlLabel(80, 36, 1120, 44, name, font='font14_title', textColor='FFFFFFFF', alignment=2))
         self.addControl(xbmcgui.ControlLabel(80, 84, 1120, 32, sub, font='font13', textColor='FFFF9C00', alignment=2))
         self.addControl(xbmcgui.ControlImage(440, 130, 400, 400, 'fefc-white.png'))
-        self.addControl(xbmcgui.ControlImage(460, 150, 360, 360, _qr_for(url), aspectRatio=self.KEEP))
-        self.addControl(xbmcgui.ControlLabel(80, 544, 1120, 32, _short_url(url), font='font12', textColor='FF99CCFF', alignment=2))
+        from . import shorturl
+        self.full = url
+        self.shown = shorturl.display(url)
+        self.addControl(xbmcgui.ControlImage(460, 150, 360, 360, _qr_for(self.full), aspectRatio=self.KEEP))
+        self.link_btn = xbmcgui.ControlButton(80, 530, 1120, 48, self.shown, font='font12', textColor='FF99CCFF',
+                                               alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+        self.addControl(self.link_btn)
         self.btn = xbmcgui.ControlButton(460, 590, 360, 64, 'Open on this device', font='font13_title', textColor='FFFFFFFF',
                                           alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.btn)
-        self.setFocus(self.btn)
+        self.setFocus(self.link_btn)
         self.addControl(xbmcgui.ControlLabel(80, 668, 1120, 28, 'Back to return to Support Us.', font='font12', textColor='FF7F8FA6', alignment=2))
 
     def onControl(self, c):
-        if c == self.btn:
-            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % self.url)
-            xbmcgui.Dialog().notification('Support Us', 'If nothing opened, scan the code or visit %s' % _short_url(self.url), xbmcgui.NOTIFICATION_INFO, 6000)
+        if c in (self.link_btn, self.btn):
+            from . import shorturl
+            shorturl.open_browser(xbmc.executebuiltin, self.shown)
+            xbmcgui.Dialog().notification('Support Us', 'If nothing opened, scan the code or visit %s' % self.shown, xbmcgui.NOTIFICATION_INFO, 6000)
 
     def onAction(self, action):
         if _dialog_back(action):
@@ -2356,17 +2365,20 @@ class LinkWindow(xbmcgui.WindowDialog):
             self.addControl(tb)
             tb.setText(t)
             y += 84
-        if qr_path:  # the full link on its own full-width line under the QR, so it can be typed on a phone
-            if open_url:
-                self.url_btn = xbmcgui.ControlButton(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF', focusTexture='fefc-ol-focus.png', noFocusTexture='')
-                self.addControl(self.url_btn)
-            else:
-                self.addControl(xbmcgui.ControlLabel(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF'))
-        self.addControl(xbmcgui.ControlLabel(96, 610, 1088, 40, 'Press Back to cancel.' + ('  Tap the code or the link to open it in your browser.' if open_url else ''), font='font12', textColor='FFFF9C00'))
+        if qr_path and open_url:
+            # The short URL. Selecting it opens that address. The QR image encodes the full URL.
+            self.url_btn = xbmcgui.ControlButton(96, 552, 1088, 48, lines[-1], font='font12', textColor='FF99CCFF',
+                                                  alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+            self.addControl(self.url_btn)
+            self.setFocus(self.url_btn)
+        elif qr_path:
+            self.addControl(xbmcgui.ControlLabel(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF'))
+        self.addControl(xbmcgui.ControlLabel(96, 610, 1088, 40, 'Press Back to cancel.' + ('  Select the link to open it in your browser.' if open_url else ''), font='font12', textColor='FFFF9C00'))
 
     def onControl(self, c):
         if self.open_url and c in (self.qr_btn, self.url_btn):
-            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % self.open_url)
+            from . import shorturl
+            shorturl.open_browser(xbmc.executebuiltin, self.open_url)
 
     def onAction(self, action):
         if _dialog_back(action):

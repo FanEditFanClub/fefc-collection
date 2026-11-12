@@ -6,6 +6,25 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
   }
+  function shortLink(full) {
+    var m = /^https?:\/\/[^/?#]+\/\?link=([\w-]{20,30})$/.exec(full || "");
+    if (m) return "https://collection.faneditfanclub.com/l/" + m[1];
+    if (full === "https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform") return "https://is.gd/UVko0K";
+    if (full === "https://fefc-collection.pages.dev/kodi-app/FEFC.apk") return "https://is.gd/8la6gb";
+    return full || "";
+  }
+  function openShown(url) {
+    try {
+      if (window.tizen && tizen.application && tizen.ApplicationControl) {
+        var ctrl = new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/view", url);
+        tizen.application.launchAppControl(ctrl, null, function() {}, function() {}, null);
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (window.parent && window.parent !== window) window.parent.postMessage({ type: "fefc-open-url", url: url }, "*");
+    } catch (e) {}
+  }
   function $(s, r) {
     return (r || document).querySelector(s);
   }
@@ -220,10 +239,12 @@
       },
       html: function() {
         var q = P.q, svg = "", gog = !!(P.opt && P.opt.google);
+        var shown = "";
         if (q && window.qrcode) {
           svg = '<div id="sp-qr-slot" data-url="' + encodeURIComponent(q.url) + '"></div>';
+          shown = shortLink(q.url);
         }
-        return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + '</div><p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + '<br>Confirm code on your phone: <b class="sp-ver">' + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
+        return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + "</div>" + (shown ? '<a class="sp-short" href="' + esc(shown) + '" target="_blank" rel="noopener" tabindex="0">' + esc(shown) + "</a>" : "") + '<p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + '<br>Confirm code on your phone: <b class="sp-ver">' + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
       }
     },
     pair: { html: function() {
@@ -379,6 +400,15 @@
     });
   }
   document.addEventListener("click", function(e) {
+    var shortA = e.target.closest && e.target.closest("a.sp-short");
+    if (shortA) {
+      var onTv = window.tizen || /[?&]tizen=1(?:&|$)/.test(location.search);
+      if (onTv) {
+        e.preventDefault();
+        openShown(shortA.getAttribute("href") || "");
+      }
+      return;
+    }
     var a = e.target.closest(".acct-btn");
     if (a) {
       var m = a.parentNode.querySelector(".acct-menu");

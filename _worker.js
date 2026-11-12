@@ -746,6 +746,13 @@ async function kodiApi(req, env, ctx, url) {
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
+    // Session QR links. /l/<id> is the short line under the code. The QR itself
+    // encodes /?link=<id>. Same id, no third-party shortener, no DNS change.
+    if (url.pathname.startsWith('/l/')) {
+      const m = url.pathname.match(/^\/l\/([\w-]{20,30})\/?$/);
+      if (!m) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
+      return Response.redirect(url.origin + '/?link=' + m[1], 302);
+    }
     if (url.pathname === '/kodi') return Response.redirect(url.origin + '/kodi/', 301);
     if (url.pathname.startsWith('/kodi/')) {
       try { return await kodiApi(req, env, ctx, url); } catch (e) { console.log('kodi error:', String(e && e.message || e).slice(0, 120)); return json({ error: 'upstream' }, 502); }

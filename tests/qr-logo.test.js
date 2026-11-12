@@ -153,3 +153,81 @@ print(got[0].data.decode() if got else '')
     }
   }
 });
+
+test('QR encodes the full URL and the line under it is a short link that opens', () => {
+  const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
+  const shell = fs.readFileSync(path.join(root, 'tizen/app/js/shell.js'), 'utf8');
+  const sync = fs.readFileSync(path.join(root, 'src/syncui.js'), 'utf8');
+  const app = fs.readFileSync(path.join(root, 'src/app.js'), 'utf8');
+  const xml = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/DialogFEFCWebOSUpdate.xml'), 'utf8');
+  assert.match(router, /ControlButton\([\s\S]{0,240}lines\[-1\]/);
+  assert.match(router, /shorturl\.open_browser\(xbmc\.executebuiltin, self\.open_url\)/);
+  assert.match(router, /qr_path = _qr_for\(url\)/);
+  assert.match(router, /qr_path = _qr_for\(FEEDBACK_FORM_URL\)/);
+  assert.match(router, /open_url=shown/);
+  assert.doesNotMatch(router, /_qr_for\(shown\)/);
+  assert.match(shell, /fefc-open-url/);
+  assert.match(shell, /launchAppControl/);
+  assert.match(shell, /ApplicationControl/);
+  assert.match(sync, /class="sp-short"/);
+  assert.match(sync, /encodeURIComponent\(q\.url\)/);
+  assert.match(sync, /tabindex="0"/);
+  assert.match(app, /class="fefc-short"/);
+  assert.match(app, /mountFefc\(c,\s*FEEDBACK_FORM_URL\)/);
+  assert.match(app, /https:\/\/is\.gd\/UVko0K/);
+  assert.match(xml, /type="button" id="7003"/);
+  assert.match(xml, /https:\/\/collection\.faneditfanclub\.com\/lg-update/);
+  const py = spawnSync('python3', ['-c', `
+import sys, urllib.request
+sys.path.insert(0, ${JSON.stringify(lib)})
+import shorturl, qrdraw
+from pyzbar.pyzbar import decode
+from PIL import Image
+full = 'https://fefc-collection.pages.dev/?link=AbcdEFghIjklMnopQrst12'
+short = shorturl.display(full)
+assert shorturl.qr_payload(full) == full
+assert short == 'https://collection.faneditfanclub.com/l/AbcdEFghIjklMnopQrst12'
+assert '/l/' not in shorturl.qr_payload(full)
+info = qrdraw.write_qr_png('/tmp/fefc-qr-full.png', shorturl.qr_payload(full), size=600, quiet=4)
+got = decode(Image.open('/tmp/fefc-qr-full.png'))
+assert got and got[0].data.decode() == full, got
+assert shorturl.display(shorturl.FEEDBACK_FULL) == shorturl.FEEDBACK_SHORT
+assert shorturl.qr_payload(shorturl.FEEDBACK_FULL) == shorturl.FEEDBACK_FULL
+assert shorturl.display(shorturl.APK_FULL) == shorturl.APK_SHORT
+cmds = shorturl.browser_builtins(short)
+assert cmds[0].startswith('StartAndroidActivity(,android.intent.action.VIEW,,')
+assert short in cmds[0]
+class Stop(Exception):
+    pass
+class N(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise Stop(code, newurl)
+try:
+    urllib.request.build_opener(N).open(urllib.request.Request(shorturl.APK_SHORT, headers={'User-Agent':'FEFC'}), timeout=20)
+    raise SystemExit('apk short did not redirect')
+except Stop as e:
+    assert e.args[0] in (301, 302, 303, 307, 308), e.args
+    assert e.args[1].split('?')[0] == shorturl.APK_FULL
+req = urllib.request.Request(shorturl.FEEDBACK_SHORT, headers={'User-Agent':'Mozilla/5.0'})
+body = urllib.request.urlopen(req, timeout=20).read().decode('utf-8', 'replace')
+assert shorturl.FEEDBACK_FULL in body
+print('ok')
+`], {encoding: 'utf8', cwd: root});
+  if (py.status !== 0)
+    throw new Error(py.stderr || py.stdout);
+  assert.match(py.stdout, /^ok/);
+  const redirect = spawnSync(process.execPath, ['--input-type=module', '-e', `
+import w from './_worker.js';
+const id = 'AbcdEFghIjklMnopQrst12';
+const full = 'https://collection.faneditfanclub.com/?link=' + id;
+const res = await w.fetch(new Request('https://collection.faneditfanclub.com/l/' + id), {}, {});
+if (res.status !== 302) { console.error('status', res.status); process.exit(1); }
+if (res.headers.get('location') !== full) { console.error(res.headers.get('location')); process.exit(1); }
+const bad = await w.fetch(new Request('https://collection.faneditfanclub.com/l/short'), {}, {});
+if (bad.status !== 404) { console.error('bad', bad.status); process.exit(1); }
+console.log('ok');
+`], {encoding: 'utf8', cwd: root});
+  if (redirect.status !== 0)
+    throw new Error(redirect.stderr || redirect.stdout);
+  assert.match(redirect.stdout, /^ok/);
+});
