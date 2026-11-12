@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link My List</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #03060c; color: #f0f0f0; font: 20px/1.45 "Segoe UI", Helvetica, Arial, sans-serif; }
+  main { max-width: 28rem; margin: 0 auto; padding: 2rem 1.2rem 3rem; }
+  h1 { font-size: 2rem; margin: 0 0 .4rem; }
+  p { color: #c5d0de; }
+  button, input { font: inherit; }
+  button { display: block; width: 100%; margin: .7rem 0; padding: .85rem 1rem; border: 0; border-radius: 12px; background: #ff9c00; color: #0b1220; font-weight: 700; }
+  button.ghost { background: #1a2433; color: #f0f0f0; }
+  input { width: 100%; box-sizing: border-box; margin: .4rem 0 0; padding: .9rem 1rem; border-radius: 12px; border: 2px solid #2a3648; background: #0b1220; color: #fff; letter-spacing: .2em; font-size: 1.6rem; text-align: center; }
+  .msg { min-height: 1.4em; color: #99ccff; }
+  .msg.bad { color: #ff8b8b; }
+</style>
+</head>
+<body>
+<main>
+<h1>Link My List</h1>
+<p>Your TV is showing a code next to FanEditFanClub.com/MyList. Sign in with Google, or enter that code.</p>
+<button type="button" id="google">Sign in with Google</button>
+<label for="code">Code from the TV</label>
+<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="Code">
+<button type="button" id="go">Link this TV</button>
+<p class="msg" id="msg" role="status"></p>
+</main>
+<script>
+var CLIENT = '965770773324-i20msn4q01isddkunrcg4o30s5pju0bk.apps.googleusercontent.com';
+var TOKEN = '';
+function say(text, bad) {
+  var el = document.getElementById('msg');
+  el.textContent = text || '';
+  el.className = 'msg' + (bad ? ' bad' : '');
+}
+function api(path, body, auth) {
+  var headers = { 'content-type': 'application/json' };
+  if (auth !== false && TOKEN) headers.authorization = 'Bearer ' + TOKEN;
+  return fetch('/api/sync/' + path, {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify(body || {}),
+    cache: 'no-store'
+  }).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (j) {
+      if (!r.ok) {
+        var err = new Error(j.error || ('http ' + r.status));
+        err.status = r.status;
+        throw err;
+      }
+      return j;
+    });
+  });
+}
+function signIn() {
+  return new Promise(function (res, rej) {
+    function ready() {
+      var client = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT,
+        scope: 'openid email profile',
+        callback: function (tok) {
+          if (!tok || !tok.access_token) return rej(new Error('denied'));
+          api('google/session', { access_token: tok.access_token }, false).then(function (s) {
+            TOKEN = s.token || '';
+            res(s);
+          }, rej);
+        }
+      });
+      client.requestAccessToken({ prompt: 'consent' });
+    }
+    if (window.google && google.accounts && google.accounts.oauth2) return ready();
+    var s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = ready;
+    s.onerror = function () { rej(new Error('google')); };
+    document.head.appendChild(s);
+  });
+}
+function submitCode(code) {
+  code = String(code || '').replace(/\D/g, '');
+  var session = TOKEN ? Promise.resolve() : api('pair/create', {}, false).then(function (r) {
+    TOKEN = r.token || '';
+  });
+  return session.then(function () {
+    if (code.length === 4) return api('qr/claim', { code: code });
+    if (code.length === 6) return api('pair/redeem', { code: code });
+    throw new Error('Enter the code from the TV');
+  });
+}
+document.getElementById('google').addEventListener('click', function () {
+  say('Opening Google…');
+  signIn().then(function () { say('Signed in. Enter the code from the TV.'); }, function () { say('Google sign-in did not finish.', true); });
+});
+document.getElementById('go').addEventListener('click', function () {
+  say('Linking…');
+  submitCode(document.getElementById('code').value).then(function () {
+    say('This TV is linked.');
+  }, function () {
+    say('That code did not work. Check the TV and try again.', true);
+  });
+});
+</script>
+</body>
+</html>

@@ -199,10 +199,17 @@ async function syncApi(req, env, url) {
   }
 
   // QR link: TV shows a one-time link; a signed-in phone approves it.
+  // qrv:<4 digits> points at that session so /mylist can finish the link from the code on the TV.
   if (p === 'qr/start') {
     if (limited(req, 'qs', 10)) return json({ error: 'rate_limited' }, 429);
-    const id = rnd(16), secret = rnd(24), verify = digits(4);
+    const id = rnd(16), secret = rnd(24);
+    let verify = digits(4);
+    for (let i = 0; i < 8; i++) {
+      if (!(await env.SYNC.get('qrv:' + verify))) break;
+      verify = digits(4);
+    }
     await kput(env, 'qr:' + id, { sh: await sha(secret), verify, status: 'pending' }, QR_TTL);
+    await env.SYNC.put('qrv:' + verify, id, { expirationTtl: QR_TTL });
     return json({ id, secret, verify, url: url.origin + '/?link=' + id, expires_in: QR_TTL });
   }
   if (p === 'qr/info') {
@@ -214,6 +221,19 @@ async function syncApi(req, env, url) {
     const id = String(body.id || ''); if (!/^[\w-]{20,30}$/.test(id)) return json({ error: 'bad_request' }, 400);
     const q = await kget(env, 'qr:' + id); if (!q || q.status !== 'pending') return json({ error: 'expired' }, 410);
     await kput(env, 'qr:' + id, { ...q, status: 'approved', key: s.key, kind: s.kind, user: s.user || null }, 120);
+    if (q.verify) await env.SYNC.delete('qrv:' + q.verify);
+    return json({ ok: true });
+  }
+  if (p === 'qr/claim') {
+    const s = await authed(req, env); if (!s) return json({ error: 'unauthorized' }, 401);
+    const code = String(body.code || '').replace(/\D/g, '');
+    if (!/^\d{4}$/.test(code)) return json({ error: 'bad_request' }, 400);
+    const id = String(await env.SYNC.get('qrv:' + code) || '');
+    if (!/^[\w-]{20,30}$/.test(id)) return json({ error: 'expired' }, 410);
+    const q = await kget(env, 'qr:' + id);
+    if (!q || q.status !== 'pending' || q.verify !== code) return json({ error: 'expired' }, 410);
+    await kput(env, 'qr:' + id, { ...q, status: 'approved', key: s.key, kind: s.kind, user: s.user || null }, 120);
+    await env.SYNC.delete('qrv:' + code);
     return json({ ok: true });
   }
   if (p === 'qr/poll') {
@@ -746,12 +766,10 @@ async function kodiApi(req, env, ctx, url) {
 export default {
   async fetch(req, env, ctx) {
     const url = new URL(req.url);
-    // Session QR links. /l/<id> is the short line under the code. The QR itself
-    // encodes /?link=<id>. Same id, no third-party shortener, no DNS change.
-    if (url.pathname.startsWith('/l/')) {
-      const m = url.pathname.match(/^\/l\/([\w-]{20,30})\/?$/);
-      if (!m) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' } });
-      return Response.redirect(url.origin + '/?link=' + m[1], 302);
+    // Typed address from the TV: FanEditFanClub.com/MyList. Case does not matter.
+    // The QR still encodes /?link=<id>. This page takes the code shown next to that address.
+    if (/^\/mylist\/?$/i.test(url.pathname)) {
+      return await guidePage(env, url, req, '/mylist.raw', 'qr/claim');
     }
     if (url.pathname === '/kodi') return Response.redirect(url.origin + '/kodi/', 301);
     if (url.pathname.startsWith('/kodi/')) {

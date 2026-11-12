@@ -1509,9 +1509,9 @@ class Router:
                 url, qid, secret, verify = j['url'], j['id'], j['secret'], j.get('verify', '')
                 from . import shorturl
                 shown = shorturl.display(url)
-                lines = ['Link My List', 'Scan the QR code with your phone (or select the link below).',
-                         'On the phone, sign in with Google (or use a sync code) and tap Approve.',
-                         'Check that the phone shows this confirm code: %s' % verify, shown]
+                lines = ['Link My List', 'Scan the QR code, or open the address below on your phone.',
+                         'Sign in with Google, or enter the code shown here.',
+                         shown]
                 ttl = int(j.get('expires_in') or 300)
             else:
                 j = ml.device_start()
@@ -1526,7 +1526,8 @@ class Router:
             xbmcgui.Dialog().ok('My List', 'Could not start linking: %s' % e)
             return
         qr_path = _qr_for(url)
-        win = LinkWindow(lines, qr_path, open_url=shown)
+        code = verify if mode == 'qr' else ''
+        win = LinkWindow(lines, qr_path, open_url=shorturl.open_target(url), code=code)
         win.show()
         mon = xbmc.Monitor()
         t0 = time.time()
@@ -2340,7 +2341,7 @@ class LinkWindow(xbmcgui.WindowDialog):
     0.5.1: when open_url is given, the QR code and the URL line are tappable buttons that open it in the browser
     (used by the feedback form — tapping the code or the link opens the form instead of only being scannable)."""
 
-    def __init__(self, lines, qr_path, open_url=''):
+    def __init__(self, lines, qr_path, open_url='', code=''):
         super().__init__()
         self.closed = False
         self.open_url = open_url
@@ -2366,8 +2367,12 @@ class LinkWindow(xbmcgui.WindowDialog):
             tb.setText(t)
             y += 84
         if qr_path and open_url:
-            # The short URL. Selecting it opens that address. The QR image encodes the full URL.
-            self.url_btn = xbmcgui.ControlButton(96, 552, 1088, 48, lines[-1], font='font12', textColor='FF99CCFF',
+            # The line under the QR. Selecting it opens that address. The picture encodes the full URL.
+            btn_x, btn_w = 96, 1088
+            if code:
+                self.addControl(xbmcgui.ControlLabel(96, 548, 280, 56, 'Code %s' % code, font='font14_title', textColor='FFFF9C00'))
+                btn_x, btn_w = 390, 794
+            self.url_btn = xbmcgui.ControlButton(btn_x, 552, btn_w, 48, lines[-1], font='font12', textColor='FF99CCFF',
                                                   alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
             self.addControl(self.url_btn)
             self.setFocus(self.url_btn)

@@ -165,7 +165,17 @@ test('QR encodes the full URL and the line under it is a short link that opens',
   assert.match(router, /qr_path = _qr_for\(url\)/);
   assert.match(router, /qr_path = _qr_for\(FEEDBACK_FORM_URL\)/);
   assert.match(router, /open_url=shown/);
+  assert.match(router, /open_target\(url\)/);
+  assert.match(router, /Code %s/);
   assert.doesNotMatch(router, /_qr_for\(shown\)/);
+  assert.doesNotMatch(fs.readFileSync(path.join(root, '_worker.js'), 'utf8'), /startsWith\('\/l\/'\)/);
+  const page = fs.readFileSync(path.join(root, 'mylist.html'), 'utf8');
+  const raw = fs.readFileSync(path.join(root, 'mylist.raw'), 'utf8');
+  assert.equal(raw, page);
+  assert.match(page, /id="code"/);
+  assert.match(page, /Sign in with Google/);
+  assert.match(page, /function submitCode/);
+  assert.match(page, /qr\/claim/);
   assert.match(shell, /fefc-open-url/);
   assert.match(shell, /launchAppControl/);
   assert.match(shell, /ApplicationControl/);
@@ -186,7 +196,8 @@ from PIL import Image
 full = 'https://fefc-collection.pages.dev/?link=AbcdEFghIjklMnopQrst12'
 short = shorturl.display(full)
 assert shorturl.qr_payload(full) == full
-assert short == 'https://collection.faneditfanclub.com/l/AbcdEFghIjklMnopQrst12'
+assert short == 'FanEditFanClub.com/MyList'
+assert shorturl.open_target(full) == 'https://faneditfanclub.com/MyList'
 assert '/l/' not in shorturl.qr_payload(full)
 info = qrdraw.write_qr_png('/tmp/fefc-qr-full.png', shorturl.qr_payload(full), size=600, quiet=4)
 got = decode(Image.open('/tmp/fefc-qr-full.png'))
@@ -194,9 +205,9 @@ assert got and got[0].data.decode() == full, got
 assert shorturl.display(shorturl.FEEDBACK_FULL) == shorturl.FEEDBACK_SHORT
 assert shorturl.qr_payload(shorturl.FEEDBACK_FULL) == shorturl.FEEDBACK_FULL
 assert shorturl.display(shorturl.APK_FULL) == shorturl.APK_SHORT
-cmds = shorturl.browser_builtins(short)
+cmds = shorturl.browser_builtins(shorturl.open_target(full))
 assert cmds[0].startswith('StartAndroidActivity(,android.intent.action.VIEW,,')
-assert short in cmds[0]
+assert 'https://faneditfanclub.com/MyList' in cmds[0]
 class Stop(Exception):
     pass
 class N(urllib.request.HTTPRedirectHandler):
@@ -218,13 +229,33 @@ print('ok')
   assert.match(py.stdout, /^ok/);
   const redirect = spawnSync(process.execPath, ['--input-type=module', '-e', `
 import w from './_worker.js';
-const id = 'AbcdEFghIjklMnopQrst12';
-const full = 'https://collection.faneditfanclub.com/?link=' + id;
-const res = await w.fetch(new Request('https://collection.faneditfanclub.com/l/' + id), {}, {});
-if (res.status !== 302) { console.error('status', res.status); process.exit(1); }
-if (res.headers.get('location') !== full) { console.error(res.headers.get('location')); process.exit(1); }
-const bad = await w.fetch(new Request('https://collection.faneditfanclub.com/l/short'), {}, {});
-if (bad.status !== 404) { console.error('bad', bad.status); process.exit(1); }
+import fs from 'fs';
+const html = fs.readFileSync('mylist.raw', 'utf8');
+const store = new Map();
+const SYNC = {
+  async get(k, t) { const v = store.get(k); return v === undefined ? null : t === 'json' ? JSON.parse(v) : v; },
+  async put(k, v) { store.set(k, v); },
+  async delete(k) { store.delete(k); },
+};
+const env = { ASSETS: { async fetch() { return new Response(html, { status: 200 }); } }, SYNC };
+for (const path of ['/mylist', '/MyList', '/MYLIST']) {
+  const page = await w.fetch(new Request('https://collection.faneditfanclub.com' + path), env, {});
+  if (page.status !== 200) { console.error(path, page.status); process.exit(1); }
+  const body = await page.text();
+  if (!body.includes('qr/claim') || !body.includes('id="code"')) { console.error('page missing code flow'); process.exit(1); }
+}
+const start = await w.fetch(new Request('https://collection.faneditfanclub.com/api/sync/qr/start', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }), env, {});
+const started = await start.json();
+if (!/^\\d{4}$/.test(started.verify) || !started.url.includes('?link=')) { console.error('start', started); process.exit(1); }
+if (started.url.includes('/l/') || started.url.includes('/mylist')) { console.error('qr must stay the full link', started.url); process.exit(1); }
+const anon = await w.fetch(new Request('https://collection.faneditfanclub.com/api/sync/pair/create', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }), env, {});
+const session = await anon.json();
+const claim = await w.fetch(new Request('https://collection.faneditfanclub.com/api/sync/qr/claim', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + session.token }, body: JSON.stringify({ code: started.verify }) }), env, {});
+const claimed = await claim.json();
+if (claim.status !== 200 || !claimed.ok) { console.error('claim', claim.status, claimed); process.exit(1); }
+const poll = await w.fetch(new Request('https://collection.faneditfanclub.com/api/sync/qr/poll', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: started.id, secret: started.secret }) }), env, {});
+const polled = await poll.json();
+if (polled.status !== 'ok' || !polled.token) { console.error('poll', polled); process.exit(1); }
 console.log('ok');
 `], {encoding: 'utf8', cwd: root});
   if (redirect.status !== 0)
