@@ -1,6 +1,13 @@
 {
  "versions": [
   {
+   "version": "0.6.5 Beta",
+   "date": "2026-11-12",
+   "notes": [
+    "Settings opens About straight onto Give feedback, Version and info, What's new, Privacy Policy, Terms of Use, and Open-source notices. There is no second About row."
+   ]
+  },
+  {
    "version": "0.6.4 Beta",
    "date": "2026-11-12",
    "notes": [

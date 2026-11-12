@@ -64,6 +64,30 @@ msgctxt "#30031"
 msgid "About"
 msgstr ""
 
+msgctxt "#30035"
+msgid "Give feedback"
+msgstr ""
+
+msgctxt "#30036"
+msgid "Version and info"
+msgstr ""
+
+msgctxt "#30037"
+msgid "What's new"
+msgstr ""
+
+msgctxt "#30038"
+msgid "Privacy Policy"
+msgstr ""
+
+msgctxt "#30039"
+msgid "Terms of Use"
+msgstr ""
+
+msgctxt "#30040"
+msgid "Open-source notices"
+msgstr ""
+
 msgctxt "#30032"
 msgid "Check for software update"
 msgstr ""

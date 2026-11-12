@@ -1357,7 +1357,31 @@ class Router:
         xbmcgui.Dialog().notification('FEFC', 'Sound on' if on else 'Sound off', time=1500, sound=False)
 
     def about(self):
+        """One About entry from Settings. There is no list to tap through first."""
+        part = (self.params.get('part') or '').strip()
         dlg = xbmcgui.Dialog()
+        try:
+            if part == 'feedback':
+                self.feedback()
+            elif part == 'version':
+                dlg.textviewer('About FEFC', self._about_version_text())
+            elif part == 'news':
+                dlg.textviewer("What's new", self._about_news_text())
+            elif part == 'privacy':
+                dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
+            elif part == 'terms':
+                dlg.textviewer('Terms of Use', self._page_text('/terms.html'))
+            elif part == 'notices':
+                with xbmcvfs.File('special://xbmc/FEFC-NOTICE.txt') as f:
+                    dlg.textviewer('Open-source notices', f.read())
+            else:
+                _log('about: unknown part %r' % part)
+        except Exception as e:
+            dlg.notification('FEFC', 'Could not load: %s' % str(e)[:60], xbmcgui.NOTIFICATION_ERROR, 4000)
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
+    def _about_version_text(self):
         build = {}
         try:
             import json
@@ -1371,39 +1395,19 @@ class Router:
                 'This is the Kodi version of the FEFC app. The collection is free; support us from the Support Us tile.'
                 '\n\nFEFC is an unofficial community app built on Kodi (GPL-2.0-or-later). Not affiliated with the Kodi Foundation.'
                 % (label, xbmc.getInfoLabel('System.BuildVersion').split(' ')[0], ADDON.getAddonInfo('version'), _base()))
-        info += '\n\nQuestions or feedback? Email %s, or choose Give feedback below to scan a code.' % CONTACT_EMAIL
-        while True:
-            # 0.5.1: Give feedback is first — it was buried at the bottom of the list.
-            k = dlg.select('About FEFC', ['Give feedback', 'Version and info', "What's new", 'Privacy Policy', 'Terms of Use', 'Open-source notices', 'Close'])
-            if k < 0 or k == 6:
-                break
-            try:
-                if k == 0:
-                    self.feedback()
-                elif k == 1:
-                    dlg.textviewer('About FEFC', info)
-                elif k == 2:
-                    import json
-                    import urllib.request
-                    req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json?t=%d' % time.time(), headers={'User-Agent': 'FEFC-Kodi'})
-                    j = json.loads(urllib.request.urlopen(req, timeout=15).read().decode('utf-8'))
-                    out = []
-                    for v in j.get('changelog') or []:
-                        out.append("What's new in %s  (%s)" % (v.get('version'), v.get('date', '')))
-                        out.extend(u'\u2022 ' + str(n) for n in v.get('notes') or [])
-                        out.append('')
-                    dlg.textviewer("What's new", '\n'.join(out).strip() or 'No release notes published yet.')
-                elif k == 3:
-                    dlg.textviewer('Privacy Policy', self._page_text('/privacy.html'))
-                elif k == 4:
-                    dlg.textviewer('Terms of Use', self._page_text('/terms.html'))
-                elif k == 5:
-                    with xbmcvfs.File('special://xbmc/FEFC-NOTICE.txt') as f:
-                        dlg.textviewer('Open-source notices', f.read())
-            except Exception as e:
-                dlg.notification('FEFC', 'Could not load: %s' % str(e)[:60], xbmcgui.NOTIFICATION_ERROR, 4000)
-        if self.handle >= 0:
-            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+        return info + '\n\nQuestions or feedback? Email %s.' % CONTACT_EMAIL
+
+    def _about_news_text(self):
+        import json
+        import urllib.request
+        req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json?t=%d' % time.time(), headers={'User-Agent': 'FEFC-Kodi'})
+        j = json.loads(urllib.request.urlopen(req, timeout=15).read().decode('utf-8'))
+        out = []
+        for v in j.get('changelog') or []:
+            out.append("What's new in %s  (%s)" % (v.get('version'), v.get('date', '')))
+            out.extend(u'\u2022 ' + str(n) for n in v.get('notes') or [])
+            out.append('')
+        return '\n'.join(out).strip() or 'No release notes published yet.'
 
     def feedback(self):
         """Feedback form QR (same remote-QR pattern as the Support and link windows).

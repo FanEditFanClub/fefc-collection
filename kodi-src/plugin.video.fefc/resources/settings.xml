@@ -67,9 +67,34 @@
     </category>
     <category id="about" label="30030">
       <group id="1">
-        <setting id="about_btn" type="action" label="30031">
+        <setting id="about_feedback" type="action" label="30035">
           <level>0</level>
-          <data>RunPlugin(plugin://plugin.video.fefc/?action=about)</data>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=about&amp;part=feedback)</data>
+          <control type="button" format="action"/>
+        </setting>
+        <setting id="about_version" type="action" label="30036">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=about&amp;part=version)</data>
+          <control type="button" format="action"/>
+        </setting>
+        <setting id="about_news" type="action" label="30037">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=about&amp;part=news)</data>
+          <control type="button" format="action"/>
+        </setting>
+        <setting id="about_privacy" type="action" label="30038">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=about&amp;part=privacy)</data>
+          <control type="button" format="action"/>
+        </setting>
+        <setting id="about_terms" type="action" label="30039">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=about&amp;part=terms)</data>
+          <control type="button" format="action"/>
+        </setting>
+        <setting id="about_notices" type="action" label="30040">
+          <level>0</level>
+          <data>RunPlugin(plugin://plugin.video.fefc/?action=about&amp;part=notices)</data>
           <control type="button" format="action"/>
         </setting>
       </group>
