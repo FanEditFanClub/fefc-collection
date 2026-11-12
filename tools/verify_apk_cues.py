@@ -34,6 +34,12 @@ def check(apk_path):
         raise SystemExit('%s settings do not select %s' % (apk_path, cues.SOUND_SKIN))
     if '<default>%s</default>' % cues.GUI_SOUND_ALWAYS not in blob and '<default>2</default>' not in blob:
         raise SystemExit('%s settings do not default guisoundmode to always' % apk_path)
+    logo = 'assets/addons/plugin.video.fefc/resources/media/fefc-logo.png'
+    if logo not in names:
+        raise SystemExit('%s is missing the FEFC logo used in QR codes: %s' % (apk_path, logo))
+    logo_bytes = z.read(logo)
+    if len(logo_bytes) < 1000 or logo_bytes[:8] != b'\x89PNG\r\n\x1a\n':
+        raise SystemExit('%s FEFC logo is not a png' % apk_path)
     for name in cues.REQUIRED_WAVS:
         data = z.read('assets/addons/resource.uisounds.fefc/resources/' + name)
         if len(data) < 100 or data[:4] != b'RIFF':

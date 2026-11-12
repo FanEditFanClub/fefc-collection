@@ -1,6 +1,15 @@
 {
  "versions": [
   {
+   "version": "0.6.5 Beta",
+   "date": "2026-11-12",
+   "notes": [
+    "Settings opens About onto Version & Info, Check for Update, Download latest version, Give Feedback, What's New, Privacy Policy, Terms of Use, and Open-source notices. There is no second About row.",
+    "QR codes for My List, feedback, and support include the FEFC logo in the picture, and they still scan.",
+    "Link My List shows FanEditFanClub.com/MyList under the QR, with the confirm code beside it. The QR still encodes the full link. The phone finishes at collection.faneditfanclub.com/mylist."
+   ]
+  },
+  {
    "version": "0.6.4 Beta",
    "date": "2026-11-12",
    "notes": [

@@ -4,6 +4,24 @@
 if(!window.FEFCSync)return;
 var G=window.FEFCSync,V=window.FEFCSrv,FIRETV=/FEFCFireTV/.test(navigator.userAgent);
 function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function shortLink(full){
+ if(/^https?:\/\/[^/?#]+\/\?link=([\w-]{20,30})$/.test(full||'')) return 'FanEditFanClub.com/MyList';
+ if(full==='https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform') return 'https://is.gd/UVko0K';
+ if(full==='https://fefc-collection.pages.dev/kodi-app/FEFC.apk') return 'https://is.gd/8la6gb';
+ return full||'';
+}
+function openTarget(full){
+ if(/^https?:\/\/[^/?#]+\/\?link=([\w-]{20,30})$/.test(full||'')) return 'https://faneditfanclub.com/MyList';
+ var shown=shortLink(full);
+ return shown.indexOf('http')===0?shown:(full||'');
+}
+function openShown(url){
+ try{ if(window.tizen&&tizen.application&&tizen.ApplicationControl){
+  var ctrl=new tizen.ApplicationControl('http://tizen.org/appcontrol/operation/view', url);
+  tizen.application.launchAppControl(ctrl,null,function(){},function(){},null); return;
+ } }catch(e){}
+ try{ if(window.parent&&window.parent!==window) window.parent.postMessage({type:'fefc-open-url',url:url},'*'); }catch(e){}
+}
 function $(s,r){return (r||document).querySelector(s)}
 // ---------- combined state ----------
 function agg(){var g=G.state,s=V?V.state:{state:'out'},gOn=g.state!=='out',sOn=s.state!=='out';
@@ -39,6 +57,7 @@ function btn(act,label,cls,extra){return '<button class="mi sp-b '+(cls||'')+'" 
 function opt(act,t,d,def){return '<button class="mi sp-opt" data-sp="'+act+'"'+(def?' data-default':'')+'><b>'+esc(t)+'</b><span>'+esc(d)+'</span></button>'}
 function render(){if(!P)return;var v=VIEWS[P.view],e=el(),ak=document.activeElement,key=P.shown===P.view&&ak&&e.contains(ak)&&ak.dataset?(ak.dataset.pad?'[data-pad="'+ak.dataset.pad+'"]':ak.dataset.sp?'[data-sp="'+ak.dataset.sp+'"]':null):null;
  e.innerHTML=v.html();P.shown=P.view;
+ var slot=document.getElementById('sp-qr-slot');if(slot&&window.qrcode&&qrcode.mountFefc)qrcode.mountFefc(slot,decodeURIComponent(slot.getAttribute('data-url')||''));
  var f=(key&&$(key,e))||$('[data-default]',e)||$('button',e);if(f)try{f.focus({preventScroll:true})}catch(x){}}
 function done(msg){go('done',{msg:msg})}
 function fail(msg,retry){go('error',{msg:msg,retry:retry})}
@@ -77,8 +96,8 @@ var VIEWS={
   html:function(){var d=P.d;return frame('Sign in with Google',d?'<p class="sp-sub">On your phone or computer, go to</p><div class="sp-url">'+esc((d.verification_url||'').replace(/^https?:\/\//,''))+'</div><p class="sp-sub">and enter this code</p><div class="sp-code">'+esc(d.user_code)+'</div><p class="sp-note" id="sp-left">Waiting for you to approve\u2026 '+mmss(P.left)+'</p>':'<p class="sp-sub">Getting a code\u2026</p>',btn('menu','Cancel','',' data-default'))}},
  qr:{enter:function(g){if(srvOff())return fail('Cloud sync is not switched on yet.');
    loadQR().then(function(){return V.qrStart()}).then(function(q){if(g!==gen)return;P.q=q;P.left=q.expires_in;render();tick(g);pollQR(g,q)},function(){if(g===gen)fail('Could not make a QR code. Try again.',1)})},
-  html:function(){var q=P.q,svg='',gog=!!(P.opt&&P.opt.google);if(q&&window.qrcode){var c=window.qrcode(0,'M');c.addData(q.url);c.make();svg=c.createSvgTag({cellSize:6,margin:3,scalable:true})}
-   return frame(gog?'Sign in with Google':'Scan with your phone',q?'<div class="sp-qr">'+svg+'</div><p class="sp-sub">'+(gog?'Open your phone camera, scan, then <b>Sign in with Google</b> and Approve.':'Open your phone camera, scan, then tap Approve.')+'<br>Confirm code on your phone: <b class="sp-ver">'+esc(q.verify)+'</b></p><p class="sp-note" id="sp-left">Waiting… '+mmss(P.left)+'</p>':'<p class="sp-sub">Making a QR code…</p>',btn('menu','Cancel','',' data-default'))}},
+  html:function(){var q=P.q,svg='',gog=!!(P.opt&&P.opt.google),shown='';if(q&&window.qrcode){svg='<div id="sp-qr-slot" data-url="'+encodeURIComponent(q.url)+'"></div>';shown=shortLink(q.url)}
+   return frame(gog?'Sign in with Google':'Scan with your phone',q?'<div class="sp-qr">'+svg+'</div>'+(shown?'<a class="sp-short" href="'+esc(openTarget(q.url))+'" target="_blank" rel="noopener" tabindex="0">'+esc(shown)+'</a>':'')+'<p class="sp-sub">'+(gog?'Open your phone camera, scan, then <b>Sign in with Google</b> and Approve.':'Open your phone camera, scan, then tap Approve.')+'<br>Code: <b class="sp-ver">'+esc(q.verify)+'</b></p><p class="sp-note" id="sp-left">Waiting… '+mmss(P.left)+'</p>':'<p class="sp-sub">Making a QR code…</p>',btn('menu','Cancel','',' data-default'))}},
  pair:{html:function(){return frame('6-digit sync code','<p class="sp-sub">No Google account needed.</p><div class="sp-opts">'+opt('pair-new','Create a code','Show a code to enter on your other device.')+opt('pair-enter','Enter a code','Type the code shown on another device.')+'</div>',btn('menu','Back','',' data-default'))}},
  'pair-new':{enter:function(g){if(srvOff())return fail('Cloud sync is not switched on yet.');
    V.pairCreate().then(function(r){if(g!==gen)return;P.code=r.code;P.left=r.expires_in;var p=r.token?V.adopt(r):Promise.resolve();return p.then(function(){if(g!==gen)return;render();tick(g)})},function(e){if(g===gen)fail('Could not create a code. Try again.',1)})},
@@ -108,6 +127,8 @@ function enterDigit(d){if(!P||P.view!=='pair-enter')return;P.digits=(P.digits||'
 function redeem(){var g=gen,code=P.digits;V.pairRedeem(code).then(function(r){if(g!==gen)return;return V.adopt(r).then(function(){done('This device is now linked.')})},function(e){if(g!==gen)return;P.digits='';P.bad=e.status===429?'Too many tries. Wait a few minutes.':'That code didn\u2019t work. Check it and try again.';render()})}
 // ---------- clicks ----------
 document.addEventListener('click',function(e){
+ var shortA=e.target.closest&&e.target.closest('a.sp-short');
+ if(shortA){var tizen=window.tizen||/[?&]tizen=1(?:&|$)/.test(location.search);if(tizen){e.preventDefault();openShown(shortA.getAttribute('href')||'');}return}
  var a=e.target.closest('.acct-btn');if(a){var m=a.parentNode.querySelector('.acct-menu');m.hidden=!m.hidden;return}
  var sp=e.target.closest('#syncpanel');
  if(sp){var pad=e.target.closest('[data-pad]');if(pad){enterDigit(pad.dataset.pad);return}

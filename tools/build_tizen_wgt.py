@@ -53,6 +53,63 @@ def write_icon(dest):
     kodi_brand.icon(512).convert('RGB').save(dest)
 
 
+def version_key(text):
+    return tuple(int(part) for part in str(text).split('.'))
+
+
+def choose_build(version_label, explicit, previous):
+    """Build number stamped into the widget.
+
+    --build 51 made 0.6.3, 0.6.4, and 0.6.5 all package version 0.6.51, so a TV
+    that already had 0.6.51 would not install the new file. A new FEFC version
+    takes one higher than the Android build and the published Tizen build, then
+    keeps climbing until the three-number widget version is higher than the one
+    already in version.json.
+    """
+    previous = previous if isinstance(previous, dict) else {}
+    tizen = (previous.get('platforms') or {}).get('tizen') or {}
+    if not isinstance(tizen, dict):
+        tizen = {}
+
+    def as_int(value):
+        try:
+            return int(value or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    android_build = as_int(previous.get('build'))
+    tizen_build = as_int(tizen.get('build'))
+    same_release = str(previous.get('version') or '').strip() == str(version_label or '').strip()
+    if explicit is not None:
+        build = int(explicit)
+    elif same_release and android_build:
+        build = android_build
+    else:
+        build = max(android_build, tizen_build) + 1
+    floor = None
+    if tizen.get('version') not in (None, '') and tizen.get('build') not in (None, ''):
+        floor = version_key(widget_version(tizen.get('version'), tizen.get('build')))
+    while floor is not None and version_key(widget_version(version_label, build)) <= floor:
+        build += 1
+        if build > 255:
+            raise SystemExit('no Tizen build number left above %s' % '.'.join(str(n) for n in floor))
+    return build
+
+
+def published_record():
+    """Live version.json, or {} when it cannot be read."""
+    import urllib.request
+    url = 'https://fefc-collection.pages.dev/kodi-app/version.json'
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Tizen-Build'})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+        return data if isinstance(data, dict) else {}
+    except Exception as exc:
+        print('published version.json not used (%s)' % exc)
+        return {}
+
+
 def published_build(version_label):
     """Build number from the live version.json when it names this same FEFC version.
     Returns None if the file cannot be read or the version string differs."""
@@ -74,16 +131,13 @@ def published_build(version_label):
         return None
 
 
-def build(out, build_num=None, use_published_build=False):
+def build(out, build_num=None, use_published_build=False, previous=None):
     out = Path(out)
     out.parent.mkdir(parents=True, exist_ok=True)
     rec = fefc_kodi_bundle.load_version()
-    if build_num is not None:
-        rec['build'] = int(build_num)
-    elif use_published_build and not int(rec.get('build') or 0):
-        published = published_build(rec.get('version'))
-        if published:
-            rec['build'] = published
+    if previous is None and (build_num is None or use_published_build):
+        previous = published_record()
+    rec['build'] = choose_build(rec.get('version'), build_num, previous or {})
     rec['platform'] = 'tizen'
     rec['pkg'] = 'tizen'
     rec['runtime'] = 'tizen-web'
@@ -109,9 +163,13 @@ def build(out, build_num=None, use_published_build=False):
         z.write(icon_path, 'icon.png')
         icon_path.unlink()
         z.writestr('fefc-build.json', json.dumps(rec) + '\n')
+        logo = ROOT / 'assets' / 'fefc-logo.png'
+        if not logo.is_file():
+            raise SystemExit('missing assets/fefc-logo.png')
+        z.write(logo, 'fefc-logo.png')
     with zipfile.ZipFile(out) as z:
         names = set(z.namelist())
-        for required in ('config.xml', 'index.html', 'icon.png', 'js/shell.js', 'js/version.js', 'fefc-build.json', 'css/shell.css'):
+        for required in ('config.xml', 'index.html', 'icon.png', 'js/shell.js', 'js/version.js', 'fefc-build.json', 'css/shell.css', 'fefc-logo.png'):
             if required not in names:
                 raise SystemExit('wgt missing ' + required)
         if any(n.startswith('author-signature') or n.startswith('signature') for n in names):

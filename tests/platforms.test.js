@@ -175,11 +175,12 @@ assert 'config.xml' in names and 'author-signature.xml' not in names and 'signat
 assert not any(n.endswith('.p12') for n in names)
 cfg = z.read('config.xml').decode()
 assert 'version="0.6.51"' in cfg
-assert '0.6.4 Beta' in cfg
+assert '0.6.5 Beta' in cfg
 assert 'avplay' in cfg and 'tv.inputdevice' in cfg
 assert 'tizen=1' in z.read('index.html').decode()
+assert 'fefc-logo.png' in names and z.read('fefc-logo.png')[:4] == bytes([137, 80, 78, 71])
 info = __import__('json').loads(z.read('fefc-build.json'))
-assert info['version'] == '0.6.4 Beta' and info['build'] == 51
+assert info['version'] == '0.6.5 Beta' and info['build'] == 51
 print('ok')
 `);
   assert.match(out, /"signed": false/);
@@ -249,6 +250,51 @@ print('ok')
   assert.match(worker, /\/lg-update\.raw/);
   assert.equal(fs.readFileSync(path.join(root, 'samsung.raw'), 'utf8'), samsung);
   assert.equal(fs.readFileSync(path.join(root, 'lg-update.raw'), 'utf8'), page);
+});
+
+test('Tizen publish uses the widget version and build, not a stale version.json', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/kodi-platforms.yml'), 'utf8');
+  assert.doesNotMatch(workflow, /--build 51/);
+  assert.doesNotMatch(workflow, /widget_version'\] == '0\.6\.51'/);
+  assert.match(workflow, /tizen_release_errors/);
+  const out = py(`
+import sys
+sys.path.insert(0, 'tools')
+import build_tizen_wgt as t
+import fefc_release_manifest as m
+import publish_kodi_platforms as pub
+stale = {'version': '0.6.3 Beta', 'build': 52, 'platforms': {'tizen': {'version': '0.6.3 Beta', 'build': 52, 'sha256': '40b1bb8c' + 'ab'*28}}}
+# The old hardcoded 51 is not allowed to stay at widget 0.6.51 once 0.6.52 is published.
+assert t.choose_build('0.6.5 Beta', 51, stale) >= 53
+assert t.version_key(t.widget_version('0.6.5 Beta', t.choose_build('0.6.5 Beta', None, stale))) > t.version_key('0.6.52')
+fresh = t.choose_build('0.6.5 Beta', None, {'version': '0.6.4 Beta', 'build': 53, 'platforms': {'tizen': {'version': '0.6.3 Beta', 'build': 52}}})
+assert fresh >= 54
+assert t.widget_version('0.6.5 Beta', fresh) != '0.6.51'
+base = m.android_manifest('21.3', 52, '0.6.3 Beta', 'abc', 'aa', 10, 'bb', 11, [], '2026-11-11T00:00:00Z')
+added = m.attach_platform(base, 'tizen', {
+    'url': 'https://fefc-collection.pages.dev/kodi-app/FEFC.wgt',
+    'sha256': 'cd'*32, 'size': 22000, 'filename': 'FEFC.wgt',
+    'version': '0.6.5 Beta', 'build': fresh,
+})
+block = added['platforms']['tizen']
+assert block['version'] == '0.6.5 Beta' and block['build'] == fresh
+assert block['sha256'] == 'cd'*32
+assert base['version'] == '0.6.3 Beta' and base['build'] == 52
+errors = pub.tizen_release_errors(
+    {'version': '0.6.3 Beta', 'build': 52, 'sha256': '40b1bb8c' + 'ab'*28, 'size': 21296},
+    {'version': '0.6.5 Beta', 'build': fresh},
+    'cd'*32, 22000, '0.6.5 Beta', t.widget_version('0.6.5 Beta', fresh))
+assert any('version' in item for item in errors)
+assert any('build' in item for item in errors)
+assert any('sha256' in item for item in errors)
+ok = pub.tizen_release_errors(
+    {'version': '0.6.5 Beta', 'build': fresh, 'sha256': 'cd'*32, 'size': 22000},
+    {'version': '0.6.5 Beta', 'build': fresh},
+    'cd'*32, 22000, '0.6.5 Beta', t.widget_version('0.6.5 Beta', fresh))
+assert ok == []
+print('ok', fresh)
+`);
+  assert.match(out, /^ok /);
 });
 
 test('publish script stays closed unless Carson turns the gate on', () => {

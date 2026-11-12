@@ -61,8 +61,17 @@ def attach_platform(manifest, platform, info, arch=''):
     block = plats.get(platform) or {}
     if not isinstance(block, dict):
         block = {}
-    block['version'] = manifest.get('version')
-    block['build'] = manifest.get('build')
+    # The widget's own record wins. Copying the live version.json here stamped
+    # 0.6.4's file with 0.6.3 Beta build 52, because the Android publish had not
+    # landed yet.
+    if info.get('version') not in (None, ''):
+        block['version'] = info['version']
+    else:
+        block['version'] = manifest.get('version')
+    if info.get('build') not in (None, ''):
+        block['build'] = int(info['build'])
+    else:
+        block['build'] = manifest.get('build')
     block['kodi'] = info.get('kodi', manifest.get('kodi'))
     entry = {
         'url': info['url'],

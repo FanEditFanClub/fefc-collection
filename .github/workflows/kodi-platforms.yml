@@ -127,7 +127,7 @@ jobs:
       - name: Tools
         run: pip install pillow
       - name: Build unsigned Tizen widget
-        run: python3 tools/build_tizen_wgt.py --out dist/FEFC.wgt --build 51
+        run: python3 tools/build_tizen_wgt.py --out dist/FEFC.wgt
       - uses: actions/upload-artifact@v4
         with:
           name: fefc-tizen
@@ -164,28 +164,45 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json
+          import hashlib, json, sys
+          sys.path.insert(0, 'tools')
+          import publish_kodi_platforms as pub
           report = json.load(open('dist/incoming/FEFC.report.json'))
-          assert report['widget_version'] == '0.6.51', report
-          expected = open('kodi-src/fefc-version.txt', encoding='utf-8').read().strip()
-          assert report['fefc_version'] == expected, report
-          assert report['signed'] is False, report
-          print('widget', report['widget_version'], report['sha256'], report['bytes'])
+          raw = open('dist/incoming/FEFC.wgt', 'rb').read()
+          file_sha = hashlib.sha256(raw).hexdigest()
+          label = open('kodi-src/fefc-version.txt', encoding='utf-8').read().strip()
+          record = pub.widget_record('dist/incoming/FEFC.wgt')
+          if report['fefc_version'] != label or record.get('version') != label:
+              raise SystemExit('widget label %r report %r is not %r' % (record.get('version'), report.get('fefc_version'), label))
+          if file_sha != report['sha256'] or len(raw) != report['bytes']:
+              raise SystemExit('widget file does not match its report')
+          if report['signed'] is not False:
+              raise SystemExit('widget is signed')
+          print('widget', report['widget_version'], report['fefc_version'], report['fefc_build'], file_sha, len(raw))
           PY
           python3 tools/publish_kodi_platforms.py \
             --tizen dist/incoming/FEFC.wgt \
             --out dist/version.json
           python3 - <<'PY'
-          import json
+          import hashlib, json, sys
+          sys.path.insert(0, 'tools')
+          import publish_kodi_platforms as pub
           doc = json.load(open('dist/version.json'))
           names = set((doc.get('platforms') or {}))
-          assert names <= {'tizen'} or 'macos' not in names and 'webos' not in names
           assert 'macos' not in names and 'webos' not in names
+          report = json.load(open('dist/incoming/FEFC.report.json'))
+          raw = open('dist/incoming/FEFC.wgt', 'rb').read()
+          label = open('kodi-src/fefc-version.txt', encoding='utf-8').read().strip()
+          record = pub.widget_record('dist/incoming/FEFC.wgt')
+          errors = pub.tizen_release_errors(
+              doc['platforms']['tizen'], record, hashlib.sha256(raw).hexdigest(), len(raw),
+              label, report['widget_version'])
+          if errors:
+              raise SystemExit('platforms.tizen does not match this build:\n' + '\n'.join(errors))
           block = doc['platforms']['tizen']
           assert block['filename'] == 'FEFC.wgt'
           assert block['url'].endswith('/kodi-app/FEFC.wgt')
-          assert len(block['sha256']) == 64 and block['size'] > 0
-          print('platforms', sorted(names))
+          print('platforms', sorted(names), block['version'], block['build'], block['sha256'])
           PY
       - name: Upload the unsigned widget and version.json to R2
         run: |

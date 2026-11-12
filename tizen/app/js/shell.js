@@ -31,6 +31,23 @@
     return ev.origin === SITE || ev.origin === 'https://fefc-collection.pages.dev';
   }
 
+  function openExternal(url) {
+    var dest = '';
+    try {
+      var u = new URL(url);
+      if (u.protocol !== 'https:' && u.protocol !== 'http:') return;
+      dest = u.toString();
+    } catch (e) {
+      return;
+    }
+    if (window.tizen && tizen.application && tizen.ApplicationControl) {
+      try {
+        var ctrl = new tizen.ApplicationControl('http://tizen.org/appcontrol/operation/view', dest);
+        tizen.application.launchAppControl(ctrl, null, function () {}, function () {}, null);
+      } catch (e) {}
+    }
+  }
+
   function post(msg) {
     try { site.contentWindow.postMessage(msg, SITE); } catch (e) {}
   }
@@ -196,7 +213,9 @@
   window.addEventListener('message', function (ev) {
     if (!fromSite(ev) || !ev.data) return;
     var d = ev.data;
-    if (d.type === 'fefc-tizen-ready') {
+    if (d.type === 'fefc-open-url') {
+      openExternal(d.url);
+    } else if (d.type === 'fefc-tizen-ready') {
       introDone = true;
       considerUpdate();
     } else if (d.type === 'fefc-tizen-play') {

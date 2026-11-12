@@ -6,6 +6,29 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
   }
+  function shortLink(full) {
+    if (/^https?:\/\/[^/?#]+\/\?link=([\w-]{20,30})$/.test(full || "")) return "FanEditFanClub.com/MyList";
+    if (full === "https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform") return "https://is.gd/UVko0K";
+    if (full === "https://fefc-collection.pages.dev/kodi-app/FEFC.apk") return "https://is.gd/8la6gb";
+    return full || "";
+  }
+  function openTarget(full) {
+    if (/^https?:\/\/[^/?#]+\/\?link=([\w-]{20,30})$/.test(full || "")) return "https://faneditfanclub.com/MyList";
+    var shown = shortLink(full);
+    return shown.indexOf("http") === 0 ? shown : full || "";
+  }
+  function openShown(url) {
+    try {
+      if (window.tizen && tizen.application && tizen.ApplicationControl) {
+        var ctrl = new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/view", url);
+        tizen.application.launchAppControl(ctrl, null, function() {}, function() {}, null);
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (window.parent && window.parent !== window) window.parent.postMessage({ type: "fefc-open-url", url: url }, "*");
+    } catch (e) {}
+  }
   function $(s, r) {
     return (r || document).querySelector(s);
   }
@@ -131,6 +154,8 @@
     var v = VIEWS[P.view], e = el(), ak = document.activeElement, key = P.shown === P.view && ak && e.contains(ak) && ak.dataset ? ak.dataset.pad ? '[data-pad="' + ak.dataset.pad + '"]' : ak.dataset.sp ? '[data-sp="' + ak.dataset.sp + '"]' : null : null;
     e.innerHTML = v.html();
     P.shown = P.view;
+    var slot = document.getElementById("sp-qr-slot");
+    if (slot && window.qrcode && qrcode.mountFefc) qrcode.mountFefc(slot, decodeURIComponent(slot.getAttribute("data-url") || ""));
     var f = key && $(key, e) || $("[data-default]", e) || $("button", e);
     if (f) try {
       f.focus({ preventScroll: true });
@@ -218,13 +243,12 @@
       },
       html: function() {
         var q = P.q, svg = "", gog = !!(P.opt && P.opt.google);
+        var shown = "";
         if (q && window.qrcode) {
-          var c = window.qrcode(0, "M");
-          c.addData(q.url);
-          c.make();
-          svg = c.createSvgTag({ cellSize: 6, margin: 3, scalable: true });
+          svg = '<div id="sp-qr-slot" data-url="' + encodeURIComponent(q.url) + '"></div>';
+          shown = shortLink(q.url);
         }
-        return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + '</div><p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + '<br>Confirm code on your phone: <b class="sp-ver">' + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
+        return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + "</div>" + (shown ? '<a class="sp-short" href="' + esc(openTarget(q.url)) + '" target="_blank" rel="noopener" tabindex="0">' + esc(shown) + "</a>" : "") + '<p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + "<br>Code: <b class=\"sp-ver\">" + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
       }
     },
     pair: { html: function() {
@@ -380,6 +404,15 @@
     });
   }
   document.addEventListener("click", function(e) {
+    var shortA = e.target.closest && e.target.closest("a.sp-short");
+    if (shortA) {
+      var onTv = window.tizen || /[?&]tizen=1(?:&|$)/.test(location.search);
+      if (onTv) {
+        e.preventDefault();
+        openShown(shortA.getAttribute("href") || "");
+      }
+      return;
+    }
     var a = e.target.closest(".acct-btn");
     if (a) {
       var m = a.parentNode.querySelector(".acct-menu");

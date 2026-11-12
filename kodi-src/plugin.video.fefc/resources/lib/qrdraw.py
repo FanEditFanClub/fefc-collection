@@ -98,7 +98,53 @@ def _read_rgba(path):
     return w, h, rows
 
 
-def _stamp_logo(rows, px, quiet, modules):
+def _protected(matrix):
+    """Finder, timing, and alignment modules. The logo must not paint over these
+    or a long code (the feedback form) stops scanning."""
+    n = len(matrix)
+    prot = set()
+
+    def mark(x0, y0, w, h):
+        for y in range(y0, y0 + h):
+            for x in range(x0, x0 + w):
+                if 0 <= x < n and 0 <= y < n:
+                    prot.add((x, y))
+
+    mark(0, 0, 8, 8)
+    mark(n - 8, 0, 8, 8)
+    mark(0, n - 8, 8, 8)
+    for i in range(n):
+        prot.add((i, 6))
+        prot.add((6, i))
+    for y in range(n - 4):
+        for x in range(n - 4):
+            if _is_alignment(matrix, x, y):
+                mark(x, y, 5, 5)
+    return prot
+
+
+def _is_alignment(matrix, x, y):
+    n = len(matrix)
+    if x < 2 or y < 2 or x + 4 >= n or y + 4 >= n:
+        return False
+    # 5x5: dark border, light ring, dark center. Skip the three finders.
+    if x < 10 and y < 10 or x > n - 15 and y < 10 or x < 10 and y > n - 15:
+        return False
+    for dy in range(5):
+        for dx in range(5):
+            dark = matrix[y + dy][x + dx]
+            edge = dx in (0, 4) or dy in (0, 4)
+            center = dx == 2 and dy == 2
+            ring = not edge and not center
+            if edge or center:
+                if not dark:
+                    return False
+            elif ring and dark:
+                return False
+    return True
+
+
+def _stamp_logo(rows, px, quiet, modules, matrix):
     """Center the FEFC mark on a white pad. The source logo is white-on-transparent,
     so the mark is drawn in black on that white pad (otherwise it would vanish).
     The pad stays inside the data area; the quiet zone is left alone. Error
@@ -130,18 +176,35 @@ def _stamp_logo(rows, px, quiet, modules):
             row[x0 * 3:(x0 + px) * 3] = blob
             rows[yy] = bytes(row)
 
+    keep = _protected(matrix)
     for my in range(origin, origin + span):
         for mx in range(origin, origin + span):
-            put(mx, my, (255, 255, 255))
-    # sample the logo into `box` modules
-    for my in range(box):
-        for mx in range(box):
-            sx = min(lw - 1, int((mx + 0.5) * lw / box))
-            sy = min(lh - 1, int((my + 0.5) * lh / box))
-            r, g, b, a = logo[sy][sx]
-            if a < 40:
+            if (mx - quiet, my - quiet) in keep:
                 continue
-            put(origin + pad + mx, origin + pad + my, (0, 0, 0))
+            put(mx, my, (255, 255, 255))
+    # One sample per module missed the strokes: the mark is a thin white line on a
+    # transparent field, so the center stayed the plain white pad. A module is ink
+    # when the patch of the logo it covers actually contains the mark.
+    for my in range(box):
+        y0 = int(my * lh / box)
+        y1 = max(y0 + 1, int((my + 1) * lh / box))
+        for mx in range(box):
+            x0 = int(mx * lw / box)
+            x1 = max(x0 + 1, int((mx + 1) * lw / box))
+            ink = 0
+            total = 0
+            for sy in range(y0, min(lh, y1)):
+                line = logo[sy]
+                for sx in range(x0, min(lw, x1)):
+                    total += 1
+                    if line[sx][3] >= 40:
+                        ink += 1
+            gx = origin + pad + mx
+            gy = origin + pad + my
+            if (gx - quiet, gy - quiet) in keep:
+                continue
+            if total and ink / total >= 0.08:
+                put(gx, gy, (0, 0, 0))
 
 
 def rgb_rows(url, size=600, quiet=4):
@@ -174,7 +237,7 @@ def rgb_rows(url, size=600, quiet=4):
                     parts.append(black if matrix[my][x - quiet] else white)
             line = b''.join(parts)
         rows.extend([line] * px)
-    _stamp_logo(rows, px, quiet, nmod)
+    _stamp_logo(rows, px, quiet, nmod, matrix)
     info = {'modules': nmod, 'quiet': quiet, 'px': px, 'side': side, 'error': 'H'}
     return rows, info
 

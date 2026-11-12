@@ -222,11 +222,15 @@ print('ok', x, y, w, h)
   assert.match(home, /id="9023"[\s\S]{0,200}<width>360<\/width>/);
   const settingsXml = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/settings.xml'), 'utf8');
   const strings = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/language/resource.language.en_gb/strings.po'), 'utf8');
-  assert.match(settingsXml, /id="about_btn"[\s\S]{0,240}action=about/);
+  assert.doesNotMatch(settingsXml, /id="about_btn"/);
+  const aboutPane = settingsXml.slice(settingsXml.indexOf('id="about"'), settingsXml.indexOf('id="system"'));
+  for (const part of ['feedback', 'version', 'news', 'privacy', 'terms', 'notices']) {
+    assert.match(aboutPane, new RegExp('action=about&amp;part=' + part));
+  }
   assert.match(settingsXml, /id="check_update_btn"[\s\S]{0,240}action=update/);
   assert.match(strings, /msgctxt "#30030"\nmsgid "About"/);
   assert.match(strings, /msgctxt "#30031"\nmsgid "About"/);
-  assert.match(strings, /msgctxt "#30032"\nmsgid "Check for software update"/);
+  assert.match(strings, /msgctxt "#30032"\nmsgid "Check for Update"/);
   assert.match(home, /id="8990"/);
   assert.match(home, /<label>ACTORS &amp;<\/label>/);
   assert.match(home, /<label>DIRECTORS<\/label>/);

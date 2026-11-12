@@ -40,10 +40,13 @@ def tv_text(download_url):
 
 
 def write_qr(path, url=GUIDE_URL):
-    """PNG of the guide URL. Returns the path, or '' if the picture could not be written."""
+    """PNG of the guide URL, with the FEFC mark baked in. Returns the path, or ''."""
     try:
-        import segno
-        segno.make(url, error='m').save(path, scale=8, border=2, dark='#0b1220', light='#f4f7fb')
+        from . import qrdraw
+    except ImportError:
+        import qrdraw
+    try:
+        qrdraw.write_qr_png(path, url, size=600, quiet=4)
         return path
     except Exception:
         return ''
