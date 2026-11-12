@@ -2295,23 +2295,72 @@ var qrcode = function() {
 }(function () {
     return qrcode;
 }));
-window.qrcode=qrcode;
-qrcode.fefcPng=function(text, logo){
+if(typeof window!=='undefined') window.qrcode=qrcode;
+function fefcProtected(isDark, n){
+  var prot={};
+  function mark(x0,y0,w,h){for(var y=y0;y<y0+h;y++)for(var x=x0;x<x0+w;x++)if(x>=0&&y>=0&&x<n&&y<n)prot[x+','+y]=1;}
+  mark(0,0,8,8); mark(n-8,0,8,8); mark(0,n-8,8,8);
+  for(var i=0;i<n;i++){ prot[i+',6']=1; prot['6,'+i]=1; }
+  function align(x,y){
+    if(x<2||y<2||x+4>=n||y+4>=n) return false;
+    if((x<10&&y<10)||(x>n-15&&y<10)||(x<10&&y>n-15)) return false;
+    for(var dy=0;dy<5;dy++) for(var dx=0;dx<5;dx++){
+      var dark=isDark(y+dy,x+dx), edge=dx===0||dx===4||dy===0||dy===4, center=dx===2&&dy===2;
+      if((edge||center)&&!dark) return false;
+      if(!edge&&!center&&dark) return false;
+    }
+    return true;
+  }
+  for(var y=0;y<n-4;y++) for(var x=0;x<n-4;x++) if(align(x,y)) mark(x,y,5,5);
+  return prot;
+}
+qrcode.fefcGrid=function(text, inkAt){
   var qr=qrcode(0,'H'); qr.addData(text); qr.make();
-  var n=qr.getModuleCount(), quiet=4, cell=8, side=(n+quiet*2)*cell;
+  var n=qr.getModuleCount(), quiet=4, side=n+quiet*2;
+  var prot=fefcProtected(function(row,col){return qr.isDark(row,col);}, n);
+  var grid=new Array(side*side);
+  for(var i=0;i<grid.length;i++) grid[i]=0;
+  for(var r=0;r<n;r++) for(var c=0;c<n;c++) if(qr.isDark(r,c)) grid[(r+quiet)*side+(c+quiet)]=1;
+  var box=Math.max(7, Math.round(n*0.20));
+  if(box%2===0) box++;
+  var pad=1, span=box+pad*2;
+  if(inkAt && span<n-8){
+    var origin=quiet+Math.floor((n-span)/2);
+    for(var my=0;my<span;my++) for(var mx=0;mx<span;mx++){
+      var gx=origin+mx, gy=origin+my, modx=gx-quiet, mody=gy-quiet;
+      if(prot[modx+','+mody]) continue;
+      var ink=false;
+      if(mx>=pad&&my>=pad&&mx<pad+box&&my<pad+box) ink=!!inkAt(mx-pad, my-pad, box);
+      grid[gy*side+gx]=ink?1:0;
+    }
+  }
+  return {n:n, quiet:quiet, side:side, grid:grid, error:'H', box:box};
+};
+qrcode.fefcLogoInk=function(logo){
+  var w=logo.naturalWidth||logo.width, h=logo.naturalHeight||logo.height;
+  var c=document.createElement('canvas'); c.width=w; c.height=h;
+  var g=c.getContext('2d'); g.drawImage(logo,0,0,w,h);
+  var data=g.getImageData(0,0,w,h).data;
+  return function(mx,my,box){
+    var y0=Math.floor(my*h/box), y1=Math.max(y0+1, Math.floor((my+1)*h/box));
+    var x0=Math.floor(mx*w/box), x1=Math.max(x0+1, Math.floor((mx+1)*w/box));
+    var ink=0, total=0;
+    for(var y=y0;y<Math.min(h,y1);y++) for(var x=x0;x<Math.min(w,x1);x++){
+      total++; if(data[(y*w+x)*4+3]>=40) ink++;
+    }
+    return total && ink/total>=0.08;
+  };
+};
+qrcode.fefcPng=function(text, logo){
+  var ink=null;
+  if(logo&&logo.complete&&logo.naturalWidth) ink=qrcode.fefcLogoInk(logo);
+  var made=qrcode.fefcGrid(text, ink);
+  var cell=8, side=made.side*cell;
   var canvas=document.createElement('canvas'); canvas.width=canvas.height=side;
   var g=canvas.getContext('2d');
   g.fillStyle='#fff'; g.fillRect(0,0,side,side); g.fillStyle='#000';
-  for(var r=0;r<n;r++) for(var c=0;c<n;c++) if(qr.isDark(r,c)) g.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
-  if(logo&&logo.complete&&logo.naturalWidth){
-    var box=Math.max(cell*7, Math.round(n*0.18)*cell), pad=cell;
-    var x=(side-box)/2, y=(side-box)/2;
-    g.fillStyle='#fff'; g.fillRect(x-pad,y-pad,box+pad*2,box+pad*2);
-    var off=document.createElement('canvas'); off.width=off.height=box;
-    var og=off.getContext('2d');
-    og.drawImage(logo,0,0,box,box);
-    og.globalCompositeOperation='source-in'; og.fillStyle='#000'; og.fillRect(0,0,box,box);
-    g.drawImage(off,x,y);
+  for(var i=0;i<made.grid.length;i++) if(made.grid[i]){
+    g.fillRect((i%made.side)*cell, Math.floor(i/made.side)*cell, cell, cell);
   }
   return canvas.toDataURL('image/png');
 };

@@ -68,4 +68,88 @@ print('ok', len(urls))
   if (r.status !== 0)
     throw new Error(r.stderr || r.stdout);
   assert.match(r.stdout, /^ok /);
+
+  for (const file of ['src/qrgen.js', 'qrgen.js']) {
+    const src = fs.readFileSync(path.join(root, file), 'utf8');
+    assert.match(src, /fefcGrid/);
+    assert.match(src, /qrcode\(0,'H'\)/);
+    assert.doesNotMatch(src, /source-in/);
+  }
+  const qrcode = require(path.join(root, 'src/qrgen.js'));
+  const built = require(path.join(root, 'qrgen.js'));
+  const logoAlpha = spawnSync('python3', ['-c', `
+import sys, json, base64
+sys.path.insert(0, ${JSON.stringify(lib)})
+import qrdraw
+w, h, rows = qrdraw._read_rgba(${JSON.stringify(logo)})
+alpha = bytes(pix[3] for line in rows for pix in line)
+json.dump({'w': w, 'h': h, 'a': base64.b64encode(alpha).decode()}, sys.stdout)
+`], {encoding: 'utf8', cwd: root});
+  if (logoAlpha.status !== 0)
+    throw new Error(logoAlpha.stderr || logoAlpha.stdout);
+  const logoPx = JSON.parse(logoAlpha.stdout);
+  const alpha = Buffer.from(logoPx.a, 'base64');
+  function inkAt(mx, my, box) {
+    const y0 = Math.floor(my * logoPx.h / box);
+    const y1 = Math.max(y0 + 1, Math.floor((my + 1) * logoPx.h / box));
+    const x0 = Math.floor(mx * logoPx.w / box);
+    const x1 = Math.max(x0 + 1, Math.floor((mx + 1) * logoPx.w / box));
+    let ink = 0, total = 0;
+    for (let y = y0; y < Math.min(logoPx.h, y1); y++) {
+      for (let x = x0; x < Math.min(logoPx.w, x1); x++) {
+        total++;
+        if (alpha[y * logoPx.w + x] >= 40) ink++;
+      }
+    }
+    return total && ink / total >= 0.08;
+  }
+  const urls = [
+    'https://www.patreon.com/cw/FanEditFanClub',
+    'https://docs.google.com/forms/d/e/1FAIpQLSe_MZOis6_4DFTkrbSu2SiP0bGTMuCRruUPeemutI4uZ7nIbA/viewform',
+    'https://collection.faneditfanclub.com/samsung',
+    'https://fefc-collection.pages.dev/kodi-app/FEFC.apk',
+    'https://collection.faneditfanclub.com/lg-update',
+  ];
+  for (const make of [qrcode.fefcGrid, built.fefcGrid]) {
+    for (const url of urls) {
+      const made = make(url, inkAt);
+      assert.equal(made.error, 'H');
+      const cell = 8;
+      const px = made.side * cell;
+      const pgm = Buffer.alloc(px * px, 255);
+      let black = 0, white = 0;
+      const box = made.box % 2 === 0 ? made.box + 1 : made.box;
+      const span = box + 2;
+      const origin = made.quiet + Math.floor((made.n - span) / 2);
+      for (let i = 0; i < made.grid.length; i++) {
+        const x = i % made.side, y = Math.floor(i / made.side);
+        const on = made.grid[i] ? 1 : 0;
+        if (x >= origin && x < origin + span && y >= origin && y < origin + span) {
+          if (on) black++;
+          else white++;
+        }
+        if (!on) continue;
+        for (let dy = 0; dy < cell; dy++) {
+          const row = (y * cell + dy) * px + x * cell;
+          pgm.fill(0, row, row + cell);
+        }
+      }
+      const area = span * span;
+      assert.ok(black > area * 0.15, url + ' center black ' + black);
+      assert.ok(white > 0, url);
+      fs.writeFileSync('/tmp/fefc-qr-web.pgm', Buffer.concat([
+        Buffer.from('P5\n' + px + ' ' + px + '\n255\n'),
+        pgm,
+      ]));
+      const dec = spawnSync('python3', ['-c', `
+from pyzbar.pyzbar import decode
+from PIL import Image
+got = decode(Image.open('/tmp/fefc-qr-web.pgm'))
+print(got[0].data.decode() if got else '')
+`], {encoding: 'utf8'});
+      if (dec.status !== 0)
+        throw new Error(dec.stderr || dec.stdout);
+      assert.equal(dec.stdout.trim(), url);
+    }
+  }
 });
