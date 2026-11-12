@@ -11,7 +11,12 @@
 	<controls>
 		<!-- Outside the content zoom. Inside it, a videowindow parked at a negative x is scaled back onto the left edge. -->
 		<include>FefcWallKeep</include>
+		<control type="videowindow">
+			<left>0</left><top>0</top><width>1920</width><height>1080</height>
+			<visible>!String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
+		</control>
 		<control type="group">
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 			<include>FefcContentZoom</include>
 		<control type="image">
 			<left>96</left><top>54</top><width>220</width><height>56</height>
@@ -59,6 +64,7 @@
 			<textcolor>FF99CCFF</textcolor>
 			<label>$INFO[ListItem.Label]</label>
 			<scroll>true</scroll>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 		</control>
 		<control type="label">
 			<right>96</right><top>954</top><width>500</width><height>32</height>
@@ -66,8 +72,12 @@
 			<font>font10</font>
 			<textcolor>FFFF9C00</textcolor>
 			<label>$VAR[FefcCount]</label>
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
 		</control>
-		<include content="FefcTopBar"><param name="down" value="500"/><param name="up" value="500"/></include>
-		<include>FefcTicker</include>
+		<control type="group">
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
+			<include content="FefcTopBar"><param name="down" value="500"/><param name="up" value="500"/></include>
+			<include>FefcTicker</include>
+		</control>
 	</controls>
 </window>

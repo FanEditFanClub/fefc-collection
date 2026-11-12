@@ -15,6 +15,10 @@ TARGET_LUFS, TP_MAX = -16.0, -1.5
 # 0.85x amplitude is about -1.4 dB. Intro, wall and clips are not built here.
 NAV_QUIET = 0.85
 NAV_QUIET_NAMES = ('move', 'back')
+# Pause, resume, and the scan whooshes sit under the programme. 0.4x after the
+# -16 LUFS match is about -8 dB, so they stay cues and not sound effects.
+TRANSPORT_QUIET = 0.4
+TRANSPORT_NAMES = ('pause', 'resume', 'forward', 'rewind')
 
 
 def osc(kind, f0, f1, n):
@@ -78,6 +82,14 @@ def synth(name):
     elif name == 'open':
         tone(b, 300, 0, 0.35, 'sawtooth', 0.05, 1200)
         tone(b, 880, 0.12, 0.25, 'sine', 0.08)
+    elif name == 'pause':
+        tone(b, 520, 0, 0.07, 'sine', 0.07, 220)
+    elif name == 'resume':
+        tone(b, 240, 0, 0.07, 'sine', 0.07, 640)
+    elif name == 'forward':
+        tone(b, 500, 0, 0.11, 'sine', 0.05, 1600)
+    elif name == 'rewind':
+        tone(b, 1600, 0, 0.11, 'sine', 0.05, 420)
     return b * MASTER
 
 
@@ -112,26 +124,15 @@ def normalise(path, x):
     return measure(path)
 
 
-SOUNDS_XML = '''<?xml version="1.0" encoding="UTF-8"?>
-<sounds>
-	<actions>
-		<action><name>left</name><file>move.wav</file></action>
-		<action><name>right</name><file>move.wav</file></action>
-		<action><name>up</name><file>move.wav</file></action>
-		<action><name>down</name><file>move.wav</file></action>
-		<action><name>pageup</name><file>move.wav</file></action>
-		<action><name>pagedown</name><file>move.wav</file></action>
-		<action><name>select</name><file>click.wav</file></action>
-		<action><name>back</name><file>back.wav</file></action>
-		<action><name>previousmenu</name><file>back.wav</file></action>
-		<action><name>parentdir</name><file>back.wav</file></action>
-	</actions>
-	<windows>
-		<window><name>movieinformation</name><activate>open.wav</activate></window>
-		<window><name>videos</name><activate>open.wav</activate></window>
-	</windows>
-</sounds>
-'''
+# cues.sounds_xml() writes <name>back</name><file>back.wav</file> <name>previousmenu</name><file>back.wav</file> <name>parentdir</name><file>back.wav</file>
+def _sounds_xml():
+    """The skin file is generated from cues.SKIN_ACTIONS so it cannot drift from Python."""
+    import sys
+    lib = ROOT / 'kodi-src' / 'plugin.video.fefc' / 'resources' / 'lib'
+    if str(lib) not in sys.path:
+        sys.path.insert(0, str(lib))
+    import cues
+    return cues.sounds_xml()
 
 ADDON = '''<?xml version="1.0" encoding="UTF-8"?>
 <addon id="resource.uisounds.fefc" version="%s" name="FEFC UI Sounds" provider-name="Fan Edit Fan Club">
@@ -163,9 +164,9 @@ def build(out, version='1.0.0'):
     bg = Image.new('RGBA', (512, 512), (11, 24, 44, 255))
     bg.alpha_composite(ic, (64, 64))
     bg.convert('RGB').save(out / 'icon.png')
-    (res / 'sounds.xml').write_text(SOUNDS_XML, encoding='utf-8')
+    (res / 'sounds.xml').write_text(_sounds_xml(), encoding='utf-8')
     report = {}
-    for n in ('move', 'click', 'open'):
+    for n in ('move', 'click', 'open', 'pause', 'resume', 'forward', 'rewind'):
         report[n] = normalise(res / (n + '.wav'), synth(n))
     # back: the web app's own file (already -16 LUFS), re-checked and re-matched to the same rules
     with wave.open(str(ROOT / 'assets' / 'sfx' / 'ui-back.wav')) as w:
@@ -182,6 +183,12 @@ def build(out, version='1.0.0'):
         with wave.open(str(p)) as w:
             x = np.frombuffer(w.readframes(w.getnframes()), '<i2').astype(float) / 32768
         write(p, x * NAV_QUIET)
+        report[n] = measure(p)
+    for n in TRANSPORT_NAMES:
+        p = res / (n + '.wav')
+        with wave.open(str(p)) as w:
+            x = np.frombuffer(w.readframes(w.getnframes()), '<i2').astype(float) / 32768
+        write(p, x * TRANSPORT_QUIET)
         report[n] = measure(p)
     return report
 

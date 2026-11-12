@@ -175,11 +175,11 @@ assert 'config.xml' in names and 'author-signature.xml' not in names and 'signat
 assert not any(n.endswith('.p12') for n in names)
 cfg = z.read('config.xml').decode()
 assert 'version="0.6.51"' in cfg
-assert '0.6.3 Beta' in cfg
+assert '0.6.4 Beta' in cfg
 assert 'avplay' in cfg and 'tv.inputdevice' in cfg
 assert 'tizen=1' in z.read('index.html').decode()
 info = __import__('json').loads(z.read('fefc-build.json'))
-assert info['version'] == '0.6.3 Beta' and info['build'] == 51
+assert info['version'] == '0.6.4 Beta' and info['build'] == 51
 print('ok')
 `);
   assert.match(out, /"signed": false/);

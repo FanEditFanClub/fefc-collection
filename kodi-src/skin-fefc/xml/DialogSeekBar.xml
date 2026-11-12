@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pause / seek bar. Stock Estuary anchors this group to bottom="0", then the
+     skin build zooms every stock window 90% around the screen centre. On a TV
+     that combination draws the bar at the top of a letterboxed picture and
+     clips the time. This copy lives in the overlay, so it is not zoomed, and
+     the group is placed with a top coordinate inside the 5% safe area
+     (54px from the bottom of 1080, 96px from each side). -->
+<window>
+	<visible>Window.IsActive(fullscreenvideo) | Window.IsActive(visualisation)</visible>
+	<visible>![Window.IsActive(sliderdialog) | Window.IsActive(pvrosdchannels) | Window.IsActive(pvrchannelguide) | Window.IsActive(pvrguideinfo) | Window.IsActive(1110)]</visible>
+	<visible>Player.Seeking | Player.HasPerformedSeek(3) | [Player.Paused + !Player.Caching] | Player.Forwarding | Player.Rewinding | Player.ShowInfo | Window.IsActive(fullscreeninfo) | Player.ShowTime | Window.IsActive(videoosd) | Window.IsActive(musicosd) | !String.IsEmpty(Player.SeekNumeric)</visible>
+	<visible>String.IsEmpty(Window(Home).Property(FEFC.Skip))</visible>
+	<zorder>0</zorder>
+	<controls>
+		<control type="group">
+			<left>96</left>
+			<top>866</top>
+			<width>1728</width>
+			<height>160</height>
+			<control type="image">
+				<left>-20</left>
+				<top>0</top>
+				<width>1768</width>
+				<height>160</height>
+				<texture colordiffuse="C0000000">colors/white.png</texture>
+			</control>
+			<control type="label" id="40000">
+				<left>0</left>
+				<top>8</top>
+				<width>1728</width>
+				<height>40</height>
+				<align>center</align>
+				<aligny>center</aligny>
+				<font>font13_title</font>
+				<textcolor>FFFFFFFF</textcolor>
+				<shadowcolor>FF000000</shadowcolor>
+				<label>$VAR[SeekLabel]</label>
+			</control>
+			<control type="label">
+				<left>0</left>
+				<top>48</top>
+				<width>1728</width>
+				<height>44</height>
+				<align>center</align>
+				<aligny>center</aligny>
+				<font>font14_title</font>
+				<textcolor>FF99CCFF</textcolor>
+				<shadowcolor>FF000000</shadowcolor>
+				<label>$VAR[SeekTimeLabelVar]</label>
+			</control>
+			<control type="progress">
+				<left>0</left>
+				<top>108</top>
+				<width>1728</width>
+				<height>16</height>
+				<info>Player.Progress</info>
+				<texturebg border="3" colordiffuse="60FFFFFF">colors/white50.png</texturebg>
+				<midtexture colordiffuse="FFFF9C00">colors/white.png</midtexture>
+			</control>
+			<control type="slider" id="401">
+				<left>0</left>
+				<top>102</top>
+				<width>1728</width>
+				<height>28</height>
+				<texturesliderbar colordiffuse="00FFFFFF">osd/progress/nub_bar.png</texturesliderbar>
+				<textureslidernib colordiffuse="FFFF9C00">osd/progress/nub_bar.png</textureslidernib>
+				<textureslidernibfocus colordiffuse="FFFFFFFF">colors/white.png</textureslidernibfocus>
+				<visible>Player.SeekEnabled</visible>
+			</control>
+			<control type="slider" id="402">
+				<left>0</left>
+				<top>102</top>
+				<width>1728</width>
+				<height>28</height>
+				<texturesliderbar colordiffuse="00FFFFFF">osd/progress/nub_bar.png</texturesliderbar>
+				<textureslidernib colordiffuse="FFFF9C00">osd/progress/nub_bar.png</textureslidernib>
+				<textureslidernibfocus colordiffuse="FFFFFFFF">colors/white.png</textureslidernibfocus>
+				<visible>false</visible>
+			</control>
+			<control type="slider" id="403">
+				<left>0</left>
+				<top>102</top>
+				<width>1728</width>
+				<height>28</height>
+				<texturesliderbar colordiffuse="00FFFFFF">osd/progress/nub_bar.png</texturesliderbar>
+				<textureslidernib colordiffuse="FFFF9C00">osd/progress/nub_bar.png</textureslidernib>
+				<textureslidernibfocus colordiffuse="FFFFFFFF">colors/white.png</textureslidernibfocus>
+				<visible>false</visible>
+			</control>
+		</control>
+	</controls>
+</window>

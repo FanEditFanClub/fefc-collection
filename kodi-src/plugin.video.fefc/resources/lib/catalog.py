@@ -105,6 +105,71 @@ def _load_json(path):
         return json.loads(f.read().decode('utf-8'))
 
 
+IMDB_GENRE = {
+    'Action': 'Action', 'Adventure': 'Adventure', 'Animation': 'Animation', 'Biography': 'Biography',
+    'Comedy': 'Comedy', 'Crime': 'Crime', 'Documentary': 'Documentary', 'Drama': 'Drama',
+    'Family': 'Family', 'Fantasy': 'Fantasy', 'History': 'History', 'Horror': 'Horror',
+    'Music': 'Musical', 'Musical': 'Musical', 'Mystery': 'Mystery', 'Romance': 'Romance',
+    'Sci-Fi': 'Sci-Fi', 'Sport': 'Sport', 'Thriller': 'Thriller', 'War': 'War', 'Western': 'Western',
+}
+
+
+def imdb_app_genres(labels):
+    """IMDb title.basics genres, in IMDb's order, mapped onto the FEFC genre names.
+
+    A label FEFC does not have a folder for (Film-Noir, Talk-Show, News) is dropped.
+    Nothing is added that IMDb did not list.
+    """
+    out = []
+    for label in labels or []:
+        name = IMDB_GENRE.get(str(label))
+        if name and name not in out:
+            out.append(name)
+    return out
+
+
+def _imdb_ids(raw):
+    """Drive file id -> IMDb tconst, via the metadata film the file is mapped to."""
+    films = ((raw.get('metadata') or {}).get('films') or {})
+    qid_tt = {}
+    for q, film in films.items():
+        if isinstance(film, dict) and film.get('imdb'):
+            qid_tt[q] = film['imdb']
+    out = {}
+    for src in ((raw.get('metadata') or {}).get('map') or {}, (raw.get('edits') or {}).get('map') or {}):
+        for key, q in src.items():
+            if q in qid_tt:
+                out[key] = qid_tt[q]
+    return out
+
+
+def title_key(name):
+    text = re.sub(r'\.[A-Za-z0-9]{2,4}$', '', name or '')
+    text = re.sub(r'[^a-z0-9]+', ' ', text.lower())
+    return re.sub(r'\s+', ' ', text).strip()
+
+
+def dedupe_titles(items, ids):
+    """One row per Drive file and per normalized title. The hosted original wins over a shortcut."""
+    by_file = {}
+    for i in ids:
+        v = items.get(i)
+        if not v:
+            continue
+        key = v[3] or i
+        prev = by_file.get(key)
+        if prev is None or (not v[3] and items[prev][3]):
+            by_file[key] = i
+    by_name = {}
+    for i in by_file.values():
+        key = title_key(items[i][0]) or i
+        prev = by_name.get(key)
+        if prev is None or (not items[i][3] and items[prev][3]):
+            by_name[key] = i
+    keep = set(by_name.values())
+    return [i for i in ids if i in keep]
+
+
 def build_model(raw):
     """raw: dict source-name -> parsed JSON. Returns a marshal-able dict."""
     idx = raw['index']
@@ -218,18 +283,18 @@ def build_model(raw):
                 g.update(e.get('genres') or [])
         if g:
             own[i] = g
+    imdb_by_tt = raw.get('imdb-genres') or {}
+    id_tt = _imdb_ids(raw)
     genre_videos = {}
     genre_folders = {}
     vgenres = {}
     tbc_ids = tbc_members(items, kids)
     for i, v in items.items():
-        g = set(own.get(i, ()))
-        p = v[1]
-        depth = 0
-        while p and depth < 30:
-            g.update(own.get(p, ()))
-            p = items.get(p, [None, ''])[1]
-            depth += 1
+        tt = id_tt.get(i) or (id_tt.get(v[3]) if v[3] else '')
+        if tt and imdb_by_tt.get(tt):
+            g = set(imdb_app_genres(imdb_by_tt[tt]))
+        else:
+            g = set(own.get(i, ()))
         if not g:
             g = {'Uncategorized'} if not v[2] else set()
         if 'Unsorted' in g:  # 0.3.22: no separate Unsorted, it folds into Uncategorized
@@ -237,18 +302,19 @@ def build_model(raw):
             g.add('Uncategorized')
         if g:
             vgenres[i] = sorted(g)
-            # Genre folders list the main catalogued tree only. To Be Catalogued
-            # (and everything under it) is left out even when the genre matches.
-            if i in tbc_ids or (v[3] and v[3] in tbc_ids):
-                continue
-            for x in g:
-                if v[2]:
-                    if i in own and x in own[i] and cnt.get(i):
-                        genre_folders.setdefault(x, []).append(i)
-                else:
-                    genre_videos.setdefault(x, []).append(i)
+        # Only a file or collection folder that sits directly in the Drive root.
+        # Nested episodes and To Be Catalogued stay out, even when the genre matches.
+        if v[1] != root or i in tbc_ids or (v[3] and v[3] in tbc_ids):
+            continue
+        for x in g:
+            if v[2]:
+                if cnt.get(i):
+                    genre_folders.setdefault(x, []).append(i)
+            else:
+                genre_videos.setdefault(x, []).append(i)
     for d in (genre_videos, genre_folders):
         for k in d:
+            d[k] = dedupe_titles(items, d[k])
             d[k].sort(key=lambda i: natkey(items[i][0]))
 
     # artwork / metadata (keep only what the add-on shows)

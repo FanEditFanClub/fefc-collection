@@ -22,7 +22,7 @@
  {
   "label": "Crime",
   "key": "Crime",
-  "img": "assets/genres/thriller.jpg"
+  "img": "assets/genres/crime.jpg?v=1"
  },
  {
   "label": "Documentary",
@@ -32,7 +32,7 @@
  {
   "label": "Drama",
   "key": "Drama",
-  "img": "assets/genres/drama.jpg"
+  "img": "assets/genres/drama.jpg?v=5"
  },
  {
   "label": "Family",

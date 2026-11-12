@@ -47,6 +47,7 @@
 				<texture fallback="DefaultFolder.png">$VAR[FefcTileArt]</texture>
 				<aspectratio scalediffuse="false">scale</aspectratio>
 				<colordiffuse>66FFFFFF</colordiffuse>
+				<visible>!ListItem.IsParentFolder</visible>
 			</control>
 			<control type="image">
 				<left>5</left><top>5</top><width>255</width><height>128</height>
@@ -66,7 +67,7 @@
 				<font>font_folder</font>
 				<textcolor>FFFFFFFF</textcolor>
 				<shadowcolor>FF000000</shadowcolor>
-				<label>$INFO[ListItem.Label]</label>
+				<label>$VAR[FefcTileLabel]</label>
 				<visible>!String.Contains(ListItem.Art(landscape),fefc-shuffle-tile) + !String.Contains(ListItem.Art(landscape),fefc-sort-tile) + !String.Contains(ListItem.Art(landscape),fefc-support-tile) + !String.Contains(ListItem.Art(landscape),fefc-readfirst-tile) + !String.Contains(ListItem.Art(landscape),fefc-tbc-tile) + !String.Contains(ListItem.Art(landscape),fefc-testing-tile)</visible>
 			</control>
 			<control type="image">
@@ -179,6 +180,10 @@
 		<value condition="!String.IsEmpty(Window(Home).Property(FEFC.Shown))">$INFO[Window(Home).Property(FEFC.Shown)] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</value>
 		<value>$INFO[Container.NumItems] items   $INFO[Container.CurrentPage,page ,/]$INFO[Container.NumPages]</value>
 	</variable>
+	<variable name="FefcTileLabel">
+		<value condition="ListItem.IsParentFolder">Back</value>
+		<value>$INFO[ListItem.Label]</value>
+	</variable>
 	<variable name="FefcSoundLabel">
 		<value condition="!String.IsEmpty(Window(Home).Property(FEFC.SoundOff))">SOUND OFF</value>
 		<value>SOUND ON</value>
@@ -283,7 +288,7 @@
 					<ondown condition="Control.IsVisible(501)">501</ondown>
 					<ondown condition="Control.IsVisible(500)">500</ondown>
 					<ondown>$PARAM[down]</ondown>
-					<onclick>ActivateWindow(Home)</onclick>
+					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=cue&amp;kind=home)</onclick>
 				</control>
 				<control type="image"><left>16</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
 				<control type="button" id="9291">

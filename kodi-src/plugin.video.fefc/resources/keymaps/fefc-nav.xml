@@ -25,4 +25,23 @@
 			<back>PreviousMenu</back>
 		</gamepad>
 	</global>
+	<!-- Play, pause, and scan become PlayerControl. The service then plays one
+	     cue from the new player state. Leaving them as Play/Pause/FastForward
+	     would also play the sound-skin action, so the cue would fire twice. -->
+	<FullscreenVideo>
+		<keyboard>
+			<space>PlayerControl(Play)</space>
+			<p>PlayerControl(Play)</p>
+			<play_pause>PlayerControl(Play)</play_pause>
+			<f>PlayerControl(Forward)</f>
+			<r>PlayerControl(Rewind)</r>
+		</keyboard>
+		<remote>
+			<play>PlayerControl(Play)</play>
+			<pause>PlayerControl(Play)</pause>
+			<playpause>PlayerControl(Play)</playpause>
+			<forward>PlayerControl(Forward)</forward>
+			<reverse>PlayerControl(Rewind)</reverse>
+		</remote>
+	</FullscreenVideo>
 </keymap>

@@ -8,10 +8,48 @@ import xbmcgui
 from .updateflow import progress_view
 
 
+class ManualDownloads(xbmcgui.WindowDialog):
+    """One focusable row per published platform. Selecting a row opens the URL."""
+
+    def __init__(self, rows):
+        super(ManualDownloads, self).__init__()
+        self.rows = rows or []
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='E0000000'))
+        self.addControl(xbmcgui.ControlLabel(80, 40, 1120, 48, 'Download the latest version', font='font_title_big', textColor='FFFFFFFF'))
+        self.buttons = []
+        y = 110
+        for row in self.rows:
+            version = ('  ' + row.get('version')) if row.get('version') else ''
+            label = '%s%s' % (row.get('platform') or '', version)
+            url = row.get('short') or row.get('url') or ''
+            self.addControl(xbmcgui.ControlLabel(80, y, 1120, 28, url, font='font12', textColor='FF99CCFF'))
+            btn = xbmcgui.ControlButton(80, y + 30, 1120, 48, label, font='font14_title', textColor='FF000000',
+                                        focusedColor='FF000000', alignment=6,
+                                        focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+            self.addControl(btn)
+            self.buttons.append(btn)
+            y += 90
+        if self.buttons:
+            self.setFocus(self.buttons[0])
+
+    def onAction(self, action):
+        if action.getId() in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PARENT_DIR, 110):
+            self.close()
+
+    def onControl(self, control):
+        for row, btn in zip(self.rows, self.buttons):
+            if control == btn:
+                url = row.get('url') or ''
+                if url:
+                    xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,%s)' % url)
+                return
+
+
 class UpdatePopup(xbmcgui.WindowDialog):
-    def __init__(self, version):
+    def __init__(self, version, links=None):
         super(UpdatePopup, self).__init__()
         self.version = version or ''
+        self.links = links or []
         self.dismissed = False
         self.retry = False
         self._bar_w = 760
@@ -34,6 +72,10 @@ class UpdatePopup(xbmcgui.WindowDialog):
             focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.retry_btn)
         self.retry_btn.setVisible(False)
+        self.manual_btn = xbmcgui.ControlButton(
+            180, 560, 920, 48, 'Download the latest version manually', font='font14_title', textColor='FF000000',
+            focusedColor='FF000000', alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+        self.addControl(self.manual_btn)
         self.setFocus(self.retry_btn)
 
     def render(self, state, pct=0, done=0, total=0, detail=''):
@@ -61,3 +103,5 @@ class UpdatePopup(xbmcgui.WindowDialog):
         if control == self.retry_btn:
             self.retry = True
             self.close()
+        elif control == self.manual_btn:
+            ManualDownloads(self.links).doModal()

@@ -177,16 +177,17 @@ open(os.path.join(_km, 'fefc-touch.xml'), 'w', encoding='utf-8').write("""<?xml 
   </movieinformation>
 </keymap>
 """)
-# FEFC navigation sounds (same as the web / Fire TV app) as the default UI sound add-on, played also while a video is paused
+# FEFC navigation sounds (same as the web / Fire TV app) as the default UI sound add-on, played also while a video is paused.
+# Defaults go through apply_fefc_defaults, not a whitespace-sensitive string replace: a Kodi settings
+# layout change used to skip guisoundmode and every cue went silent while the wall video played.
 import kodi_navsfx
+from fefc_kodi_bundle import apply_fefc_defaults
 print('uisounds:', kodi_navsfx.build(os.path.join(A, 'addons', 'resource.uisounds.fefc')))
-t = open(ap, encoding='utf-8').read()
-t = t.replace('  <section id="system">\n', '  <section id="system">\n    <category id="audio">\n      <group id="2">\n        <setting id="audiooutput.guisoundmode">\n          <default>2</default>\n        </setting>\n        <setting id="lookandfeel.soundskin">\n          <default>resource.uisounds.fefc</default>\n        </setting>\n      </group>\n    </category>\n', 1)
-assert 'resource.uisounds.fefc' in t; open(ap, 'w', encoding='utf-8').write(t)
-# selecting a video opens its details page (Play is a button there): Kodi 'Select action' for videos = Show information (3)
-t = open(ap, encoding='utf-8').read()
-t = t.replace('</settings>', '  <section id="media">\n    <category id="video">\n      <group id="1">\n        <setting id="myvideos.selectaction">\n          <default>3</default>\n        </setting>\n      </group>\n    </category>\n  </section>\n</settings>', 1)
-assert 'myvideos.selectaction' in t; open(ap, 'w', encoding='utf-8').write(t)
+t = apply_fefc_defaults(open(ap, encoding='utf-8').read())
+for needle in ('resource.uisounds.fefc', '<default>2</default>', 'myvideos.selectaction'):
+    if needle not in t:
+        raise SystemExit('android.xml is missing %s after FEFC defaults' % needle)
+open(ap, 'w', encoding='utf-8').write(t)
 # enable the bundled add-ons by default (Kodi enables whatever addon-manifest.xml lists)
 am = os.path.join(A, 'system', 'addon-manifest.xml'); t = open(am, encoding='utf-8').read()
 extra = ''.join('  <addon>%s</addon>\n' % a for a in ('plugin.video.fefc', 'repository.fefc', 'skin.fefc', 'resource.uisounds.fefc') if os.path.isdir(os.path.join(A, 'addons', a)))

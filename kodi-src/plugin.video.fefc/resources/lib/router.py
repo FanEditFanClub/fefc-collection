@@ -432,7 +432,7 @@ class Router:
         from . import shapes
         pending = self._pending
         self._pending = []
-        slots = shapes.pack([k for k, _ in pending])
+        slots = shapes.pack([k for k, _ in pending], leading=1)
         real = 0
         for slot in slots:
             if slot == 'spacer':
@@ -614,27 +614,46 @@ class Router:
         url = _url(self.url, action='play', id=fid, n=name)
         self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
 
+    def _add_listing_actions(self, action, kw):
+        """Sort, Shuffle, Support Us, and the My List star on every folder-style page."""
+        fid = kw.get('id') or ''
+        if action == 'genre':
+            fid = 'genre:' + (kw.get('genre') or '')
+            self.add_tool('Sort: %s   (select to change)' % dict(SORTS).get(_sort_get(fid), 'Name A-Z'),
+                          'Change how this genre is sorted.', action='sort', id=fid)
+            self.add_tool('Shuffle Play', 'Play a random mix of edits from this genre.',
+                          'DefaultMusicPlaylists.png', action='shuffle', genre=kw.get('genre') or '')
+        elif action == 'folder':
+            self.add_tool('Sort: %s   (select to change)' % dict(SORTS).get(_sort_get(fid), 'Name A-Z'),
+                          'Change how this collection is sorted. Same options as the FEFC web app.',
+                          action='sort', id=fid)
+            self.add_tool('Shuffle Play', 'Play a random mix of edits from this collection.',
+                          'DefaultMusicPlaylists.png', action='shuffle', id=fid)
+        elif action == 'search':
+            self.add_tool('Shuffle Play', 'Play a random mix of these results.',
+                          'DefaultMusicPlaylists.png', action='shuffle', q=kw.get('q') or self.params.get('q') or '')
+        self.add_folder('Support Us', 'special://skin/media/fefc-ol-tile.png', 'Patreon, PayPal and Venmo.',
+                        landscape='special://skin/media/fefc-ol-tile.png', action='support',
+                        props={'fefc_kind': 'action'})
+        star_id = kw.get('id') or ''
+        if action == 'genre':
+            star_id = 'genre:' + (kw.get('genre') or '')
+        if star_id:
+            on = False
+            try:
+                on = self.mydb().has(star_id)
+            except Exception:
+                on = False
+            label = 'Remove from My List' if on else 'Add to My List'
+            self.add_tool('★  ' + label, 'Star this folder, or remove it.',
+                          'special://skin/media/fefc-ol-tile.png', action='mylist_toggle', id=star_id)
+
     def _emit_pack_page(self, doc, page, action, **kw):
         from . import pagepack
         if not page and doc.get('sfx'):
             self._maybe_sfx(doc.get('sfx'))
-        if not page and action == 'folder' and doc.get('total'):
-            fid = kw.get('id') or ''
-            key = _sort_get(fid)
-            self.add_tool('Sort: %s   (select to change)' % dict(SORTS).get(key, 'Name A-Z'),
-                          'Change how this collection is sorted. Same options as the FEFC web app.',
-                          action='sort', id=fid)
-            self.add_tool('Shuffle Play', 'Play a random mix of edits from this collection.', 'DefaultMusicPlaylists.png', action='shuffle', id=fid)
-        if not page and action == 'genre':
-            gname = kw.get('genre') or ''
-            key = _sort_get('genre:' + gname)
-            self.add_tool('Sort: %s   (select to change)' % dict(SORTS).get(key, 'Name A-Z'),
-                          'Change how this genre is sorted.',
-                          action='sort', id='genre:' + gname)
-            self.add_tool('Shuffle Play', 'Play a random mix of edits from this genre.', 'DefaultMusicPlaylists.png', action='shuffle', genre=gname)
-            self.add_folder('Support Us', 'special://skin/media/fefc-ol-tile.png', 'Patreon, PayPal and Venmo.',
-                            landscape='special://skin/media/fefc-ol-tile.png', action='support',
-                            props={'fefc_kind': 'action'})
+        if not page and action in ('folder', 'genre', 'search', 'person', 'mylist'):
+            self._add_listing_actions(action, kw)
         for row in doc.get('rows') or []:
             self._add_pack_row(row)
         size = pagepack.LIST_PAGE
@@ -745,7 +764,18 @@ class Router:
                 return
         except Exception:
             pass
-        wav = catalog.play_choice(rel, xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1')
+        off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+        from .cues import opening_plan, ui_file
+        plan = opening_plan('folder', off, rel if isinstance(rel, list) else ([rel] if rel else []))
+        # Folder select is the "select" skin action when guisoundmode stuck at "always".
+        # When it did not, play the same click here so a folder tile is not silent.
+        if plan['click'] and xbmcgui.Window(10000).getProperty('FEFC.GuiSound') != 'always':
+            try:
+                import service as _svc
+                _svc._play_local_wav(ui_file('select', False))
+            except Exception:
+                pass
+        wav = catalog.play_choice(rel, off)
         if not wav:
             return
         url = catalog.abs_url(_base(), wav)
@@ -794,16 +824,22 @@ class Router:
             _go('activate', _url('plugin://plugin.video.fefc/', action='genres'))
             return
         dark = 'special://skin/media/fefc-ol-tile.png'
+        # The directory is filled so a failed dialog still has the genre folders.
+        # FEFC.Genres hides that list, the wordmark, and the item count while the board is up.
+        home = xbmcgui.Window(10000)
+        home.setProperty('FEFC.Genres', '1')
         if not entries:
             self.add_folder('Genres could not be read', dark, 'Open Genres again.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
-            self.end()
-            return
-        for label, key, img in entries:
-            self.add_folder(label, img or dark, '', landscape=dark, action='genre', genre=key, props={'fefc_kind': 'folder'})
+        else:
+            for label, key, img in entries:
+                self.add_folder(label, img or dark, '', landscape=dark, action='genre', genre=key, props={'fefc_kind': 'folder'})
         self.end()
         _close_busy()
         from .genreshow import open_genre_board
-        picked = open_genre_board(entries)
+        try:
+            picked = open_genre_board(entries)
+        finally:
+            home.clearProperty('FEFC.Genres')
         if picked:
             _go('push', _url('plugin://plugin.video.fefc/', action='genre', genre=picked))
         elif not _bar_left():
@@ -817,33 +853,8 @@ class Router:
         g = self.params.get('genre') or ''
         page = int(self.params.get('page') or 0)
         dark = 'special://skin/media/fefc-ol-tile.png'
-        from . import pagepack
-        if pagepack.available():
-            full = pagepack.genre_all(g)
-            if full is not None:
-                rows = list(full.get('rows') or [])
-                key = _sort_get('genre:' + g)
-                if key == 'za':
-                    rows = list(reversed(rows))
-                if not rows and page == 0:
-                    self.add_folder('Nothing in the main collection', dark, 'To Be Catalogued is not listed here.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
-                    self.end()
-                    return
-                start = page * pagepack.LIST_PAGE
-                doc = {
-                    'name': full.get('name') or g,
-                    'sfx': '',
-                    'total': len(rows),
-                    'rows': rows[start:start + pagepack.LIST_PAGE],
-                }
-                pool = full.get('sfx') or []
-                if isinstance(pool, list) and pool:
-                    import random
-                    doc['sfx'] = random.choice(pool)
-                elif isinstance(pool, str):
-                    doc['sfx'] = pool
-                self._emit_pack_page(doc, page, 'genre', genre=g)
-                return
+        # The shipped page pack still contains nested files and inherited genres.
+        # This listing is built from the live model: root items only, IMDb genres.
         try:
             m = _model()
         except Exception as e:
@@ -862,9 +873,15 @@ class Router:
             return
         chunk = rows[page * GENRE_PAGE:(page + 1) * GENRE_PAGE]
         if not page:
-            self._maybe_sfx(catalog.sfx_genre(m, g))
-            if vids:
-                self.add_tool('Shuffle Play', 'Play a random mix of edits from this genre.', 'DefaultMusicPlaylists.png', action='shuffle', genre=g)
+            clips = []
+            for i in rows:
+                rel = catalog.sfx_up(m, i)
+                if isinstance(rel, list):
+                    clips.extend(rel)
+                elif rel:
+                    clips.append(rel)
+            self._maybe_sfx(clips)
+            self._add_listing_actions('genre', {'genre': g})
         nf = nv = 0
         for k in chunk:
             if m['items'][k][2]:
@@ -914,10 +931,36 @@ class Router:
             self.add_folder('Next page (%d more) >>' % (len(vids) - (page + 1) * page_size), '', action='recent', page=page + 1)
         self.end(cache=False)
 
+    def cue(self):
+        """Play one UI cue (select, back, home, search). Sound off plays nothing."""
+        kind = self.params.get('kind') or 'select'
+        off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+        from .cues import ui_file
+        name = ui_file(kind, off)
+        if name:
+            try:
+                import service as _svc
+                _svc._play_local_wav(name)
+            except Exception as e:
+                _log('cue %s: %s' % (kind, e))
+        if kind == 'home':
+            xbmc.executebuiltin('ActivateWindow(Home)')
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     def search(self):
         from . import searchflow
         q = self.params.get('q')
         if q is None:
+            off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+            from .cues import ui_file
+            name = ui_file('search', off)
+            if name:
+                try:
+                    import service as _svc
+                    _svc._play_local_wav(name)
+                except Exception:
+                    pass
             if self.handle < 0:
                 _go('activate', _url(self.url, action='search'))
                 return
@@ -1228,6 +1271,24 @@ class Router:
         txt = _html.unescape(re.sub(r'<[^>]+>', '', raw)).replace('\xa0', ' ')
         return re.sub(r'\n{3,}', '\n\n', re.sub(r'[ \t]+', ' ', txt)).strip()
 
+    def downloads(self):
+        """Settings entry: the same manual links as the update popup."""
+        from .updateflow import manual_downloads
+        from .updatepopup import ManualDownloads
+        info = {}
+        try:
+            import json
+            import urllib.request
+            req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json',
+                                         headers={'User-Agent': 'FEFC-Kodi'})
+            with urllib.request.urlopen(req, timeout=12) as r:
+                info = json.loads(r.read().decode('utf-8'))
+        except Exception as e:
+            _log('manual downloads: %s' % e)
+        ManualDownloads(manual_downloads(info)).doModal()
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     def settings(self):
         """Menu-bar SETTINGS opens the FEFC settings. About and Check for software update are entries there.
         About runs the same about() screen as the old Home button (action=about)."""
@@ -1369,8 +1430,7 @@ class Router:
             err = ml.sync()
             if err:
                 _log('mylist sync: %s' % err)
-        if self.params.get('refresh') or xbmc.getInfoLabel('Container.PluginCategory') == 'My List':
-            xbmc.executebuiltin('Container.Refresh')
+        xbmc.executebuiltin('Container.Refresh')
 
     def mylist_sync(self):
         # Folder item: open the dialog, then close the directory handle so Back does not re-run it.
@@ -2069,7 +2129,7 @@ def _bar_action(win, button):
     if button == menu[0]:
         _bar_leave(win)
         win.close()
-        xbmc.executebuiltin('ActivateWindow(Home)')
+        xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=cue&kind=home)')
     elif button == menu[1]:
         _bar_leave(win)
         xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)')
@@ -2408,9 +2468,6 @@ class OptimusWindow(xbmcgui.WindowDialog):
             x = x0 + i * (col + gap)
             self.addControl(xbmcgui.ControlImage(
                 x + (col - icon) // 2, y, icon, icon, name, aspectRatio=2))
-            self.addControl(xbmcgui.ControlLabel(
-                x, y + icon + 1, col, 18, label, font='font12',
-                textColor='FFFFFFFF', alignment=2))
 
     def _keyboard_open(self):
         return bool(xbmc.getCondVisibility('Window.IsActive(virtualkeyboard) | Window.IsVisible(virtualkeyboard) | Window.IsActive(numericinput)'))
@@ -2576,7 +2633,8 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop', 'gridpad': 'gridpad',
-          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr'}
+          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr', 'cue': 'cue',
+          'downloads': 'downloads'}
 
 
 def _play_back_sfx():

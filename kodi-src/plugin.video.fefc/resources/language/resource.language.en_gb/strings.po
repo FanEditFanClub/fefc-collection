@@ -67,3 +67,7 @@ msgstr ""
 msgctxt "#30032"
 msgid "Check for software update"
 msgstr ""
+
+msgctxt "#30034"
+msgid "Download the latest version manually"
+msgstr ""

@@ -573,7 +573,8 @@ def _install_update(new):
             pass
         _cue('start')
         from resources.lib.updatepopup import UpdatePopup
-        popup = UpdatePopup(version_label(new))
+        from resources.lib.updateflow import manual_downloads
+        popup = UpdatePopup(version_label(new), manual_downloads(new))
         popup.render('downloading', 0, 0, want or 0)
         finished = {'done': False}
 
@@ -1337,28 +1338,113 @@ class SkipIntro(xbmcgui.WindowDialog):
             self._go()
 
 
+def _play_local_wav(filename):
+    """Play one packaged UI wav. filename is click.wav or back.wav. Sound off is the caller's check."""
+    name = os.path.basename(filename or '')
+    if not name:
+        return
+    paths = [xbmcvfs.translatePath('special://xbmc/addons/resource.uisounds.fefc/resources/' + name),
+             xbmcvfs.translatePath('special://home/addons/resource.uisounds.fefc/resources/' + name),
+             os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'ui-back.wav' if name == 'back.wav' else name)]
+    for p in paths:
+        try:
+            if p and os.path.exists(p) and os.path.getsize(p) > 100:
+                xbmc.playSFX(p, False)
+                return
+        except Exception:
+            return
+
+
+def _remember_focused_clip():
+    """Keep the focused row's clip on the home window.
+
+    The details dialog often does not see ListItem properties on its first poll.
+    0.6.3 latched the item id at that moment and then never played the clip.
+    """
+    if not xbmc.getCondVisibility('Window.IsActive(videos)'):
+        return
+    url = xbmc.getInfoLabel('Container.ListItem.Property(fefc_sfx)') or ''
+    key = xbmc.getInfoLabel('Container.ListItem.Property(fefc_id)') or ''
+    if url and key:
+        home = xbmcgui.Window(10000)
+        home.setProperty('FEFC.FocusSfx', url)
+        home.setProperty('FEFC.FocusId', key)
+
+
+_transport_state = {'playing': False, 'paused': False, 'forwarding': False, 'rewinding': False, 'wall': False}
+
+
+def _playing_path():
+    return (xbmc.getInfoLabel('Player.Filenameandpath') or '').lower()
+
+
+def transport_cues():
+    """Pause, resume, fast-forward and rewind cues while a title is on screen.
+
+    Kodi's action sounds do play during video on Android: GUIAudioManager stays
+    enabled (playback only disables it on non-POSIX) and xbmc.playSFX uses that
+    same mixer. OSD buttons never send the action, they call PlayerControl, so
+    this watches the player instead. The fullscreen keymap does the same for
+    the remote, which keeps the skin from playing a second copy.
+    """
+    path = _playing_path()
+    wall = ('home-wall' in path) or ('fefc-intro' in path) or ('fefc-home-wall' in path)
+    now = {
+        'playing': bool(xbmc.getCondVisibility('Player.HasVideo')) and not wall,
+        'paused': bool(xbmc.getCondVisibility('Player.Paused')),
+        'forwarding': bool(xbmc.getCondVisibility('Player.Forwarding')),
+        'rewinding': bool(xbmc.getCondVisibility('Player.Rewinding')),
+        'wall': wall,
+    }
+    from resources.lib.cues import transport_event, ui_file
+    off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+    event = transport_event(_transport_state, now, off)
+    _transport_state.clear()
+    _transport_state.update(now)
+    name = ui_file(event, off) if event else ''
+    if name:
+        _play_local_wav(name)
+
+
 def details_sfx():
-    """Play the file's franchise clip once when its details page opens (web parity). Local wav only; never a remote URL."""
+    """Play the select click and the file's clip once when its details page opens.
+
+    The click is the same cue as every other tile. The clip is one file from that
+    title's own set (fefc_sfx), remembered from the folder row if the dialog has
+    not copied the property yet. Sound off and a real film stay silent.
+    """
     if not xbmc.getCondVisibility('Window.IsActive(movieinformation)'):
         _last_info[0] = ''
         return
-    url = xbmc.getInfoLabel('ListItem.Property(fefc_sfx)')
-    key = xbmc.getInfoLabel('ListItem.Property(fefc_id)')
-    if not url or key == _last_info[0]:
+    if _foreground_video():
         return
-    _last_info[0] = key
-    if xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1' or _foreground_video():
+    home = xbmcgui.Window(10000)
+    url = xbmc.getInfoLabel('ListItem.Property(fefc_sfx)') or home.getProperty('FEFC.FocusSfx') or ''
+    key = xbmc.getInfoLabel('ListItem.Property(fefc_id)') or home.getProperty('FEFC.FocusId') or ''
+    off = home.getProperty('FEFC.SoundOff') == '1'
+    from resources.lib.cues import details_ready, opening_plan, ui_file
+    ready, latched = details_ready(key, url, off, _last_info[0])
+    _last_info[0] = latched
+    if not ready:
         return
+    plan = opening_plan('file', False, [url])
+    # The sound skin plays click.wav for the info action when guisoundmode is 2.
+    # Python plays it only when that setting did not stick, so the two do not stack.
+    if home.getProperty('FEFC.GuiSound') != 'always':
+        _play_local_wav(ui_file('select', False))
+    clip = plan['clip']
+
     def go():
         try:
             d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/sfx/')
             os.makedirs(d, exist_ok=True)
-            dst = os.path.join(d, os.path.basename(url.split('?')[0]))
+            dst = os.path.join(d, os.path.basename(clip.split('?')[0]))
             if not os.path.exists(dst) or os.path.getsize(dst) < 1000:
-                req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
+                req = urllib.request.Request(clip, headers={'User-Agent': 'FEFC-Kodi'})
                 with urllib.request.urlopen(req, timeout=8) as r:
                     data = r.read(8 * 1024 * 1024)
                 if len(data) < 1000 or data[:4] != b'RIFF':
+                    log('details sfx: clip is not a wav (%s)' % clip)
                     return
                 with open(dst + '.tmp', 'wb') as f:
                     f.write(data)
@@ -1463,6 +1549,10 @@ def _grid_pad_loop(monitor):
                 continue
             path = xbmc.getInfoLabel('Container.FolderPath') or ''
             total = int(xbmc.getInfoLabel('Container.NumItems') or '0')
+            try:
+                _remember_focused_clip()
+            except Exception:
+                pass
             if path != seen_path and total:
                 seen_path = path
                 if total <= 2500:
@@ -1596,6 +1686,9 @@ def main():
     tracker = Tracker()
     global _wall
     wall = _wall = HomeWall()
+    # The startup JSON-RPC often lands before guisettings. Apply again once the
+    # wall player is up, then on a slow repeat so a settings reload cannot mute cues.
+    next_nav_sound = time.time() + 3
     next_feed = 0.0
     next_counts = 0.0
     next_new_files = 0.0
@@ -1615,6 +1708,17 @@ def main():
     threading.Thread(target=_grid_pad_loop, args=(monitor,), daemon=True).start()
     while not monitor.abortRequested():
         now = time.time()
+        if now >= next_nav_sound:
+            try:
+                from sfxpref import sfx_enabled
+                from resources.lib.cues import REAPPLY_SECONDS
+                on = sfx_enabled(ADDON.getSetting('play_sfx'))
+                home.setProperty('FEFC.SoundOff', '' if on else '1')
+                apply_nav_sound(on)
+                next_nav_sound = now + REAPPLY_SECONDS
+            except Exception as e:
+                log('nav sound reapply: %s' % e)
+                next_nav_sound = now + 45
         try:
             maybe_ask_notify_perm(perm_asked)
         except Exception as e:
@@ -1674,6 +1778,10 @@ def main():
             details_sfx()
         except Exception as e:
             log('details sfx: %s' % e)
+        try:
+            transport_cues()
+        except Exception as e:
+            log('transport cue: %s' % e)
         try:
             wall.tick()
         except Exception as e:
