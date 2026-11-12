@@ -745,7 +745,18 @@ class Router:
                 return
         except Exception:
             pass
-        wav = catalog.play_choice(rel, xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1')
+        off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+        from .cues import opening_plan, ui_file
+        plan = opening_plan('folder', off, rel if isinstance(rel, list) else ([rel] if rel else []))
+        # Folder select is the "select" skin action when guisoundmode stuck at "always".
+        # When it did not, play the same click here so a folder tile is not silent.
+        if plan['click'] and xbmcgui.Window(10000).getProperty('FEFC.GuiSound') != 'always':
+            try:
+                import service as _svc
+                _svc._play_local_wav(ui_file('select', False))
+            except Exception:
+                pass
+        wav = catalog.play_choice(rel, off)
         if not wav:
             return
         url = catalog.abs_url(_base(), wav)
@@ -914,10 +925,36 @@ class Router:
             self.add_folder('Next page (%d more) >>' % (len(vids) - (page + 1) * page_size), '', action='recent', page=page + 1)
         self.end(cache=False)
 
+    def cue(self):
+        """Play one UI cue (select, back, home, search). Sound off plays nothing."""
+        kind = self.params.get('kind') or 'select'
+        off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+        from .cues import ui_file
+        name = ui_file(kind, off)
+        if name:
+            try:
+                import service as _svc
+                _svc._play_local_wav(name)
+            except Exception as e:
+                _log('cue %s: %s' % (kind, e))
+        if kind == 'home':
+            xbmc.executebuiltin('ActivateWindow(Home)')
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+
     def search(self):
         from . import searchflow
         q = self.params.get('q')
         if q is None:
+            off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+            from .cues import ui_file
+            name = ui_file('search', off)
+            if name:
+                try:
+                    import service as _svc
+                    _svc._play_local_wav(name)
+                except Exception:
+                    pass
             if self.handle < 0:
                 _go('activate', _url(self.url, action='search'))
                 return
@@ -2069,7 +2106,7 @@ def _bar_action(win, button):
     if button == menu[0]:
         _bar_leave(win)
         win.close()
-        xbmc.executebuiltin('ActivateWindow(Home)')
+        xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=cue&kind=home)')
     elif button == menu[1]:
         _bar_leave(win)
         xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)')
@@ -2576,7 +2613,7 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop', 'gridpad': 'gridpad',
-          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr'}
+          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr', 'cue': 'cue'}
 
 
 def _play_back_sfx():

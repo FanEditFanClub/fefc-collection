@@ -112,26 +112,14 @@ def normalise(path, x):
     return measure(path)
 
 
-SOUNDS_XML = '''<?xml version="1.0" encoding="UTF-8"?>
-<sounds>
-	<actions>
-		<action><name>left</name><file>move.wav</file></action>
-		<action><name>right</name><file>move.wav</file></action>
-		<action><name>up</name><file>move.wav</file></action>
-		<action><name>down</name><file>move.wav</file></action>
-		<action><name>pageup</name><file>move.wav</file></action>
-		<action><name>pagedown</name><file>move.wav</file></action>
-		<action><name>select</name><file>click.wav</file></action>
-		<action><name>back</name><file>back.wav</file></action>
-		<action><name>previousmenu</name><file>back.wav</file></action>
-		<action><name>parentdir</name><file>back.wav</file></action>
-	</actions>
-	<windows>
-		<window><name>movieinformation</name><activate>open.wav</activate></window>
-		<window><name>videos</name><activate>open.wav</activate></window>
-	</windows>
-</sounds>
-'''
+def _sounds_xml():
+    """The skin file is generated from cues.SKIN_ACTIONS so it cannot drift from Python."""
+    import sys
+    lib = ROOT / 'kodi-src' / 'plugin.video.fefc' / 'resources' / 'lib'
+    if str(lib) not in sys.path:
+        sys.path.insert(0, str(lib))
+    import cues
+    return cues.sounds_xml()
 
 ADDON = '''<?xml version="1.0" encoding="UTF-8"?>
 <addon id="resource.uisounds.fefc" version="%s" name="FEFC UI Sounds" provider-name="Fan Edit Fan Club">
@@ -163,7 +151,7 @@ def build(out, version='1.0.0'):
     bg = Image.new('RGBA', (512, 512), (11, 24, 44, 255))
     bg.alpha_composite(ic, (64, 64))
     bg.convert('RGB').save(out / 'icon.png')
-    (res / 'sounds.xml').write_text(SOUNDS_XML, encoding='utf-8')
+    (res / 'sounds.xml').write_text(_sounds_xml(), encoding='utf-8')
     report = {}
     for n in ('move', 'click', 'open'):
         report[n] = normalise(res / (n + '.wav'), synth(n))

@@ -53,6 +53,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
+      - name: Sound cues
+        run: |
+          set -euo pipefail
+          node --test tests/sound-cues.test.js
       - name: Tools
         timeout-minutes: 10
         run: |
@@ -172,6 +176,7 @@ jobs:
           "$BUILD_TOOLS/aapt2" dump badging FEFC.apk | tee badging2.txt | head -3
           grep -q "package: name='com.fefc.kodi'" badging2.txt
           unzip -l FEFC.apk | grep -q "lib/arm64-v8a/libkodi.so"
+          python3 tools/verify_apk_cues.py FEFC-Kodi.apk FEFC.apk
           unzip -l FEFC.apk | grep -q "lib/armeabi-v7a/libkodi.so"
           rm -rf sochk && mkdir sochk && unzip -q -o FEFC.apk 'lib/*' -d sochk
           for so in sochk/lib/*/libkodi.so; do grep -a -q -F 'com.fefc.kodi' "$so"; ! grep -a -q -E 'org[./_]xbmc[./_]kodi' "$so" || { echo "old package left in $so"; exit 1; }; done

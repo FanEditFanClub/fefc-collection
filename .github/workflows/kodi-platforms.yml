@@ -167,7 +167,8 @@ jobs:
           import json
           report = json.load(open('dist/incoming/FEFC.report.json'))
           assert report['widget_version'] == '0.6.51', report
-          assert report['fefc_version'] == '0.6.3 Beta', report
+          expected = open('kodi-src/fefc-version.txt', encoding='utf-8').read().strip()
+          assert report['fefc_version'] == expected, report
           assert report['signed'] is False, report
           print('widget', report['widget_version'], report['sha256'], report['bytes'])
           PY

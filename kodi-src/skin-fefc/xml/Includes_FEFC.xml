@@ -283,7 +283,7 @@
 					<ondown condition="Control.IsVisible(501)">501</ondown>
 					<ondown condition="Control.IsVisible(500)">500</ondown>
 					<ondown>$PARAM[down]</ondown>
-					<onclick>ActivateWindow(Home)</onclick>
+					<onclick>RunPlugin(plugin://plugin.video.fefc/?action=cue&amp;kind=home)</onclick>
 				</control>
 				<control type="image"><left>16</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-home.png</texture></control>
 				<control type="button" id="9291">
