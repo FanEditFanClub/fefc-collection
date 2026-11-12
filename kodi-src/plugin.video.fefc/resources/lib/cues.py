@@ -22,6 +22,10 @@ UI = {
     'back': 'back.wav',
     'home': 'back.wav',
     'search': 'click.wav',
+    'pause': 'pause.wav',
+    'resume': 'resume.wav',
+    'forward': 'forward.wav',
+    'rewind': 'rewind.wav',
 }
 
 # Kodi action name -> wav. Video tiles fire "info" (show information), not "select".
@@ -37,9 +41,25 @@ SKIN_ACTIONS = (
     ('back', 'back.wav'),
     ('previousmenu', 'back.wav'),
     ('parentdir', 'back.wav'),
+    # Playback. The service plays these from player state (OSD buttons call
+    # PlayerControl and never hit this map). The names are here so a remote
+    # that still sends the action gets the same file.
+    ('pause', 'pause.wav'),
+    ('play', 'resume.wav'),
+    ('playpause', 'resume.wav'),
+    ('fastforward', 'forward.wav'),
+    ('rewind', 'rewind.wav'),
+    ('stepforward', 'forward.wav'),
+    ('stepback', 'rewind.wav'),
+    ('bigstepforward', 'forward.wav'),
+    ('bigstepback', 'rewind.wav'),
+    ('smallstepback', 'rewind.wav'),
+    ('skipplus', 'forward.wav'),
+    ('skipminus', 'rewind.wav'),
 )
 
-REQUIRED_WAVS = ('click.wav', 'back.wav', 'move.wav', 'open.wav')
+REQUIRED_WAVS = ('click.wav', 'back.wav', 'move.wav', 'open.wav',
+                 'pause.wav', 'resume.wav', 'forward.wav', 'rewind.wav')
 SOUND_SKIN = 'resource.uisounds.fefc'
 GUI_SOUND_ALWAYS = 2
 # Re-apply the Kodi setting this often. Startup JSON-RPC is often too early.
@@ -108,6 +128,27 @@ def details_ready(item_id, clip_url, sound_off, latched_id):
     if sound_off or not item_id or item_id == latched_id or not clip_url:
         return False, latched_id
     return True, item_id
+
+
+def transport_event(prev, now, sound_off):
+    """Cue for a change in playback, or '' when nothing new should play.
+
+    prev and now are dicts with playing, paused, forwarding, rewinding, wall.
+    Sound off is silent. The home-wall loop and the intro are not a title,
+    so they never get a transport cue. Fast-forward and rewind win over a
+    pause change in the same poll, because starting a scan also leaves pause.
+    """
+    if sound_off or now.get('wall') or not (now.get('playing') or now.get('paused')):
+        return ''
+    if now.get('forwarding') and not prev.get('forwarding'):
+        return 'forward'
+    if now.get('rewinding') and not prev.get('rewinding'):
+        return 'rewind'
+    if now.get('paused') and not prev.get('paused'):
+        return 'pause'
+    if prev.get('paused') and not now.get('paused') and now.get('playing'):
+        return 'resume'
+    return ''
 
 
 def apk_asset_paths():

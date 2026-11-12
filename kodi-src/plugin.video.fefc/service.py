@@ -1371,6 +1371,41 @@ def _remember_focused_clip():
         home.setProperty('FEFC.FocusId', key)
 
 
+_transport_state = {'playing': False, 'paused': False, 'forwarding': False, 'rewinding': False, 'wall': False}
+
+
+def _playing_path():
+    return (xbmc.getInfoLabel('Player.Filenameandpath') or '').lower()
+
+
+def transport_cues():
+    """Pause, resume, fast-forward and rewind cues while a title is on screen.
+
+    Kodi's action sounds do play during video on Android: GUIAudioManager stays
+    enabled (playback only disables it on non-POSIX) and xbmc.playSFX uses that
+    same mixer. OSD buttons never send the action, they call PlayerControl, so
+    this watches the player instead. The fullscreen keymap does the same for
+    the remote, which keeps the skin from playing a second copy.
+    """
+    path = _playing_path()
+    wall = ('home-wall' in path) or ('fefc-intro' in path) or ('fefc-home-wall' in path)
+    now = {
+        'playing': bool(xbmc.getCondVisibility('Player.HasVideo')) and not wall,
+        'paused': bool(xbmc.getCondVisibility('Player.Paused')),
+        'forwarding': bool(xbmc.getCondVisibility('Player.Forwarding')),
+        'rewinding': bool(xbmc.getCondVisibility('Player.Rewinding')),
+        'wall': wall,
+    }
+    from resources.lib.cues import transport_event, ui_file
+    off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+    event = transport_event(_transport_state, now, off)
+    _transport_state.clear()
+    _transport_state.update(now)
+    name = ui_file(event, off) if event else ''
+    if name:
+        _play_local_wav(name)
+
+
 def details_sfx():
     """Play the select click and the file's clip once when its details page opens.
 
@@ -1743,6 +1778,10 @@ def main():
             details_sfx()
         except Exception as e:
             log('details sfx: %s' % e)
+        try:
+            transport_cues()
+        except Exception as e:
+            log('transport cue: %s' % e)
         try:
             wall.tick()
         except Exception as e:

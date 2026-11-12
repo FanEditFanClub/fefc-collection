@@ -5,6 +5,8 @@
    "date": "2026-11-12",
    "notes": [
     "Selecting a file, folder, or action plays the click again, and Back and Home play the back cue. Sound off stays silent.",
+    "Pausing, resuming, fast-forward, and rewind play a short quiet cue over the video.",
+    "The pause bar, its label, and the time sit at the bottom of the screen, inside the TV safe area.",
     "Opening a file or its folder plays a random clip from that title. Westworld files play a Westworld clip. The details page retries if the clip address is not ready on the first look.",
     "If an update fails, the popup and Settings list a manual download for Fire TV and Android (FEFC.apk only), Samsung TV (the widget and the guide), and the web app.",
     "Genres hides the folder list behind the board. The four wall tiles stay visible. Genre names sit on a dark band. Drama uses the Godfather still of Brando and Pacino. Crime uses a text-free still from the Heat (1995) downtown shootout.",

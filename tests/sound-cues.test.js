@@ -28,6 +28,19 @@ test('UI select, back, home, search and title/genre clips resolve, and Sound off
   assert.match(service, /details_ready/);
   assert.match(service, /FEFC\.FocusSfx/);
   assert.match(service, /next_nav_sound/);
+  assert.match(service, /def transport_cues/);
+  const seek = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/DialogSeekBar.xml'), 'utf8');
+  const keymap = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/resources/keymaps/fefc-nav.xml'), 'utf8');
+  assert.match(seek, /<top>866<\/top>/);
+  assert.match(seek, /<left>96<\/left>/);
+  assert.match(seek, /<height>160<\/height>/);
+  assert.match(seek, /SeekLabel/);
+  assert.match(seek, /SeekTimeLabelVar/);
+  assert.match(seek, /id="401"/);
+  assert.doesNotMatch(seek, /effect="zoom"/);
+  assert.match(keymap, /FullscreenVideo/);
+  assert.match(keymap, /PlayerControl\(Play\)/);
+  assert.match(navsfx, /TRANSPORT_QUIET = 0\.4/);
   assert.match(builder, /apply_fefc_defaults/);
   assert.match(workflow, /sound-cues\.test\.js/);
   assert.match(workflow, /verify_apk_cues\.py FEFC-Kodi\.apk FEFC\.apk/);
@@ -39,7 +52,11 @@ assert cues.ui_file('select', False) == 'click.wav'
 assert cues.ui_file('back', False) == 'back.wav'
 assert cues.ui_file('home', False) == 'back.wav'
 assert cues.ui_file('search', False) == 'click.wav'
-for event in ('select', 'back', 'home', 'search'):
+assert cues.ui_file('pause', False) == 'pause.wav'
+assert cues.ui_file('resume', False) == 'resume.wav'
+assert cues.ui_file('forward', False) == 'forward.wav'
+assert cues.ui_file('rewind', False) == 'rewind.wav'
+for event in ('select', 'back', 'home', 'search', 'pause', 'resume', 'forward', 'rewind'):
     assert cues.ui_file(event, True) == ''
 # A video tile opens details via the info action. That must be the click, not silence.
 actions = dict(cues.SKIN_ACTIONS)
@@ -48,6 +65,26 @@ assert actions['info'] == 'click.wav'
 assert actions['back'] == 'back.wav'
 assert actions['previousmenu'] == 'back.wav'
 assert actions['parentdir'] == 'back.wav'
+assert actions['pause'] == 'pause.wav'
+assert actions['play'] == 'resume.wav'
+assert actions['playpause'] == 'resume.wav'
+assert actions['fastforward'] == 'forward.wav'
+assert actions['rewind'] == 'rewind.wav'
+assert actions['stepforward'] == 'forward.wav'
+assert actions['stepback'] == 'rewind.wav'
+assert actions['skipplus'] == 'forward.wav'
+assert actions['skipminus'] == 'rewind.wav'
+for name in ('pause.wav', 'resume.wav', 'forward.wav', 'rewind.wav'):
+    assert name in cues.REQUIRED_WAVS
+    assert any(p.endswith(name) for p in cues.apk_asset_paths())
+idle = {'playing': True, 'paused': False, 'forwarding': False, 'rewinding': False, 'wall': False}
+paused = dict(idle, paused=True, playing=True)
+assert cues.transport_event(idle, paused, False) == 'pause'
+assert cues.transport_event(paused, idle, False) == 'resume'
+assert cues.transport_event(idle, dict(idle, forwarding=True), False) == 'forward'
+assert cues.transport_event(idle, dict(idle, rewinding=True), False) == 'rewind'
+assert cues.transport_event(idle, paused, True) == ''
+assert cues.transport_event(idle, dict(paused, wall=True), False) == ''
 xml = cues.sounds_xml()
 assert '<name>info</name>' in xml and '<file>click.wav</file>' in xml
 assert '<name>select</name>' in xml
