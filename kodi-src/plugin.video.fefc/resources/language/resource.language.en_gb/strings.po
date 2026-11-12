@@ -65,15 +65,15 @@ msgid "About"
 msgstr ""
 
 msgctxt "#30035"
-msgid "Give feedback"
+msgid "Give Feedback"
 msgstr ""
 
 msgctxt "#30036"
-msgid "Version and info"
+msgid "Version & Info"
 msgstr ""
 
 msgctxt "#30037"
-msgid "What's new"
+msgid "What's New"
 msgstr ""
 
 msgctxt "#30038"
@@ -89,9 +89,9 @@ msgid "Open-source notices"
 msgstr ""
 
 msgctxt "#30032"
-msgid "Check for software update"
+msgid "Check for Update"
 msgstr ""
 
 msgctxt "#30034"
-msgid "Download the latest version manually"
+msgid "Download latest version"
 msgstr ""

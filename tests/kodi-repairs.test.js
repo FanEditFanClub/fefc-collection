@@ -230,7 +230,7 @@ print('ok', x, y, w, h)
   assert.match(settingsXml, /id="check_update_btn"[\s\S]{0,240}action=update/);
   assert.match(strings, /msgctxt "#30030"\nmsgid "About"/);
   assert.match(strings, /msgctxt "#30031"\nmsgid "About"/);
-  assert.match(strings, /msgctxt "#30032"\nmsgid "Check for software update"/);
+  assert.match(strings, /msgctxt "#30032"\nmsgid "Check for Update"/);
   assert.match(home, /id="8990"/);
   assert.match(home, /<label>ACTORS &amp;<\/label>/);
   assert.match(home, /<label>DIRECTORS<\/label>/);
