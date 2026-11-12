@@ -131,6 +131,8 @@
     var v = VIEWS[P.view], e = el(), ak = document.activeElement, key = P.shown === P.view && ak && e.contains(ak) && ak.dataset ? ak.dataset.pad ? '[data-pad="' + ak.dataset.pad + '"]' : ak.dataset.sp ? '[data-sp="' + ak.dataset.sp + '"]' : null : null;
     e.innerHTML = v.html();
     P.shown = P.view;
+    var slot = document.getElementById("sp-qr-slot");
+    if (slot && window.qrcode && qrcode.mountFefc) qrcode.mountFefc(slot, decodeURIComponent(slot.getAttribute("data-url") || ""));
     var f = key && $(key, e) || $("[data-default]", e) || $("button", e);
     if (f) try {
       f.focus({ preventScroll: true });
@@ -219,10 +221,7 @@
       html: function() {
         var q = P.q, svg = "", gog = !!(P.opt && P.opt.google);
         if (q && window.qrcode) {
-          var c = window.qrcode(0, "M");
-          c.addData(q.url);
-          c.make();
-          svg = c.createSvgTag({ cellSize: 6, margin: 3, scalable: true });
+          svg = '<div id="sp-qr-slot" data-url="' + encodeURIComponent(q.url) + '"></div>';
         }
         return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + '</div><p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + '<br>Confirm code on your phone: <b class="sp-ver">' + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
       }

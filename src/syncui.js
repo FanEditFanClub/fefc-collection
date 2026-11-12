@@ -39,6 +39,7 @@ function btn(act,label,cls,extra){return '<button class="mi sp-b '+(cls||'')+'" 
 function opt(act,t,d,def){return '<button class="mi sp-opt" data-sp="'+act+'"'+(def?' data-default':'')+'><b>'+esc(t)+'</b><span>'+esc(d)+'</span></button>'}
 function render(){if(!P)return;var v=VIEWS[P.view],e=el(),ak=document.activeElement,key=P.shown===P.view&&ak&&e.contains(ak)&&ak.dataset?(ak.dataset.pad?'[data-pad="'+ak.dataset.pad+'"]':ak.dataset.sp?'[data-sp="'+ak.dataset.sp+'"]':null):null;
  e.innerHTML=v.html();P.shown=P.view;
+ var slot=document.getElementById('sp-qr-slot');if(slot&&window.qrcode&&qrcode.mountFefc)qrcode.mountFefc(slot,decodeURIComponent(slot.getAttribute('data-url')||''));
  var f=(key&&$(key,e))||$('[data-default]',e)||$('button',e);if(f)try{f.focus({preventScroll:true})}catch(x){}}
 function done(msg){go('done',{msg:msg})}
 function fail(msg,retry){go('error',{msg:msg,retry:retry})}
@@ -77,7 +78,7 @@ var VIEWS={
   html:function(){var d=P.d;return frame('Sign in with Google',d?'<p class="sp-sub">On your phone or computer, go to</p><div class="sp-url">'+esc((d.verification_url||'').replace(/^https?:\/\//,''))+'</div><p class="sp-sub">and enter this code</p><div class="sp-code">'+esc(d.user_code)+'</div><p class="sp-note" id="sp-left">Waiting for you to approve\u2026 '+mmss(P.left)+'</p>':'<p class="sp-sub">Getting a code\u2026</p>',btn('menu','Cancel','',' data-default'))}},
  qr:{enter:function(g){if(srvOff())return fail('Cloud sync is not switched on yet.');
    loadQR().then(function(){return V.qrStart()}).then(function(q){if(g!==gen)return;P.q=q;P.left=q.expires_in;render();tick(g);pollQR(g,q)},function(){if(g===gen)fail('Could not make a QR code. Try again.',1)})},
-  html:function(){var q=P.q,svg='',gog=!!(P.opt&&P.opt.google);if(q&&window.qrcode){var c=window.qrcode(0,'M');c.addData(q.url);c.make();svg=c.createSvgTag({cellSize:6,margin:3,scalable:true})}
+  html:function(){var q=P.q,svg='',gog=!!(P.opt&&P.opt.google);if(q&&window.qrcode){svg='<div id="sp-qr-slot" data-url="'+encodeURIComponent(q.url)+'"></div>'}
    return frame(gog?'Sign in with Google':'Scan with your phone',q?'<div class="sp-qr">'+svg+'</div><p class="sp-sub">'+(gog?'Open your phone camera, scan, then <b>Sign in with Google</b> and Approve.':'Open your phone camera, scan, then tap Approve.')+'<br>Confirm code on your phone: <b class="sp-ver">'+esc(q.verify)+'</b></p><p class="sp-note" id="sp-left">Waiting… '+mmss(P.left)+'</p>':'<p class="sp-sub">Making a QR code…</p>',btn('menu','Cancel','',' data-default'))}},
  pair:{html:function(){return frame('6-digit sync code','<p class="sp-sub">No Google account needed.</p><div class="sp-opts">'+opt('pair-new','Create a code','Show a code to enter on your other device.')+opt('pair-enter','Enter a code','Type the code shown on another device.')+'</div>',btn('menu','Back','',' data-default'))}},
  'pair-new':{enter:function(g){if(srvOff())return fail('Cloud sync is not switched on yet.');

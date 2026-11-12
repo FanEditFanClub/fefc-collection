@@ -163,9 +163,13 @@ def build(out, build_num=None, use_published_build=False, previous=None):
         z.write(icon_path, 'icon.png')
         icon_path.unlink()
         z.writestr('fefc-build.json', json.dumps(rec) + '\n')
+        logo = ROOT / 'assets' / 'fefc-logo.png'
+        if not logo.is_file():
+            raise SystemExit('missing assets/fefc-logo.png')
+        z.write(logo, 'fefc-logo.png')
     with zipfile.ZipFile(out) as z:
         names = set(z.namelist())
-        for required in ('config.xml', 'index.html', 'icon.png', 'js/shell.js', 'js/version.js', 'fefc-build.json', 'css/shell.css'):
+        for required in ('config.xml', 'index.html', 'icon.png', 'js/shell.js', 'js/version.js', 'fefc-build.json', 'css/shell.css', 'fefc-logo.png'):
             if required not in names:
                 raise SystemExit('wgt missing ' + required)
         if any(n.startswith('author-signature') or n.startswith('signature') for n in names):

@@ -2296,3 +2296,30 @@ var qrcode = function() {
     return qrcode;
 }));
 window.qrcode=qrcode;
+qrcode.fefcPng=function(text, logo){
+  var qr=qrcode(0,'H'); qr.addData(text); qr.make();
+  var n=qr.getModuleCount(), quiet=4, cell=8, side=(n+quiet*2)*cell;
+  var canvas=document.createElement('canvas'); canvas.width=canvas.height=side;
+  var g=canvas.getContext('2d');
+  g.fillStyle='#fff'; g.fillRect(0,0,side,side); g.fillStyle='#000';
+  for(var r=0;r<n;r++) for(var c=0;c<n;c++) if(qr.isDark(r,c)) g.fillRect((c+quiet)*cell,(r+quiet)*cell,cell,cell);
+  if(logo&&logo.complete&&logo.naturalWidth){
+    var box=Math.max(cell*7, Math.round(n*0.18)*cell), pad=cell;
+    var x=(side-box)/2, y=(side-box)/2;
+    g.fillStyle='#fff'; g.fillRect(x-pad,y-pad,box+pad*2,box+pad*2);
+    var off=document.createElement('canvas'); off.width=off.height=box;
+    var og=off.getContext('2d');
+    og.drawImage(logo,0,0,box,box);
+    og.globalCompositeOperation='source-in'; og.fillStyle='#000'; og.fillRect(0,0,box,box);
+    g.drawImage(off,x,y);
+  }
+  return canvas.toDataURL('image/png');
+};
+qrcode.mountFefc=function(el, text){
+  var img=document.createElement('img'); img.alt='QR code'; img.style.cssText='display:block;width:100%;height:auto;background:#fff';
+  function draw(){ try{ img.src=qrcode.fefcPng(text, window.FEFC_QR_LOGO); }catch(e){} }
+  if(!window.FEFC_QR_LOGO){ var logo=new Image(); logo.src='assets/fefc-logo.png'; window.FEFC_QR_LOGO=logo; }
+  draw();
+  if(!(window.FEFC_QR_LOGO.complete&&window.FEFC_QR_LOGO.naturalWidth)) window.FEFC_QR_LOGO.addEventListener('load', draw);
+  el.innerHTML=''; el.appendChild(img);
+};

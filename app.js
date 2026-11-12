@@ -1754,10 +1754,8 @@ var __spreadValues = (a, b) => {
     const draw = () => {
       try {
         if (!window.qrcode) return;
-        const qr = qrcode(0, "M");
-        qr.addData(FEEDBACK_FORM_URL);
-        qr.make();
-        c.innerHTML = qr.createSvgTag(5, 8);
+        if (!qrcode.mountFefc) return;
+        qrcode.mountFefc(c, FEEDBACK_FORM_URL);
       } catch (e) {
         c.innerHTML = '<a href="' + FEEDBACK_FORM_URL + '" target="_blank" rel="noopener">Open the feedback form</a>';
       }

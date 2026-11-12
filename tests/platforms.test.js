@@ -178,6 +178,7 @@ assert 'version="0.6.51"' in cfg
 assert '0.6.5 Beta' in cfg
 assert 'avplay' in cfg and 'tv.inputdevice' in cfg
 assert 'tizen=1' in z.read('index.html').decode()
+assert 'fefc-logo.png' in names and z.read('fefc-logo.png')[:4] == bytes([137, 80, 78, 71])
 info = __import__('json').loads(z.read('fefc-build.json'))
 assert info['version'] == '0.6.5 Beta' and info['build'] == 51
 print('ok')
