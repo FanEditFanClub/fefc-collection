@@ -1,6 +1,6 @@
 """Text entry with the Android / Fire TV system keyboard (Gboard voice typing, Fire TV keyboard + remote mic)
 via the injected com.fefc.kodi.FefcInputActivity. Falls back to Kodi's own keyboard off-Android or if it fails to open."""
-import os, time, random, urllib.parse
+import os, time, urllib.parse
 import xbmc, xbmcgui, xbmcvfs
 
 
