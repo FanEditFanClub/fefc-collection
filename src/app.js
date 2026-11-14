@@ -676,7 +676,19 @@ window.addEventListener('popstate',()=>{S.back();navBack=true;clearBack();route(
 if(P.get('debug'))window._fefc={items,kids,episodes:i=>episodes(items.get(i))};
 /* ---------- DASHBOARD ---------- */
 function status(t){$('#status').textContent=t}
-function menu(){$('#menu').innerHTML=NA.menuHTML(FOLD,cur!==ROOT||!$('#details').hidden||parseH()[0]==='search'||parseH()[0]==='edit');const o=$('#menu .mi.on');o&&o.scrollIntoView&&o.scrollIntoView({block:'nearest',inline:'nearest'})}
+let _menuLast='';
+const menuBack=()=>cur!==ROOT||!$('#details').hidden||parseH()[0]==='search'||parseH()[0]==='edit';
+function menu(){_menuLast=NA.menuHTML(FOLD,menuBack());$('#menu').innerHTML=_menuLast;const o=$('#menu .mi.on');o&&o.scrollIntoView&&o.scrollIntoView({block:'nearest',inline:'nearest'})}
+/* Redraw the top menu when the details page or player opens or closes (the overlay watcher below the
+   app scope calls this). Only when the menu would actually change, never scrolls, and a remote's focus
+   inside the menu stays on the same button (or the current page's button if that one is gone).
+   Does nothing until the app has drawn the menu once. */
+function menuRefresh(){if(!_menuLast||!(window.NA&&NA.menuHTML))return false;const m=$('#menu');if(!m)return false;const h=NA.menuHTML(FOLD,menuBack());if(h===_menuLast)return false;
+ const a=document.activeElement,inMenu=!!(a&&a!==m&&m.contains(a)),href=inMenu&&a.getAttribute('data-href'),nav=inMenu&&a.getAttribute('data-nav');
+ _menuLast=h;m.innerHTML=h;
+ if(inMenu){let t=null;for(const b of m.querySelectorAll('.mi')){if((href&&b.getAttribute('data-href')===href)||(nav&&b.getAttribute('data-nav')===nav)){t=b;break}}t=t||m.querySelector('.mi.on')||m.querySelector('.mi');if(t)try{t.focus({preventScroll:true})}catch(e){try{t.focus()}catch(_){}}}
+ return true}
+window.FEFCMenuRefresh=menuRefresh;
 const FIRST_TILES=36;let drainGen=0,artIO=null;
 function lazyArt(el){if(!window.IntersectionObserver)return art(el,items.get(el.dataset.id));if(!artIO)artIO=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){artIO.unobserve(e.target);art(e.target,items.get(e.target.dataset.id))}}),{root:null,rootMargin:(document.body.classList.contains('tv')||document.body.classList.contains('firetv')||!!window.FEFCNative)?'320px 0px':'600px 0px'});artIO.observe(el)}
 /* On TV only keep a few screens of tiles ahead of the viewport in the DOM (the root grid is 4,000+ tiles). */
@@ -1765,7 +1777,7 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();window.__bip=e;upd
  const t=setInterval(()=>{if(document.body.classList.contains('intro-done')){clearInterval(t);setTimeout(show,1200)}},400)})();
 /* clips.js also in index.html (defer); keep late inject as fallback if markup omitted */
 (function(){let done=0;const inj=()=>{if(done||document.querySelector('script[src*="clips.js"]'))return;done=1;const s=document.createElement('script');s.src='clips.js?v='+(document.querySelector('script[src*="app.js?v="]')||{src:''}).src.split('v=')[1];s.async=true;document.body.appendChild(s)};if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',inj);else inj();addEventListener('load',inj)})();
-;(function(){const sync=()=>{const d=!document.getElementById('details').hidden&&document.getElementById('player').hidden;const isShuf=document.body.classList.contains('shuf-player');document.body.classList.toggle('overlay',(!document.getElementById('details').hidden||!document.getElementById('player').hidden)&&!isShuf);document.body.classList.toggle('details-open',d);if(d||isShuf){const b=document.getElementById('bar');document.documentElement.style.setProperty('--barh',(b.offsetHeight||56)+'px');if(window.NA&&NA.menuHTML)try{menu()}catch(e){}}};const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden','class']}));sync()})();
+;(function(){const sync=()=>{const d=!document.getElementById('details').hidden&&document.getElementById('player').hidden;const isShuf=document.body.classList.contains('shuf-player');document.body.classList.toggle('overlay',(!document.getElementById('details').hidden||!document.getElementById('player').hidden)&&!isShuf);document.body.classList.toggle('details-open',d);if(d||isShuf){const b=document.getElementById('bar');document.documentElement.style.setProperty('--barh',(b.offsetHeight||56)+'px');}try{window.FEFCMenuRefresh&&window.FEFCMenuRefresh()}catch(e){}};const mo=new MutationObserver(sync);['details','player'].forEach(i=>mo.observe(document.getElementById(i),{attributes:true,attributeFilter:['hidden','class']}));sync()})();
 addEventListener('load',()=>{const w=document.getElementById('wordmark');if(w)window.dispatchEvent(new Event('resize'))});
 
 (()=>{const h=document.getElementById('hints'),pl=document.getElementById('player'),rf=document.getElementById('rfpanel'),up=()=>{if(h){const isShuf=document.body.classList.contains('shuf-player');h.style.display=(rf&&!rf.hidden)||(pl&&!pl.hidden&&!isShuf)?'none':''}};if(window.MutationObserver)[pl,rf].forEach(x=>x&&new MutationObserver(up).observe(x,{attributes:true,attributeFilter:['hidden','class']}));up()})(); // one sound/legend control on every page, hidden in the player

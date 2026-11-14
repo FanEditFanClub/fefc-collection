@@ -1548,7 +1548,7 @@ var __spreadValues = (a, b) => {
     $("#arena").innerHTML = "";
     $("#sec2").textContent = sub || "";
     status("");
-    menu2();
+    menu();
     $("#main").scrollTop = 0;
   }
   function peopleList() {
@@ -1824,7 +1824,7 @@ var __spreadValues = (a, b) => {
       $("#grid").className = "support-grid";
       $("#grid").innerHTML = SUPPORT.map((s) => '<a class="ol-tile link sup sup-'.concat(s.name.toLowerCase(), '" href="').concat(s.url, '" target="_blank" rel="noopener" aria-label="').concat(s.name, ' (opens in a new tab)"><span class="sup-logo">').concat(s.logo, '</span><span class="sup-nm">').concat(s.name, "</span><small>").concat(s.sub, "</small></a>")).join("") + FEEDBACK_HTML;
       status("");
-      menu2();
+      menu();
       renderFeedbackQR();
     }
   }
@@ -2719,11 +2719,44 @@ var __spreadValues = (a, b) => {
   function status(t) {
     $("#status").textContent = t;
   }
-  function menu2() {
-    $("#menu").innerHTML = NA.menuHTML(FOLD, cur !== ROOT || !$("#details").hidden || parseH()[0] === "search" || parseH()[0] === "edit");
+  let _menuLast = "";
+  const menuBack = () => cur !== ROOT || !$("#details").hidden || parseH()[0] === "search" || parseH()[0] === "edit";
+  function menu() {
+    _menuLast = NA.menuHTML(FOLD, menuBack());
+    $("#menu").innerHTML = _menuLast;
     const o = $("#menu .mi.on");
     o && o.scrollIntoView && o.scrollIntoView({ block: "nearest", inline: "nearest" });
   }
+  function menuRefresh() {
+    if (!_menuLast || !(window.NA && NA.menuHTML)) return false;
+    const m = $("#menu");
+    if (!m) return false;
+    const h = NA.menuHTML(FOLD, menuBack());
+    if (h === _menuLast) return false;
+    const a = document.activeElement, inMenu = !!(a && a !== m && m.contains(a)), href = inMenu && a.getAttribute("data-href"), nav = inMenu && a.getAttribute("data-nav");
+    _menuLast = h;
+    m.innerHTML = h;
+    if (inMenu) {
+      let t = null;
+      for (const b of m.querySelectorAll(".mi")) {
+        if (href && b.getAttribute("data-href") === href || nav && b.getAttribute("data-nav") === nav) {
+          t = b;
+          break;
+        }
+      }
+      t = t || m.querySelector(".mi.on") || m.querySelector(".mi");
+      if (t) try {
+        t.focus({ preventScroll: true });
+      } catch (e) {
+        try {
+          t.focus();
+        } catch (_) {
+        }
+      }
+    }
+    return true;
+  }
+  window.FEFCMenuRefresh = menuRefresh;
   const FIRST_TILES = 36;
   let drainGen = 0, artIO = null;
   function lazyArt(el) {
@@ -3055,7 +3088,7 @@ var __spreadValues = (a, b) => {
     g.querySelectorAll(".ol-tile").forEach(lazyArt);
     drain(Q, {});
     status(big.length || loose.length ? "" : "Nothing here yet");
-    menu2();
+    menu();
     restoreScroll();
   }
   document.addEventListener("click", (e) => {
@@ -3348,7 +3381,7 @@ var __spreadValues = (a, b) => {
     document.querySelectorAll("#arena .ol-tile,#grid .ol-tile").forEach(lazyArt);
     if (mode !== "arena" && !(mode === "all" && cur === ROOT)) drain(Q, isNew);
     status(all.length ? "" : live ? "Empty" : "Nothing here yet");
-    menu2();
+    menu();
     restoreScroll();
     viewEnter(_main);
   }
@@ -3856,7 +3889,7 @@ var __spreadValues = (a, b) => {
     $("#bar").hidden = false;
     document.body.classList.add("details-open");
     if (window.NA && NA.menuHTML) try {
-      menu2();
+      menu();
     } catch (e) {
     }
     const b = $("#bar");
@@ -4675,7 +4708,7 @@ var __spreadValues = (a, b) => {
     $("#crumb").textContent = "Search: " + q;
     $("#arena").innerHTML = "";
     status("");
-    menu2();
+    menu();
     $("#main").scrollTop = 0;
     const qNorm = spNorm(q);
     const words = qNorm.split(/\s+/).filter((w) => w.length > 1 || qNorm.length < 3);
@@ -6530,10 +6563,10 @@ var __spreadValues = (a, b) => {
     if (d || isShuf) {
       const b = document.getElementById("bar");
       document.documentElement.style.setProperty("--barh", (b.offsetHeight || 56) + "px");
-      if (window.NA && NA.menuHTML) try {
-        menu();
-      } catch (e) {
-      }
+    }
+    try {
+      window.FEFCMenuRefresh && window.FEFCMenuRefresh();
+    } catch (e) {
     }
   };
   const mo = new MutationObserver(sync);
