@@ -863,10 +863,19 @@ class Router:
             self.add_folder('Try again', dark, '', landscape=dark, action='genre', genre=g, props={'fefc_kind': 'action'})
             self.end()
             return
+        fid = 'genre:' + g
+        key = _sort_get(fid)
         nk = lambda i: catalog.natkey(m['items'][i][0])
         folders = sorted(catalog.dedupe(m, m['genre_folders'].get(g, [])), key=nk)
         vids = sorted(catalog.dedupe(m, m['genre_videos'].get(g, [])), key=nk)
         rows = folders + vids
+        if key != 'az':
+            # Same keys and helper as folder(): az/za/added/files.
+            # _sort_get() already validates the key, defaulting to 'az'.
+            rows = _sorted_kids(m, rows, key)
+            # Keep landscape cards first: pack() pairs slots land-first,
+            # so a sort must not interleave a video ahead of a folder.
+            rows = [i for i in rows if m['items'][i][2]] + [i for i in rows if not m['items'][i][2]]
         if not rows and page == 0:
             self.add_folder('Nothing in the main collection', dark, 'To Be Catalogued is not listed here.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
             self.end()
@@ -1047,17 +1056,20 @@ class Router:
 
     def mylist(self):
         ml = self.mydb()
-        from . import pagepack
-        by = pagepack.id_index() if pagepack.available() else {}
-        wanted = list(ml.continue_ids()) + list(ml.ids())
-        if by and all(sid in by for sid in wanted):
-            self._mylist_from_pack(ml, by)
-            return
-        m = _model()
+        # Sync BEFORE the pack-coverage decision: wanted must include
+        # stars that arrive via sync, or the pack path below will skip
+        # a newly synced star that is not in the shipped pack.
         if ml.linked and not self.params.get('nosync'):
             err = ml.sync(timeout=4)
             if err:
                 _log('mylist sync: %s' % err)
+        from . import pagepack
+        by = pagepack.id_index() if pagepack.available() else {}
+        wanted = list(ml.continue_ids()) + list(ml.ids())
+        if by and all(sid in by for sid in wanted):
+            self._mylist_from_pack(ml, by, synced=True)
+            return
+        m = _model()
         who = ml.db.get('user') or 'linked'
         dark = 'special://skin/media/fefc-ol-tile.png'
         link_plot = 'Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.'
@@ -1105,9 +1117,9 @@ class Router:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
         self.end(cache=False)
 
-    def _mylist_from_pack(self, ml, by):
+    def _mylist_from_pack(self, ml, by, synced=False):
         """My List from the shipped index. Skips the full catalogue build."""
-        if ml.linked and not self.params.get('nosync'):
+        if not synced and ml.linked and not self.params.get('nosync'):
             err = ml.sync(timeout=4)
             if err:
                 _log('mylist sync: %s' % err)
@@ -1223,11 +1235,32 @@ class Router:
 
     def shuffle(self):
         import random
-        m = _model()
-        if self.params.get('genre'):
-            vids = catalog.dedupe(m, m['genre_videos'].get(self.params['genre'], []))
+        try:
+            m = _model()
+        except Exception as e:
+            _log('shuffle catalogue: %s' % e)
+            xbmcgui.Dialog().notification('FEFC', 'Could not load the collection. Check the connection and try again.', xbmcgui.NOTIFICATION_ERROR, 3000)
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            return
+        genre = self.params.get('genre') or ''
+        q = (self.params.get('q') or '').strip()
+        fid = self.params.get('id') or ''
+        if genre:
+            vids = catalog.dedupe(m, m['genre_videos'].get(genre, []))
+        elif q:
+            # Search pages pass q= only, with no id. Shuffle the search
+            # results (catalog.search, the same fallback router.search()
+            # uses), videos only — folders cannot be queued to play.
+            try:
+                vids = [i for i in catalog.search(m, q)
+                        if i in m['items'] and not m['items'][i][2]]
+            except Exception as e:
+                _log('shuffle search: %s' % e)
+                vids = []
+        elif fid:
+            vids = catalog.dedupe(m, _descendant_videos(m, fid))
         else:
-            vids = catalog.dedupe(m, _descendant_videos(m, self.params['id']))
+            vids = []
         if not vids:
             xbmcgui.Dialog().notification('FEFC', 'Nothing to shuffle here.', xbmcgui.NOTIFICATION_INFO, 3000)
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
@@ -1271,9 +1304,9 @@ class Router:
         txt = _html.unescape(re.sub(r'<[^>]+>', '', raw)).replace('\xa0', ' ')
         return re.sub(r'\n{3,}', '\n\n', re.sub(r'[ \t]+', ' ', txt)).strip()
 
-    def downloads(self):
+    def manual_downloads(self):
         """Settings entry: the same manual links as the update popup."""
-        from .updateflow import manual_downloads
+        from .updateflow import manual_downloads as _manual_downloads
         from .updatepopup import ManualDownloads
         info = {}
         try:
@@ -1285,7 +1318,7 @@ class Router:
                 info = json.loads(r.read().decode('utf-8'))
         except Exception as e:
             _log('manual downloads: %s' % e)
-        ManualDownloads(manual_downloads(info)).doModal()
+        ManualDownloads(_manual_downloads(info)).doModal()
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
@@ -1421,21 +1454,38 @@ class Router:
         LinkWindow(lines, qr_path, open_url=shown).doModal()
 
     def mylist_toggle(self):
-        m = _model()
-        vid = self.params['id']
+        vid = self.params.get('id') or ''
+        if not vid:
+            xbmcgui.Dialog().notification('FEFC', 'Nothing to add to My List.', xbmcgui.NOTIFICATION_INFO, 3000)
+            return
         ml = self.mydb()
-        v = m['items'].get(vid)
-        on = ml.toggle(vid, v[0] if v else '')
-        msg = ('Added to My List' if on else 'Removed from My List') + (': ' + catalog.display_title(v[0]) if v else '')
+        # Name for the notification only. The pack index has it without
+        # loading the full catalogue, so toggling works offline.
+        name = ''
+        try:
+            from . import pagepack
+            by = pagepack.id_index() if pagepack.available() else {}
+            row = by.get(vid) if isinstance(by, dict) else None
+            if row and len(row) > 1:
+                name = row[1] or ''
+        except Exception:
+            name = ''
+        on = ml.toggle(vid, name)
+        msg = ('Added to My List' if on else 'Removed from My List') + (': ' + catalog.display_title(name) if name else '')
         xbmcgui.Dialog().notification('FEFC', msg, xbmcgui.NOTIFICATION_INFO, 3000)
         hw = xbmcgui.Window(10000)
         hw.setProperty('FEFC.MyId', vid)
         hw.setProperty('FEFC.MyLabel', 'Remove from My List' if on else 'Add to My List')
+        # Refresh first: the toggle is already saved locally, so the
+        # refresh shows it at once. Sync after it — sync only uploads.
+        xbmc.executebuiltin('Container.Refresh')
         if ml.linked:
-            err = ml.sync()
+            try:
+                err = ml.sync()
+            except Exception as e:
+                err = e
             if err:
                 _log('mylist sync: %s' % err)
-        xbmc.executebuiltin('Container.Refresh')
 
     def mylist_sync(self):
         # Folder item: open the dialog, then close the directory handle so Back does not re-run it.
@@ -1879,26 +1929,36 @@ class Router:
             xbmcgui.Dialog().notification('Downloads', 'Nothing downloaded yet. Open a video and pick Download.', xbmcgui.NOTIFICATION_INFO, 5000)
             self.end()
             return
+        # One model load for the whole listing, not one per row. A model
+        # failure must not fail local downloads: fall back to the
+        # placeholder poster instead.
+        try:
+            m = _model()
+        except Exception:
+            m = None
         for r in rows:
+            rid = (r or {}).get('id') or ''
+            if not rid:
+                _log('downloads: skipping row without id: %r' % (r,))
+                continue
             li = xbmcgui.ListItem(catalog.display_title(r.get('name') or 'video.mp4'), offscreen=True)
             li.setProperty('IsPlayable', 'true')
             li.setProperty('fefc_download', 'true')
             poster = 'special://skin/media/fefc-video-poster.png'
-            try:
-                m = _model()
-                if r.get('id') in m['items']:
-                    poster = catalog.poster_for(m, _base(), r['id']) or poster
-            except Exception:
-                pass
+            if m is not None and rid in m['items']:
+                try:
+                    poster = catalog.poster_for(m, _base(), rid) or poster
+                except Exception:
+                    pass
             from . import shapes
             shapes.stamp(li, 'video', poster)
             sz = r.get('size') or 0
             if sz:
                 li.getVideoInfoTag().setPlot('Downloaded to this device  ·  %.2f GB' % (sz / 1073741824.0))
-            li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=r['id']))])
-            url = _url(self.url, action='play_download', id=r['id'])
+            li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=rid))])
+            url = _url(self.url, action='play_download', id=rid)
             self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
-        self.end()
+        self.end(cache=False)
 
     def download_storage(self):
         """Storage details dialog (from the Downloads section's storage row)."""
@@ -2679,11 +2739,10 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'mylist_sortswitch': 'mylist_sortswitch', 'mylist_shuffle': 'mylist_shuffle', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
           'open_link': 'open_link', 'play_external': 'play_external',
-          'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
+          'download': 'download', 'downloads': 'downloads', 'manual_downloads': 'manual_downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop', 'gridpad': 'gridpad',
-          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr', 'cue': 'cue',
-          'downloads': 'downloads'}
+          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr', 'cue': 'cue'}
 
 
 def _play_back_sfx():
