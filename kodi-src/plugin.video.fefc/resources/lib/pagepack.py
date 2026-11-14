@@ -219,7 +219,14 @@ def build_pack(model, base):
         name = display(fid, item[0], parent, is_dir)
         row = [fid, name, is_dir, art_of(fid, is_dir)]
         if not is_dir:
-            info = catalog.video_info(model, fid)
+            try:
+                info = catalog.video_info(model, fid)
+            except Exception:
+                info = {'plot': '', 'editor': '', 'year': 0, 'rating_text': '', 'rating_src': '', 'runtime': 0}
+            try:
+                runtime = int(info.get('runtime') or 0)
+            except (TypeError, ValueError):
+                runtime = 0
             # [id, name, is_dir, art, search extra, details]
             # details: plot, editor, year, rating text, rating source, runtime minutes
             row.append('')
@@ -229,7 +236,7 @@ def build_pack(model, base):
                 info.get('year') or 0,
                 info.get('rating_text') or '',
                 info.get('rating_src') or '',
-                int(info.get('runtime') or 0),
+                runtime,
             ])
             # Full parent set. The listing picks one clip when the row is shown.
             try:

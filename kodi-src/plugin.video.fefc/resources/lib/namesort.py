@@ -14,7 +14,6 @@ _PARTICLE = {
     'mac', 'zu', 'dos', 'das', 'do', 'y',
 }
 _PREFIX_RE = re.compile(r'^\s*\d+\s*[-.:)]\s*')
-_PREFIX_SPACE_RE = re.compile(r'^\s*\d+\s+(?=\S)')
 _COUNT_RE = re.compile(r'\s*\(\d+\)\s*$')
 
 
@@ -22,7 +21,6 @@ def display_name(raw):
     """Natural name for a person tile. Drops a leading catalogue index and a trailing (count)."""
     s = _COUNT_RE.sub('', (raw or '').strip())
     s = _PREFIX_RE.sub('', s)
-    s = _PREFIX_SPACE_RE.sub('', s)
     return re.sub(r'\s+', ' ', s).strip()
 
 
@@ -44,6 +42,12 @@ def surname(raw):
     i = len(tokens) - 1
     while i > 0 and tokens[i - 1].casefold().rstrip('.') in _PARTICLE:
         i -= 1
+    if i > 0 and tokens[i].casefold().rstrip('.') == 'y':
+        # "Garcia y Lopez": 'y' joins two surnames, so the surname starts at
+        # the name before 'y', not at 'y'. Include that name's particles too.
+        i -= 1
+        while i > 0 and tokens[i - 1].casefold().rstrip('.') in _PARTICLE:
+            i -= 1
     if i == 0:
         i = len(tokens) - 1
     return ' '.join(tokens[i:])

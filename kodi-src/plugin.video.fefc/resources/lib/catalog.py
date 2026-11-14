@@ -203,6 +203,54 @@ def dedupe_titles(items, ids):
     return [i for i in ids if i in keep]
 
 
+def _person_names(value, cap):
+    """Normalise a director/cast value to a list of name strings, capped.
+
+    A string becomes a one-item list (not a character slice), a dict becomes
+    its 'name', a list is flattened the same way, anything else becomes [].
+    """
+    if isinstance(value, str):
+        return [value.strip()] if value.strip() else []
+    if isinstance(value, dict):
+        name = value.get('name')
+        return [str(name).strip()] if name and str(name).strip() else []
+    if isinstance(value, (list, tuple)):
+        out = []
+        for entry in value:
+            if isinstance(entry, str):
+                if entry.strip():
+                    out.append(entry.strip())
+            elif isinstance(entry, dict):
+                name = entry.get('name')
+                if name and str(name).strip():
+                    out.append(str(name).strip())
+            elif entry is not None:
+                text = str(entry).strip()
+                if text:
+                    out.append(text)
+            if len(out) >= cap:
+                break
+        return out
+    return []
+
+
+def _coerce_runtime(value):
+    """A runtime value to int minutes, or 0. Accepts int, float, a numeric
+    string, and a string such as '122 minutes' (leading number is taken)."""
+    if value is None:
+        return 0
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        pass
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        pass
+    m = re.search(r'\d+', str(value))
+    return int(m.group(0)) if m else 0
+
+
 def build_model(raw):
     """raw: dict source-name -> parsed JSON. Returns a marshal-able dict."""
     idx = raw['index']
@@ -369,8 +417,8 @@ def build_model(raw):
     md = raw.get('metadata') or {}
 
     def slim_film(f):
-        return {'title': f.get('title'), 'year': f.get('year'), 'plot': f.get('plot'), 'director': (f.get('director') or [])[:4],
-                'cast': (f.get('cast') or [])[:10], 'runtime': f.get('runtime'), 'imdb': f.get('imdb'),
+        return {'title': f.get('title'), 'year': f.get('year'), 'plot': f.get('plot'), 'director': _person_names(f.get('director'), 4),
+                'cast': _person_names(f.get('cast'), 10), 'runtime': f.get('runtime'), 'imdb': f.get('imdb'),
                 'imdbRating': f.get('imdbRating'), 'imdbVotes': f.get('imdbVotes'), 'trailer': f.get('trailer'),
                 'genres': (f.get('genres') or [])[:6]}
     films = {}
@@ -474,6 +522,9 @@ def _decorate(model):
         model['recent'] = _compute_recent(model)
     if not isinstance(model.get('art'), dict) or not model.get('art'):
         model['art'] = _build_art_index(model)
+    for key in ('sfx', 'edits', 'fmap', 'films', 'ratings', 'fileinfo', 'changes', 'added'):
+        if not isinstance(model.get(key), dict):
+            model[key] = {}
     return model
 
 
@@ -1023,20 +1074,26 @@ def folder_art(m, base, fid):
 
 def video_info(m, vid):
     """Merge everything known about a video: title/plot/year/cast/ratings."""
-    it = m['items'].get(vid)
-    tgt = it[3] if it else ''
-    e = m['edits'].get(vid) or (m['edits'].get(tgt) if tgt else None) or {}
-    q = m['fmap'].get(vid) or (m['fmap'].get(tgt) if tgt else None)
-    f = m['films'].get(q) if q else {}
-    f = f or {}
-    r = m['ratings'].get(vid) or (m['ratings'].get(tgt) if tgt else None) or {}
+    def _d(v):
+        return v if isinstance(v, dict) else {}
+
+    it = m['items'].get(vid) if isinstance(m.get('items'), dict) else None
+    tgt = it[3] if it and len(it) > 3 else ''
+    edits = _d(m.get('edits'))
+    e = _d(edits.get(vid) or (edits.get(tgt) if tgt else None) or {})
+    fmap = _d(m.get('fmap'))
+    q = fmap.get(vid) or (fmap.get(tgt) if tgt else None)
+    films = _d(m.get('films'))
+    f = _d(films.get(q) if q else {})
+    ratings_map = _d(m.get('ratings'))
+    r = _d(ratings_map.get(vid) or (ratings_map.get(tgt) if tgt else None) or {})
     plot = []
     # same sections as the web app's details page: FAN EDIT (synopsis, details, editor, ratings), CHANGES, SOURCE FILM
     syn = e.get('synopsis') or e.get('description')
     if syn:
-        plot.append('[COLOR FFFF9C00]FAN EDIT[/COLOR]\n' + syn)
+        plot.append('[COLOR FFFF9C00]FAN EDIT[/COLOR]\n' + str(syn))
     if e.get('details'):
-        plot.append('[COLOR FFCC99FF]ABOUT THIS EDIT[/COLOR]\n' + e['details'])
+        plot.append('[COLOR FFCC99FF]ABOUT THIS EDIT[/COLOR]\n' + str(e['details']))
     facts = []
     if e.get('editor'):
         facts.append('Editor: %s' % e['editor'])
@@ -1047,35 +1104,60 @@ def video_info(m, vid):
     if e.get('released'):
         facts.append('Released: %s' % e['released'])
     for src, label in (('ifdb', 'FanEdit.org IFDB'), ('mrdb', 'Movies Remastered')):
-        if r.get(src):
-            s0, sc, v = r[src]
-            facts.append('%s: %.1f/10%s' % (label, s0 / sc * 10, (' (%d votes)' % v) if v else ''))
+        rec = r.get(src)
+        if isinstance(rec, (list, tuple)) and len(rec) == 3:
+            try:
+                s0, sc, v = rec
+                sc = float(sc)
+                if sc:
+                    facts.append('%s: %.1f/10%s' % (label, float(s0) / sc * 10, (' (%d votes)' % v) if v else ''))
+            except (TypeError, ValueError):
+                pass
     if facts:
         plot.append('[COLOR FF99CCFF]' + '   |   '.join(facts) + '[/COLOR]')
-    par = it[1] if it else ''
-    ch = (m.get('changes') or {}).get(vid) or ((m.get('changes') or {}).get(tgt) if tgt else None) or (m.get('changes') or {}).get('folder:' + par)
+    par = it[1] if it and len(it) > 1 else ''
+    changes = _d(m.get('changes'))
+    ch = changes.get(vid) or ((changes.get(tgt) if tgt else None) or changes.get('folder:' + par))
+    if isinstance(ch, str):
+        ch = [ch]
     if ch:
-        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + c for c in ch))
+        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + str(c) for c in ch if isinstance(c, (str, int, float))))
     elif r.get('changes_lines'):
-        # 0.4.2: IFDb change lines, shown inline. No "(see FanEdit.org)" pointer — the changes are right here.
-        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + c for c in r['changes_lines']))
+        lines = r['changes_lines']
+        if isinstance(lines, str):
+            lines = [lines]
+        plot.append('[COLOR FFFF7AA2]CHANGES[/COLOR]\n' + '\n'.join('- ' + str(c) for c in lines if isinstance(c, (str, int, float))))
     # 0.4.0: FILE INFO (web parity) from data/fileinfo.json - read-only Drive metadata (size, owner, length, resolution)
-    fi = (m.get('fileinfo') or {}).get(tgt or vid) or (m.get('fileinfo') or {}).get(vid) or {}
+    fileinfo = _d(m.get('fileinfo'))
+    fi = _d(fileinfo.get(tgt or vid) or fileinfo.get(vid) or {})
     nm = (m['items'].get(tgt) or it or [''])[0] if (tgt or it) else ''
     xm = re.search(r'\.([a-z0-9]{2,4})$', nm or '', re.I)
     fl = []
     if fi.get('d'):
-        d = int(fi['d'])
-        fl.append('Length: ' + ('%dh %dm' % (d // 3600, round(d % 3600 / 60)) if d >= 3600 else '%dm' % max(1, round(d / 60))))
+        try:
+            d = int(fi['d'])
+        except (TypeError, ValueError):
+            d = 0
+        if d:
+            fl.append('Length: ' + ('%dh %dm' % (d // 3600, (d % 3600) // 60) if d >= 3600 else '%dm' % max(1, d // 60)))
     if fi.get('s'):
-        sz = float(fi['s'])
-        fl.append('Size: ' + ('%.1f GB' % (sz / 1e9) if sz >= 1e9 else '%d MB' % round(sz / 1e6)))
-    if fi.get('r'):
+        try:
+            sz = float(fi['s'])
+        except (TypeError, ValueError):
+            sz = 0
+        if sz:
+            if sz >= 1e9:
+                fl.append('Size: %.1f GB' % (sz / 1e9))
+            elif sz >= 1e6:
+                fl.append('Size: %d MB' % round(sz / 1e6))
+            else:
+                fl.append('Size: %.1f MB' % (sz / 1e6))
+    if isinstance(fi.get('r'), str) and fi['r']:
         fl.append('Resolution: ' + fi['r'])
     if xm:
         fl.append('Format: ' + xm.group(1).upper())
     if fi.get('o'):
-        fl.append('Host: ' + fi['o'].split('@')[0])
+        fl.append('Host: ' + str(fi['o']).split('@')[0])
     par_name = (m['items'].get(par) or [''])[0] if par else ''
     if not par_name and par and par == m.get('root'):
         par_name = m.get('root_name') or ''
@@ -1086,24 +1168,30 @@ def video_info(m, vid):
     elif not plot:
         plot.append('No editorial notes for this file.' + ((' Folder: ' + par_name) if par_name else ''))
     if f.get('plot'):
-        plot.append('[COLOR FFFFCC66]SOURCE FILM%s[/COLOR]\n' % (': ' + f['title'] if f.get('title') else '') + f['plot'])
-    links = [u for u in (e.get('url'), r.get('ifdb_url'), r.get('mrdb_url')) if u]
+        plot.append('[COLOR FFFFCC66]SOURCE FILM%s[/COLOR]\n' % (': ' + f['title'] if f.get('title') else '') + str(f['plot']))
+    links = [u for u in (e.get('url'), r.get('ifdb_url'), r.get('mrdb_url')) if isinstance(u, str) and u]
     if links:
         plot.append('[COLOR FF888888]' + '\n'.join(dict.fromkeys(links)) + '[/COLOR]')
     ratings = []
     for src, label in (('ifdb', 'FEFC-IFDb'), ('mrdb', 'MRDb')):
-        if r.get(src):
-            s, sc, v = r[src]
-            ratings.append((label, round(s / sc * 10, 1), v))
+        rec = r.get(src)
+        if isinstance(rec, (list, tuple)) and len(rec) == 3:
+            try:
+                s, sc, v = rec
+                sc = float(sc)
+                if sc:
+                    ratings.append((label, round(float(s) / sc * 10, 1), v))
+            except (TypeError, ValueError):
+                pass
     if f.get('imdbRating'):
         try:
             ratings.append(('imdb', float(f['imdbRating']), int(f.get('imdbVotes') or 0)))
-        except ValueError:
+        except (TypeError, ValueError):
             pass
     year = e.get('origYear') or f.get('year') or e.get('year')
     try:
         year = int(str(year)[:4]) if year else 0
-    except ValueError:
+    except (TypeError, ValueError):
         year = 0
     rating_text = ''
     rating_src = ''
@@ -1112,16 +1200,28 @@ def video_info(m, vid):
         lab, sc, _votes = ratings[0]
         rating_src, rating_name = shown.get(lab, ('imdb', lab))
         rating_text = '%s %s/10' % (rating_name, sc)
-    return {'plot': '\n\n'.join(plot), 'year': year, 'director': f.get('director') or [], 'cast': f.get('cast') or [],
-            'runtime': (round(int(fi['d']) / 60) if fi.get('d') else f.get('runtime') or 0), 'ratings': ratings, 'trailer': f.get('trailer'),
+    try:
+        runtime = round(int(fi['d']) / 60) if fi.get('d') else _coerce_runtime(f.get('runtime'))
+    except (TypeError, ValueError):
+        runtime = _coerce_runtime(f.get('runtime'))
+    return {'plot': '\n\n'.join(plot), 'year': year, 'director': _person_names(f.get('director'), 4), 'cast': _person_names(f.get('cast'), 10),
+            'runtime': runtime, 'ratings': ratings, 'trailer': f.get('trailer'),
             'editor': e.get('editor') or '', 'title': e.get('title') or '', 'film': f.get('title') or '',
             'rating_text': rating_text, 'rating_src': rating_src}
 
 
 def display_title(name):
     # exactly like the web app's caption (parse(n).raw): the full file name, only the extension removed
-    t = re.sub(r'\.[a-z0-9]{2,4}$', '', name or '', flags=re.I)
-    return t.strip() or name
+    if not name:
+        return ''
+    t = str(name)
+    m = re.search(r'\.([A-Za-z0-9]+)$', t)
+    if m and m.group(1).lower() in VIDEO_EXTS:
+        t = t[:m.start()]
+    return t.strip()
+
+
+_BAG_CACHE = {}
 
 
 def _bag(files):
@@ -1136,15 +1236,25 @@ def _bag(files):
         d = '/tmp/'
     fn = os.path.join(d, 'sfxbag.json')
     key = '|'.join(str(f[0] if isinstance(f, list) else f) for f in files)
-    try:
-        st = json.load(open(fn))
-    except Exception:
-        st = {}
-    b = st.get(key) or {'o': [], 'l': -1}
+    st = _BAG_CACHE.get(fn)
+    if st is None:
+        try:
+            with open(fn, encoding='utf-8') as f:
+                st = json.load(f)
+        except Exception:
+            st = {}
+        if not isinstance(st, dict):
+            st = {}
+        _BAG_CACHE[fn] = st
+    b = st.get(key)
+    if (not isinstance(b, dict) or not isinstance(b.get('o'), list)
+            or not all(isinstance(i, int) and 0 <= i < len(files) for i in b['o'])
+            or not isinstance(b.get('l'), int)):
+        b = {'o': [], 'l': -1}
     if not b.get('o') or any(i >= len(files) for i in b['o']):
         o = list(range(len(files)))
         random.shuffle(o)
-        if o[0] == b.get('l'):
+        if len(o) > 1 and o[0] == b.get('l'):
             o[0], o[1] = o[1], o[0]
         b['o'] = o
     i = b['o'].pop(0)
@@ -1152,36 +1262,62 @@ def _bag(files):
     st[key] = b
     try:
         os.makedirs(d, exist_ok=True)
-        json.dump(st, open(fn, 'w'))
+        _atomic_write(fn, json.dumps(st).encode('utf-8'))
     except Exception:
         pass
     return files[i]
 
 
 def _pick(v):
+    """Pick clips from a sound entry. A grouped entry (list of lists) uses the
+    shuffle-bag (one group, never the same twice in a row). A flat entry
+    returns all its clips, or one at random when 'random' is truthy."""
     import random
     if isinstance(v, dict):
         files = v.get('file') or v.get('files')
-        rnd = v.get('random')
+        rnd = bool(v.get('random'))
     else:
         files, rnd = v, False
     if not files:
         return ''
+    if isinstance(files, str):
+        files = [files]
     if files and isinstance(files[0], list):
-        files = _bag(files)
-    return files
+        return _bag(files)
+    flat = [p for p in files if isinstance(p, str) and p]
+    if not flat:
+        return ''
+    if rnd:
+        return [random.choice(flat)]
+    return flat
 
 
 def sfx_genre(m, genre):
-    """Genre sound clip (data/folder-sfx.json -> _genres), like the web app. -> list of relative paths or ''."""
-    g = (m['sfx'].get('_genres') or {})
+    """Genre sound clip (data/folder-sfx.json -> _genres), like the web app.
+    Returns a list of relative clip paths, or '' when the genre is silent."""
+    sfx = m.get('sfx') or {}
+    g = (sfx.get('_genres') or {}) if isinstance(sfx, dict) else {}
+    if not isinstance(g, dict):
+        g = {}
     v = g.get(genre)
     if v is None:
         for k, x in g.items():
-            if k.lower() == (genre or '').lower():
+            if isinstance(k, str) and k.lower() == (genre or '').lower():
                 v = x
                 break
-    return _pick(v) if v else ''
+    if not v:
+        return ''
+    picked = _pick(v)
+    if isinstance(picked, str):
+        return [picked] if picked else ''
+    if isinstance(picked, list):
+        return picked
+    return ''
+
+
+# One ancestor limit for the sfx walk and for depth: sfx_for() and _depth()
+# used to disagree (30 vs 40). 30 is the binding one.
+ANCESTOR_LIMIT = 30
 
 
 def _depth(m, i):
@@ -1190,7 +1326,7 @@ def _depth(m, i):
         return c[i]
     d = 0
     p = m['items'][i][1]
-    while p and d < 40:
+    while p and d < ANCESTOR_LIMIT:
         d += 1
         p = m['items'].get(p, [None, ''])[1]
     c[i] = d
@@ -1209,8 +1345,8 @@ def dedupe(m, ids):
     A shortcut and its original share the target id. The original file (no
     target id) is the FEFC-hosted copy and is the one shown. A shortcut is
     kept only when that original is not in the list. Separate uploads of the
-    same title still collapse when the normalized title and the size or the
-    duration match. A single folder's own children are not passed through here,
+    same title still collapse when the normalized title and BOTH the size and
+    the duration match. A single folder's own children are not passed through here,
     so a shortcut stays visible in the folder it was filed in.
     """
     items = m.get('items') or {}
@@ -1235,9 +1371,20 @@ def dedupe(m, ids):
             return None
         key = target_of(i)
         fi = fileinfo.get(key) or fileinfo.get(i) or {}
-        size = int(fi.get('s') or 0)
-        dur = int(fi.get('d') or 0)
-        if not size and not dur:
+        if not isinstance(fi, dict):
+            return None
+        try:
+            size = int(fi.get('s') or 0)
+        except (TypeError, ValueError):
+            size = 0
+        try:
+            dur = int(fi.get('d') or 0)
+        except (TypeError, ValueError):
+            dur = 0
+        if not size or not dur:
+            # Only collapse on a signature when BOTH are known. With only one
+            # present, two different cuts with the same title and the same
+            # one value would collapse; target-based dedupe still applies.
             return None
         return (_norm_title(v[0]), size, dur)
 
@@ -1280,6 +1427,8 @@ def clip_list(value):
         files = [value]
     else:
         files = list(value or [])
+    if isinstance(files, str):
+        files = [files]
     if files and isinstance(files[0], list):
         groups = files
     else:
@@ -1291,30 +1440,46 @@ def clip_list(value):
         if not paths:
             continue
         chosen = next((p for p in paths if p.lower().endswith('.mp3')), paths[0])
-        base = os.path.splitext(os.path.basename(chosen))[0].lower()
-        if base in seen:
+        # Dedupe by full path, not basename: two different folders can both
+        # hold an 'intro.mp3' and they are different clips.
+        key = chosen.lower()
+        if key in seen:
             continue
-        seen.add(base)
+        seen.add(key)
         out.append(chosen)
     return out
 
 
-def sfx_wav(rel):
-    """Wav path for one clip. A list is a full set: one clip is chosen now, not when the pack was built."""
+def sfx_wav(rel, exists=None):
+    """Wav path for one clip. A list is a full set: one clip is chosen now, not when the pack was built.
+
+    exists, when given, is a caller-supplied callable(path) -> bool that knows
+    where kodi-sfx/ lives. When it reports the wav absent, '' is returned so
+    the caller can fall back. Catalog itself is pure Python and cannot know
+    the add-on media dir, and the returned path is a relative URL, so no
+    local existence check is done here by default.
+    """
     import random
     paths = [rel] if isinstance(rel, str) else clip_list(rel)
     paths = [p for p in paths if isinstance(p, str) and os.path.basename(p)]
     if not paths:
         return ''
     f = random.choice(paths) if len(paths) > 1 else paths[0]
-    return 'kodi-sfx/' + os.path.splitext(os.path.basename(f))[0] + '.wav'
+    wav = 'kodi-sfx/' + os.path.splitext(os.path.basename(f))[0] + '.wav'
+    if exists is not None:
+        try:
+            if not exists(wav):
+                return ''
+        except Exception:
+            return ''
+    return wav
 
 
-def play_choice(rel, sound_off=False):
+def play_choice(rel, sound_off=False, exists=None):
     """The clip to play for this open. Sound Off returns nothing for every set."""
     if sound_off or not rel:
         return ''
-    return sfx_wav(rel)
+    return sfx_wav(rel, exists=exists)
 
 
 def sfx_up(m, vid):
@@ -1322,15 +1487,19 @@ def sfx_up(m, vid):
     The set is cached. The clip is chosen later, once per open."""
     cache = m.get('_sfxup')
     if isinstance(cache, dict) and vid in cache:
-        return cache[vid]
+        cached = cache[vid]
+        return list(cached) if isinstance(cached, list) else (cached or [])
     r = sfx_for(m, vid)
-    m.setdefault('_sfxup', {})[vid] = r or []
-    return r or []
+    result = list(r) if isinstance(r, list) else []
+    m.setdefault('_sfxup', {})[vid] = result
+    return list(result)
 
 
 def _sfx_direct(m, fid):
     """Set pinned to this item, or the first rule that names it. Ancestors are not consulted."""
-    sfx = m['sfx']
+    sfx = m.get('sfx') or {}
+    if not isinstance(sfx, dict):
+        sfx = {}
     it = m['items'].get(fid)
     name = it[0] if it else ''
 
@@ -1364,7 +1533,7 @@ def sfx_for(m, fid):
     """Full clip set for an item or its nearest sounding ancestor. A list, or '' when silent."""
     seen = set()
     cur = fid
-    for _ in range(30):
+    for _ in range(ANCESTOR_LIMIT):
         if not cur or cur in seen:
             break
         seen.add(cur)
@@ -1418,19 +1587,28 @@ def _compiled_rules(sfx):
 
 
 def search(m, query, limit=300):
-    toks = [t for t in re.split(r'\s+', query.lower().strip()) if t]
+    if query is None:
+        return []
+    toks = [t for t in re.split(r'\s+', str(query).lower().strip()) if t]
     if not toks:
         return []
+    items = m.get('items') or {}
+    edits = m.get('edits') or {}
+    if not isinstance(edits, dict):
+        edits = {}
+    tbc_ids = tbc_members(items, m.get('kids') or {})
     out = []
-    for i, v in m['items'].items():
-        hay = v[0].lower()
-        e = m['edits'].get(i)
-        if e and e.get('title'):
-            hay += ' ' + e['title'].lower()
+    for i, v in items.items():
+        if i in tbc_ids or (v[3] and v[3] in tbc_ids):
+            continue
+        hay = str(v[0] or '').lower()
+        e = edits.get(i)
+        if isinstance(e, dict) and e.get('title'):
+            hay += ' ' + str(e['title']).lower()
         if all(t in hay for t in toks):
-            if v[2] and not (m.get('rcnt') or m['cnt']).get(i):
+            if v[2] and not (m.get('rcnt') or m.get('cnt') or {}).get(i):
                 continue
             out.append(i)
     out = dedupe(m, out)
-    out.sort(key=lambda i: (0 if m['items'][i][2] else 1, natkey(m['items'][i][0])))
+    out.sort(key=lambda i: (0 if items[i][2] else 1, natkey(items[i][0])))
     return out[:limit]
