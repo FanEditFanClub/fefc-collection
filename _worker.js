@@ -408,7 +408,8 @@ async function feedApi(req, env, ctx, url) {
 // Fallback: GOOGLE_API_KEY (public/"anyone with the link" only), then Drive usercontent.
 // Never change Drive sharing or content. Never log token values.
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/';
-const sidCache = new Map();                       // shortcut/file id -> { id, t }
+const sidCache = new Map();                       // shortcut/file id -> { id, t, ttl }
+const SID_OK_TTL = 6 * 3600e3, SID_FAIL_TTL = 60e3;   // a resolved id is stable; a failed lookup (raw id kept) is retried within a minute, not 6 h
 let driveTok = null;                              // { access, exp }
 async function driveAccessToken(env) {
   const rt = env.GOOGLE_DRIVE_REFRESH_TOKEN, cid = env.GOOGLE_DRIVE_CLIENT_ID, sec = env.GOOGLE_DRIVE_CLIENT_SECRET;
@@ -428,8 +429,8 @@ async function driveAccessToken(env) {
 }
 async function resolveDriveId(id, auth) {
   // auth: { bearer } or { key } or null (public view redirect)
-  const c = sidCache.get(id); if (c && Date.now() - c.t < 6 * 3600e3) return c.id;
-  let out = id;
+  const c = sidCache.get(id); if (c && Date.now() - c.t < (c.ttl || SID_OK_TTL)) return c.id;
+  let out = id, resolved = false;
   if (auth && (auth.bearer || auth.key)) {
     const q = DRIVE + id + '?fields=id,mimeType,shortcutDetails&supportsAllDrives=true' + (auth.key ? ('&key=' + encodeURIComponent(auth.key)) : '');
     const headers = auth.bearer ? { Authorization: 'Bearer ' + auth.bearer } : {};
@@ -437,16 +438,18 @@ async function resolveDriveId(id, auth) {
     if (!r.ok) { const e = new Error('meta ' + r.status); e.status = r.status; e.body = await r.text().catch(() => ''); throw e; }
     const m = await r.json();
     out = m.mimeType === 'application/vnd.google-apps.shortcut' && m.shortcutDetails && m.shortcutDetails.targetId ? m.shortcutDetails.targetId : m.id;
+    resolved = true;
   } else {
     // Catalog IDs are often Drive shortcuts; usercontent fails on the shortcut id ("Can't download file" HTML).
     try {
       const r = await fetch('https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view', { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(8000) });
       const loc = r.headers.get('location') || '';
       const m = loc.match(/\/file\/d\/([\w-]{10,80})(?:\/|$)/);
-      if (m) out = m[1];
-    } catch (_) { /* keep raw id */ }
+      if (m) { out = m[1]; resolved = true; }
+      else if (r.status === 200) resolved = true;   // a plain file (not a shortcut): the raw id is the answer
+    } catch (_) { /* keep raw id; not cached for long (resolved stays false) */ }
   }
-  if (sidCache.size > 5000) sidCache.clear(); sidCache.set(id, { id: out, t: Date.now() });
+  if (sidCache.size > 5000) sidCache.clear(); sidCache.set(id, { id: out, t: Date.now(), ttl: resolved ? SID_OK_TTL : SID_FAIL_TTL });
   return out;
 }
 function driveErr(status, body) {
