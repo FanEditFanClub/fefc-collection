@@ -2766,8 +2766,12 @@
    "assets/sfx/scott-entertained.m4a",
    "assets/sfx/scott-entertained.mp3"
   ],
-  "assets/sfx/blade-runner-vangelis.mp3",
-  "assets/sfx/blade-runner-lonely.mp3",
+  [
+   "assets/sfx/blade-runner-vangelis.mp3"
+  ],
+  [
+   "assets/sfx/blade-runner-lonely.mp3"
+  ],
   [
    "assets/sfx/blade-tears-in-rain.m4a",
    "assets/sfx/blade-tears-in-rain.mp3"
