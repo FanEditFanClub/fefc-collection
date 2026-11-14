@@ -576,7 +576,7 @@ class _WebOSGuide(xbmcgui.WindowXMLDialog):
             self.close()
 
 
-def _install_platform_update(new, plat):
+def _install_platform_update(new, plat, monitor=None):
     """Download the macOS package named in version.json and hand it to the OS.
     webOS shows the Dev Manager guide instead of trying to install from inside the app.
     Android never reaches this. A missing platforms entry does not download the APK."""
@@ -585,7 +585,6 @@ def _install_platform_update(new, plat):
         _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
         return
     import hashlib
-    import shutil
     import subprocess
     from resources.lib.updateflow import (platform_download, platform_install_message,
                                            platform_unavailable_message, allowed_update_url)
@@ -607,11 +606,19 @@ def _install_platform_update(new, plat):
     ok = False
     _cue('start')
     log('downloading %s' % version_label(new))
-    prog = xbmcgui.DialogProgressBG()
-    prog.create('FEFC update', 'Downloading %s...' % version_label(new))
-    tries = 0
-    try:
-        while tries < 8 and not ok:
+    mon = monitor if monitor is not None else xbmc.Monitor()
+    # Same centered UpdatePopup as Android (progress, Back hides it, Retry,
+    # manual download links), not the old corner background progress bar.
+    from resources.lib.updatepopup import UpdatePopup
+    from resources.lib.updateflow import manual_downloads
+    popup = UpdatePopup(version_label(new), manual_downloads(new))
+    popup.render('downloading', 0, 0, want or 0)
+    finished = {'done': False}
+
+    def work():
+        nonlocal ok
+        tries = 0
+        while tries < 8 and not ok and not mon.abortRequested():
             tries += 1
             try:
                 # Keep the partial download across retries and resume it.
@@ -631,19 +638,20 @@ def _install_platform_update(new, plat):
                     with open(part, 'ab' if have else 'wb') as f:
                         done = have
                         while True:
+                            if mon.abortRequested():
+                                raise RuntimeError('aborted')
                             chunk = r.read(256 * 1024)
                             if not chunk:
                                 break
                             f.write(chunk)
                             done += len(chunk)
                             if total:
-                                prog.update(min(99, int(done * 100 / total)), 'FEFC update',
-                                            '%d / %d MB' % (done >> 20, total >> 20))
-                            else:
-                                prog.update(0, 'FEFC update', '%d MB downloaded' % (done >> 20))
-                if want and os.path.getsize(part) < want:
+                                popup.render('downloading', min(99, int(done * 100 / total)), done, total)
+                size = os.path.getsize(part)
+                if want and size < want:
                     raise RuntimeError('short download')
                 log('checking the download')
+                popup.render('verifying', 100, size, want or size)
                 h = hashlib.sha256()
                 with open(part, 'rb') as f:
                     for c in iter(lambda: f.read(1 << 20), b''):
@@ -658,16 +666,48 @@ def _install_platform_update(new, plat):
                 ok = True
             except Exception as e:
                 log('platform update attempt %d failed: %s' % (tries, e))
-                xbmc.sleep(min(30, 3 * tries) * 1000)
-    finally:
+                if mon.abortRequested():
+                    break
+                popup.render('downloading', 0, 0, want or 0, 'Connection problem, retrying (%d/8)...' % tries)
+                if mon.waitForAbort(min(30, 3 * tries)):
+                    break
+        finished['done'] = True
         try:
-            prog.close()
+            popup.close()
         except Exception:
             pass
+
+    threading.Thread(target=work, daemon=True).start()
+    while not finished['done'] and not mon.abortRequested():
+        if popup.dismissed:
+            if xbmcgui.Window(10000).getProperty('FEFC.UpdateReveal') == '1':
+                xbmcgui.Window(10000).clearProperty('FEFC.UpdateReveal')
+                popup.dismissed = False
+            else:
+                if mon.waitForAbort(0.2):
+                    break
+                continue
+        popup.doModal()
+    if mon.abortRequested():
+        try:
+            popup.close()
+        except Exception:
+            pass
+        return
     if not ok:
         _cue('error')
-        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again.')
+        popup.render('failed', 0, 0, want or 0, 'The download did not finish after several tries. Check the connection and pick Retry. It continues where it stopped.')
+        popup.doModal()
+        if popup.retry:
+            _install_platform_update(new, plat, mon)
         return
+    try:
+        popup.render('ready', 100, os.path.getsize(dst), want or os.path.getsize(dst))
+        popup.show()
+        xbmc.sleep(700)
+        popup.close()
+    except Exception:
+        pass
     opened = False
     if plat == 'macos':
         try:
@@ -685,7 +725,7 @@ def _install_update(new, monitor=None):
     mon = monitor if monitor is not None else xbmc.Monitor()
     plat = _host_platform()
     if plat != 'android':
-        _install_platform_update(new, plat)
+        _install_platform_update(new, plat, mon)
         return
     import hashlib
     url, want, sha = _for_my_package(new)
