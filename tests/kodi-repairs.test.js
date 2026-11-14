@@ -1184,7 +1184,8 @@ test('folder and details sounds pick from the full set each open', () => {
   assert.match(router, /li\.setProperty\('fefc_sfx'/);
   assert.match(router, /play_choice\(rel/);
   assert.match(router, /cache=False/);
-  assert.match(catalog, /def play_choice\(rel, sound_off=False\)/);
+  // exists=None keeps the old two-argument call working; a caller can pass an existence check.
+  assert.match(catalog, /def play_choice\(rel, sound_off=False, exists=None\)/);
   const start = service.indexOf('def details_sfx');
   const details = service.slice(start, service.indexOf('\ndef ', start + 10));
   const off = details.indexOf('FEFC.SoundOff');
@@ -1224,6 +1225,14 @@ opens = {catalog.sfx_wav(ww) for _ in range(80)}
 assert opens == {'kodi-sfx/' + b + '.wav' for b in want}
 for pool in (ww, catalog.sfx_for(m, 'st'), catalog.sfx_for(m, 'ag'), catalog.sfx_for(m, '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg')):
     assert catalog.play_choice(pool, True) == ''
+# exists unknown (None): a clip is still chosen. A check that says missing (or raises) gives ''.
+assert catalog.play_choice(ww, False) in {'kodi-sfx/' + b + '.wav' for b in want}
+assert catalog.play_choice(ww, False, exists=None) in {'kodi-sfx/' + b + '.wav' for b in want}
+assert catalog.play_choice(ww, False, exists=lambda p: True) in {'kodi-sfx/' + b + '.wav' for b in want}
+assert catalog.play_choice(ww, False, exists=lambda p: False) == ''
+def _boom(p):
+    raise OSError('no media dir')
+assert catalog.play_choice(ww, False, exists=_boom) == ''
 assert catalog.sfx_up(m, 'qv') == []
 st = catalog.sfx_for(m, 'st')
 assert len(st) >= 6 and set(bases(catalog.sfx_up(m, 'rk'))) == set(bases(st))
