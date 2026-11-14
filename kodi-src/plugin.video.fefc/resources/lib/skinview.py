@@ -305,13 +305,26 @@ def panels(nav=None, includes=None):
         if not re.fullmatch(r'\d+', pid):
             continue
         xml = body.replace('$PARAM[id]', pid)
-        expr = ''
-        always = True
+        conds = []
         vm = re.search(r'<visible\b[^>]*>([^<]*Container\.Viewmode[^<]*)</visible>', xml)
         if vm:
-            expr = ' '.join(html.unescape(vm.group(1)).split())
-            always = False
-        found.append({'id': pid, 'visible_expr': expr, 'always': always, 'itemlayout': xml})
+            conds.append(' '.join(html.unescape(vm.group(1)).split()))
+        # A Viewmode condition can also sit outside the include: on the <include> element
+        # in MyVideoNav, or on any control group that wraps it there. Kodi hides the panel
+        # when any of them is false, so they are ANDed with the include's own condition.
+        n = node
+        while n is not None and n.tag != '#root':
+            for child in n.children:
+                if child.tag == 'visible' and 'container.viewmode' in (child.text or '').lower():
+                    cond = ' '.join(html.unescape(child.text).split())
+                    if cond and cond not in conds:
+                        conds.append(cond)
+            n = n.parent
+        if len(conds) > 1:
+            expr = ' + '.join('[%s]' % c for c in conds)
+        else:
+            expr = conds[0] if conds else ''
+        found.append({'id': pid, 'visible_expr': expr, 'always': not conds, 'itemlayout': xml})
     return found
 
 

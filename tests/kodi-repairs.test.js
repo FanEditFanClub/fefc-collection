@@ -465,6 +465,16 @@ for mode in ('', '0', '50', '55', '500', '501'):
 for screen, kind in skinview.CONTENT.items():
     assert skinview.tile_draws(kind), screen
 assert not skinview.tile_draws('spacer')
+# A Viewmode condition outside the include (on a wrapping group in MyVideoNav) still hides it.
+import os, tempfile
+nav = os.path.join(tempfile.mkdtemp(), 'MyVideoNav.xml')
+with open(nav, 'w') as f:
+    f.write('<window><defaultcontrol>501</defaultcontrol><controls><control type="group">'
+            '<visible>Integer.IsEqual(Container.Viewmode,501)</visible>'
+            '<include content="FefcBrowser"><param name="id" value="501"/></include></control></controls></window>')
+wrapped = skinview.panels(nav)
+assert len(wrapped) == 1 and not wrapped[0]['always'], wrapped
+assert skinview.panel_visible(wrapped[0], '501') and not skinview.panel_visible(wrapped[0], '50')
 print('ok', focus, list(skinview.CONTENT))
 `);
   assert.match(out, /^ok /);
