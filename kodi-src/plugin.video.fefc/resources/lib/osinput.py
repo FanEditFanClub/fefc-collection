@@ -41,7 +41,32 @@ def _kodi(heading, default, numeric):
         return xbmcgui.Dialog().input(heading, default, type=xbmcgui.INPUT_NUMERIC) or None
     kb = xbmc.Keyboard(default, heading)
     kb.doModal()
-    return kb.getText() if kb.isConfirmed() else None
+    if not kb.isConfirmed():
+        return None
+    text = kb.getText()
+    return text if text else None
+
+
+def uuid_token():
+    """Opaque token for the ack/result filenames. uuid4, not second-resolution
+    time + 16-bit random: no 1/65536 same-second collision, and a stale file
+    from a killed earlier session can never match a new token."""
+    import uuid
+    return uuid.uuid4().hex[:12]
+
+
+def _close_input_activity():
+    """Best-effort close of the Android IME activity on timeout/abort.
+
+    Back dismisses it as a user Back would; bringing Home forward then
+    guarantees Kodi is the visible window. If the activity ignores Back,
+    only the Java side can force-finish it.
+    """
+    for cmd in ('Action(Back)', 'ActivateWindow(home)'):
+        try:
+            xbmc.executebuiltin(cmd)
+        except Exception:
+            pass
 
 
 def _find(dirs, name):
@@ -62,22 +87,42 @@ def get_text(heading, default='', numeric=False):
     pkg, dirs = _pkg_and_dirs()
     if inputplan.input_plan(android, dirs if android else [], False, 0) == 'kodi':
         return _kodi(heading, default, numeric)
-    tok = '%x%04x' % (int(time.time()), random.randint(0, 0xffff))
+    if pkg != 'com.fefc.kodi':
+        # Stock Kodi (org.xbmc.kodi) has no FefcInputActivity: launching it
+        # would wait the full FAIL_AFTER (3 s) and then fall back anyway.
+        # Go straight to the Kodi keyboard instead.
+        return _kodi(heading, default, numeric)
+    tok = uuid_token()
     uri = 'fefcinput://input?' + urllib.parse.urlencode({'tok': tok, 'h': heading, 'd': default, 'num': '1' if numeric else '0'})
-    xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"%s",,,,,"com.fefc.kodi.FefcInputActivity")' % (pkg, uri))
+    xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"%s",,,,,"%s.FefcInputActivity")' % (pkg, uri, pkg))
     mon = xbmc.Monitor()
     t0 = time.time()
     ack_name = 'fefc-input-%s.ack' % tok
     res_name = 'fefc-input-%s.txt' % tok
     try:
+        stable = None  # (size, mtime_ns) of the result file on the last poll
         while not mon.abortRequested():
             elapsed = time.time() - t0
             res = _find(dirs, res_name)
             ack = _find(dirs, ack_name)
             if res:
-                with open(res, 'r', encoding='utf-8', errors='ignore') as f:
-                    r = f.read()
-                return r[3:] if r.startswith('OK\n') else None
+                try:
+                    st = os.stat(res)
+                    cur = (st.st_size, st.st_mtime_ns)
+                except OSError:
+                    res = ''
+                else:
+                    if stable != cur:
+                        # First sight, or still being written: wait one poll
+                        # and only read it once it is unchanged. A partial
+                        # read used to return None (treated as cancelled)
+                        # though the user had submitted.
+                        stable = cur
+                        mon.waitForAbort(0.1)
+                        continue
+                    with open(res, 'r', encoding='utf-8', errors='ignore') as f:
+                        r = f.read()
+                    return r[3:] if r.startswith('OK\n') else None
             plan = inputplan.input_plan(True, dirs, bool(ack), elapsed)
             if plan == 'fallback_kodi':
                 xbmc.log('[plugin.video.fefc] system keyboard did not open; using Kodi keyboard', xbmc.LOGINFO)
@@ -87,6 +132,7 @@ def get_text(heading, default='', numeric=False):
                     pass
                 return _kodi(heading, default, numeric)
             if elapsed > 600:
+                _close_input_activity()
                 return None
             mon.waitForAbort(0.1)
     finally:

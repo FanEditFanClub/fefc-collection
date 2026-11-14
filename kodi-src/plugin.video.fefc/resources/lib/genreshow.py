@@ -4,14 +4,28 @@ The dialog is transparent. Home keeps playing the one wall video, and the top
 three mosaic cells stay visible because this screen has no wordmark. Tiles are
 solid so the names stay readable. Nine names a page.
 """
+import os
+
+import xbmc
+import xbmcgui
+
+# Safe at module top: router.py has no top-level genreshow import (it imports
+# this module lazily inside genres()), so there is no import cycle. This
+# replaces the per-keypress `from .router import ...` inside onAction/onClick.
+from .router import _bar_action, _dialog_back
 
 
 def open_genre_board(entries):
-    """entries: (label, key, art). Returns the genre key, or '' if they left."""
-    import os
-    import xbmc
-    import xbmcgui
+    """entries: (label, key, art). Returns the genre key, or '' if they left.
 
+    Malformed entries (not a 3-tuple) are skipped, so a bad caller can never
+    make _show()/onClick() index past a short tuple.
+    """
+    clean = []
+    for e in entries or []:
+        if isinstance(e, (list, tuple)) and len(e) == 3:
+            clean.append((e[0] or '', e[1] or '', e[2] or ''))
+    entries = clean
     pages = [entries[i:i + 9] for i in range(0, len(entries), 9)] or [[]]
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -23,42 +37,59 @@ def open_genre_board(entries):
             self._focus = 0
             self._ready = False
             self.tiles = []
+            self.arts = []
+            self.names = []
             self.menu = []
+            self.indicator = None
+            self.sound_icon = None
 
         def onInit(self):
             if self._ready:
                 return
-            self._ready = True
-            self.tiles = [self.getControl(9101 + i) for i in range(9)]
+            def _ctl(cid):
+                try:
+                    return self.getControl(cid)
+                except Exception:
+                    return None
+            self.tiles = [_ctl(9101 + i) for i in range(9)]
             self.arts = []
             self.names = []
             for i in range(9):
-                try:
-                    self.arts.append(self.getControl(9201 + i))
-                except Exception:
-                    self.arts.append(None)
-                try:
-                    self.names.append(self.getControl(9301 + i))
-                except Exception:
-                    self.names.append(None)
-            self.menu = [self.getControl(9401 + i) for i in range(4)]
-            self.indicator = self.getControl(9150)
+                self.arts.append(_ctl(9201 + i))
+                self.names.append(_ctl(9301 + i))
+            self.menu = [_ctl(9401 + i) for i in range(4)]
+            self.indicator = _ctl(9150)
+            # Item 152: remember the sound icon so _bar_action can update it.
+            self.sound_icon = _ctl(9405)
             off = xbmc.getInfoLabel('Window(home).Property(FEFC.SoundOff)') == '1'
-            self.menu[2].setLabel('SOUND OFF' if off else 'SOUND ON')
-            try:
-                self.getControl(9405).setImage('fefc-ic-mute.png' if off else 'fefc-ic-sound.png')
-            except Exception:
-                pass
+            if self.menu[2] is not None:
+                self.menu[2].setLabel('SOUND OFF' if off else 'SOUND ON')
+            if self.sound_icon is not None:
+                try:
+                    self.sound_icon.setImage('fefc-ic-mute.png' if off else 'fefc-ic-sound.png')
+                except Exception:
+                    pass
             self._show(0, 0)
+            # Only after init (including the first _show) succeeded.
+            self._ready = True
 
         def _show(self, page, focus):
+            # Defensive page: callers pass ints, but never index out of range.
+            try:
+                page = int(page)
+            except (TypeError, ValueError):
+                page = 0
+            page = max(0, min(page, len(pages) - 1))
             self.page = page
             chunk = pages[page]
             n = len(chunk)
             focus = min(focus, max(0, n - 1))
             self._focus = focus
-            self.indicator.setLabel('%d/%d' % (page + 1, max(1, len(pages))))
+            if self.indicator is not None:
+                self.indicator.setLabel('%d/%d' % (page + 1, max(1, len(pages))))
             for i, btn in enumerate(self.tiles):
+                if btn is None:
+                    continue
                 art = self.arts[i] if i < len(self.arts) else None
                 name = self.names[i] if i < len(self.names) else None
                 if i < n:
@@ -84,13 +115,15 @@ def open_genre_board(entries):
             for i in range(n):
                 col, row = i % 3, i // 3
                 btn = self.tiles[i]
-                left = self.tiles[i - 1] if col else btn
-                right = self.tiles[i + 1] if col < 2 and i + 1 < n else btn
-                up = self.tiles[i - 3] if row else btn
+                if btn is None:
+                    continue
+                left = self.tiles[i - 1] if col and self.tiles[i - 1] is not None else btn
+                right = self.tiles[i + 1] if col < 2 and i + 1 < n and self.tiles[i + 1] is not None else btn
+                up = self.tiles[i - 3] if row and self.tiles[i - 3] is not None else btn
                 if row < 2 and i + 3 < n:
-                    down = self.tiles[i + 3]
+                    down = self.tiles[i + 3] if self.tiles[i + 3] is not None else self.menu[0]
                 else:
-                    down = self.menu[0]
+                    down = self.menu[0] if self.menu and self.menu[0] is not None else btn
                 if col == 2:
                     right = btn
                 if col == 0:
@@ -100,11 +133,37 @@ def open_genre_board(entries):
                 btn.controlUp(up)
                 btn.controlDown(down)
             if n:
-                for b in self.menu:
-                    b.controlUp(self.tiles[min(6, n - 1)])
-                self.setFocus(self.tiles[self._focus])
+                # Item 151: per-column Up. Menu columns are (0, 1, 1, 2) —
+                # the shipped XML targets 9401->9107, 9402->9108,
+                # 9403->9108, 9404->9109. Each button goes up to the last
+                # visible tile in its column; a column with no tile on a
+                # short page falls back to the last visible tile overall.
+                _menu_cols = (0, 1, 1, 2)
+                for j, b in enumerate(self.menu):
+                    if b is None:
+                        continue
+                    col = _menu_cols[j] if j < len(_menu_cols) else 0
+                    target = None
+                    for i in range(n - 1, -1, -1):
+                        if i % 3 == col and self.tiles[i] is not None:
+                            target = self.tiles[i]
+                            break
+                    if target is None:
+                        for i in range(n - 1, -1, -1):
+                            if self.tiles[i] is not None:
+                                target = self.tiles[i]
+                                break
+                    b.controlUp(target if target is not None else b)
+                if self.tiles[self._focus] is not None:
+                    self.setFocus(self.tiles[self._focus])
             else:
-                self.setFocus(self.menu[0])
+                # Item 155: empty board — the XML onup targets point at
+                # hidden tiles. Point each menu button up at itself.
+                for b in self.menu:
+                    if b is not None:
+                        b.controlUp(b)
+                if self.menu and self.menu[0] is not None:
+                    self.setFocus(self.menu[0])
 
         def _index(self):
             try:
@@ -125,7 +184,6 @@ def open_genre_board(entries):
             if aid == xbmcgui.ACTION_MOVE_LEFT and i is not None and i % 3 == 0 and self.page > 0:
                 self._show(self.page - 1, i + 2)
                 return
-            from .router import _dialog_back
             # Remote Back, the Android back key, and Backspace. _dialog_back covers
             # the first two and plays the cue; ParentDir and Backspace still close.
             if aid in (xbmcgui.ACTION_PARENT_DIR, 110) or _dialog_back(action):
@@ -135,13 +193,12 @@ def open_genre_board(entries):
         def onClick(self, cid):
             if 9101 <= cid <= 9109:
                 i = cid - 9101
-                chunk = pages[self.page]
+                chunk = pages[self.page] if 0 <= self.page < len(pages) else []
                 if i < len(chunk):
                     self.picked = chunk[i][1]
                     self.close()
                 return
             if 9401 <= cid <= 9404:
-                from .router import _bar_action
                 _bar_action(self, self.menu[cid - 9401])
 
     home = xbmcgui.Window(10000)

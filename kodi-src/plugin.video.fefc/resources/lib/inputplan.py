@@ -28,7 +28,11 @@ def files_dirs(translated_paths, packages=('com.fefc.kodi', 'org.xbmc.kodi')):
 def input_plan(platform_android, dirs, ack, elapsed, fail_after=FAIL_AFTER):
     if ack:
         return 'native'
-    if not platform_android and not dirs:
+    if not platform_android:
+        # Off-Android the Kodi keyboard is the real keyboard. (The old
+        # `and not dirs` clause was vacuous: get_text passes [] here
+        # off-Android, and files_dirs() always returns >= 4 fallback dirs
+        # on Android, so `not dirs` was unreachable on both paths.)
         return 'kodi'
     if elapsed >= fail_after:
         return 'fallback_kodi'
