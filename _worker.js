@@ -128,7 +128,8 @@ function mergeList(a, b) {
   return o;
 }
 const publicUser = u => u ? { email: u.email || '', name: u.name || '', picture: u.picture || '' } : null;
-const jwtPayload = t => { try { return JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch { return null; } };
+// atob gives one char per byte; decode those bytes as UTF-8 so non-ASCII names (José, Zoë) are not mangled.
+const jwtPayload = t => { try { const bin = atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')); return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)))); } catch { return null; } };
 async function readBody(req, max = 20000) {
   const raw = await req.text(); if (raw.length > max) throw Object.assign(new Error('too_large'), { status: 413 });
   try { return raw ? JSON.parse(raw) : {}; } catch { throw Object.assign(new Error('bad_request'), { status: 400 }); }

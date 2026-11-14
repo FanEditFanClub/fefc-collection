@@ -6,7 +6,7 @@ let state='pending';const realFetch=globalThis.fetch;
 globalThis.fetch=async(u,o)=>{u=String(u);
  if(u.includes('/device/code'))return new Response(JSON.stringify({device_code:'DC',user_code:'ABCD-EFGH',verification_url:'https://www.google.com/device',expires_in:1800,interval:0}),{status:200});
  if(u.endsWith('/token')){if(state==='pending')return new Response(JSON.stringify({error:'authorization_pending'}),{status:428});
-  const pl=Buffer.from(JSON.stringify({sub:'123',aud:'tv.apps',email:'a@b.c',name:'A'})).toString('base64url');return new Response(JSON.stringify({id_token:'h.'+pl+'.s'}),{status:200})}
+  const pl=Buffer.from(JSON.stringify({sub:'123',aud:'tv.apps',email:'a@b.c',name:'Zoë Ñ 映画'})).toString('base64url');return new Response(JSON.stringify({id_token:'h.'+pl+'.s'}),{status:200})}
  if(u.includes('tokeninfo'))return new Response(JSON.stringify({sub:'123',aud:'965770773324-i20msn4q01isddkunrcg4o30s5pju0bk.apps.googleusercontent.com',email:'a@b.c'}),{status:200});
  throw new Error('unexpected '+u)};
 const call=async(p,body,tok)=>{const r=await w.fetch(new Request('https://x.test/api/sync/'+p,{method:body===undefined?'GET':'POST',headers:{'content-type':'application/json',...(tok?{authorization:'Bearer '+tok}:{})},body:body===undefined?undefined:JSON.stringify(body)}),env,{});return {s:r.status,j:await r.json()}};
@@ -15,6 +15,7 @@ let d=await call('device/start',{});ok(d.j.user_code==='ABCD-EFGH'&&d.j.id&&!JSO
 let p=await call('device/poll',{id:d.j.id});ok(p.j.status==='pending','pending');
 state='ok';let rec=JSON.parse(store.get('dev:'+d.j.id));rec.next=0;store.set('dev:'+d.j.id,JSON.stringify(rec));
 p=await call('device/poll',{id:d.j.id});ok(p.j.status==='ok'&&p.j.token&&p.j.user.email==='a@b.c','device ok');
+ok(p.j.user.name==='Zoë Ñ 映画','device-flow name keeps non-ASCII characters (UTF-8 id_token payload)');
 const tvTok=p.j.token;
 let g=await call('google/session',{access_token:'t'.repeat(40),name:'A'});ok(g.j.token&&g.j.kind==='google','web google session');
 await call('list',{data:{v:1,stars:{['S'.repeat(11)]:{id:'S'.repeat(11),updatedAt:3}},history:{},playback:{}}},g.j.token);
