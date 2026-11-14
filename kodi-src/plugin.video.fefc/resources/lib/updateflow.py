@@ -119,6 +119,11 @@ def parse_pm_path(text):
     dump covering several packages, the first line may belong to another
     package's split.
     """
+    for line in (text or '').splitlines():
+        line = line.strip()
+        if line.startswith('package:'):
+            return line.split(':', 1)[1].strip()
+    return ''
 
 
 def parse_dumpsys_version_code(text):
@@ -128,6 +133,8 @@ def parse_dumpsys_version_code(text):
     package <pkg>`): an unscoped dump can contain several versionCode
     values, and the first one wins here.
     """
+    match = re.search(r'versionCode=(\d+)', text or '')
+    return int(match.group(1)) if match else None
 
 
 def build_from_version_code(version_code, base=VERSIONCODE_BASE):
