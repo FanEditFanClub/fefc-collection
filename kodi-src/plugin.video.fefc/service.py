@@ -678,7 +678,7 @@ def _install_platform_update(new, plat):
     # from this device's local path, so a local-path install could never work.
     # platform_install_message tells the user the Dev Manager steps instead.
     _cue('verified')
-    xbmcgui.Dialog().ok('FEFC update', platform_install_message(plat, dst, opened, rec.get('abi') or ''))
+    xbmcgui.Dialog().ok('FEFC update', platform_install_message(plat, dst, opened, rec.get('abi') or '', url=rec.get('url') or ''))
 
 
 def _install_update(new, monitor=None):
@@ -816,7 +816,10 @@ def _install_update(new, monitor=None):
             if '/%s/' % pkg in dst and marker in dst:
                 uri = 'content://%s.fefcupdate/%s/%s' % (pkg, name, dst.split(marker, 1)[1]); break
     if uri is None:
-        uri = 'content://%s.file/#' % pkg + dst
+        # No '#' here: '#' starts the URI fragment under Uri.parse, so the
+        # old 'content://%s.file/#' % pkg + dst put the whole path in the
+        # fragment and FileProvider could never resolve it.
+        uri = 'content://%s.file%s' % (pkg, dst)
     builtin = installer_builtin(uri, installer_package_for(pkg))
     if not builtin:
         _cue('error')
