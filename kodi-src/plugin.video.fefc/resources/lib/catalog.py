@@ -189,7 +189,7 @@ def title_key(name):
 
 
 def dedupe_titles(items, ids):
-    """One row per Drive file and per normalized title. The hosted original wins over a shortcut."""
+    """One row per Drive file. The hosted original wins over a shortcut."""
     by_file = {}
     for i in ids:
         v = items.get(i)
@@ -199,13 +199,7 @@ def dedupe_titles(items, ids):
         prev = by_file.get(key)
         if prev is None or (not v[3] and items[prev][3]):
             by_file[key] = i
-    by_name = {}
-    for i in by_file.values():
-        key = title_key(items[i][0]) or i
-        prev = by_name.get(key)
-        if prev is None or (not items[i][3] and items[prev][3]):
-            by_name[key] = i
-    keep = set(by_name.values())
+    keep = set(by_file.values())
     return [i for i in ids if i in keep]
 
 
@@ -237,7 +231,7 @@ def build_model(raw):
         isdir = _isdir(it)
         name = it.get('name') or ''
         tname = (allit.get(it.get('targetId') or '') or {}).get('name') or ''
-        isvid = (not isdir) and (it.get('kind') == 'video' or bool(VIDEO_RX.search(name)))
+        isvid = (not isdir) and not name.startswith('.') and (it.get('kind') == 'video' or bool(VIDEO_RX.search(name)))
         if not isdir and not isvid:
             # Support Us / Read First docs are shown inside folders like the web app
             if not name.startswith('.') and (SUPRE.search(name) or SUPRE.search(tname)):
@@ -623,12 +617,36 @@ def _show_key(name):
     return re.sub(r'\s+', ' ', base).strip().lower()
 
 
+def _added_ts(value):
+    """Sortable timestamp for an 'added' value: a number, an ISO date/datetime
+    string, or 0.0 when unparseable (sorts last, oldest)."""
+    if isinstance(value, (int, float)):
+        return float(value)
+    s = str(value or '').strip()
+    if not s:
+        return 0.0
+    try:
+        return float(s)
+    except (TypeError, ValueError):
+        pass
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(s.replace('Z', '+00:00')).timestamp()
+    except Exception:
+        return 0.0
+
+
 def _compute_recent(m):
     added = m.get('added') or {}
     items = m.get('items') or {}
-    vids = [i for i in added if i in items and not items[i][2]]
+    kids = m.get('kids') or {}
+    tbc_ids = tbc_members(items, kids)
+    vids = [i for i in added
+            if i in items and not items[i][2]
+            and i not in tbc_ids
+            and not (items[i][3] and items[i][3] in tbc_ids)]
     vids = dedupe(m, vids)
-    vids.sort(key=lambda i: added.get(i) or '', reverse=True)
+    vids.sort(key=lambda i: _added_ts(added.get(i)), reverse=True)
     return vids[:RECENT_CAP]
 
 
@@ -876,7 +894,11 @@ def _build_art_index(m):
         u = posters.get(i)
         if u and not _is_drive_art(u):
             add_keys(title, u)
-    year_art = {k: _pick_url(v) for k, v in by_year.items()}
+    year_art = {}
+    for k, urls in by_year.items():
+        uniq = set(urls)
+        if len(uniq) == 1:
+            year_art[k] = next(iter(uniq))
     bare_art = {}
     for k, urls in by_bare.items():
         uniq = set(urls)
@@ -902,6 +924,8 @@ def _build_art_index(m):
             u = bare_art.get(bare) or ''
         if not u:
             u = _art_from_folders(items, v[1], year_art, bare_art)
+            if u:
+                src = 'folder'
         if not u:
             u = _extra_show(yk, bare)
         if not u:
@@ -925,7 +949,7 @@ def art_report(m):
     m['art'] = new
     before = sum(1 for i in vids if str(old.get(i) or '').startswith('drive:'))
     missing = sum(1 for i in vids if not new.get(i))
-    gained = {'sibling': 0, 'show': 0, 'folder': 0}
+    gained = {'own': 0, 'sibling': 0, 'show': 0, 'folder': 0}
     why = m.get('art_why') or {}
     for i in vids:
         if str(old.get(i) or '').startswith('drive:') and new.get(i):
@@ -948,29 +972,52 @@ def poster_for(m, base, vid):
 
 
 def folder_art(m, base, fid):
-    it = m['items'].get(fid)
-    tgt = (it[3] if it and it[3] else fid)
-    u = m['people'].get(tgt) or m['people'].get(fid)
+    items = m.get('items') or {}
+    people = m.get('people') or {}
+    fthumbs = m.get('fthumbs') or {}
+    kids = m.get('kids') or {}
+    it = items.get(fid)
+    tgt = (it[3] if it and len(it) > 3 and it[3] else fid)
+    u = people.get(tgt) or people.get(fid)
     if u:
         return abs_url(base, u)
-    t = m['fthumbs'].get(tgt) or m['fthumbs'].get(fid)
+    t = fthumbs.get(tgt) or fthumbs.get(fid)
     if not t:  # first video below (3 levels), like the web app
+        seen = set()
         q = [fid]
+        visits = 0
         for _ in range(3):
             nq = []
             for i in q:
-                for k in m['kids'].get((m['items'].get(i) or [0, 0, 0, ''])[3] or i, []):
-                    if m['items'][k][2]:
-                        nq.append(k)
+                if i in seen:
+                    continue
+                seen.add(i)
+                visits += 1
+                if visits > 200:
+                    break
+                target = (items.get(i) or [0, 0, 0, ''])[3] or i
+                for k in kids.get(target, []) or []:
+                    kv = items.get(k)
+                    if not kv:
+                        continue  # stale kids entry: no such item
+                    if len(kv) > 2 and kv[2]:
+                        if k not in seen:
+                            nq.append(k)
                     else:
                         # 0.4.2: use the video file's own Drive thumbnail (a landscape frame from the video)
                         # instead of its portrait poster, so folder cards stay landscape. (Only 369/1803
                         # folders have a curated fthumb; the rest hit this fallback.)
-                        vk = (m['items'].get(k) or [0, 0, 0, ''])[3] or k
+                        vk = (kv[3] if len(kv) > 3 and kv[3] else k)
                         return 'https://drive.google.com/thumbnail?sz=w320&id=' + vk
-            q = nq[:40]
+            q = nq
+            if not q:
+                break
     if t:
-        return abs_url(base, t) if t.startswith('assets/') else 'https://drive.google.com/thumbnail?sz=w320&id=' + t
+        if t.startswith('http://') or t.startswith('https://'):
+            return t
+        if t.startswith('assets/'):
+            return abs_url(base, t)
+        return 'https://drive.google.com/thumbnail?sz=w320&id=' + t
     return ''
 
 

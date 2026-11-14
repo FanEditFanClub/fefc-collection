@@ -52,11 +52,17 @@ def root_id(path=None):
 
 
 def _art(row):
+    """Art stored in the pack row, or '' when the pack has none.
+
+    No Drive-thumbnail substitution here: poster_for() treats a Drive first
+    frame as missing (those frames are often black, a title card, or the
+    fan-edit WARNING slate), and the tile must agree with the details page.
+    A video with only a Drive first frame therefore shows the skin's
+    placeholder poster on its tile and no poster on its details page, in
+    both places — instead of a thumbnail on the tile and a blank details page.
+    """
     art = row[3] if len(row) > 3 else ''
-    if art:
-        return art
-    # Empty art in the pack is the standard Drive thumbnail for that file id.
-    return 'https://drive.google.com/thumbnail?sz=w320&id=' + row[0]
+    return art or ''
 
 
 def _hydrate(row):
