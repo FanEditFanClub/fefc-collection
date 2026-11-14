@@ -500,12 +500,21 @@ def _host_arch(platform):
 
 def _show_webos_guide(new, rec):
     """Full-screen skin dialog with the Dev Manager steps. A text page is the fallback."""
-    from resources.lib import webosguide
+    try:
+        from resources.lib import webosguide
+    except Exception as e:
+        log('webos guide: %s' % e)
+        return
     url = rec.get('url') if rec and rec.get('available') else ''
     body = '\n\n'.join(webosguide.tv_steps(url))
     foot = 'If Install fails, turn Key Server off and on, then check the passphrase.'
     skin = xbmcvfs.translatePath('special://skin')
-    qr = webosguide.write_qr(xbmcvfs.translatePath('special://temp/fefc-lg-qr.png'))
+    qr = ''
+    try:
+        qr = webosguide.write_qr(xbmcvfs.translatePath('special://temp/fefc-lg-qr.png')) or ''
+    except Exception as e:
+        log('webos guide qr: %s' % e)
+        qr = ''
     try:
         dlg = _WebOSGuide(webosguide.DIALOG_XML, skin, 'default', '1080i')
         dlg.step_text = body
@@ -585,45 +594,76 @@ def _install_platform_update(new, plat):
         _cue('error')
         xbmcgui.Dialog().ok('FEFC update', platform_unavailable_message(plat, version_label(new)))
         return
-    name = rec.get('filename') or ('FEFC-macOS-update.dmg' if plat == 'macos' else 'FEFC-webOS-update.ipk')
+    # Sanitise the manifest filename before joining it to the temp dir: a
+    # '/' or '..' in it must not escape special://temp/.
+    _default_name = 'FEFC-macOS-update.dmg' if plat == 'macos' else 'FEFC-webOS-update.ipk'
+    _raw_name = rec.get('filename') or _default_name
+    name = ''.join(c for c in os.path.basename(str(_raw_name)) if c.isalnum() or c in ('.', '-', '_'))
+    if not name or name in ('.', '..') or name.startswith('.'):
+        name = _default_name
     dst = xbmcvfs.translatePath('special://temp/' + name)
     part = dst + '.part'
     url, want, sha = rec['url'], rec.get('size') or 0, rec.get('sha256') or ''
     ok = False
     _cue('start')
     log('downloading %s' % version_label(new))
+    prog = xbmcgui.DialogProgressBG()
+    prog.create('FEFC update', 'Downloading %s...' % version_label(new))
     tries = 0
-    while tries < 8 and not ok:
-        tries += 1
-        try:
+    try:
+        while tries < 8 and not ok:
+            tries += 1
             try:
-                os.remove(part)
-            except OSError:
-                pass
-            req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
-            with urllib.request.urlopen(req, timeout=60) as r, open(part, 'wb') as f:
-                done = 0
-                total = want or int(r.headers.get('Content-Length') or 0)
-                while True:
-                    chunk = r.read(256 * 1024)
-                    if not chunk:
-                        break
-                    f.write(chunk)
-                    done += len(chunk)
-            if want and os.path.getsize(part) != want and os.path.getsize(part) < want:
-                raise RuntimeError('short download')
-            log('checking the download')
-            h = hashlib.sha256()
-            with open(part, 'rb') as f:
-                for c in iter(lambda: f.read(1 << 20), b''):
-                    h.update(c)
-            if h.hexdigest() != sha:
-                raise RuntimeError('checksum mismatch')
-            os.replace(part, dst)
-            ok = True
-        except Exception as e:
-            log('platform update attempt %d failed: %s' % (tries, e))
-            xbmc.sleep(min(30, 3 * tries) * 1000)
+                # Keep the partial download across retries and resume it.
+                # Only a checksum failure deletes it (corrupt data cannot
+                # be resumed); a short download is retried from where it stopped.
+                have = os.path.getsize(part) if os.path.exists(part) else 0
+                if want and have >= want:
+                    have = 0
+                hdr = {'User-Agent': 'FEFC-Kodi'}
+                if have:
+                    hdr['Range'] = 'bytes=%d-' % have
+                req = urllib.request.Request(url, headers=hdr)
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    if have and r.status != 206:
+                        have = 0
+                    total = want or (have + int(r.headers.get('Content-Length') or 0))
+                    with open(part, 'ab' if have else 'wb') as f:
+                        done = have
+                        while True:
+                            chunk = r.read(256 * 1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            done += len(chunk)
+                            if total:
+                                prog.update(min(99, int(done * 100 / total)), 'FEFC update',
+                                            '%d / %d MB' % (done >> 20, total >> 20))
+                            else:
+                                prog.update(0, 'FEFC update', '%d MB downloaded' % (done >> 20))
+                if want and os.path.getsize(part) < want:
+                    raise RuntimeError('short download')
+                log('checking the download')
+                h = hashlib.sha256()
+                with open(part, 'rb') as f:
+                    for c in iter(lambda: f.read(1 << 20), b''):
+                        h.update(c)
+                if h.hexdigest() != sha:
+                    try:
+                        os.remove(part)
+                    except OSError:
+                        pass
+                    raise RuntimeError('checksum mismatch')
+                os.replace(part, dst)
+                ok = True
+            except Exception as e:
+                log('platform update attempt %d failed: %s' % (tries, e))
+                xbmc.sleep(min(30, 3 * tries) * 1000)
+    finally:
+        try:
+            prog.close()
+        except Exception:
+            pass
     if not ok:
         _cue('error')
         xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again.')
@@ -634,14 +674,9 @@ def _install_platform_update(new, plat):
             opened = subprocess.call(['open', dst]) == 0
         except Exception as e:
             log('open dmg: %s' % e)
-    elif plat == 'webos':
-        luna = shutil.which('luna-send')
-        if luna:
-            try:
-                payload = json.dumps({'id': 'org.xbmc.kodi', 'ipkUrl': dst, 'subscribe': False})
-                subprocess.call([luna, '-n', '1', 'luna://com.webos.appInstallService/dev/install', payload])
-            except Exception as e:
-                log('webos install: %s' % e)
+    # webOS: no luna-send call. The TV installs from a URL it can fetch, not
+    # from this device's local path, so a local-path install could never work.
+    # platform_install_message tells the user the Dev Manager steps instead.
     _cue('verified')
     xbmcgui.Dialog().ok('FEFC update', platform_install_message(plat, dst, opened, rec.get('abi') or ''))
 
