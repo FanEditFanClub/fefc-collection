@@ -21,11 +21,11 @@ test('About settings lists the eight entries in order, and downloads stay on the
   assert.doesNotMatch(about, /action=about<\/data>/);
   assert.doesNotMatch(about, /FEFC-Kodi\.apk/);
   assert.doesNotMatch(about, /org\.xbmc\.kodi/);
-  assert.doesNotMatch(notes, /check_update_btn|manual_download_btn|action=update|action=downloads/);
+  assert.doesNotMatch(notes, /check_update_btn|manual_download_btn|action=update|action=(?:manual_)?downloads/);
   const order = [
     ['about_version', '30036', 'action=about&amp;part=version', 'Version & Info'],
     ['check_update_btn', '30032', 'action=update', 'Check for Update'],
-    ['manual_download_btn', '30034', 'action=downloads', 'Download latest version'],
+    ['manual_download_btn', '30034', 'action=manual_downloads)', 'Download latest version'],
     ['about_feedback', '30035', 'action=about&amp;part=feedback', 'Give Feedback'],
     ['about_news', '30037', 'action=about&amp;part=news', "What's New"],
     ['about_privacy', '30038', 'action=about&amp;part=privacy', 'Privacy Policy'],
@@ -76,6 +76,10 @@ print('ok')
   assert.match(aboutFn, /part == 'privacy'/);
   assert.match(aboutFn, /part == 'terms'/);
   assert.match(aboutFn, /part == 'notices'/);
+  // "Download latest version" opens the Manual Downloads list, not the offline Downloads folder.
+  assert.doesNotMatch(about, /action=downloads\)/);
+  assert.match(router, /'manual_downloads': 'manual_downloads'/);
+  assert.match(router, /def manual_downloads\(self\):[\s\S]{0,800}ManualDownloads\(/);
   // A category whose only row is labeled the same as the category is the extra tap.
   const categories = [...xml.matchAll(/<category id="([^"]+)" label="(\d+)">([\s\S]*?)<\/category>/g)];
   for (const [, id, label, body] of categories) {
