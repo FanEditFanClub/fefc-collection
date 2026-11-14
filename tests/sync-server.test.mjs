@@ -20,3 +20,19 @@ const tvTok=p.j.token;
 let g=await call('google/session',{access_token:'t'.repeat(40),name:'A'});ok(g.j.token&&g.j.kind==='google','web google session');
 await call('list',{data:{v:1,stars:{['S'.repeat(11)]:{id:'S'.repeat(11),updatedAt:3}},history:{},playback:{}}},g.j.token);
 let l=await call('list',undefined,tvTok);ok(l.j.data.stars['S'.repeat(11)],'TV (device flow) and web Google share the same list');
+// Device id mapping: one account cannot take over another account's device id; restore misses are capped per IP.
+{
+ const dev='D'.repeat(24);
+ const a=await call('pair/create',{});const b=await call('pair/create',{});ok(a.j.token&&b.j.token,'two code accounts');
+ let r=await call('device/register',{deviceId:dev},a.j.token);ok(r.s===200,'first account registers the device');
+ r=await call('device/register',{deviceId:dev},a.j.token);ok(r.s===200,'same account re-registers');
+ r=await call('device/register',{deviceId:dev},b.j.token);ok(r.s===409&&r.j.error==='device_taken','another account cannot overwrite the mapping');
+ await call('list',{data:{v:1,stars:{['A'.repeat(11)]:{id:'A'.repeat(11),updatedAt:5}},history:{},playback:{}}},a.j.token);
+ const ra=await call('restore',{deviceId:dev});const la=await call('list',undefined,ra.j.token);ok(ra.s===200&&la.j.data&&la.j.data.stars['A'.repeat(11)],'restore still returns the first account');
+ r=await call('device/forget',{deviceId:dev},b.j.token);ok(!!store.get('device:'+dev),'another account cannot forget it either');
+ r=await call('device/forget',{deviceId:dev},a.j.token);ok(!store.get('device:'+dev),'the owner releases it');
+ r=await call('device/register',{deviceId:dev},b.j.token);ok(r.s===200,'after release the new account registers');
+ r=await call('device/register',{deviceId:dev});ok(r.s===401,'register needs a session');
+ let last=null;for(let i=0;i<25;i++){last=await call('restore',{deviceId:'M'.repeat(20)+String(i).padStart(4,'0')});if(last.s===429)break}
+ ok(last.s===429&&+store.get('rl:rm:x')>=1,'restore misses are rate limited and counted in KV');
+}

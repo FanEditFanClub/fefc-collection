@@ -70,7 +70,10 @@ function srvClient(){
     if(e.status===401||e.status===503&&0){clear();return}S.state='in';S.error=e&&e.message||'sync failed'}).then(function(){busy=false;emit();if(again){again=false;return run()}})}
  function soon(){clearTimeout(deb);deb=setTimeout(run,2500)}
  function wire(){if(S._wired||!window.UD)return;S._wired=1;window.UD.subscribe(function(){persistNative();if(tok()&&!busy)soon()});addEventListener('focus',function(){if(tok())run()});document.addEventListener('visibilitychange',function(){if(!document.hidden&&tok())run()});timer=setInterval(function(){if(tok())run()},4*60*1000)}
- function adopt(r){if(!r||!r.token)throw new Error('no token');localStorage.setItem(KT,r.token);localStorage.setItem(KK,r.kind||'code');localStorage.setItem(KU,JSON.stringify(r.user||null));load();persistNative();wire();emit();return run().then(function(){return S})}
+ function adopt(r){if(!r||!r.token)throw new Error('no token');var old=tok(),id=devId(),pre=Promise.resolve();
+  /* Switching accounts on this device: release the device id from the old account first, or the server keeps it pointed there (device_taken). */
+  if(old&&old!==r.token&&id)pre=fetch('/api/sync/device/forget',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+old},body:JSON.stringify({deviceId:id}),cache:'no-store'}).catch(function(){});
+  localStorage.setItem(KT,r.token);localStorage.setItem(KK,r.kind||'code');localStorage.setItem(KU,JSON.stringify(r.user||null));load();persistNative();wire();emit();return pre.then(run).then(function(){return S})}
  function clear(){localStorage.removeItem(KT);localStorage.removeItem(KK);localStorage.removeItem(KU);persistNative();load();emit()}
  function tryRestore(){if(tok())return Promise.resolve(false);var id=devId();if(!id)return Promise.resolve(false);
   return api('restore',{deviceId:id},false).then(function(r){if(r&&r.token){adopt(r);return true}return false}).catch(function(e){if(e&&e.status===404)offerRepair();return false})}
