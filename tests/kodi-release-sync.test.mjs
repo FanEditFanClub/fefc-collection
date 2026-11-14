@@ -109,12 +109,14 @@ test('kodi-apk.yml builds Android, Mac and the add-on repo from one plan and pub
 test('worker serves FEFC-Mac.dmg and the R2 add-on repo, with the static repo as fallback', async () => {
   const { default: w } = await import('../_worker.js');
   const objs = new Map([['kodi/FEFC-Mac.dmg', 'DMG'], ['kodi-repo/addons.xml', '<addons r2="1"/>']]);
-  const MEDIA = { async get(k) { if (!objs.has(k)) return null; const b = objs.get(k); return { body: b, size: b.length, httpEtag: '"e"' }; } };
+  const MEDIA = { async get(k) { if (!objs.has(k)) return null; const b = objs.get(k); return { body: b, size: b.length, httpEtag: '"e"', range: { offset: 0, length: b.length } }; } };  // R2 reports a range even without a Range header
   const ASSETS = { async fetch(r) { return new Response('static:' + new URL(r.url).pathname, { status: 200 }); } };
   const env = { MEDIA, ASSETS };
-  const get = p => w.fetch(new Request('https://fefc-collection.pages.dev' + p), env, {});
+  const get = (p, init) => w.fetch(new Request('https://fefc-collection.pages.dev' + p, init), env, {});
   let r = await get('/kodi-app/FEFC-Mac.dmg');
   assert.equal(r.status, 200); assert.equal(await r.text(), 'DMG');
+  r = await get('/kodi-app/FEFC-Mac.dmg', { headers: { range: 'bytes=0-1' } });
+  assert.equal(r.status, 206); assert.match(r.headers.get('content-range'), /^bytes 0-2\/3$/);
   assert.equal(r.headers.get('content-type'), 'application/x-apple-diskimage');
   assert.match(r.headers.get('content-disposition'), /FEFC-Mac\.dmg/);
   r = await get('/kodi-app/FEFC-Mac-Intel.dmg'); assert.equal(r.status, 404);

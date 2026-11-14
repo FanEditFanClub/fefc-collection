@@ -845,7 +845,7 @@ export default {
       if (isApk) { h.set('content-disposition', 'attachment; filename="' + (url.pathname === '/kodi-app/FEFC.apk' ? 'FEFC.apk' : 'FEFC-Kodi.apk') + '"'); h.set('cache-control', 'no-store'); }
       if (obj.httpEtag) h.set('etag', obj.httpEtag);
       let status = 200;
-      if (obj.range && obj.size != null) {
+      if (obj.range && obj.size != null && req.headers.has('range')) {
         const r = obj.range; const off = r.offset != null ? r.offset : (r.suffix != null ? obj.size - r.suffix : 0);
         const len = r.length != null ? r.length : (obj.size - off);
         h.set('content-range', 'bytes ' + off + '-' + (off + len - 1) + '/' + obj.size); h.set('content-length', String(len)); status = 206;
@@ -871,7 +871,7 @@ export default {
           'content-disposition': 'attachment; filename="' + platformFile[2] + '"', 'access-control-allow-origin': '*' });
         if (obj.httpEtag) h.set('etag', obj.httpEtag);
         let status = 200;
-        if (obj.range && obj.size != null) {
+        if (obj.range && obj.size != null && req.headers.has('range')) {
           const r = obj.range; const off = r.offset != null ? r.offset : (r.suffix != null ? obj.size - r.suffix : 0);
           const len = r.length != null ? r.length : (obj.size - off);
           h.set('content-range', 'bytes ' + off + '-' + (off + len - 1) + '/' + obj.size); h.set('content-length', String(len)); status = 206;
