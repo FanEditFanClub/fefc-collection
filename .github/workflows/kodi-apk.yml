@@ -301,27 +301,41 @@ jobs:
       - name: Launch test (Apple Silicon image, no window interaction)
         continue-on-error: true
         run: |
-          set -uo pipefail
-          mnt="$RUNNER_TEMP/mnt-run"; mkdir -p "$mnt"
-          hdiutil attach -nobrowse -readonly -mountpoint "$mnt" dist/FEFC-Mac.dmg
-          ditto "$mnt/FEFC.app" "$RUNNER_TEMP/FEFC.app"; hdiutil detach "$mnt"
-          exe="$RUNNER_TEMP/FEFC.app/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$RUNNER_TEMP/FEFC.app/Contents/Info.plist")"
-          rm -f "$HOME/Library/Logs/kodi.log"
-          "$exe" > "$RUNNER_TEMP/kodi-stdout.txt" 2>&1 &
-          pid=$!
-          for i in $(seq 1 30); do sleep 4; if ! kill -0 $pid 2>/dev/null; then break; fi; if grep -q "plugin.video.fefc" "$HOME/Library/Logs/kodi.log" 2>/dev/null && grep -q "skin.fefc" "$HOME/Library/Logs/kodi.log" 2>/dev/null; then sleep 8; break; fi; done
-          alive=no; kill -0 $pid 2>/dev/null && alive=yes
-          kill $pid 2>/dev/null; sleep 3; kill -9 $pid 2>/dev/null || true
-          log="$HOME/Library/Logs/kodi.log"
-          cp "$log" dist/launch-kodi.log 2>/dev/null || true
-          {
-            echo "running_after_test=$alive"
-            echo "skin_fefc=$(grep -c 'skin.fefc' "$log" 2>/dev/null || echo 0)"
-            echo "plugin_fefc=$(grep -c 'plugin.video.fefc' "$log" 2>/dev/null || echo 0)"
-            echo "errors=$(grep -c ' error <general>' "$log" 2>/dev/null || echo 0)"
-          } | tee dist/launch-test.txt
-          grep -E "Starting Kodi|load skin|skin.fefc|plugin.video.fefc|FEFC" "$log" 2>/dev/null | head -40 || true
-          grep -q '^skin_fefc=[1-9]' dist/launch-test.txt && grep -q '^plugin_fefc=[1-9]' dist/launch-test.txt
+          set +e
+          # Runs the FEFC app and, for comparison, stock Kodi from the same mirror image, each with a clean
+          # Kodi profile, on this headless runner. Records whether each one starts and loads the FEFC skin/add-on.
+          launch() {  # $1 label, $2 dmg
+            local label="$1" mnt="$RUNNER_TEMP/mnt-$1" app="$RUNNER_TEMP/run-$1.app" pid alive i exe log
+            mkdir -p "$mnt"; hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$2" >/dev/null
+            ditto "$(ls -d "$mnt"/*.app | head -1)" "$app"; hdiutil detach "$mnt" >/dev/null
+            exe="$app/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
+            rm -rf "$HOME/Library/Application Support/Kodi" "$HOME/Library/Logs/kodi.log" "$HOME/Library/Logs/DiagnosticReports"/Kodi* 2>/dev/null
+            log="$HOME/Library/Logs/kodi.log"
+            "$exe" > "dist/launch-$label-stdout.txt" 2>&1 &
+            pid=$!
+            for i in $(seq 1 30); do
+              sleep 4
+              kill -0 $pid 2>/dev/null || break
+              if grep -q "skin.fefc\|skin.estuary" "$log" 2>/dev/null && grep -q "Loading skin file\|load skin\|Home.xml" "$log" 2>/dev/null; then sleep 10; break; fi
+            done
+            alive=no; kill -0 $pid 2>/dev/null && alive=yes
+            kill $pid 2>/dev/null; sleep 3; kill -9 $pid 2>/dev/null
+            wait $pid 2>/dev/null; code=$?
+            cp "$log" "dist/launch-$label-kodi.log" 2>/dev/null
+            cp "$HOME/Library/Logs/DiagnosticReports"/Kodi* dist/ 2>/dev/null
+            {
+              echo "[$label] running_after_test=$alive exit=$code"
+              echo "[$label] log_lines=$(wc -l < "$log" 2>/dev/null | tr -d ' ')"
+              echo "[$label] skin_fefc=$(grep -c 'skin.fefc' "$log" 2>/dev/null)"
+              echo "[$label] plugin_fefc=$(grep -c 'plugin.video.fefc' "$log" 2>/dev/null)"
+            } | tee -a dist/launch-test.txt
+            tail -25 "$log" 2>/dev/null; tail -15 "dist/launch-$label-stdout.txt"
+          }
+          : > dist/launch-test.txt
+          stock=$(ls "$RUNNER_TEMP"/kodi/*arm64*.dmg | head -1)
+          launch stock "$stock"
+          launch fefc dist/FEFC-Mac.dmg
+          grep -q '^\[fefc\] skin_fefc=[1-9]' dist/launch-test.txt && grep -q '^\[fefc\] plugin_fefc=[1-9]' dist/launch-test.txt
       - uses: actions/upload-artifact@v4
         with:
           name: fefc-mac
@@ -331,7 +345,8 @@ jobs:
             dist/FEFC-Mac-Intel.dmg
             dist/FEFC-Mac-Intel.dmg.report.json
             dist/launch-test.txt
-            dist/launch-kodi.log
+            dist/launch-*
+            dist/Kodi*
           retention-days: 7
           if-no-files-found: warn
 
