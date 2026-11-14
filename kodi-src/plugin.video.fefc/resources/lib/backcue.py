@@ -8,13 +8,12 @@ Python plays the same wav for the plugin ".." row (Kodi does not fire parentdir 
 when the sound skin will not. A short debounce stops a second cue when the skin and Python both
 run for one Back. Playback of the wall is never stopped to make room for the cue.
 
-# now/last throughout this module are time.monotonic() seconds, never wall
-# clock: a clock jump must not suppress or disable the 0.4 s debounce.
-# FEFC.BackAt stores the same monotonic value. A leftover wall-clock
-# BackAt from before the monotonic switch is smaller than no monotonic
-# reading in the wrong direction (now - last is negative), and should_play()
-# treats a negative gap as "stale, do not suppress", so it self-heals on
-# the first Back after the switch.
+now/last throughout this module are time.monotonic() seconds, never wall
+clock: a clock jump must not suppress or disable the 0.4 s debounce.
+FEFC.BackAt stores the same monotonic value. A leftover wall-clock BackAt from
+before the monotonic switch is far larger than any monotonic reading, so
+now - last is negative, and should_play() treats a negative gap as "stale, do
+not suppress": it self-heals on the first Back after the switch.
 """
 DEBOUNCE_S = 0.4
 # parentdir, previousmenu, nav back
