@@ -1761,6 +1761,11 @@ def _grid_pad_loop(monitor):
             pos = cur - 1 if cur else 0
 
             def lookup(i, pos=pos):
+                if i == 0:
+                    # Absolute index 0 is Kodi's ".." parent row. Kodi builds it, not
+                    # the plugin, so it carries no fefc_kind; it is a folder row, and
+                    # skip_delta() must be able to target it (item 133c).
+                    return 'folder'
                 off = i - pos
                 if off == 0:
                     k = xbmc.getInfoLabel('Container.ListItem.Property(fefc_kind)')

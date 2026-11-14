@@ -51,11 +51,15 @@ def kind_for_container(is_container):
 def shape_for_kind(kind):
     """Portrait is only a video file. A missing kind is Kodi's Back/Up row.
     folder and action (Sort, Shuffle, Support Us, Read Me, Check for update,
-    and the same buttons) are landscape cards."""
+    and the same buttons) are landscape cards.
+
+    Returns LANDSCAPE or PORTRAIT only. A spacer is not a tile shape: its
+    cell occupies one landscape-height cell, so it maps to LANDSCAPE. Do not
+    return 'spacer' here — ROW_H has no 'spacer' key, so callers doing
+    ROW_H[shape_for_kind(kind)] would raise KeyError on a spacer.
+    """
     if kind == KIND_VIDEO:
         return PORTRAIT
-    if kind == KIND_SPACER:
-        return KIND_SPACER
     return LANDSCAPE
 
 
@@ -102,11 +106,20 @@ def pack(kinds, leading=0):
 
     leading is the Kodi parent row (".."), which this list does not build.
     It occupies column 0, so the padding has to count it or the first video
-    row starts one cell to the left of the row above it.
+    row starts one cell to the left of the row above it. leading is clamped
+    to >= 0: a negative value means "no parent row", it is not wrapped
+    around (the old `int(leading or 0) % COLS` turned -1 into 5).
+
+    kinds must be folder, action, video, or spacer. Any other kind raises
+    ValueError instead of silently becoming a landscape card.
     """
+    known = (KIND_FOLDER, KIND_ACTION, KIND_VIDEO, KIND_SPACER)
+    for k in kinds:
+        if k not in known:
+            raise ValueError('unknown kind %r (expected folder/action/video/spacer)' % (k,))
     land = [k for k in kinds if k != KIND_VIDEO]
     vids = [KIND_VIDEO for k in kinds if k == KIND_VIDEO]
-    lead = int(leading or 0) % COLS
+    lead = max(0, int(leading or 0))
     rows = []
     if land or (vids and lead):
         padded = list(land)
@@ -129,11 +142,24 @@ def pack(kinds, leading=0):
     return flat
 
 
-def audit(slots):
+def audit(slots, leading=0):
     """Problems in a packed grid. Empty means every folder/tool is a landscape
-    cell, every video is a portrait cell, and no real item sits in a hole."""
+    cell, every video is a portrait cell, and no real item sits in a hole.
+
+    leading is the number of columns the Kodi parent row ("..") already
+    occupies before slots[0] — the same value passed to pack(). pack()
+    counts the parent in its padding but does not emit it, so audit()
+    must prepend it before chunking into 6-wide rows, or the first row
+    drifts and its padding spacers are falsely reported as blank gaps.
+    """
     if not slots:
         return ['empty']
+    try:
+        lead = max(0, int(leading or 0))
+    except (TypeError, ValueError):
+        lead = 0
+    if lead:
+        slots = [KIND_FOLDER] * min(lead, COLS) + list(slots)
     width = COLS
     rows = []
     for i in range(0, len(slots), width):
@@ -194,11 +220,17 @@ def skip_delta(pos, origin, lookup, from_menu=False):
     """Where to send focus when it lands on a reserved or padding cell.
 
     pos is the absolute index. lookup(i) returns the kind, or None past either
-    end. origin is the previous index (None if unknown). Returns None when the
-    current cell is a real tile, a relative delta to a real tile, or 'menu'
-    when moving down off the last row. A padding cell on a landscape row moves
-    to a real tile on that row, or on to the portrait grid. Up from a poster
-    cell returns to a real tile. Down off the last poster row reaches the menu.
+    end. lookup() must return 'folder' for the Kodi parent row ("..") at
+    index 0 — see the _grid_pad_loop lookup fix below; the parent row
+    carries no fefc_kind of its own, so a lookup that returns None for it
+    makes skip_delta() unable to target the parent. origin is the previous
+    index (None if unknown). Returns None when the current cell is a real
+    tile or when no move was found — in both cases None means "stay", and
+    the caller treats it that way. Otherwise returns a relative delta to a
+    real tile, or 'menu' when moving down off the last row. A padding cell
+    on a landscape row moves to a real tile on that row, or on to the
+    portrait grid. Up from a poster cell returns to a real tile. Down off
+    the last poster row reaches the menu.
     """
     if lookup(pos) != KIND_SPACER:
         return None
@@ -207,8 +239,13 @@ def skip_delta(pos, origin, lookup, from_menu=False):
     if from_menu:
         delta = -1
         direction = -1
+    elif origin is None:
+        # Unknown origin: try up first. Defaulting to down (delta 0) sent a
+        # spacer with no tile below it straight to the menu.
+        delta = -1
+        direction = -1
     else:
-        delta = 0 if origin is None else pos - origin
+        delta = pos - origin
         direction = 1 if delta >= 0 else -1
     covered = False
     for back in range(1, SPAN):
@@ -247,11 +284,9 @@ def skip_delta(pos, origin, lookup, from_menu=False):
             k = lookup(j)
             if k and k != KIND_SPACER:
                 return j - pos
-        if direction > 0:
-            return None if from_menu else 'menu'
-        found = ahead(-1, 48)
-        if found is not None:
-            return found
+        # No tile in either direction on this row or ahead of it. When
+        # direction is -1, ahead(-1, 48) was already tried above as
+        # ahead(direction, 48); do not repeat that search.
         return None if from_menu else 'menu'
 
     found = ahead(direction, 36)

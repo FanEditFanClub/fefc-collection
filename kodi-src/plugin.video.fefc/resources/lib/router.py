@@ -467,12 +467,34 @@ class Router:
         pending = self._pending
         self._pending = []
         slots = shapes.pack([k for k, _ in pending], leading=1)
+        # pack() reorders land-first, then videos; pending stays in
+        # insertion order (e.g. My List: tools, continue videos, then
+        # stars with folders/videos interleaved). Pairing by position
+        # put videos into folder slots and vice versa. Pair by kind:
+        # each slot takes the next pending item of the same kind, in
+        # insertion order within that kind.
+        queues = {}
+        for kind, emit in pending:
+            queues.setdefault(kind, []).append(emit)
         real = 0
         for slot in slots:
             if slot == 'spacer':
                 self._emit_pad()
             else:
-                pending[real][1]()
+                q = queues.get(slot)
+                if q:
+                    q.pop(0)()
+                    real += 1
+                else:
+                    # No pending item of this kind left (should not happen
+                    # if pack() and pending agree). Emit a pad rather than
+                    # pairing the wrong item into this slot.
+                    self._emit_pad()
+        # Any pending item pack() produced no slot for must still be
+        # emitted, so nothing is silently dropped.
+        for q in queues.values():
+            for emit in q:
+                emit()
                 real += 1
         try:
             xbmcgui.Window(10000).setProperty('FEFC.Shown', str(real))

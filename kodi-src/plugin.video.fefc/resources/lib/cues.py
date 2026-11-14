@@ -13,10 +13,18 @@ folder tile still played "select". The same release baked one clip URL onto the
 list item and details_sfx latched the item id before that property was ready,
 so the title clip was skipped for the rest of the open.
 
-This module is the list both the sound-skin XML and the Python player use.
-Sound off returns no file for every event.
+UI and SKIN_ACTIONS are two different lists on purpose — do not merge them.
+UI maps the Python player's logical events (select, back, home, search,
+pause, resume, forward, rewind) to wav files. SKIN_ACTIONS maps Kodi action
+names (left, right, up, down, pageup, pagedown, select, info, back,
+previousmenu, parentdir, plus the playback aliases) to wav files for
+sounds.xml, which is what sounds_xml() emits. 'home' and 'search' are
+Python events, not Kodi actions, so they have no skin entry; 'left' /
+'right' / move and the playback aliases are Kodi actions with no Python
+UI event. Sound off returns no file for every event.
 """
 
+# Python player events -> wav. Only these keys are valid for ui_file().
 UI = {
     'select': 'click.wav',
     'back': 'back.wav',
@@ -28,7 +36,10 @@ UI = {
     'rewind': 'rewind.wav',
 }
 
-# Kodi action name -> wav. Video tiles fire "info" (show information), not "select".
+# Kodi action name -> wav, for sounds.xml only. Video tiles fire "info"
+# (show information), not "select". Playback entries are here so a remote
+# that still sends the action gets the same file; the service plays
+# transport cues from player state, not from this map.
 SKIN_ACTIONS = (
     ('left', 'move.wav'),
     ('right', 'move.wav'),
@@ -79,9 +90,11 @@ SOUNDS_XML_TAIL = '''	</actions>
 
 
 def sounds_xml():
+    from xml.sax.saxutils import escape
     lines = [SOUNDS_XML_HEAD]
     for name, filename in SKIN_ACTIONS:
-        lines.append('\t\t<action><name>%s</name><file>%s</file></action>\n' % (name, filename))
+        lines.append('\t\t<action><name>%s</name><file>%s</file></action>\n'
+                     % (escape(str(name)), escape(str(filename))))
     lines.append(SOUNDS_XML_TAIL)
     return ''.join(lines)
 
@@ -96,10 +109,15 @@ def ui_file(event, sound_off):
 def opening_plan(kind, sound_off, clips):
     """What an open should play.
 
-    kind is select, file, folder, genre, search, home, or back.
+    kind is select, file, folder, genre, search, home, back, or action.
+    'action' is a non-file tool tile (Sort, Shuffle, Support Us, and the
+    same buttons): it plays the UI click and no clip, like 'search'.
     clips is the title or genre set (a list of asset paths) or a single path.
     Sound off plays nothing. A file, folder, or genre with clips plays the UI
-    click and one clip. Search plays the click. Home and Back play the back cue.
+    click and one clip. Search and action play the click. Home and Back play
+    the back cue. When clips is a list, the clip is deterministically the
+    first non-empty string in it — callers pass an already-chosen set, so
+    this function does not rotate or shuffle.
     """
     empty = {'click': '', 'clip': ''}
     if sound_off:
@@ -134,11 +152,23 @@ def transport_event(prev, now, sound_off):
     """Cue for a change in playback, or '' when nothing new should play.
 
     prev and now are dicts with playing, paused, forwarding, rewinding, wall.
+    Either may be None / not a dict on the first poll; that returns ''.
     Sound off is silent. The home-wall loop and the intro are not a title,
     so they never get a transport cue. Fast-forward and rewind win over a
     pause change in the same poll, because starting a scan also leaves pause.
+    No cue is played on start: playing False -> True with no pause change
+    returns ''. A wall -> title transition also returns '' explicitly, even
+    if the pause flags happen to differ across the switch.
     """
-    if sound_off or now.get('wall') or not (now.get('playing') or now.get('paused')):
+    if sound_off:
+        return ''
+    if not isinstance(prev, dict) or not isinstance(now, dict):
+        return ''
+    if now.get('wall'):
+        return ''
+    if prev.get('wall') and not now.get('wall'):
+        return ''
+    if not (now.get('playing') or now.get('paused')):
         return ''
     if now.get('forwarding') and not prev.get('forwarding'):
         return 'forward'
