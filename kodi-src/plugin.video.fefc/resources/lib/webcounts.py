@@ -2,7 +2,18 @@ import re
 FOLDER='application/vnd.google-apps.folder'; SC='application/vnd.google-apps.shortcut'
 XTRA=re.compile(r'\b(sample|trailer|teaser|featurette|extras?|bonus|promo|behind the scenes|deleted scenes?|interview|making of)\b',re.I)
 JUNK=re.compile(r'^\.|^thumbs\.db$|^desktop\.ini$',re.I)
-VEXT=re.compile(r'\.(mkv|mp4|m4v|avi|mov|wmv|mpg|mpeg|ts|m2ts|webm|flv|vob|iso|divx|ogm|3gp)$',re.I)
+# Video extensions: single source of truth is catalog.VIDEO_EXTS.
+# Fall back to the same union literal when catalog cannot be imported
+# (webcounts is also imported standalone in tests). No cycle: catalog only
+# imports webcounts inside build_model(), after catalog is fully loaded.
+try:
+    from .catalog import VIDEO_EXTS as _VIDEO_EXTS
+except ImportError:
+    try:
+        from catalog import VIDEO_EXTS as _VIDEO_EXTS
+    except ImportError:
+        _VIDEO_EXTS = ('mkv', 'mp4', 'm4v', 'avi', 'mov', 'wmv', 'mpg', 'mpeg', 'ts', 'm2ts', 'webm', 'flv', 'vob', 'iso', 'divx', 'ogm', '3gp')
+VEXT = re.compile(r'\.(?:' + '|'.join(_VIDEO_EXTS) + r')$', re.I)
 FOLD={'collections':'1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB','tbc':'1503Wl56hzRppaIFcQisvQksOaeYOEjnk','readFirst':'1Aw4hr8uM3dsj_txpxPkEJxPDfNjmcYRT','actors':'1Jb0DtQC05fOdpiNg-O88fUpwI5ic3UHS','directors':'1u2B5d9cb1zAtrtdF_rA3eXhtcFgggSib'}
 def web_counts(idx, ids):
     """Port of web app deepCounts/immFolderCount/countsLine (src/app.js)."""

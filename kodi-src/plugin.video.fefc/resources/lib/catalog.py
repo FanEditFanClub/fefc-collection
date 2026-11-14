@@ -14,7 +14,11 @@ import urllib.error
 
 SOURCES = ['drive-changes', 'index', 'video-genres', 'genres', 'posters', 'editinfo', 'metadata', 'fanedit-ratings',
            'folderthumbs', 'folder-sfx', 'added', 'people', 'genreart', 'fileinfo']
-VIDEO_RX = re.compile(r'\.(mp4|m4v|mkv|mov|avi|webm|ts|m2ts|wmv|mpg|mpeg)$', re.I)
+# Single source of truth for video extensions: the union of every list that
+# used to disagree (catalog VIDEO_RX, build_model _vx, webcounts VEXT).
+# webcounts.py imports this; do not add an extension in only one place.
+VIDEO_EXTS = ('mkv', 'mp4', 'm4v', 'avi', 'mov', 'wmv', 'mpg', 'mpeg', 'ts', 'm2ts', 'webm', 'flv', 'vob', 'iso', 'divx', 'ogm', '3gp')
+VIDEO_RX = re.compile(r'\.(?:' + '|'.join(VIDEO_EXTS) + r')$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
 MODEL_VERSION = 8
 UA = 'plugin.video.fefc/1.0 (Kodi)'
@@ -103,6 +107,41 @@ def _fetch(base, name, etag=None, lm=None, timeout=15):
 def _load_json(path):
     with open(path, 'rb') as f:
         return json.loads(f.read().decode('utf-8'))
+
+
+def _fsync_dir(path):
+    """fsync the directory containing path, so a rename survives a power pull."""
+    try:
+        fd = os.open(os.path.dirname(os.path.abspath(path)) or '.', os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+    except Exception:
+        pass
+
+
+def _atomic_write(path, data):
+    """Write bytes to a unique temp file, flush + fsync, then atomically replace path.
+
+    The temp name is unique per write (uuid4), so two processes (plugin +
+    service) writing at once cannot interleave on one fixed '.tmp' name.
+    """
+    import uuid
+    tmp = '%s.%s.tmp' % (path, uuid.uuid4().hex)
+    try:
+        with open(tmp, 'wb') as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+        _fsync_dir(path)
+    except Exception:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
 
 
 IMDB_GENRE = {
@@ -235,34 +274,43 @@ def build_model(raw):
     except Exception:
         web_counts = {}
     # recursive video counts
-    cnt = {}
+    rcnt = {}
 
     def count(i, seen):
-        if i in cnt:
-            return cnt[i]
+        if i in rcnt:
+            return rcnt[i]
         if i in seen:
             return 0
+        # Path set, not a shared visited set: add on entry, remove on exit.
+        # A folder reached by two paths is then counted in full on each path
+        # (and cached in full), while a genuine shortcut cycle still stops
+        # at the back-edge instead of recursing forever.
         seen.add(i)
-        n = 0
-        t = items[i][3] if i in items and items[i][2] and items[i][3] else i
-        for k in kids.get(t, []):
-            n += count(k, seen) if items[k][2] else 1
-        cnt[i] = n
-        return n
+        try:
+            n = 0
+            t = items[i][3] if i in items and items[i][2] and items[i][3] else i
+            for k in kids.get(t, []):
+                n += count(k, seen) if items[k][2] else 1
+            rcnt[i] = n
+            return n
+        finally:
+            seen.remove(i)
     for i, v in items.items():
         if v[2]:
             count(i, set())
     # 0.3.22: the number SHOWN next to a folder = video files directly inside it (not recursive), like the web
     # Main Collection root count. The recursive total (rcnt) is only used to hide empty folders.
-    rcnt = cnt
-    _vx = re.compile(r'\.(mp4|mkv|mov|avi|m4v|webm|ts|wmv|mpg|mpeg)$', re.I)
     dcnt = {}
     for i, v in items.items():
         if v[2]:
             t = v[3] if v[3] else i
-            dcnt[i] = sum(1 for k in kids.get(t, []) if k in items and not items[k][2] and _vx.search(items[k][0] or ''))
+            dcnt[i] = sum(1 for k in kids.get(t, []) if k in items and not items[k][2] and VIDEO_RX.search(items[k][0] or ''))
     cnt = dcnt
-    count(root, set())
+    # Root uses the same direct-child count as every other folder. The old
+    # count(root, set()) stored the recursive total in cnt[root] while every
+    # other entry was a direct count. Root is not in items (see _add), so
+    # count it directly from its kids.
+    cnt[root] = sum(1 for k in kids.get(root, []) if k in items and not items[k][2] and VIDEO_RX.search(items[k][0] or ''))
 
     # genres: video-genres sets + genres.json (collection folders), unioned along the ancestor chain
     vg = raw.get('video-genres') or {}
@@ -291,10 +339,11 @@ def build_model(raw):
     tbc_ids = tbc_members(items, kids)
     for i, v in items.items():
         tt = id_tt.get(i) or (id_tt.get(v[3]) if v[3] else '')
+        # Curated genres are the base; IMDb genres are added to them, not a
+        # replacement for them. A film with IMDb genres keeps its FEFC genres.
+        g = set(own.get(i, ()))
         if tt and imdb_by_tt.get(tt):
-            g = set(imdb_app_genres(imdb_by_tt[tt]))
-        else:
-            g = set(own.get(i, ()))
+            g.update(imdb_app_genres(imdb_by_tt[tt]))
         if not g:
             g = {'Uncategorized'} if not v[2] else set()
         if 'Unsorted' in g:  # 0.3.22: no separate Unsorted, it folds into Uncategorized
@@ -343,7 +392,10 @@ def build_model(raw):
     fmap = {}
     for src in (md.get('map') or {}, ed.get('map') or {}):
         for k, q in src.items():
-            if q in films:
+            # First wins, like films above: metadata maps first, editinfo only
+            # fills keys metadata did not set. The old code let editinfo
+            # overwrite metadata here, the opposite of the films merge.
+            if q in films and k not in fmap:
                 fmap[k] = q
     edits = {}
     for k, e in (ed.get('edits') or {}).items():
@@ -358,7 +410,12 @@ def build_model(raw):
         for src in ('ifdb', 'mrdb'):
             s = r.get(src) if isinstance(r, dict) else None
             if isinstance(s, dict) and s.get('score') is not None and s.get('scale'):
-                out[src] = (float(s['score']), float(s['scale']), int(s.get('votes') or 0))
+                try:
+                    out[src] = (float(s['score']), float(s['scale']), int(s.get('votes') or 0))
+                except (TypeError, ValueError):
+                    # One bad score/scale/votes value must not abort the whole
+                    # build: skip this source for this entry, keep the other.
+                    continue
         ch = r.get('changes') if isinstance(r, dict) else None
         if isinstance(ch, dict) and ch.get('label'):
             out['changes'] = ch['label']
@@ -378,7 +435,7 @@ def build_model(raw):
         if lines:
             changes[k] = lines[:60]
     added = {k: v for k, v in (raw.get('added') or {}).items() if isinstance(v, str)}
-    return {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'root_name': root_name, 'generated': idx.get('generated') or '', 'built': int(time.time()),
+    model = {'v': MODEL_VERSION, 'web_counts': web_counts, 'docs': docs, 'changes': changes, 'root': root, 'root_name': root_name, 'generated': idx.get('generated') or '', 'built': int(time.time()),
             'items': items, 'kids': kids, 'cnt': cnt, 'rcnt': rcnt, 'vgenres': vgenres,
             'genre_videos': genre_videos, 'genre_folders': genre_folders,
             'posters': posters, 'poster_titles': poster_titles, 'people': people, 'films': films, 'fmap': fmap, 'edits': edits,
@@ -387,6 +444,16 @@ def build_model(raw):
             'genreart': raw.get('genreart') or {},
             'fileinfo': raw.get('fileinfo') or {},
             'people_meta': {k: (v.get('name') or '', v.get('role') or '') for k, v in (raw.get('people') or {}).items() if isinstance(v, dict)}}
+    # Persist the art index in the model instead of rebuilding it on every
+    # cold load (_decorate used to do that because 'art' was never stored).
+    # _build_art_index is defined later in this module, but this runs after
+    # the module is fully loaded, so the call is valid here. On failure the
+    # index stays empty and _decorate rebuilds it on load, as before.
+    try:
+        model['art'] = _build_art_index(model)
+    except Exception:
+        model['art'] = {}
+    return model
 
 
 def _mark_refresh_due(cache_dir):
@@ -468,17 +535,27 @@ def load_model(base, cache_dir, refresh_minutes=180, log=None, force=False):
             continue
         p = os.path.join(cache_dir, name + '.json')
         st = files.get(name, {})
+        etag = st.get('etag') if os.path.exists(p) else None
+        lm = st.get('lm') if os.path.exists(p) else None
+        if etag or lm:
+            try:
+                _load_json(p)
+            except Exception as e:
+                # Corrupt cached file: do not trust its etag. Sending it would
+                # let the server 304 and keep the corrupt file forever.
+                log('corrupt cached %s, re-fetching: %s' % (name, e))
+                etag = None
+                lm = None
+                files[name] = {}
         try:
-            status, raw, etag, lm = _fetch(base, name, st.get('etag') if os.path.exists(p) else None,
-                                           st.get('lm') if os.path.exists(p) else None,
+            status, raw, etag, lm = _fetch(base, name, etag, lm,
                                            timeout=20 if have else 8)
         except Exception as e:  # network failure: keep whatever we have
             errors.append('%s: %s' % (name, e))
             continue
         if status == 304:
             continue
-        with open(p, 'wb') as f:
-            f.write(raw)
+        _atomic_write(p, raw)
         files[name] = {'etag': etag, 'lm': lm}
         changed = True
         log('updated %s' % name)
@@ -491,25 +568,27 @@ def load_model(base, cache_dir, refresh_minutes=180, log=None, force=False):
             if os.path.exists(p):
                 try:
                     raw[name] = _load_json(p)
-                except Exception:
-                    pass
+                except Exception as e:
+                    log('cached %s unreadable, skipping: %s' % (name, e))
         if 'index' not in raw:
             if have:
                 return _decorate(have)
             raise RuntimeError('catalogue unavailable: ' + '; '.join(errors)[:200])
-        have = build_model(raw)
-        tmp = mpath + '.tmp'
-        with open(tmp, 'wb') as f:
-            marshal.dump(have, f)
-        os.replace(tmp, mpath)
+        try:
+            have = build_model(raw)
+        except Exception as e:
+            log('build_model failed: %s' % e)
+            if have:
+                return _decorate(have)
+            raise
+        _atomic_write(mpath, marshal.dumps(have))
     try:
         mtime = os.path.getmtime(mpath)
     except OSError:
         mtime = 0
     have = _decorate(have)
     meta = {'checked': now, 'files': files, 'base': base}
-    with open(meta_path, 'w') as f:
-        json.dump(meta, f)
+    _atomic_write(meta_path, json.dumps(meta).encode('utf-8'))
     clear_refresh_due(cache_dir)
     _MEM[key] = {'model': have, 'mtime': mtime, 'checked': now}
     return have
@@ -583,17 +662,16 @@ _ART_NOISE = re.compile(r'\b(?:movie\s+)?fan\s*edit\b|\bfan\s*cut\b|\bsensical\s
 _ART_STOP = {'video', 'movie', 'edit', 'fan edit', 'sample', 'trailer', 'clip'}
 
 
-def _norm_title(s):
-    return re.sub(r'\s+', ' ', re.sub(r'[^a-z0-9]+', ' ', (s or '').lower())).strip()
-
 
 def _title_keys(name):
     """(year_key, bare_key) for borrowing show art that is already in the catalogue."""
     t = re.sub(r'\.[a-z0-9]{2,4}$', '', name or '', flags=re.I)
     t = re.sub(r'^[.\s_]+', '', t)
     t = _ART_LEAD.sub('', t)
-    # "01 Gumby - Moon Trip" keeps the episode index in front of the show name.
-    # A 4-digit year at the front is left in place so the year key can see it.
+    # A leading 1-3 digit number is stripped below, so "01 Gumby - Moon Trip"
+    # loses its episode index and matches on the show name alone.
+    # A 4-digit year is stripped from `head`, so the year key can
+    # only come from the original `t`, not from `head`.
     t = re.sub(r'^\d{1,3}\s+', '', t)
     year = ''
     ym = _ART_YEAR.search(t)
@@ -1251,24 +1329,44 @@ def sfx_for(m, fid):
 
 
 _RULE_CACHE = {}
+_RULE_CACHE_MAX = 4
 
 
 def _compiled_rules(sfx):
-    """Compile folder-sfx regexes once per process. Compiling them per video made large folders stall."""
-    key = id(sfx)
-    hit = _RULE_CACHE.get(key)
+    """Compile folder-sfx regexes once per catalogue. Compiling them per video made large folders stall.
+
+    Identity is a token stored on the sfx dict itself, not id(sfx): a new
+    dict can reuse a freed id, which used to serve the old catalogue's rules.
+    The compiled patterns are kept out of the model dict (a compiled regex is
+    not marshalable) and only in this bounded cache, keyed by that token.
+    """
+    if not isinstance(sfx, dict):
+        return []
+    token = sfx.get('_compiled_rules_token')
+    if not isinstance(token, str) or not token:
+        import uuid
+        token = uuid.uuid4().hex
+        try:
+            sfx['_compiled_rules_token'] = token
+        except Exception:
+            pass
+    hit = _RULE_CACHE.get(token)
     if hit is not None:
         return hit
     out = []
     for rule in sfx.get('_rules') or []:
         rx = None
-        if isinstance(rule, dict) and rule.get('regex'):
-            try:
-                rx = re.compile(rule['regex'], re.I)
-            except re.error:
-                rx = None
-        out.append((rule, rx))
-    _RULE_CACHE[key] = out
+        if isinstance(rule, dict):
+            regex = rule.get('regex')
+            if isinstance(regex, str) and regex:
+                try:
+                    rx = re.compile(regex, re.I)
+                except (re.error, TypeError):
+                    rx = None
+            out.append((rule, rx))
+    _RULE_CACHE[token] = out
+    while len(_RULE_CACHE) > _RULE_CACHE_MAX:
+        _RULE_CACHE.pop(next(iter(_RULE_CACHE)))
     return out
 
 
