@@ -72,7 +72,7 @@ print('ok', len(urls))
   for (const file of ['src/qrgen.js', 'qrgen.js']) {
     const src = fs.readFileSync(path.join(root, file), 'utf8');
     assert.match(src, /fefcGrid/);
-    assert.match(src, /qrcode\(0,'H'\)/);
+    assert.match(src, /qrcode\(0,\s*["']H["']\)/);
     assert.doesNotMatch(src, /source-in/);
   }
   const qrcode = require(path.join(root, 'src/qrgen.js'));

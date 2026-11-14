@@ -277,9 +277,14 @@ async function syncApi(req, env, url) {
 
   /* Stable device → list mapping. No TTL: an APK update must still be able to mint a fresh session for the same My List. */
   if (p === 'device/register') {
+    if (limited(req, 'dr', 30)) return json({ error: 'rate_limited' }, 429);
     const s = await authed(req, env); if (!s) return json({ error: 'unauthorized' }, 401);
     const id = String(body.deviceId || '');
     if (!/^[\w-]{20,80}$/.test(id)) return json({ error: 'bad_request' }, 400);
+    // A device id that already restores another account's list is only re-pointed by that account
+    // (device/forget with its session, which the web app sends on sign-out and before switching accounts).
+    const prev = await kget(env, 'device:' + id);
+    if (prev && prev.key && prev.key !== s.key) return json({ error: 'device_taken' }, 409);
     await env.SYNC.put('device:' + id, JSON.stringify({ key: s.key, kind: s.kind, user: s.user || null, at: Date.now() }));
     return json({ ok: true });
   }
@@ -292,11 +297,15 @@ async function syncApi(req, env, url) {
     return json({ ok: true });
   }
   if (p === 'restore') {
-    if (limited(req, 'rs', 30)) return json({ error: 'rate_limited' }, 429);
+    if (limited(req, 'rs', 12)) return json({ error: 'rate_limited' }, 429);
+    // Misses are counted in KV per IP (the in-memory limit is per isolate), so device ids cannot be swept.
+    const ip = req.headers.get('cf-connecting-ip') || 'x', mk = 'rl:rm:' + ip;
+    const misses = +(await env.SYNC.get(mk)) || 0;
+    if (misses >= 20) return json({ error: 'rate_limited' }, 429);
     const id = String(body.deviceId || '');
     if (!/^[\w-]{20,80}$/.test(id)) return json({ error: 'bad_request' }, 400);
     const rec = await kget(env, 'device:' + id);
-    if (!rec || !rec.key) return json({ error: 'not_found' }, 404);
+    if (!rec || !rec.key) { await env.SYNC.put(mk, String(misses + 1), { expirationTtl: 600 }); return json({ error: 'not_found' }, 404); }
     return json({ token: await newSession(env, rec.key, rec.kind || 'code', rec.user), kind: rec.kind || 'code', user: publicUser(rec.user) });
   }
   return json({ error: 'not_found' }, 404);

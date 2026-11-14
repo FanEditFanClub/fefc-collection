@@ -373,6 +373,9 @@
     }
     function adopt(r) {
       if (!r || !r.token) throw new Error("no token");
+      var old = tok(), id = devId(), pre = Promise.resolve();
+      if (old && old !== r.token && id) pre = fetch("/api/sync/device/forget", { method: "POST", headers: { "content-type": "application/json", Authorization: "Bearer " + old }, body: JSON.stringify({ deviceId: id }), cache: "no-store" }).catch(function() {
+      });
       localStorage.setItem(KT, r.token);
       localStorage.setItem(KK, r.kind || "code");
       localStorage.setItem(KU, JSON.stringify(r.user || null));
@@ -380,7 +383,7 @@
       persistNative();
       wire();
       emit();
-      return run().then(function() {
+      return pre.then(run).then(function() {
         return S;
       });
     }

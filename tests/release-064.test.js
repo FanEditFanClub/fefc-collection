@@ -22,9 +22,9 @@ test('manual downloads list FEFC.apk, the Samsung widget, and the web app only',
     assert.doesNotMatch(text, /FEFC-Kodi\.apk/);
     assert.doesNotMatch(text, /org\.xbmc\.kodi/);
   }
-  assert.match(app, /kodi-app\/FEFC\.apk/);
-  assert.match(app, /kodi-app\/FEFC\.wgt/);
-  assert.match(app, /collection\.faneditfanclub\.com\/samsung/);
+  // The web app's own TV menu has no manual-download block: 0.6.4 added one to src/app.js only and it was
+  // never built or served. src now matches the live app.js, so the links live in Kodi and the Samsung widget.
+  assert.doesNotMatch(app, /id="ml-manual"/);
   // The settings button opens the Manual Downloads list (action=downloads is the offline Downloads folder).
   assert.match(settings, /action=manual_downloads\)/);
   assert.doesNotMatch(settings, /action=downloads\)/);
