@@ -21,13 +21,17 @@
     try {
       if (window.tizen && tizen.application && tizen.ApplicationControl) {
         var ctrl = new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/view", url);
-        tizen.application.launchAppControl(ctrl, null, function() {}, function() {}, null);
+        tizen.application.launchAppControl(ctrl, null, function() {
+        }, function() {
+        }, null);
         return;
       }
-    } catch (e) {}
+    } catch (e) {
+    }
     try {
-      if (window.parent && window.parent !== window) window.parent.postMessage({ type: "fefc-open-url", url: url }, "*");
-    } catch (e) {}
+      if (window.parent && window.parent !== window) window.parent.postMessage({ type: "fefc-open-url", url }, "*");
+    } catch (e) {
+    }
   }
   function $(s, r) {
     return (r || document).querySelector(s);
@@ -242,13 +246,12 @@
         });
       },
       html: function() {
-        var q = P.q, svg = "", gog = !!(P.opt && P.opt.google);
-        var shown = "";
+        var q = P.q, svg = "", gog = !!(P.opt && P.opt.google), shown = "";
         if (q && window.qrcode) {
           svg = '<div id="sp-qr-slot" data-url="' + encodeURIComponent(q.url) + '"></div>';
           shown = shortLink(q.url);
         }
-        return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + "</div>" + (shown ? '<a class="sp-short" href="' + esc(openTarget(q.url)) + '" target="_blank" rel="noopener" tabindex="0">' + esc(shown) + "</a>" : "") + '<p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + "<br>Code: <b class=\"sp-ver\">" + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
+        return frame(gog ? "Sign in with Google" : "Scan with your phone", q ? '<div class="sp-qr">' + svg + "</div>" + (shown ? '<a class="sp-short" href="' + esc(openTarget(q.url)) + '" target="_blank" rel="noopener" tabindex="0">' + esc(shown) + "</a>" : "") + '<p class="sp-sub">' + (gog ? "Open your phone camera, scan, then <b>Sign in with Google</b> and Approve." : "Open your phone camera, scan, then tap Approve.") + '<br>Code: <b class="sp-ver">' + esc(q.verify) + '</b></p><p class="sp-note" id="sp-left">Waiting\u2026 ' + mmss(P.left) + "</p>" : '<p class="sp-sub">Making a QR code\u2026</p>', btn("menu", "Cancel", "", " data-default"));
       }
     },
     pair: { html: function() {
@@ -406,8 +409,8 @@
   document.addEventListener("click", function(e) {
     var shortA = e.target.closest && e.target.closest("a.sp-short");
     if (shortA) {
-      var onTv = window.tizen || /[?&]tizen=1(?:&|$)/.test(location.search);
-      if (onTv) {
+      var tizen2 = window.tizen || /[?&]tizen=1(?:&|$)/.test(location.search);
+      if (tizen2) {
         e.preventDefault();
         openShown(shortA.getAttribute("href") || "");
       }

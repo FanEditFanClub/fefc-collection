@@ -1754,8 +1754,7 @@ var __spreadValues = (a, b) => {
     if (!c) return;
     const draw = () => {
       try {
-        if (!window.qrcode) return;
-        if (!qrcode.mountFefc) return;
+        if (!window.qrcode || !qrcode.mountFefc) return;
         qrcode.mountFefc(c, FEEDBACK_FORM_URL);
       } catch (e) {
         c.innerHTML = '<a href="' + FEEDBACK_FORM_URL + '" target="_blank" rel="noopener">Open the feedback form</a>';
@@ -1783,13 +1782,17 @@ var __spreadValues = (a, b) => {
     try {
       if (window.tizen && tizen.application && tizen.ApplicationControl) {
         var ctrl = new tizen.ApplicationControl("http://tizen.org/appcontrol/operation/view", url);
-        tizen.application.launchAppControl(ctrl, null, function() {}, function() {}, null);
+        tizen.application.launchAppControl(ctrl, null, function() {
+        }, function() {
+        }, null);
         return;
       }
-    } catch (err) {}
+    } catch (err) {
+    }
     try {
-      if (window.parent && window.parent !== window) window.parent.postMessage({ type: "fefc-open-url", url: url }, "*");
-    } catch (err) {}
+      if (window.parent && window.parent !== window) window.parent.postMessage({ type: "fefc-open-url", url }, "*");
+    } catch (err) {
+    }
   });
   function hubGo(k) {
     S.click();
