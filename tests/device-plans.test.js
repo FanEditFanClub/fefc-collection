@@ -37,7 +37,12 @@ import inputplan
 assert inputplan.input_plan(False, [], False, 0) == 'kodi'
 assert inputplan.input_plan(True, ['/x'], False, 0.2) == 'wait'
 assert inputplan.input_plan(True, ['/x'], True, 9) == 'native'
-assert inputplan.input_plan(True, ['/x'], False, 1.5) == 'fallback_kodi'
+# A cold Fire TV can take longer than 1.5 s to open the input activity (0.4.2): wait until FAIL_AFTER.
+assert inputplan.FAIL_AFTER >= 3.0
+assert inputplan.input_plan(True, ['/x'], False, 1.5) == 'wait'
+assert inputplan.input_plan(True, ['/x'], False, inputplan.FAIL_AFTER - 0.1) == 'wait'
+assert inputplan.input_plan(True, ['/x'], False, inputplan.FAIL_AFTER) == 'fallback_kodi'
+assert inputplan.input_plan(True, ['/x'], False, 1.5, fail_after=1.5) == 'fallback_kodi'
 dirs = inputplan.files_dirs(['/storage/emulated/0/Android/data/org.xbmc.kodi/files/x'])
 assert any('com.fefc.kodi' in d for d in dirs)
 assert any('org.xbmc.kodi' in d for d in dirs)
