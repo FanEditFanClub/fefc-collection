@@ -2145,16 +2145,27 @@ var __spreadValues = (a, b) => {
     _sfxGen++;
     _gpool = {};
     const pre = () => {
-      Object.keys(m._genres || {}).forEach((g) => {
-        const L = m._genres[g];
-        const V = Array.isArray(L) && L.length && Array.isArray(L[0]) ? L : [L];
-        V.forEach((x) => S.loadFx && S.loadFx(x));
+      const fx = (x) => {
+        if (!S.loadFx || x == null || x === "") return;
+        const L = Array.isArray(x) ? x : [x];
+        if (L.length && Array.isArray(L[0])) {
+          L.forEach(fx);
+          return;
+        }
+        if (L.length && L.every((v) => typeof v === "string")) try {
+          S.loadFx(L);
+        } catch (e) {
+        }
+      };
+      Object.keys(m._genres || {}).forEach((g) => fx(m._genres[g]));
+      Object.keys(m).forEach((k) => {
+        const v = m[k];
+        if (k[0] !== "_" && Array.isArray(v) && v.length && !Array.isArray(v[0])) fx(v);
       });
-      Object.keys(m).forEach((k) => Array.isArray(m[k]) && S.loadFx && S.loadFx(m[k]));
       (m._rules || []).forEach((r) => {
-        if (!S.loadFx) return;
-        const V = Array.isArray(r.file) && Array.isArray(r.file[0]) ? r.file : [r.files || (Array.isArray(r.file) ? r.file : [r.file])];
-        V.forEach((x) => S.loadFx(x));
+        const f = r.files || r.file;
+        if (Array.isArray(f) && f.length && !Array.isArray(f[0]) && f.some((v) => Array.isArray(v))) f.forEach(fx);
+        else fx(f);
       });
     };
     (window.requestIdleCallback || setTimeout)(pre, { timeout: 4e3 });

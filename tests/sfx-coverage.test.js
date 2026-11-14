@@ -62,3 +62,12 @@ test('known pairs resolve to their signature clips',()=>{
   if(dexter)assert.match(flat(h.resolve(h.target(dexter))).join(),/dexter|default|trex/i);
   assert.match(flat(h.resolve('10AA5RFZKOrtyeALpY891WpIKTiqASZbZ')).join(),/bruce-almighty/);
 });
+
+test('clip sets never mix bare paths with clips (the web preload and Kodi both read a bare path as a broken clip)',()=>{
+  const mixed=v=>Array.isArray(v)&&v.length&&Array.isArray(v[0])&&v.some(x=>!Array.isArray(x));
+  const bad=[];
+  for(const [k,v] of Object.entries(h.FSFX)){if(k[0]!=='_'&&mixed(v))bad.push(k)}
+  (h.FSFX._rules||[]).forEach((r,i)=>{if(mixed(r.file)||mixed(r.files))bad.push('_rules['+i+'] '+(r.regex||r.name||''))});
+  for(const [g,v] of Object.entries(h.FSFX._genres||{}))if(mixed(v))bad.push('_genres.'+g);
+  assert.deepEqual(bad,[]);
+});

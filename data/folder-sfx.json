@@ -1203,7 +1203,7 @@
      "assets/sfx/costner-robin-hood-theme.m4a",
      "assets/sfx/costner-robin-hood-theme.mp3"
     ],
-    "assets/sfx/costner-build-it.mp3",
+    ["assets/sfx/costner-build-it.mp3"],
     [
      "assets/sfx/costner-jfk-back-left.m4a",
      "assets/sfx/costner-jfk-back-left.mp3"
