@@ -76,6 +76,17 @@ def read_installed_identity(pkg):
     import subprocess
     from resources.lib.updateflow import (
         build_from_version_code, parse_dumpsys_version_code, parse_pm_path, read_apk_identity)
+    # Fast path: the APK path is cached, and its mtime has not changed,
+    # so the installed build cannot have changed either. This avoids
+    # the `pm path` subprocess (up to 4 s) on every tick.
+    cached = _installed_cache.get('path')
+    if cached and os.path.exists(cached):
+        try:
+            mtime = os.path.getmtime(cached)
+        except OSError:
+            mtime = None
+        if mtime is not None and mtime == _installed_cache.get('mtime') and _installed_cache.get('ident'):
+            return dict(_installed_cache['ident'])
     text = ''
     try:
         text = subprocess.check_output(['pm', 'path', pkg], stderr=subprocess.DEVNULL, timeout=4, text=True)
@@ -87,6 +98,12 @@ def read_installed_identity(pkg):
         if ident and int(ident.get('build') or 0):
             if not ident.get('pkg'):
                 ident['pkg'] = pkg
+            try:
+                _installed_cache['path'] = path
+                _installed_cache['mtime'] = os.path.getmtime(path)
+                _installed_cache['ident'] = dict(ident)
+            except OSError:
+                pass
             return ident
     dump = ''
     try:
@@ -99,6 +116,17 @@ def read_installed_identity(pkg):
         return None
     running = installed_build() or {}
     return {'pkg': pkg, 'build': build, 'version': str(running.get('version') or '')}
+
+
+# One shared busy flag for background work that must never overlap
+# itself or stall the tick loop (install check, background update
+# check, nav-sound reapply). They all touch home-window properties,
+# so one flag — not one per job — is what serialises them.
+_bg_lock = threading.Lock()
+_bg_busy = False
+# Cached installed-APK identity: path + mtime + identity. Re-checked
+# only when the APK file's mtime changes (see read_installed_identity).
+_installed_cache = {'path': None, 'mtime': None, 'ident': None}
 
 
 _restarted_for_build = {'build': 0}
@@ -178,7 +206,37 @@ def _updating():
     return bool(xbmcgui.Window(10000).getProperty('FEFC.Updating'))
 
 
-def install_update(new):
+def _run_in_background(fn, *args, **kwargs):
+    """Run fn on a daemon thread unless background work is already running.
+
+    Returns True when the thread was started, False when the work was
+    skipped because the flag was busy. The flag is cleared in a finally
+    so a raising job can never wedge the loop. Callers that need a GUI
+    dialog must NOT use this — xbmcgui calls stay on the main thread
+    (see Item 66); background check_update() calls are prompt=False only.
+    """
+    global _bg_busy
+    with _bg_lock:
+        if _bg_busy:
+            log('background work already running; skipping %s' % fn.__name__)
+            return False
+        _bg_busy = True
+
+    def _wrap():
+        global _bg_busy
+        try:
+            fn(*args, **kwargs)
+        except Exception as e:
+            log('background %s: %s' % (fn.__name__, e))
+        finally:
+            with _bg_lock:
+                _bg_busy = False
+
+    threading.Thread(target=_wrap, daemon=True).start()
+    return True
+
+
+def install_update(new, monitor=None):
     """One non-interruptible flow: close every dialog, download with resume + automatic retries (one flow at a time,
     guarded by FEFC.Updating so no update popup or second download can start meanwhile), verify size + sha256,
     then hand the APK to Android's package installer."""
@@ -187,9 +245,15 @@ def install_update(new):
     if _updating():
         log('update already in progress')
         return
+    if threading.current_thread() is not threading.main_thread():
+        # The install popup is modal xbmcgui work and must stay on the
+        # main thread. Background checks must never reach here — they
+        # call check_update(prompt=False), which returns before install.
+        log('install_update called off the main thread; refusing')
+        return
     home.setProperty('FEFC.Updating', '1')
     try:
-        _install_update(new)
+        _install_update(new, monitor)
     finally:
         home.clearProperty('FEFC.Updating')
 
@@ -300,7 +364,7 @@ def maybe_ask_notify_perm(asked):
     xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"fefcnotify://perm",,,,,"com.fefc.kodi.FefcNotifyActivity")' % my_package())
 
 
-def consume_pending_nav():
+def consume_pending_nav(monitor=None):
     """Notification tap writes fefc-pending-nav.txt; open New Arrivals or the updater."""
     if not is_phone_pkg():
         return
@@ -323,7 +387,9 @@ def consume_pending_nav():
     if kind in ('files', 'recent', 'newfiles', 'new_files'):
         xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent,return)')
     elif kind in ('update', 'updater', 'app_update'):
-        check_update(manual=True, prompt=False)
+        # Tap means "open the updater", not "install now": show the
+        # what's-new + Install / Later prompt and install only on Install.
+        check_update(manual=True, prompt=True, from_tap=True, monitor=monitor)
 
 
 def poll_new_files_feed():
@@ -557,13 +623,18 @@ def _install_platform_update(new, plat):
     xbmcgui.Dialog().ok('FEFC update', platform_install_message(plat, dst, opened, rec.get('abi') or ''))
 
 
-def _install_update(new):
+def _install_update(new, monitor=None):
+    mon = monitor if monitor is not None else xbmc.Monitor()
     plat = _host_platform()
     if plat != 'android':
         _install_platform_update(new, plat)
         return
     import hashlib
     url, want, sha = _for_my_package(new)
+    if not url:
+        _cue('error')
+        xbmcgui.Dialog().ok('FEFC update', 'No update package is published for this app.')
+        return
     dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
     part = dst + '.part'
     ok = False
@@ -589,7 +660,7 @@ def _install_update(new):
         def work():
             nonlocal ok
             tries = 0
-            while tries < 8 and not ok:
+            while tries < 8 and not ok and not mon.abortRequested():
                 tries += 1
                 try:
                     have = os.path.getsize(part) if os.path.exists(part) else 0
@@ -605,6 +676,8 @@ def _install_update(new):
                         with open(part, 'ab' if have else 'wb') as f:
                             done = have
                             while True:
+                                if mon.abortRequested():
+                                    raise RuntimeError('aborted')
                                 chunk = r.read(256 * 1024)
                                 if not chunk:
                                     break
@@ -629,8 +702,13 @@ def _install_update(new):
                     ok = True
                 except Exception as e:
                     log('update download attempt %d failed: %s' % (tries, e))
+                    if mon.abortRequested():
+                        break
                     popup.render('downloading', 0, 0, want or 0, 'Connection problem, retrying (%d/8)...' % tries)
-                    xbmc.sleep(min(30, 3 * tries) * 1000)
+                    # Abort-aware sleep: wakes at once on shutdown instead
+                    # of sleeping out the full back-off.
+                    if mon.waitForAbort(min(30, 3 * tries)):
+                        break
             finished['done'] = True
             try:
                 popup.close()
@@ -638,25 +716,30 @@ def _install_update(new):
                 pass
 
         threading.Thread(target=work, daemon=True).start()
-        while not finished['done']:
+        while not finished['done'] and not mon.abortRequested():
             if popup.dismissed:
                 if xbmcgui.Window(10000).getProperty('FEFC.UpdateReveal') == '1':
                     xbmcgui.Window(10000).clearProperty('FEFC.UpdateReveal')
                     popup.dismissed = False
                 else:
-                    xbmc.sleep(200)
+                    if mon.waitForAbort(0.2):
+                        break
                     continue
             popup.doModal()
+        if mon.abortRequested():
+            # Shutting down: no 'failed' render, no Retry offer, no
+            # installer. install_update()'s finally clears FEFC.Updating.
+            try:
+                popup.close()
+            except Exception:
+                pass
+            return
     if not ok:
         _cue('error')
         popup.render('failed', 0, 0, want or 0, 'The download did not finish after several tries. Check the connection and pick Retry. It continues where it stopped.')
         popup.doModal()
         if popup.retry:
-            _install_update(new)
-        return
-    if not url:
-        _cue('error')
-        xbmcgui.Dialog().ok('FEFC update', 'No update package is published for this app.')
+            _install_update(new, monitor)
         return
     from resources.lib.updateflow import read_apk_identity, handoff_ok, installer_builtin, installer_package_for
     identity = read_apk_identity(dst)
@@ -746,7 +829,7 @@ def set_update_state(cur, new=None, avail=False, state=None):
     home.setProperty('FEFC.UpdateLabel', label_for('up_to_date'))
 
 
-def check_update(manual=False, prompt=True):
+def check_update(manual=False, prompt=True, from_tap=False, monitor=None):
     """Compare the installed FEFC app build with the latest published one (the GitHub Action publishes version.json).
     Always refreshes the home Update tile; shows the what's-new + Install / Later popup when prompt is true."""
     cur = installed_build()
@@ -796,11 +879,11 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Window(10000).setProperty('FEFC.UpdateReveal', '1')
         return
-    if avail and manual:   # the Home update button: always a fresh check, then install straight away
-        install_update(new)
+    if avail and manual and not from_tap:   # the Home update button: always a fresh check, then install straight away
+        install_update(new, monitor)
         return
     if avail:
-        if is_phone_pkg():
+        if is_phone_pkg() and not from_tap:
             # Android phone/tablet: OS notification (gated by Settings); Fire TV keeps the in-app popup below.
             if ADDON.getSetting('notify_app_update') != 'false':
                 nb = str(new.get('build') or '')
@@ -821,7 +904,7 @@ def check_update(manual=False, prompt=True):
         finally:
             home.clearProperty('FEFC.UpdatePrompt')
         if go:
-            install_update(new)
+            install_update(new, monitor)
         return
     if manual:
         xbmcgui.Dialog().notification('FEFC', 'Up to date', time=2000, sound=False)
@@ -1734,8 +1817,12 @@ def main():
                 from resources.lib.cues import REAPPLY_SECONDS
                 on = sfx_enabled(ADDON.getSetting('play_sfx'))
                 home.setProperty('FEFC.SoundOff', '' if on else '1')
-                apply_nav_sound(on)
-                next_nav_sound = now + REAPPLY_SECONDS
+                if _run_in_background(apply_nav_sound, on):
+                    next_nav_sound = now + REAPPLY_SECONDS
+                else:
+                    # Background work is busy; retry soon instead of
+                    # waiting out the full 45 s reapply interval.
+                    next_nav_sound = now + 5
             except Exception as e:
                 log('nav sound reapply: %s' % e)
                 next_nav_sound = now + 45
@@ -1744,7 +1831,7 @@ def main():
         except Exception as e:
             log('notify perm ask: %s' % e)
         try:
-            consume_pending_nav()
+            consume_pending_nav(monitor)
         except Exception as e:
             log('pending nav: %s' % e)
         if now >= next_counts:  # tile counts (catalog + My List), refreshed every minute like the web app's home
@@ -1815,13 +1902,16 @@ def main():
             tracker.tick()
         except Exception as e:
             log('tracker: %s' % e)
-        # The process can survive an APK replace. On Home, and every few seconds,
+        # The process can survive an APK replace. On Home only — never on
+        # other screens and never during playback — and every few seconds,
         # compare it with the package on disk and drop a stale Update available badge.
+        # The check itself runs on a daemon thread (busy flag in
+        # _run_in_background) so it can never stall this tick loop.
         home_now = bool(xbmc.getCondVisibility('Window.IsActive(home)'))
-        if (home_now and not was_home) or now >= next_install_check:
+        if home_now and (not was_home or now >= next_install_check):
             next_install_check = now + 5
             try:
-                maybe_refresh_installed()
+                _run_in_background(maybe_refresh_installed)
             except Exception as e:
                 log('resume install check: %s' % e)
         was_home = home_now
@@ -1830,10 +1920,12 @@ def main():
             checked = True
             last_check = now
             ADDON.setSetting('last_update_check', str(now))
-            check_update(prompt=not xbmc.Player().isPlaying())
+            check_update(prompt=not _foreground_video(), monitor=monitor)
         elif checked and now - last_check > 21600:
             last_check = now
-            check_update(prompt=False)
+            # Background only: prompt=False, so no dialog and no install
+            # can be reached from this thread (see Item 66).
+            _run_in_background(check_update, prompt=False, monitor=monitor)
         if monitor.waitForAbort(0.2 if wall.playing() else 0.5):
             break
 
