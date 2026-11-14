@@ -258,9 +258,21 @@ def install_update(new, monitor=None):
         home.clearProperty('FEFC.Updating')
 
 
+# The package and the external-files dir never change during a process
+# lifetime, but my_package() runs translatePath on three special://
+# paths plus string scans on every call. Cache both, lazily, on first use.
+_package_cache = None
+_ext_files_dir_cache = None
+_ext_files_dir_computed = False
+
+
+
 def my_package():
     """Android package of this install: the app's own data paths name it (com.fefc.kodi vs org.xbmc.kodi), so the
     updater always downloads the APK for the package that is actually running; fefc-build.json is the fallback."""
+    global _package_cache
+    if _package_cache is not None:
+        return _package_cache
     for sp in ('special://xbmc/', 'special://home/', 'special://temp/'):
         try:
             t = xbmcvfs.translatePath(sp)
@@ -268,8 +280,10 @@ def my_package():
             t = ''
         for pkg in ('com.fefc.kodi', 'org.xbmc.kodi'):
             if '/%s/' % pkg in t:
+                _package_cache = pkg
                 return pkg
-    return str((installed_build() or {}).get('pkg') or 'org.xbmc.kodi')
+    _package_cache = str((installed_build() or {}).get('pkg') or 'org.xbmc.kodi')
+    return _package_cache
 
 
 def _for_my_package(new):
@@ -288,6 +302,10 @@ def is_phone_pkg():
 
 def _android_ext_files_dir():
     """Android/data/<pkg>/files — same folder Java FefcNotifyActivity uses via getExternalFilesDir(null)."""
+    global _ext_files_dir_cache, _ext_files_dir_computed
+    if _ext_files_dir_computed:
+        return _ext_files_dir_cache
+    result = ''
     for sp in ('special://home/', 'special://temp/', 'special://xbmc/'):
         try:
             t = xbmcvfs.translatePath(sp)
@@ -299,8 +317,13 @@ def _android_ext_files_dir():
             marker = '/Android/data/%s/files' % pkg
             i = t.find(marker)
             if i >= 0:
-                return t[:i + len(marker)]
-    return ''
+                result = t[:i + len(marker)]
+                break
+        if result:
+            break
+    _ext_files_dir_cache = result
+    _ext_files_dir_computed = True
+    return result
 
 
 def sync_notify_prefs():
@@ -912,65 +935,25 @@ def check_update(manual=False, prompt=True, from_tap=False, monitor=None):
 
 def _prompt(new, cur):
     """What's new first, then Install / Later. Returns True for Install."""
-    if True:
-        msg = 'A new FEFC app is available: %s. You have %s.' % (version_label(new), version_label(cur))
-        wn = whats_new(new, cur)
-        if wn:   # full-size scrollable notes first, then the short Install / Later question
-            xbmcgui.Dialog().textviewer('FEFC app update: %s' % version_label(new), msg + '\n\n' + wn)
-        msg += ' Download and install it now?'
-        return xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN)
+    msg = 'A new FEFC app is available: %s. You have %s.' % (version_label(new), version_label(cur))
+    wn = whats_new(new, cur)
+    if wn:   # full-size scrollable notes first, then the short Install / Later question
+        xbmcgui.Dialog().textviewer('FEFC app update: %s' % version_label(new), msg + '\n\n' + wn)
+    msg += ' Download and install it now?'
+    return xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN)
 
 BASE = 'https://fefc-collection.pages.dev'
-CTA = [('Discord', 'Join the FEFC Discord: discord.gg/d8A9xHTey7'),
-       ('X', 'Follow @FanEditFanClub on X'),
-       ('Facebook Group', 'Join the FEFC Facebook Group'),
-       ('Reddit', 'Join r/FanEditFanClub on Reddit')]
-
 
 def _get_json(url, timeout=15):
     req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read().decode('utf-8'))
 
 
-TICKER_ICONS = {'discord': ('\ue001', 'FF5865F2'), 'facebook': ('\ue002', 'FF1877F2'),
-                'x': ('\ue003', 'FFFFFFFF'), 'reddit': ('\ue004', 'FFFF4500')}
 
-
-def _cta(c):
-    """Unused by the live ticker (that is ticker.build_text). Kept in step with it:
-    the network name, then the sentence, with no extra JOIN."""
-    return '%s  %s' % (c[0].split()[0].upper(), c[1])
-
-
-def _new_files_ticker_items():
-    """Count line + recent titles from the same feed the daily notifier publishes with its social posts."""
-    out = []
-    try:
-        feed = _get_json(NEW_FILES_FEED + '?t=%d' % int(time.time()), timeout=10) or {}
-    except Exception as e:
-        log('new-files ticker: %s' % e)
-        return out
-    title = str(feed.get('title') or '').strip()
-    count = int(feed.get('count') or 0)
-    if not title and count:
-        label = 'New File' if count == 1 else 'New Files'
-        verb = 'has been added' if count == 1 else 'have been added'
-        title = '%s %s %s to The Fan Edit Fan Club Collection' % (count, label, verb)
-    if title:
-        out.append({'src': 'new', 'title': title})
-    for name in (feed.get('recent') or [])[:12]:
-        t = ' '.join(str(name or '').split())
-        if t:
-            out.append({'src': 'new', 'title': t})
-    return out
 
 
 def _ticker_mod():
-    import sys
-    lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
-    if lib not in sys.path:
-        sys.path.insert(0, lib)
-    import ticker
+    from resources.lib import ticker
     return ticker
 
 
@@ -978,11 +961,7 @@ def _model_recent_items(limit=12):
     """Most recently-added collection files from the live model (refreshes every 180 min = the 3h resync),
     so the ticker's 'new files' items update on the same cycle as the database, not just the daily feed."""
     try:
-        import sys
-        lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
-        if lib not in sys.path:
-            sys.path.insert(0, lib)
-        import catalog
+        from resources.lib import catalog
         base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
         prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
         try:
@@ -1209,8 +1188,6 @@ class Tracker(object):
 
 def refresh_home_counts():
     try:
-        import sys
-        sys.path.insert(0, xbmcvfs.translatePath(ADDON.getAddonInfo('path')))
         from resources.lib import router
         home = xbmcgui.Window(10000)
         for k, v in router.home_counts().items():
@@ -1404,42 +1381,6 @@ class HomeWall(object):
         self._start(pl, sound, self.pos if self.pos > 0.5 else 0.0)
 
 
-class SkipIntro(xbmcgui.WindowDialog):
-    """Focused SKIP tile. Bottom-right, inside the TV safe area, clear of the intro's centre."""
-
-    def __init__(self):
-        super().__init__()
-        try:
-            from resources.lib.wallplan import skip_button
-            x, y, w, h = skip_button()
-        except Exception:
-            x, y, w, h = 1540, 910, 260, 92
-        self.done = False
-        self.btn = xbmcgui.ControlButton(x, y, w, h, 'SKIP', font='font13_title', textColor='FFFFFFFF',
-                                         focusedColor='FFFFFFFF', alignment=6,
-                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
-        self.addControl(self.btn)
-        self.setFocus(self.btn)
-
-    def _go(self):
-        if self.done:
-            return
-        self.done = True
-        try:
-            xbmc.Player().stop()
-        except Exception:
-            pass
-        self.close()
-
-    def onControl(self, c):
-        self._go()
-
-    def onAction(self, action):
-        aid = action.getId()
-        select = {xbmcgui.ACTION_SELECT_ITEM, xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401}
-        if aid in select or aid in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
-            self._go()
-
 
 def _play_local_wav(filename):
     """Play one packaged UI wav. filename is click.wav or back.wav. Sound off is the caller's check."""
@@ -1536,6 +1477,8 @@ def details_sfx():
     if home.getProperty('FEFC.GuiSound') != 'always':
         _play_local_wav(ui_file('select', False))
     clip = plan['clip']
+    if not clip:
+        return
 
     def go():
         try:
@@ -1634,13 +1577,8 @@ def _grid_pad_loop(monitor):
 
     The panel cannot skip an item by itself. This only runs while that cell is
     focused, and it never touches playback."""
-    import sys
-    lib = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'lib')
-    if lib not in sys.path:
-        sys.path.insert(0, lib)
-    from shapes import skip_delta
+    from resources.lib.shapes import skip_delta
     origin = None
-    seen_path = ''
     while not monitor.abortRequested():
         try:
             cid = xbmc.getInfoLabel('System.CurrentControlId') or ''
@@ -1656,16 +1594,6 @@ def _grid_pad_loop(monitor):
                 _remember_focused_clip()
             except Exception:
                 pass
-            if path != seen_path and total:
-                seen_path = path
-                if total <= 2500:
-                    shown = 0
-                    for i in range(total):
-                        k = xbmc.getInfoLabel('Container.ListItemAbsolute(%d).Property(fefc_kind)' % i)
-                        if k != 'spacer':
-                            shown += 1
-                    if shown:
-                        xbmcgui.Window(10000).setProperty('FEFC.Shown', str(shown))
             cur = int(xbmc.getInfoLabel('Container.CurrentItem') or '0')
             pos = cur - 1 if cur else 0
 
@@ -1700,12 +1628,25 @@ def _grid_pad_loop(monitor):
             return
 
 
+def _setting_bool(setting_id, default=False):
+    """ADDON.getSettingBool() raises if the setting id does not exist
+    (e.g. after a settings.xml change). Never let that kill startup."""
+    try:
+        return bool(ADDON.getSettingBool(setting_id))
+    except Exception:
+        return default
+
+
 def main():
     home = xbmcgui.Window(10000)
     if not xbmcvfs.exists(INTRO):
         home.setProperty('FEFC.Ready', '1')
         return  # plain Kodi: nothing to do
     monitor = xbmc.Monitor()
+    # Warm the package / external-files-dir caches (Item 68) so the
+    # first tick does not pay for the translatePath scans.
+    my_package()
+    _android_ext_files_dir()
     ensure_source()
     set_select_action()
     _drop_stale_back_keymap()
@@ -1713,14 +1654,14 @@ def main():
     if cb:
         xbmcgui.Window(10000).setProperty('FEFC.Version', 'FEFC app ' + version_label(cb))
         set_update_state(cb, state='checking')
-    if ADDON.getSettingBool('open_on_start') or ADDON.getSettingBool('play_intro'):
+    if _setting_bool('open_on_start') or _setting_bool('play_intro'):
         # wait for the home screen to be up
         for _ in range(60):
             if monitor.waitForAbort(0.5):
                 return
             if xbmc.getCondVisibility('Window.IsActive(home)'):
                 break
-        if ADDON.getSettingBool('play_intro'):
+        if _setting_bool('play_intro'):
             # Fullscreen. A dialog cannot draw above it; the video OSD can, so SKIP is a control on that OSD.
             xbmc.executebuiltin('PlayMedia(%s,noresume)' % INTRO)
             started = False
@@ -1764,15 +1705,11 @@ def main():
                 home.setProperty('FEFC.Skip', '')
                 xbmc.executebuiltin('Dialog.Close(videoosd,true)')
         home.setProperty('FEFC.Ready', '1')  # the home screen stays hidden behind a black splash until the intro has finished
-        if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
+        if _setting_bool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')
     home.setProperty('FEFC.Ready', '1')
     try:
-        import sys as _sys
-        _lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
-        if _lib not in _sys.path:
-            _sys.path.insert(0, _lib)
-        from sfxpref import sfx_enabled, should_persist_on
+        from resources.lib.sfxpref import sfx_enabled, should_persist_on
         _raw = ADDON.getSetting('play_sfx')
         if should_persist_on(_raw):
             ADDON.setSetting('play_sfx', 'true')
@@ -1813,7 +1750,7 @@ def main():
         now = time.time()
         if now >= next_nav_sound:
             try:
-                from sfxpref import sfx_enabled
+                from resources.lib.sfxpref import sfx_enabled
                 from resources.lib.cues import REAPPLY_SECONDS
                 on = sfx_enabled(ADDON.getSetting('play_sfx'))
                 home.setProperty('FEFC.SoundOff', '' if on else '1')
@@ -1851,7 +1788,7 @@ def main():
         if now >= next_catalog:
             def refresh_catalog():
                 try:
-                    import catalog
+                    from resources.lib import catalog
                     base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
                     prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
                     cache = os.path.join(prof, 'cache')
