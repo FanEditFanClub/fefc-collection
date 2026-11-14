@@ -406,12 +406,33 @@ class Router:
         gs = [g for g in (m['vgenres'].get(vid) or []) if g != 'Uncategorized']
         if gs:
             tag.setGenres(gs)
-        if info['director']:
-            tag.setDirectors(info['director'])
-        if info['cast']:
-            tag.setCast([xbmc.Actor(c, '', i) for i, c in enumerate(info['cast'])])
-        if info['runtime']:
-            tag.setDuration(int(info['runtime']) * 60)
+        # Director/cast/runtime come from catalogue data that has had string
+        # directors, dict cast rows and string runtimes. One bad field must not
+        # stop the whole listing, so each is normalised and guarded alone.
+        try:
+            dirs = info['director']
+            if isinstance(dirs, str):
+                dirs = [dirs]
+            dirs = [str(d) for d in (dirs or []) if d]
+            if dirs:
+                tag.setDirectors(dirs)
+        except Exception as e:
+            _log('add_video directors: %r' % (e,))
+        try:
+            names = []
+            for c in (info['cast'] or []):
+                n = c.get('name') if isinstance(c, dict) else c
+                if n:
+                    names.append(str(n))
+            if names:
+                tag.setCast([xbmc.Actor(c, '', i) for i, c in enumerate(names)])
+        except Exception as e:
+            _log('add_video cast: %r' % (e,))
+        try:
+            if info['runtime']:
+                tag.setDuration(int(float(info['runtime'])) * 60)
+        except Exception as e:
+            _log('add_video runtime: %r' % (e,))
         if info['editor']:
             tag.setStudios([info['editor']])
         first = True
@@ -1229,29 +1250,38 @@ class Router:
         self.end(cache=False)
 
     def _mylist_from_pack(self, ml, by, synced=False):
-        """My List from the shipped index. Skips the full catalogue build."""
+        """My List from the shipped index. Skips the full catalogue build. Paged like the live path."""
         if not synced and ml.linked and not self.params.get('nosync'):
             err = ml.sync(timeout=4)
             if err:
                 _log('mylist sync: %s' % err)
+        try:
+            page = max(0, int(self.params.get('page') or 0))
+        except (TypeError, ValueError):
+            page = 0
+        page_size = catalog.RECENT_PAGE
         dark = 'special://skin/media/fefc-ol-tile.png'
         who = ml.db.get('user') or 'linked'
         link_plot = 'Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.'
         if ml.linked:
             link_plot += ' Signed in as %s.' % who
-        self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
         sortk = self.params.get('sort') or _pref('_mylist', 'date')
         if sortk not in ('date', 'az', 'za'):
             sortk = 'date'
         sort_name = {'date': 'Date added', 'az': 'Name A-Z', 'za': 'Name Z-A'}[sortk]
-        self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
-        self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
-        self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
-        try:
-            ndl = _dl().count()
-        except Exception:
-            ndl = 0
-        self.add_folder('Downloads' if not ndl else 'Downloads · %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
+        if not page:
+            # Tool folders on page 0 only: they must not repeat on every page.
+            self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
+            self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
+            self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
+            self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
+            try:
+                ndl = _dl().count()
+            except Exception:
+                ndl = 0
+            self.add_folder('Downloads' if not ndl else 'Downloads \u00b7 %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
+        # One ordered, deduplicated list of pack rows, then page it.
+        ordered = []
         shown = set()
         ids = list(ml.ids())
         if sortk in ('az', 'za'):
@@ -1262,15 +1292,19 @@ class Router:
             for sid in ml.continue_ids():
                 row = by.get(sid)
                 if row and not row[2] and sid not in shown:
-                    self._add_pack_row(row)
                     shown.add(sid)
+                    ordered.append(row)
         for sid in ids:
             row = by.get(sid)
             if not row or sid in shown:
                 continue
             shown.add(sid)
+            ordered.append(row)
+        for row in ordered[page * page_size:(page + 1) * page_size]:
             self._add_pack_row(row)
-        if not shown:
+        if (page + 1) * page_size < len(ordered):
+            self.add_folder('Next page (%d more) >>' % (len(ordered) - (page + 1) * page_size), '', action='mylist', page=page + 1, sort=sortk)
+        if not ordered and page == 0:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
         self.end(cache=False)
 
@@ -2274,32 +2308,39 @@ class Router:
 
 
 def _png_rgb(path, rows):
-    """Plain 8-bit RGB PNG (Kodi decodes this everywhere; 1-bit PNGs show up black/blank)."""
-    import struct
-    import zlib
-    h, w = len(rows), len(rows[0]) // 3
-    raw = b''.join(b'\x00' + r for r in rows)
-
-    def chunk(t, d):
-        return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
-    data = (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
-            + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
-    with open(path, 'wb') as f:
-        f.write(data)
-        f.flush()
-        os.fsync(f.fileno())
-    return path
+    """Plain 8-bit RGB PNG (Kodi decodes this everywhere; 1-bit PNGs show up black/blank).
+    Delegates to qrdraw's writer: atomic (temp file + rename) with row-shape validation."""
+    from .qrdraw import _png_rgb as _write
+    return _write(path, rows)
 
 
-def _tmpdir():
-    tmp = xbmcvfs.translatePath('special://temp/')
-    for old in os.listdir(tmp):
-        if old.startswith('fefc-link-qr') or old.startswith('fefc-white'):
+
+def _prune_qr_files(keep=5):
+    """Delete old generated QR/placeholder PNGs. They were only ever created, never removed.
+
+    Keeps the newest `keep` fefc-qr-*.png files in the profile qr folder (a dialog may
+    still be showing the previous one) and drops stale fefc-link-qr-*/fefc-white-* in temp."""
+    import glob
+    try:
+        d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/qr')
+        files = sorted(glob.glob(os.path.join(d, 'fefc-qr-*.png')), key=os.path.getmtime, reverse=True)
+        stale = files[keep:]
+        tmp = xbmcvfs.translatePath('special://temp/')
+        cutoff = time.time() - 3600
+        for pat in ('fefc-link-qr-*.png', 'fefc-white-*.png'):
+            for p in glob.glob(os.path.join(tmp, pat)):
+                try:
+                    if os.path.getmtime(p) < cutoff:
+                        stale.append(p)
+                except OSError:
+                    pass
+        for p in stale:
             try:
-                os.remove(os.path.join(tmp, old))
+                os.remove(p)
             except OSError:
                 pass
-    return tmp
+    except Exception as e:
+        _log('qr prune: %s' % e)
 
 
 def _make_qr_png(url, size=600):
@@ -2309,8 +2350,10 @@ def _make_qr_png(url, size=600):
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, 'fefc-qr-%d.png' % int(time.time() * 1000))
     info = write_qr_png(path, url, size=size, quiet=4)
-    if os.path.getsize(path) < 100 or info['side'] != info['px'] * (info['modules'] + 8):
+    # info['side'] is authoritative (px flooring can differ from the requested size).
+    if os.path.getsize(path) < 100 or info['side'] != info['px'] * (info['modules'] + 2 * info.get('quiet', 4)):
         raise IOError('QR png not written')
+    _prune_qr_files()
     return path
 
 
