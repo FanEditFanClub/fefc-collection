@@ -769,11 +769,17 @@ flat = [p for page in pages for p in page]
 labels = [a for a, _ in flat]
 assert labels == ['Adventure', 'animation', 'Comedy', 'Horror', 'Uncategorized'], labels
 assert all(k == 'Unsorted' or 'Unsorted' not in labels for k in labels)
+# Names that clean to the same label are one tile (first raw name kept).
+dupes = genrepages.genre_pages(['01 - Horror', 'Horror (3)', 'horror', 'Comedy'], 9)
+assert dupes == [[('Comedy', 'Comedy'), ('Horror', '01 - Horror')]], dupes
+# 'G00'..'G19' all clean to 'G', so they are one tile, not twenty.
+assert [a for page in genrepages.genre_pages(['G%02d' % i for i in range(20)]) for a, _ in page] == ['G']
 # Nine per page, last page short, no empty slots in the data.
-many = ['G%02d' % i for i in range(20)]
+many = ['Genre %s' % chr(65 + i) for i in range(20)]
 ps = genrepages.genre_pages(many)
 assert [len(p) for p in ps] == [9, 9, 2]
 assert sum(len(p) for p in ps) == 20
+assert len({a for p in ps for a, _ in p}) == 20
 print('ok', len(ps))
 `);
   assert.equal(out, 'ok 3');
