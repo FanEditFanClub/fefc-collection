@@ -226,6 +226,8 @@ async function syncApi(req, env, url) {
     return json({ ok: true });
   }
   if (p === 'qr/claim') {
+    // The code is only 4 digits: cap guesses per IP so a pending TV link cannot be swept.
+    if (limited(req, 'qc', 12)) return json({ error: 'rate_limited' }, 429);
     const s = await authed(req, env); if (!s) return json({ error: 'unauthorized' }, 401);
     const code = String(body.code || '').replace(/\D/g, '');
     if (!/^\d{4}$/.test(code)) return json({ error: 'bad_request' }, 400);
