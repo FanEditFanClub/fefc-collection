@@ -14,13 +14,17 @@ _COUNT = re.compile(r'\s*(?:[\(\[]\s*\d+\s*[\)\]]|#\d+|\d+)\s*$')
 
 def clean_genre_name(name):
     """Drop a numeric prefix and any trailing count or badge."""
-    s = (name or '').strip()
+    if name is None:
+        return ''
+    if not isinstance(name, str):
+        name = str(name)
+    s = name.strip()
     s = _PREFIX.sub('', s)
     # The listing used to append "  (42)". Take that off, then a single badge.
     s = _COUNT.sub('', s)
     s = _COUNT.sub('', s)
     s = re.sub(r'\s+', ' ', s).strip()
-    return s or (name or '').strip()
+    return s or name.strip()
 
 
 def genre_pages(names, per_page=PER_PAGE):
@@ -28,7 +32,15 @@ def genre_pages(names, per_page=PER_PAGE):
 
     Uncategorized is last. Unsorted is not its own tile. The original key is
     what the genre route looks up; the label is what the tile shows.
+    per_page is coerced to int (bad input falls back to PER_PAGE) and
+    clamped to >= 1.
     """
+    try:
+        per_page = int(per_page)
+    except (TypeError, ValueError):
+        per_page = PER_PAGE
+    if per_page < 1:
+        per_page = 1
     rows = []
     seen = set()
     for raw in names or []:
@@ -37,7 +49,10 @@ def genre_pages(names, per_page=PER_PAGE):
         label = clean_genre_name(raw)
         if not label or label.lower() == 'unsorted':
             continue
-        key = (label.casefold(), raw)
+        # Dedupe by cleaned label alone: the first raw key wins and keeps
+        # its key. ("01 - Action" and "Action" clean to the same label and
+        # must tile once, not twice.)
+        key = label.casefold()
         if key in seen:
             continue
         seen.add(key)

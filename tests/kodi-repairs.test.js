@@ -360,7 +360,13 @@ print('ok', len(frames))
   assert.match(out, /^ok /);
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   assert.match(router, /def _halt_anim/);
-  assert.match(router, /setFocus\(self\.btn\)/);
+  // Search opens focused on the search bar button, not the text field, so the clip
+  // can play; moving onto the field stops it. (The old pin matched setFocus(self.btn),
+  // which only ever existed in the earlier search window and later the Support QR dialog.)
+  const win = router.slice(router.indexOf('class OptimusWindow'));
+  const init = win.slice(0, win.indexOf('\n    def ', win.indexOf('def __init__') + 1));
+  assert.match(init, /self\.setFocus\(self\.bar_btn\)/);
+  assert.doesNotMatch(init, /setFocus\(self\.edit\)/);
   assert.doesNotMatch(router, /Player\(\)\.play\([^)]*optimus/);
   assert.doesNotMatch(router, /optimus-popcorn-search\.mp4/);
 });
@@ -459,6 +465,16 @@ for mode in ('', '0', '50', '55', '500', '501'):
 for screen, kind in skinview.CONTENT.items():
     assert skinview.tile_draws(kind), screen
 assert not skinview.tile_draws('spacer')
+# A Viewmode condition outside the include (on a wrapping group in MyVideoNav) still hides it.
+import os, tempfile
+nav = os.path.join(tempfile.mkdtemp(), 'MyVideoNav.xml')
+with open(nav, 'w') as f:
+    f.write('<window><defaultcontrol>501</defaultcontrol><controls><control type="group">'
+            '<visible>Integer.IsEqual(Container.Viewmode,501)</visible>'
+            '<include content="FefcBrowser"><param name="id" value="501"/></include></control></controls></window>')
+wrapped = skinview.panels(nav)
+assert len(wrapped) == 1 and not wrapped[0]['always'], wrapped
+assert skinview.panel_visible(wrapped[0], '501') and not skinview.panel_visible(wrapped[0], '50')
 print('ok', focus, list(skinview.CONTENT))
 `);
   assert.match(out, /^ok /);
@@ -493,6 +509,11 @@ test('folder tiles stay landscape and videos stay portrait at every depth', () =
   assert.match(router, /shapes\.stamp/);
   assert.match(router, /shapes\.pack/);
   assert.match(router, /def _enqueue/);
+  // The grid-pad lookup reads index 0 as the ".." folder only when Kodi says it is the parent row.
+  const svcSrc = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
+  const kindAt = svcSrc.slice(svcSrc.indexOf('def _grid_kind_at'), svcSrc.indexOf('def _grid_pad_loop'));
+  assert.match(kindAt, /IsParentFolder/);
+  assert.doesNotMatch(kindAt, /if i == 0:\s*\n\s*(#.*\n\s*)*return 'folder'/);
   const out = py(`
 import json, sys
 sys.path.insert(0, ${JSON.stringify(lib)})
@@ -558,9 +579,15 @@ assert shapes.skip_delta(2, 1, lambda i: {0: 'folder', 1: 'video', 2: 'spacer'}.
 assert shapes.skip_delta(8, 2, lambda i: {2: 'video', 8: 'spacer'}.get(i)) == 'menu'
 # Up from the menu lands on a spacer with no in-grid origin. That must walk
 # up to a real tile, not straight back to the menu.
-assert shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 'menu'
 back = shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None, from_menu=True)
 assert back != 'menu' and back is not None and back < 0, back
+assert padded[last + back] not in ('spacer', None), (last, back)
+# Unknown origin (no from_menu) also tries Up first, so a trailing spacer with
+# nothing below it walks back to a real tile instead of jumping to the menu.
+unknown = shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None)
+assert unknown == back, (unknown, back)
+# Only a real Down (known origin above) off the last row reaches the menu.
+assert shapes.skip_delta(last, last - shapes.COLS, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 'menu'
 idx = json.load(open('data/index.json'))
 added = json.load(open('data/added.json'))
 m = catalog.build_model({'index': idx, 'added': added})
@@ -590,30 +617,38 @@ def grouped(kinds):
 
 def check(name, kinds):
     assert kinds, name + ' empty'
+    # A leading '' is Kodi's Back/Up ("..") row. The router never builds it: it is
+    # pack(..., leading=1), and pack() rejects an unknown kind such as ''.
+    shown = list(kinds)
+    lead = 0
+    while kinds and kinds[0] == '':
+        lead += 1
+        kinds = kinds[1:]
+    assert '' not in kinds, (name, 'blank kind after the parent row')
     mode = shapes.listing_mode('video' in kinds)
     assert mode['view'] == 501 and mode['wrap'] is False, name
     assert mode['content'] == ('movies' if 'video' in kinds else 'files'), name
-    slots = shapes.pack(kinds)
+    slots = shapes.pack(kinds, leading=lead)
     real = [s for s in slots if s != 'spacer']
     assert real == grouped(kinds), (name, 'order', real[:12])
     if 'video' in kinds:
-        assert slots.index('video') % shapes.COLS == 0, (name, 'video shared a landscape row')
+        assert (slots.index('video') + lead) % shapes.COLS == 0, (name, 'video shared a landscape row')
         # Every video row is only videos and the cells reserved under them.
         for i, s in enumerate(slots):
             if s != 'video':
                 continue
-            row = (i // shapes.COLS) * shapes.COLS
+            row = ((i + lead) // shapes.COLS) * shapes.COLS - lead
             for c in range(shapes.COLS):
                 j = row + c
-                cell = slots[j] if j < len(slots) else None
+                cell = slots[j] if 0 <= j < len(slots) else None
                 assert cell in ('video', 'spacer'), (name, 'mixed row', row, cell)
-    for k in kinds:
+    for k in shown:
         shape = shapes.shape_for_kind(k)
         if k == 'video':
             assert shape == 'portrait', (name, k, shape)
         else:
             assert shape == 'landscape', (name, k, shape)
-    problems = shapes.audit(slots)
+    problems = shapes.audit(slots, leading=lead)
     assert not problems, (name, problems[:6])
     # A poster fills the cells under it: the next real row is SPAN cells down,
     # which is the poster block, not an empty band.
@@ -625,6 +660,14 @@ def check(name, kinds):
 # A folder page: Back, then Sort, Shuffle, and Support Us, then its own rows.
 # Back is the parent row (no kind). Sort and Shuffle are action. Support Us is action.
 check('Folder with Back, Sort, Shuffle, Support Us', ['', 'action', 'action', 'action', 'folder', 'video'])
+# pack() only takes real kinds; a blank or unknown kind is an error, not a silent landscape card.
+for bad in ('', 'tool', None):
+    try:
+        shapes.pack(['folder', bad])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('pack accepted kind %r' % (bad,))
 # Collections, including that same utility row
 check('Collections', ['action', 'action'] + kinds_for(FOLD['collections']))
 # Actors & Directors, then one person folder
@@ -747,11 +790,17 @@ flat = [p for page in pages for p in page]
 labels = [a for a, _ in flat]
 assert labels == ['Adventure', 'animation', 'Comedy', 'Horror', 'Uncategorized'], labels
 assert all(k == 'Unsorted' or 'Unsorted' not in labels for k in labels)
+# Names that clean to the same label are one tile (first raw name kept).
+dupes = genrepages.genre_pages(['01 - Horror', 'Horror (3)', 'horror', 'Comedy'], 9)
+assert dupes == [[('Comedy', 'Comedy'), ('Horror', '01 - Horror')]], dupes
+# 'G00'..'G19' all clean to 'G', so they are one tile, not twenty.
+assert [a for page in genrepages.genre_pages(['G%02d' % i for i in range(20)]) for a, _ in page] == ['G']
 # Nine per page, last page short, no empty slots in the data.
-many = ['G%02d' % i for i in range(20)]
+many = ['Genre %s' % chr(65 + i) for i in range(20)]
 ps = genrepages.genre_pages(many)
 assert [len(p) for p in ps] == [9, 9, 2]
 assert sum(len(p) for p in ps) == 20
+assert len({a for p in ps for a, _ in p}) == 20
 print('ok', len(ps))
 `);
   assert.equal(out, 'ok 3');
@@ -821,7 +870,13 @@ for n, c in hit.items():
 # A title the catalogue can already illustrate must not stay on a first frame.
 assert hit['godzilla']['art'] > 0
 assert hit['home alone 2']['art'] > 0 and hit['home alone 2']['missing'] == 0
-assert hit['gumby']['art'] > 300
+# Gumby has ~200 real episodes. The index also lists macOS AppleDouble junk
+# ('._Gumby ....mp4'); those are dropped from the model, so they are neither
+# counted nor illustrated.
+assert hit['gumby']['art'] > 150 and hit['gumby']['missing'] == 0, hit['gumby']
+raw = json.load(open('data/index.json'))['items']
+assert any(str(it.get('name') or '').startswith('._') for it in raw), 'fixture has no AppleDouble files'
+assert not any(str(v[0]).startswith('._') for v in m['items'].values())
 assert hit['astro-monster']['art'] + hit.get('astro monster', {}).get('art', 0) > 0
 `);
   assert.match(out, /ART /);
@@ -1150,7 +1205,8 @@ test('folder and details sounds pick from the full set each open', () => {
   assert.match(router, /li\.setProperty\('fefc_sfx'/);
   assert.match(router, /play_choice\(rel/);
   assert.match(router, /cache=False/);
-  assert.match(catalog, /def play_choice\(rel, sound_off=False\)/);
+  // exists=None keeps the old two-argument call working; a caller can pass an existence check.
+  assert.match(catalog, /def play_choice\(rel, sound_off=False, exists=None\)/);
   const start = service.indexOf('def details_sfx');
   const details = service.slice(start, service.indexOf('\ndef ', start + 10));
   const off = details.indexOf('FEFC.SoundOff');
@@ -1190,6 +1246,16 @@ opens = {catalog.sfx_wav(ww) for _ in range(80)}
 assert opens == {'kodi-sfx/' + b + '.wav' for b in want}
 for pool in (ww, catalog.sfx_for(m, 'st'), catalog.sfx_for(m, 'ag'), catalog.sfx_for(m, '1Bj8vx-7styFpcsc6IQc8eWfefN4uNtGg')):
     assert catalog.play_choice(pool, True) == ''
+# exists unknown (None): a clip is still chosen. A check that says missing (or raises) gives ''.
+assert catalog.play_choice(ww, False) in {'kodi-sfx/' + b + '.wav' for b in want}
+assert catalog.play_choice(ww, False, exists=None) in {'kodi-sfx/' + b + '.wav' for b in want}
+assert catalog.play_choice(ww, False, exists=lambda p: True) in {'kodi-sfx/' + b + '.wav' for b in want}
+assert catalog.play_choice(ww, False, exists=lambda p: False) == ''
+def _boom(p):
+    raise OSError('no media dir')
+assert catalog.play_choice(ww, False, exists=_boom) == ''
+# A bare path inside a clip set is one clip, never split into single characters.
+assert catalog.clip_list([['x/a.m4a', 'x/a.mp3'], 'x/b.mp3']) == ['x/a.mp3', 'x/b.mp3']
 assert catalog.sfx_up(m, 'qv') == []
 st = catalog.sfx_for(m, 'st')
 assert len(st) >= 6 and set(bases(catalog.sfx_up(m, 'rk'))) == set(bases(st))

@@ -3,7 +3,7 @@ const h=require('./sfx-harness.js');
 const exists=p=>fs.existsSync(h.R(p));
 const flat=L=>h.filesIn(L).filter(x=>/^assets\//.test(x));
 
-test('every file referenced by data/folder-sfx.json exists, and id/name keys hold plain path arrays',()=>{
+test('every file referenced by data/folder-sfx.json exists, and id/name keys hold path arrays or clip sets',()=>{
   const bad=[];
   for(const [k,v] of Object.entries(h.FSFX)){
     if(k==='_note')continue;
@@ -23,8 +23,12 @@ test('every file referenced by data/folder-sfx.json exists, and id/name keys hol
       const L=v.file||v.files;
       assert.ok(Array.isArray(L)&&flat(L).length,'key '+k+' rotation has no files');
       flat(L).forEach(f=>{if(!exists(f))bad.push(k+': '+f)});
+    }else if(Array.isArray(v)&&v.length&&Array.isArray(v[0])){
+      // A clip set (list of clips, each a list of format alternatives), the same shape as _rules[].file.
+      assert.ok(v.every(c=>Array.isArray(c)&&c.length&&c.every(x=>typeof x==='string')),'key '+k+' clip set must be lists of paths');
+      flat(v).forEach(f=>{if(!exists(f))bad.push(k+': '+f)});
     }else{
-      assert.ok(Array.isArray(v)&&v.every(x=>typeof x==='string'),'key '+k+' must be an array of paths');
+      assert.ok(Array.isArray(v)&&v.every(x=>typeof x==='string'),'key '+k+' must be an array of paths or a list of path arrays');
       v.forEach(f=>{if(!exists(f))bad.push(k+': '+f)});
     }
   }

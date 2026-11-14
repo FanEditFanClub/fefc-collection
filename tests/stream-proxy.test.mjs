@@ -26,6 +26,7 @@ test('without GOOGLE_API_KEY resolves shortcut via view redirect then proxies us
   assert.equal(await r.text(), 'abc');
 });
 test('rejects bad ids', async () => { const r = await call('/api/stream/x', { GOOGLE_API_KEY: 'k' }); assert.equal(r.status, 400); });
+test('rejects a malformed percent-encoded path with 400', async () => { const r = await call('/api/stream/' + ID + '/%E0%A4%A', { GOOGLE_API_KEY: 'k' }); assert.equal(r.status, 400); });
 test('resolves shortcut, forwards Range, returns 206', async () => {
   const seen = [];
   mock((u, init) => {

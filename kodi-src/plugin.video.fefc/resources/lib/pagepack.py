@@ -52,11 +52,17 @@ def root_id(path=None):
 
 
 def _art(row):
+    """Art stored in the pack row, or '' when the pack has none.
+
+    No Drive-thumbnail substitution here: poster_for() treats a Drive first
+    frame as missing (those frames are often black, a title card, or the
+    fan-edit WARNING slate), and the tile must agree with the details page.
+    A video with only a Drive first frame therefore shows the skin's
+    placeholder poster on its tile and no poster on its details page, in
+    both places — instead of a thumbnail on the tile and a blank details page.
+    """
     art = row[3] if len(row) > 3 else ''
-    if art:
-        return art
-    # Empty art in the pack is the standard Drive thumbnail for that file id.
-    return 'https://drive.google.com/thumbnail?sz=w320&id=' + row[0]
+    return art or ''
 
 
 def _hydrate(row):
@@ -213,7 +219,14 @@ def build_pack(model, base):
         name = display(fid, item[0], parent, is_dir)
         row = [fid, name, is_dir, art_of(fid, is_dir)]
         if not is_dir:
-            info = catalog.video_info(model, fid)
+            try:
+                info = catalog.video_info(model, fid)
+            except Exception:
+                info = {'plot': '', 'editor': '', 'year': 0, 'rating_text': '', 'rating_src': '', 'runtime': 0}
+            try:
+                runtime = int(info.get('runtime') or 0)
+            except (TypeError, ValueError):
+                runtime = 0
             # [id, name, is_dir, art, search extra, details]
             # details: plot, editor, year, rating text, rating source, runtime minutes
             row.append('')
@@ -223,7 +236,7 @@ def build_pack(model, base):
                 info.get('year') or 0,
                 info.get('rating_text') or '',
                 info.get('rating_src') or '',
-                int(info.get('runtime') or 0),
+                runtime,
             ])
             # Full parent set. The listing picks one clip when the row is shown.
             try:

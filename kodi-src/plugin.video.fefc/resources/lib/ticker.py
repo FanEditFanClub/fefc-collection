@@ -1,5 +1,8 @@
 """Ticker text from real feed items only. Capped so Kodi can draw it."""
 import re
+import logging
+
+_LOG = logging.getLogger(__name__)
 
 MAX_LEN = 900
 ICONS = {
@@ -32,6 +35,9 @@ def _clean(text):
     """Ticker line with post text kept and visible URLs removed."""
     s = _MD_LINK.sub(lambda m: m.group(1), str(text or ''))
     s = _URL_RE.sub(' ', s)
+    # An email lost its domain to the URL strip above ("user@example.com"
+    # -> "user@"): drop a '@' left dangling after a word character.
+    s = re.sub(r'(\w)@(?=\s|$|[.,;:!?])', r'\1', s)
     s = _EMPTY_WRAP.sub(' ', s)
     s = _MULTI_PUNCT.sub(r'\1', s)
     s = _SPACE_PUNCT.sub(r'\1', s)
@@ -69,9 +75,13 @@ def items_from_api(payload):
     for it in payload.get('items') or []:
         if not isinstance(it, dict):
             continue
-        t = _clean(it.get('title'))
-        if t:
-            out.append({'src': _clean(it.get('src')).lower(), 'title': t})
+        raw = it.get('title')
+        t = _clean(raw)
+        if not t:
+            if raw:
+                _LOG.warning('ticker: dropped api item whose title cleans to empty: %r (src=%r)', str(raw)[:80], it.get('src'))
+            continue
+        out.append({'src': _clean(it.get('src')).lower(), 'title': t})
     return out
 
 
@@ -82,13 +92,19 @@ def items_from_snapshot(payload):
     for p in payload.get('posts') or []:
         if not isinstance(p, dict):
             continue
-        t = _clean(p.get('title'))
-        if t:
-            out.append({'src': _clean(p.get('src') or p.get('label')).lower(), 'title': t})
+        raw = p.get('title')
+        t = _clean(raw)
+        if not t:
+            if raw:
+                _LOG.warning('ticker: dropped snapshot post whose title cleans to empty: %r (src=%r)', str(raw)[:80], p.get('src') or p.get('label'))
+            continue
+        out.append({'src': _clean(p.get('src') or p.get('label')).lower(), 'title': t})
     return out
 
 
 def _piece(it):
+    if not isinstance(it, dict):
+        return ''
     t = _clean(it.get('title'))
     if not t:
         return ''

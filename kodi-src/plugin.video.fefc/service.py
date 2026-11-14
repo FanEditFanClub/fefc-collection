@@ -76,6 +76,17 @@ def read_installed_identity(pkg):
     import subprocess
     from resources.lib.updateflow import (
         build_from_version_code, parse_dumpsys_version_code, parse_pm_path, read_apk_identity)
+    # Fast path: the APK path is cached, and its mtime has not changed,
+    # so the installed build cannot have changed either. This avoids
+    # the `pm path` subprocess (up to 4 s) on every tick.
+    cached = _installed_cache.get('path')
+    if cached and os.path.exists(cached):
+        try:
+            mtime = os.path.getmtime(cached)
+        except OSError:
+            mtime = None
+        if mtime is not None and mtime == _installed_cache.get('mtime') and _installed_cache.get('ident'):
+            return dict(_installed_cache['ident'])
     text = ''
     try:
         text = subprocess.check_output(['pm', 'path', pkg], stderr=subprocess.DEVNULL, timeout=4, text=True)
@@ -87,6 +98,12 @@ def read_installed_identity(pkg):
         if ident and int(ident.get('build') or 0):
             if not ident.get('pkg'):
                 ident['pkg'] = pkg
+            try:
+                _installed_cache['path'] = path
+                _installed_cache['mtime'] = os.path.getmtime(path)
+                _installed_cache['ident'] = dict(ident)
+            except OSError:
+                pass
             return ident
     dump = ''
     try:
@@ -99,6 +116,17 @@ def read_installed_identity(pkg):
         return None
     running = installed_build() or {}
     return {'pkg': pkg, 'build': build, 'version': str(running.get('version') or '')}
+
+
+# One shared busy flag for background work that must never overlap
+# itself or stall the tick loop (install check, background update
+# check, nav-sound reapply). They all touch home-window properties,
+# so one flag — not one per job — is what serialises them.
+_bg_lock = threading.Lock()
+_bg_busy = False
+# Cached installed-APK identity: path + mtime + identity. Re-checked
+# only when the APK file's mtime changes (see read_installed_identity).
+_installed_cache = {'path': None, 'mtime': None, 'ident': None}
 
 
 _restarted_for_build = {'build': 0}
@@ -178,7 +206,37 @@ def _updating():
     return bool(xbmcgui.Window(10000).getProperty('FEFC.Updating'))
 
 
-def install_update(new):
+def _run_in_background(fn, *args, **kwargs):
+    """Run fn on a daemon thread unless background work is already running.
+
+    Returns True when the thread was started, False when the work was
+    skipped because the flag was busy. The flag is cleared in a finally
+    so a raising job can never wedge the loop. Callers that need a GUI
+    dialog must NOT use this — xbmcgui calls stay on the main thread
+    (see Item 66); background check_update() calls are prompt=False only.
+    """
+    global _bg_busy
+    with _bg_lock:
+        if _bg_busy:
+            log('background work already running; skipping %s' % fn.__name__)
+            return False
+        _bg_busy = True
+
+    def _wrap():
+        global _bg_busy
+        try:
+            fn(*args, **kwargs)
+        except Exception as e:
+            log('background %s: %s' % (fn.__name__, e))
+        finally:
+            with _bg_lock:
+                _bg_busy = False
+
+    threading.Thread(target=_wrap, daemon=True).start()
+    return True
+
+
+def install_update(new, monitor=None):
     """One non-interruptible flow: close every dialog, download with resume + automatic retries (one flow at a time,
     guarded by FEFC.Updating so no update popup or second download can start meanwhile), verify size + sha256,
     then hand the APK to Android's package installer."""
@@ -187,16 +245,34 @@ def install_update(new):
     if _updating():
         log('update already in progress')
         return
+    if threading.current_thread() is not threading.main_thread():
+        # The install popup is modal xbmcgui work and must stay on the
+        # main thread. Background checks must never reach here — they
+        # call check_update(prompt=False), which returns before install.
+        log('install_update called off the main thread; refusing')
+        return
     home.setProperty('FEFC.Updating', '1')
     try:
-        _install_update(new)
+        _install_update(new, monitor)
     finally:
         home.clearProperty('FEFC.Updating')
+
+
+# The package and the external-files dir never change during a process
+# lifetime, but my_package() runs translatePath on three special://
+# paths plus string scans on every call. Cache both, lazily, on first use.
+_package_cache = None
+_ext_files_dir_cache = None
+_ext_files_dir_computed = False
+
 
 
 def my_package():
     """Android package of this install: the app's own data paths name it (com.fefc.kodi vs org.xbmc.kodi), so the
     updater always downloads the APK for the package that is actually running; fefc-build.json is the fallback."""
+    global _package_cache
+    if _package_cache is not None:
+        return _package_cache
     for sp in ('special://xbmc/', 'special://home/', 'special://temp/'):
         try:
             t = xbmcvfs.translatePath(sp)
@@ -204,8 +280,10 @@ def my_package():
             t = ''
         for pkg in ('com.fefc.kodi', 'org.xbmc.kodi'):
             if '/%s/' % pkg in t:
+                _package_cache = pkg
                 return pkg
-    return str((installed_build() or {}).get('pkg') or 'org.xbmc.kodi')
+    _package_cache = str((installed_build() or {}).get('pkg') or 'org.xbmc.kodi')
+    return _package_cache
 
 
 def _for_my_package(new):
@@ -224,6 +302,10 @@ def is_phone_pkg():
 
 def _android_ext_files_dir():
     """Android/data/<pkg>/files — same folder Java FefcNotifyActivity uses via getExternalFilesDir(null)."""
+    global _ext_files_dir_cache, _ext_files_dir_computed
+    if _ext_files_dir_computed:
+        return _ext_files_dir_cache
+    result = ''
     for sp in ('special://home/', 'special://temp/', 'special://xbmc/'):
         try:
             t = xbmcvfs.translatePath(sp)
@@ -235,8 +317,13 @@ def _android_ext_files_dir():
             marker = '/Android/data/%s/files' % pkg
             i = t.find(marker)
             if i >= 0:
-                return t[:i + len(marker)]
-    return ''
+                result = t[:i + len(marker)]
+                break
+        if result:
+            break
+    _ext_files_dir_cache = result
+    _ext_files_dir_computed = True
+    return result
 
 
 def sync_notify_prefs():
@@ -300,7 +387,7 @@ def maybe_ask_notify_perm(asked):
     xbmc.executebuiltin('StartAndroidActivity(%s,android.intent.action.VIEW,,"fefcnotify://perm",,,,,"com.fefc.kodi.FefcNotifyActivity")' % my_package())
 
 
-def consume_pending_nav():
+def consume_pending_nav(monitor=None):
     """Notification tap writes fefc-pending-nav.txt; open New Arrivals or the updater."""
     if not is_phone_pkg():
         return
@@ -323,7 +410,9 @@ def consume_pending_nav():
     if kind in ('files', 'recent', 'newfiles', 'new_files'):
         xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent,return)')
     elif kind in ('update', 'updater', 'app_update'):
-        check_update(manual=True, prompt=False)
+        # Tap means "open the updater", not "install now": show the
+        # what's-new + Install / Later prompt and install only on Install.
+        check_update(manual=True, prompt=True, from_tap=True, monitor=monitor)
 
 
 def poll_new_files_feed():
@@ -411,12 +500,21 @@ def _host_arch(platform):
 
 def _show_webos_guide(new, rec):
     """Full-screen skin dialog with the Dev Manager steps. A text page is the fallback."""
-    from resources.lib import webosguide
+    try:
+        from resources.lib import webosguide
+    except Exception as e:
+        log('webos guide: %s' % e)
+        return
     url = rec.get('url') if rec and rec.get('available') else ''
     body = '\n\n'.join(webosguide.tv_steps(url))
     foot = 'If Install fails, turn Key Server off and on, then check the passphrase.'
     skin = xbmcvfs.translatePath('special://skin')
-    qr = webosguide.write_qr(xbmcvfs.translatePath('special://temp/fefc-lg-qr.png'))
+    qr = ''
+    try:
+        qr = webosguide.write_qr(xbmcvfs.translatePath('special://temp/fefc-lg-qr.png')) or ''
+    except Exception as e:
+        log('webos guide qr: %s' % e)
+        qr = ''
     try:
         dlg = _WebOSGuide(webosguide.DIALOG_XML, skin, 'default', '1080i')
         dlg.step_text = body
@@ -478,7 +576,7 @@ class _WebOSGuide(xbmcgui.WindowXMLDialog):
             self.close()
 
 
-def _install_platform_update(new, plat):
+def _install_platform_update(new, plat, monitor=None):
     """Download the macOS package named in version.json and hand it to the OS.
     webOS shows the Dev Manager guide instead of trying to install from inside the app.
     Android never reaches this. A missing platforms entry does not download the APK."""
@@ -487,7 +585,6 @@ def _install_platform_update(new, plat):
         _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
         return
     import hashlib
-    import shutil
     import subprocess
     from resources.lib.updateflow import (platform_download, platform_install_message,
                                            platform_unavailable_message, allowed_update_url)
@@ -496,74 +593,146 @@ def _install_platform_update(new, plat):
         _cue('error')
         xbmcgui.Dialog().ok('FEFC update', platform_unavailable_message(plat, version_label(new)))
         return
-    name = rec.get('filename') or ('FEFC-macOS-update.dmg' if plat == 'macos' else 'FEFC-webOS-update.ipk')
+    # Sanitise the manifest filename before joining it to the temp dir: a
+    # '/' or '..' in it must not escape special://temp/.
+    _default_name = 'FEFC-macOS-update.dmg' if plat == 'macos' else 'FEFC-webOS-update.ipk'
+    _raw_name = rec.get('filename') or _default_name
+    name = ''.join(c for c in os.path.basename(str(_raw_name)) if c.isalnum() or c in ('.', '-', '_'))
+    if not name or name in ('.', '..') or name.startswith('.'):
+        name = _default_name
     dst = xbmcvfs.translatePath('special://temp/' + name)
     part = dst + '.part'
     url, want, sha = rec['url'], rec.get('size') or 0, rec.get('sha256') or ''
     ok = False
     _cue('start')
     log('downloading %s' % version_label(new))
-    tries = 0
-    while tries < 8 and not ok:
-        tries += 1
-        try:
+    mon = monitor if monitor is not None else xbmc.Monitor()
+    # Same centered UpdatePopup as Android (progress, Back hides it, Retry,
+    # manual download links), not the old corner background progress bar.
+    from resources.lib.updatepopup import UpdatePopup
+    from resources.lib.updateflow import manual_downloads
+    popup = UpdatePopup(version_label(new), manual_downloads(new))
+    popup.render('downloading', 0, 0, want or 0)
+    finished = {'done': False}
+
+    def work():
+        nonlocal ok
+        tries = 0
+        while tries < 8 and not ok and not mon.abortRequested():
+            tries += 1
             try:
-                os.remove(part)
-            except OSError:
-                pass
-            req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
-            with urllib.request.urlopen(req, timeout=60) as r, open(part, 'wb') as f:
-                done = 0
-                total = want or int(r.headers.get('Content-Length') or 0)
-                while True:
-                    chunk = r.read(256 * 1024)
-                    if not chunk:
-                        break
-                    f.write(chunk)
-                    done += len(chunk)
-            if want and os.path.getsize(part) != want and os.path.getsize(part) < want:
-                raise RuntimeError('short download')
-            log('checking the download')
-            h = hashlib.sha256()
-            with open(part, 'rb') as f:
-                for c in iter(lambda: f.read(1 << 20), b''):
-                    h.update(c)
-            if h.hexdigest() != sha:
-                raise RuntimeError('checksum mismatch')
-            os.replace(part, dst)
-            ok = True
-        except Exception as e:
-            log('platform update attempt %d failed: %s' % (tries, e))
-            xbmc.sleep(min(30, 3 * tries) * 1000)
+                # Keep the partial download across retries and resume it.
+                # Only a checksum failure deletes it (corrupt data cannot
+                # be resumed); a short download is retried from where it stopped.
+                have = os.path.getsize(part) if os.path.exists(part) else 0
+                if want and have >= want:
+                    have = 0
+                hdr = {'User-Agent': 'FEFC-Kodi'}
+                if have:
+                    hdr['Range'] = 'bytes=%d-' % have
+                req = urllib.request.Request(url, headers=hdr)
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    if have and r.status != 206:
+                        have = 0
+                    total = want or (have + int(r.headers.get('Content-Length') or 0))
+                    with open(part, 'ab' if have else 'wb') as f:
+                        done = have
+                        while True:
+                            if mon.abortRequested():
+                                raise RuntimeError('aborted')
+                            chunk = r.read(256 * 1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            done += len(chunk)
+                            if total:
+                                popup.render('downloading', min(99, int(done * 100 / total)), done, total)
+                size = os.path.getsize(part)
+                if want and size < want:
+                    raise RuntimeError('short download')
+                log('checking the download')
+                popup.render('verifying', 100, size, want or size)
+                h = hashlib.sha256()
+                with open(part, 'rb') as f:
+                    for c in iter(lambda: f.read(1 << 20), b''):
+                        h.update(c)
+                if h.hexdigest() != sha:
+                    try:
+                        os.remove(part)
+                    except OSError:
+                        pass
+                    raise RuntimeError('checksum mismatch')
+                os.replace(part, dst)
+                ok = True
+            except Exception as e:
+                log('platform update attempt %d failed: %s' % (tries, e))
+                if mon.abortRequested():
+                    break
+                popup.render('downloading', 0, 0, want or 0, 'Connection problem, retrying (%d/8)...' % tries)
+                if mon.waitForAbort(min(30, 3 * tries)):
+                    break
+        finished['done'] = True
+        try:
+            popup.close()
+        except Exception:
+            pass
+
+    threading.Thread(target=work, daemon=True).start()
+    while not finished['done'] and not mon.abortRequested():
+        if popup.dismissed:
+            if xbmcgui.Window(10000).getProperty('FEFC.UpdateReveal') == '1':
+                xbmcgui.Window(10000).clearProperty('FEFC.UpdateReveal')
+                popup.dismissed = False
+            else:
+                if mon.waitForAbort(0.2):
+                    break
+                continue
+        popup.doModal()
+    if mon.abortRequested():
+        try:
+            popup.close()
+        except Exception:
+            pass
+        return
     if not ok:
         _cue('error')
-        xbmcgui.Dialog().ok('FEFC update', 'The download did not finish after several tries. Check the connection and pick Update again.')
+        popup.render('failed', 0, 0, want or 0, 'The download did not finish after several tries. Check the connection and pick Retry. It continues where it stopped.')
+        popup.doModal()
+        if popup.retry:
+            _install_platform_update(new, plat, mon)
         return
+    try:
+        popup.render('ready', 100, os.path.getsize(dst), want or os.path.getsize(dst))
+        popup.show()
+        xbmc.sleep(700)
+        popup.close()
+    except Exception:
+        pass
     opened = False
     if plat == 'macos':
         try:
             opened = subprocess.call(['open', dst]) == 0
         except Exception as e:
             log('open dmg: %s' % e)
-    elif plat == 'webos':
-        luna = shutil.which('luna-send')
-        if luna:
-            try:
-                payload = json.dumps({'id': 'org.xbmc.kodi', 'ipkUrl': dst, 'subscribe': False})
-                subprocess.call([luna, '-n', '1', 'luna://com.webos.appInstallService/dev/install', payload])
-            except Exception as e:
-                log('webos install: %s' % e)
+    # webOS: no luna-send call. The TV installs from a URL it can fetch, not
+    # from this device's local path, so a local-path install could never work.
+    # platform_install_message tells the user the Dev Manager steps instead.
     _cue('verified')
-    xbmcgui.Dialog().ok('FEFC update', platform_install_message(plat, dst, opened, rec.get('abi') or ''))
+    xbmcgui.Dialog().ok('FEFC update', platform_install_message(plat, dst, opened, rec.get('abi') or '', url=rec.get('url') or ''))
 
 
-def _install_update(new):
+def _install_update(new, monitor=None):
+    mon = monitor if monitor is not None else xbmc.Monitor()
     plat = _host_platform()
     if plat != 'android':
-        _install_platform_update(new, plat)
+        _install_platform_update(new, plat, mon)
         return
     import hashlib
     url, want, sha = _for_my_package(new)
+    if not url:
+        _cue('error')
+        xbmcgui.Dialog().ok('FEFC update', 'No update package is published for this app.')
+        return
     dst = xbmcvfs.translatePath('special://temp/FEFC-Kodi-update.apk')
     part = dst + '.part'
     ok = False
@@ -589,7 +758,7 @@ def _install_update(new):
         def work():
             nonlocal ok
             tries = 0
-            while tries < 8 and not ok:
+            while tries < 8 and not ok and not mon.abortRequested():
                 tries += 1
                 try:
                     have = os.path.getsize(part) if os.path.exists(part) else 0
@@ -605,6 +774,8 @@ def _install_update(new):
                         with open(part, 'ab' if have else 'wb') as f:
                             done = have
                             while True:
+                                if mon.abortRequested():
+                                    raise RuntimeError('aborted')
                                 chunk = r.read(256 * 1024)
                                 if not chunk:
                                     break
@@ -629,8 +800,13 @@ def _install_update(new):
                     ok = True
                 except Exception as e:
                     log('update download attempt %d failed: %s' % (tries, e))
+                    if mon.abortRequested():
+                        break
                     popup.render('downloading', 0, 0, want or 0, 'Connection problem, retrying (%d/8)...' % tries)
-                    xbmc.sleep(min(30, 3 * tries) * 1000)
+                    # Abort-aware sleep: wakes at once on shutdown instead
+                    # of sleeping out the full back-off.
+                    if mon.waitForAbort(min(30, 3 * tries)):
+                        break
             finished['done'] = True
             try:
                 popup.close()
@@ -638,25 +814,30 @@ def _install_update(new):
                 pass
 
         threading.Thread(target=work, daemon=True).start()
-        while not finished['done']:
+        while not finished['done'] and not mon.abortRequested():
             if popup.dismissed:
                 if xbmcgui.Window(10000).getProperty('FEFC.UpdateReveal') == '1':
                     xbmcgui.Window(10000).clearProperty('FEFC.UpdateReveal')
                     popup.dismissed = False
                 else:
-                    xbmc.sleep(200)
+                    if mon.waitForAbort(0.2):
+                        break
                     continue
             popup.doModal()
+        if mon.abortRequested():
+            # Shutting down: no 'failed' render, no Retry offer, no
+            # installer. install_update()'s finally clears FEFC.Updating.
+            try:
+                popup.close()
+            except Exception:
+                pass
+            return
     if not ok:
         _cue('error')
         popup.render('failed', 0, 0, want or 0, 'The download did not finish after several tries. Check the connection and pick Retry. It continues where it stopped.')
         popup.doModal()
         if popup.retry:
-            _install_update(new)
-        return
-    if not url:
-        _cue('error')
-        xbmcgui.Dialog().ok('FEFC update', 'No update package is published for this app.')
+            _install_update(new, monitor)
         return
     from resources.lib.updateflow import read_apk_identity, handoff_ok, installer_builtin, installer_package_for
     identity = read_apk_identity(dst)
@@ -675,7 +856,10 @@ def _install_update(new):
             if '/%s/' % pkg in dst and marker in dst:
                 uri = 'content://%s.fefcupdate/%s/%s' % (pkg, name, dst.split(marker, 1)[1]); break
     if uri is None:
-        uri = 'content://%s.file/#' % pkg + dst
+        # No '#' here: '#' starts the URI fragment under Uri.parse, so the
+        # old 'content://%s.file/#' % pkg + dst put the whole path in the
+        # fragment and FileProvider could never resolve it.
+        uri = 'content://%s.file%s' % (pkg, dst)
     builtin = installer_builtin(uri, installer_package_for(pkg))
     if not builtin:
         _cue('error')
@@ -746,7 +930,7 @@ def set_update_state(cur, new=None, avail=False, state=None):
     home.setProperty('FEFC.UpdateLabel', label_for('up_to_date'))
 
 
-def check_update(manual=False, prompt=True):
+def check_update(manual=False, prompt=True, from_tap=False, monitor=None):
     """Compare the installed FEFC app build with the latest published one (the GitHub Action publishes version.json).
     Always refreshes the home Update tile; shows the what's-new + Install / Later popup when prompt is true."""
     cur = installed_build()
@@ -767,9 +951,21 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Dialog().ok('FEFC', 'Unable to check for updates right now.')
         return
-    from resources.lib.updateflow import release_is_newer, platform_download, platform_unavailable_message
-    avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
-    set_update_state(cur, new, avail)
+    try:
+        if not isinstance(new, dict):
+            raise ValueError('update manifest is not a JSON object: %r' % (type(new).__name__,))
+        from resources.lib.updateflow import release_is_newer, platform_download, platform_unavailable_message
+        avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
+        set_update_state(cur, new, avail)
+    except Exception as e:
+        log('update check failed after fetch: %s' % e)
+        try:
+            set_update_state(cur, state='failed')
+        except Exception:
+            pass
+        if manual:
+            xbmcgui.Dialog().ok('FEFC', 'Unable to check for updates right now.')
+        return
     plat = _host_platform()
     if plat == 'webos' and avail and (manual or prompt):
         _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
@@ -784,11 +980,11 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Window(10000).setProperty('FEFC.UpdateReveal', '1')
         return
-    if avail and manual:   # the Home update button: always a fresh check, then install straight away
-        install_update(new)
+    if avail and manual and not from_tap:   # the Home update button: always a fresh check, then install straight away
+        install_update(new, monitor)
         return
     if avail:
-        if is_phone_pkg():
+        if is_phone_pkg() and not from_tap:
             # Android phone/tablet: OS notification (gated by Settings); Fire TV keeps the in-app popup below.
             if ADDON.getSetting('notify_app_update') != 'false':
                 nb = str(new.get('build') or '')
@@ -809,7 +1005,7 @@ def check_update(manual=False, prompt=True):
         finally:
             home.clearProperty('FEFC.UpdatePrompt')
         if go:
-            install_update(new)
+            install_update(new, monitor)
         return
     if manual:
         xbmcgui.Dialog().notification('FEFC', 'Up to date', time=2000, sound=False)
@@ -817,84 +1013,55 @@ def check_update(manual=False, prompt=True):
 
 def _prompt(new, cur):
     """What's new first, then Install / Later. Returns True for Install."""
-    if True:
-        msg = 'A new FEFC app is available: %s. You have %s.' % (version_label(new), version_label(cur))
-        wn = whats_new(new, cur)
-        if wn:   # full-size scrollable notes first, then the short Install / Later question
-            xbmcgui.Dialog().textviewer('FEFC app update: %s' % version_label(new), msg + '\n\n' + wn)
-        msg += ' Download and install it now?'
-        return xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN)
+    msg = 'A new FEFC app is available: %s. You have %s.' % (version_label(new), version_label(cur))
+    wn = whats_new(new, cur)
+    if wn:   # full-size scrollable notes first, then the short Install / Later question
+        xbmcgui.Dialog().textviewer('FEFC app update: %s' % version_label(new), msg + '\n\n' + wn)
+    msg += ' Download and install it now?'
+    return xbmcgui.Dialog().yesno('FEFC update', msg, nolabel='Later', yeslabel='Install', defaultbutton=xbmcgui.DLG_YESNO_YES_BTN)
 
 BASE = 'https://fefc-collection.pages.dev'
-CTA = [('Discord', 'Join the FEFC Discord: discord.gg/d8A9xHTey7'),
-       ('X', 'Follow @FanEditFanClub on X'),
-       ('Facebook Group', 'Join the FEFC Facebook Group'),
-       ('Reddit', 'Join r/FanEditFanClub on Reddit')]
-
 
 def _get_json(url, timeout=15):
     req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
     return json.loads(urllib.request.urlopen(req, timeout=timeout).read().decode('utf-8'))
 
 
-TICKER_ICONS = {'discord': ('\ue001', 'FF5865F2'), 'facebook': ('\ue002', 'FF1877F2'),
-                'x': ('\ue003', 'FFFFFFFF'), 'reddit': ('\ue004', 'FFFF4500')}
 
-
-def _cta(c):
-    """Unused by the live ticker (that is ticker.build_text). Kept in step with it:
-    the network name, then the sentence, with no extra JOIN."""
-    return '%s  %s' % (c[0].split()[0].upper(), c[1])
-
-
-def _new_files_ticker_items():
-    """Count line + recent titles from the same feed the daily notifier publishes with its social posts."""
-    out = []
-    try:
-        feed = _get_json(NEW_FILES_FEED + '?t=%d' % int(time.time()), timeout=10) or {}
-    except Exception as e:
-        log('new-files ticker: %s' % e)
-        return out
-    title = str(feed.get('title') or '').strip()
-    count = int(feed.get('count') or 0)
-    if not title and count:
-        label = 'New File' if count == 1 else 'New Files'
-        verb = 'has been added' if count == 1 else 'have been added'
-        title = '%s %s %s to The Fan Edit Fan Club Collection' % (count, label, verb)
-    if title:
-        out.append({'src': 'new', 'title': title})
-    for name in (feed.get('recent') or [])[:12]:
-        t = ' '.join(str(name or '').split())
-        if t:
-            out.append({'src': 'new', 'title': t})
-    return out
 
 
 def _ticker_mod():
-    import sys
-    lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
-    if lib not in sys.path:
-        sys.path.insert(0, lib)
-    import ticker
+    from resources.lib import ticker
     return ticker
+
+
+# Serialises every service-side catalog.load_model() call (refresh
+# thread, ticker thread, home-counts path). A caller that arrives
+# while a load is running waits on the lock; load_model() then returns
+# the just-loaded model from its _MEM cache instead of re-fetching.
+_catalog_lock = threading.Lock()
+
+
+def _load_model_guarded(base, cache, mins, force=False):
+    """catalog.load_model() under the service-side lock. Never call
+    catalog.load_model() directly from service.py — always go through
+    this helper, or through the same lock in refresh_home_counts()."""
+    from resources.lib import catalog
+    with _catalog_lock:
+        return catalog.load_model(base, cache, mins, log, force=force)
 
 
 def _model_recent_items(limit=12):
     """Most recently-added collection files from the live model (refreshes every 180 min = the 3h resync),
     so the ticker's 'new files' items update on the same cycle as the database, not just the daily feed."""
     try:
-        import sys
-        lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
-        if lib not in sys.path:
-            sys.path.insert(0, lib)
-        import catalog
         base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
         prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
         try:
             mins = int(ADDON.getSetting('refresh_minutes') or 180)
         except ValueError:
             mins = 180
-        m = catalog.load_model(base, os.path.join(prof, 'cache'), mins, log)
+        m = _load_model_guarded(base, os.path.join(prof, 'cache'), mins)
         added = m.get('added') or {}
         items = m.get('items') or {}
         # newest first by added timestamp; skip folders and anything without a title
@@ -974,6 +1141,8 @@ class Watcher(object):
         self.last_title = ''
         self.last_list = ''     # the FEFC list the user started the video from
         self.restore_until = 0.0
+        self.restore_tries = 0  # capped: a deliberate move away is not fought forever
+        self._playing_file = ''
 
     @staticmethod
     def in_player_screens():
@@ -991,8 +1160,26 @@ class Watcher(object):
         if not xbmc.getCondVisibility('Player.HasVideo'):
             self.mine = False
             self.seen_full = False
+            self.restore_until = 0.0
+            self.restore_tries = 0
+            self.last_list = ''
+            self._playing_file = ''
             xbmcgui.Window(10000).clearProperty('FEFC.PausedTitle')
             return
+        # Capture the starting folder when playback starts, whatever
+        # window started it — not only when the user is on a videos
+        # window at that moment. The playing file is the trigger.
+        try:
+            cur_file = pl.getPlayingFile() or ''
+        except Exception:
+            cur_file = ''
+        if cur_file and cur_file != self._playing_file:
+            self._playing_file = cur_file
+            self.restore_tries = 0
+            self.restore_until = 0.0
+            p = xbmc.getInfoLabel('Container.FolderPath') or ''
+            if p.startswith('plugin://plugin.video.fefc/'):
+                self.last_list = p
         full = xbmc.getCondVisibility('Window.IsActive(fullscreenvideo)')
         if not self.seen_full and not full and xbmc.getCondVisibility('Window.IsActive(videos)'):
             p = xbmc.getInfoLabel('Container.FolderPath') or ''
@@ -1001,6 +1188,7 @@ class Watcher(object):
         if full:
             self.seen_full = True
             self.restore_until = 0.0
+            self.restore_tries = 0
             if self.mine:  # back on the video screen: carry on playing
                 self.mine = False
                 if xbmc.getCondVisibility('Player.Paused'):
@@ -1012,8 +1200,19 @@ class Watcher(object):
         if self.restore_until and time.time() < self.restore_until and self.last_list and xbmc.getCondVisibility('Window.IsActive(videos)'):
             # one Back press can leave the video AND go up a folder: put the user back on the list they started from
             if (xbmc.getInfoLabel('Container.FolderPath') or '') != self.last_list:
-                xbmc.executebuiltin('Container.Update(%s,replace)' % self.last_list)
-                self.restore_until = time.time() + 2.5
+                if self.restore_tries < 3:
+                    xbmc.executebuiltin('Container.Update(%s,replace)' % self.last_list)
+                    self.restore_tries += 1
+                    self.restore_until = time.time() + 2.5
+                else:
+                    # Deliberate navigation: stop fighting it.
+                    self.restore_until = 0.0
+                    self.restore_tries = 0
+            else:
+                self.restore_until = 0.0
+                self.restore_tries = 0
+        elif self.restore_until and time.time() >= self.restore_until:
+            self.restore_tries = 0
         paused = xbmc.getCondVisibility('Player.Paused')
         if not paused:
             if self.mine and time.time() - self.t_pause > 1.5:
@@ -1026,6 +1225,7 @@ class Watcher(object):
                 self.mine = True
                 self.t_pause = time.time()
                 self.restore_until = time.time() + 4.0
+                self.restore_tries = 0
                 try:
                     t = xbmc.getInfoLabel('VideoPlayer.Title') or xbmc.getInfoLabel('Player.Title')
                 except Exception:
@@ -1079,7 +1279,15 @@ class Tracker(object):
         if vid != self.vid:
             if self.vid:
                 self.finish()
+            # New video: start from a clean slate, even if finish()
+            # was not called (no previous video). The old last_save
+            # must not gate the new video's first save, and the old
+            # pos/total must not be saved for it.
             self.vid = vid
+            self.name = ''
+            self.pos = 0.0
+            self.total = 0.0
+            self.last_save = 0.0
             self.name = xbmc.getInfoLabel('VideoPlayer.Title') or xbmc.getInfoLabel('Player.Title') or ''
             try:
                 self._ml().opened(vid, self.name)
@@ -1098,14 +1306,23 @@ class Tracker(object):
                 log('playback: %s' % e)
 
     def finish(self):
-        vid, ml = self.vid, None
+        # Capture the outgoing video's state, then reset everything
+        # before saving, so a later save can never use stale values.
+        vid = self.vid
+        name = self.name
+        pos = self.pos
+        total = self.total
         self.vid = None
+        self.name = ''
+        self.pos = 0.0
+        self.total = 0.0
+        self.last_save = 0.0
         try:
             ml = self._ml()
-            if self.total and self.pos >= self.total * 0.95:
+            if total and pos >= total * 0.95:
                 ml.clear_playback(vid)       # finished: no longer "continue watching"
-            elif self.pos > 5:
-                ml.set_playback(vid, self.pos, self.name, self.total)
+            elif pos > 5:
+                ml.set_playback(vid, pos, name, total)
             if ml.linked:
                 threading.Thread(target=ml.sync, daemon=True).start()
         except Exception as e:
@@ -1114,11 +1331,14 @@ class Tracker(object):
 
 def refresh_home_counts():
     try:
-        import sys
-        sys.path.insert(0, xbmcvfs.translatePath(ADDON.getAddonInfo('path')))
         from resources.lib import router
         home = xbmcgui.Window(10000)
-        for k, v in router.home_counts().items():
+        # Same lock as _load_model_guarded(): home_counts() loads the
+        # catalogue via router, so it must not run concurrently with
+        # a service-side load.
+        with _catalog_lock:
+            counts = router.home_counts()
+        for k, v in counts.items():
             home.setProperty('FEFC.Cnt.' + k, v)
     except Exception as e:
         log('home counts: %s' % e)
@@ -1146,6 +1366,16 @@ class HomeWall(object):
         self._dialog = False
         self._win = ''
         self._repeat = False
+        self._duration = 0.0   # real loop length once known; LOOP is the fallback
+        self._started_at = 0.0
+        self._stop_counted = False
+
+    def _wall_url(self):
+        base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
+        return base + '/assets/home-wall.mp4'
+
+    def _loop_len(self):
+        return self._duration if self._duration > 10 else self.LOOP
 
     def _bundled(self, sound):
         f = xbmcvfs.translatePath('special://xbmc/media/fefc-home-wall%s.mp4' % ('' if sound else '-silent'))
@@ -1154,27 +1384,46 @@ class HomeWall(object):
     def _fetch(self):
         try:
             os.makedirs(os.path.dirname(self.path), exist_ok=True)
-            req = urllib.request.Request(self.URL, headers={'User-Agent': 'FEFC-Kodi'})
+            req = urllib.request.Request(self._wall_url(), headers={'User-Agent': 'FEFC-Kodi'})
             with urllib.request.urlopen(req, timeout=30) as r:
+                clen = r.headers.get('Content-Length')
                 data = r.read(20 * 1024 * 1024)
+            if clen is not None:
+                try:
+                    want_len = int(clen)
+                except (TypeError, ValueError):
+                    want_len = 0
+                if want_len and len(data) < want_len:
+                    log('home wall download: truncated %d/%d bytes' % (len(data), want_len))
+                    return
+                if want_len > 20 * 1024 * 1024:
+                    log('home wall download: advertised %d bytes exceeds the 20 MB cap' % want_len)
+                    return
+            elif len(data) >= 20 * 1024 * 1024:
+                log('home wall download: hit the 20 MB cap with no Content-Length; treating as truncated')
+                return
             if len(data) > 100000 and data[4:8] == b'ftyp':
                 with open(self.path + '.tmp', 'wb') as f:
                     f.write(data)
                 os.replace(self.path + '.tmp', self.path)
+            else:
+                log('home wall download: %d bytes, not a usable mp4' % len(data))
         except Exception as e:
             log('home wall download: %s' % e)
-        self.fetching = False
+        finally:
+            self.fetching = False
 
     def playing(self):
         return xbmcgui.Window(10000).getProperty('FEFC.Wall') == '1'
 
     def switch_sound(self, sound):
-        """Swap the audible and silent loops now. Does not touch a real film."""
+        """Swap the audible and silent loops now. Does not touch a real film or the intro."""
         pl = xbmc.Player()
         try:
             if pl.isPlaying():
                 cur = pl.getPlayingFile() or ''
-                if cur and 'home-wall' not in cur and 'fefc-intro' not in cur:
+                if cur and 'home-wall' not in cur:
+                    # A real film, a trailer, or the intro: leave it alone.
                     self.cur_sound = sound
                     return
                 try:
@@ -1199,8 +1448,12 @@ class HomeWall(object):
 
     def _start(self, pl, sound, at=0.0):
         home = xbmcgui.Window(10000)
-        src = self._bundled(sound) or self._bundled(not sound)
+        src = self._bundled(sound)
         if not src:
+            if not sound:
+                # No silent bundled file: do not play the audible loop
+                # (bundled or downloaded) as a substitute for silence.
+                return
             if not os.path.exists(self.path):
                 if not self.fetching:
                     self.fetching = True
@@ -1210,7 +1463,8 @@ class HomeWall(object):
             src = self.path
         li = xbmcgui.ListItem('FEFC', offscreen=True)
         li.setProperty('fefc_wall', '1')
-        if at > self.LOOP - 3:
+        loop = self._loop_len()
+        if at > loop - 3:
             at = 0.0
         if at > 0.5:
             li.setProperty('StartOffset', '%.2f' % at)
@@ -1219,6 +1473,8 @@ class HomeWall(object):
         try:
             log('wall OpenFile at=%.2f sound=%s' % (at, sound))
             self._repeat = False
+            self._started_at = time.time()
+            self._stop_counted = False
             pl.play(src, li, windowed=True)
             xbmc.executebuiltin('PlayerControl(RepeatOne)')
         except Exception as e:
@@ -1246,6 +1502,9 @@ class HomeWall(object):
         home = xbmcgui.Window(10000)
         pl = xbmc.Player()
         sound = home.getProperty('FEFC.SoundOff') != '1'
+        if self._dialog and not xbmc.getCondVisibility('Window.IsVisible(11191)'):
+            # The off-screen videowindow was closed: re-arm it below.
+            self._dialog = False
         if not self._dialog and home.getProperty('FEFC.Ready') == '1':
             # One off-screen videowindow that outlives Home, so window changes do not drop the player.
             xbmc.executebuiltin('ActivateWindow(11191)')
@@ -1276,8 +1535,14 @@ class HomeWall(object):
                 home.setProperty('FEFC.Wall', '1')
             try:
                 self.pos = pl.getTime()
+                total = pl.getTotalTime()
+                if total and total > 10:
+                    self._duration = total
             except Exception:
                 pass
+            # Sustained good play resets the failure count.
+            if self._started_at and time.time() - self._started_at > 10:
+                self.fails = 0
             if not self._repeat:
                 try:
                     xbmc.executeJSONRPC('{"jsonrpc":"2.0","id":1,"method":"Player.SetRepeat","params":{"playerid":1,"repeat":"one"}}')
@@ -1289,14 +1554,15 @@ class HomeWall(object):
                 return
             # RepeatOne does not loop a file that is not in a playlist, so the player hits EOF and
             # the next start is a new OpenFile. Seek the same player back to the start instead.
-            if self.pos > self.LOOP - 1.2 and time.time() - getattr(self, '_seeked', 0) > 2:
+            loop = self._loop_len()
+            if self.pos > loop - 1.2 and time.time() - getattr(self, '_seeked', 0) > 2:
                 self._seeked = time.time()
                 try:
                     pl.seekTime(0)
                 except Exception:
                     pass
             if at_home:
-                if self.pos > self.LOOP - 0.6 or self.pos < 0.35:
+                if self.pos > loop - 0.6 or self.pos < 0.35:
                     home.setProperty('FEFC.WallSeam', '1')
                 else:
                     home.clearProperty('FEFC.WallSeam')
@@ -1306,44 +1572,20 @@ class HomeWall(object):
         # Player stopped while browsing or on Home. Resume the same loop; do not stack a second one.
         if home.getProperty('FEFC.Ready') != '1' or time.time() < self.t_next or self.fails >= 3:
             return
+        if not self._stop_counted:
+            # Count this stop once. A stop after < 10 s of play is a
+            # failed play, not a clean EOF; back off before retrying.
+            self._stop_counted = True
+            if self._started_at and time.time() - self._started_at < 10:
+                self.fails += 1
+                self.t_next = time.time() + min(60, 5 * (2 ** (self.fails - 1)))
+                if self.fails >= 3:
+                    log('home wall: giving up after %d short-lived plays' % self.fails)
+                    return
+                return
+            self.fails = 0
         self._start(pl, sound, self.pos if self.pos > 0.5 else 0.0)
 
-
-class SkipIntro(xbmcgui.WindowDialog):
-    """Focused SKIP tile. Bottom-right, inside the TV safe area, clear of the intro's centre."""
-
-    def __init__(self):
-        super().__init__()
-        try:
-            from resources.lib.wallplan import skip_button
-            x, y, w, h = skip_button()
-        except Exception:
-            x, y, w, h = 1540, 910, 260, 92
-        self.done = False
-        self.btn = xbmcgui.ControlButton(x, y, w, h, 'SKIP', font='font13_title', textColor='FFFFFFFF',
-                                         focusedColor='FFFFFFFF', alignment=6,
-                                         focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
-        self.addControl(self.btn)
-        self.setFocus(self.btn)
-
-    def _go(self):
-        if self.done:
-            return
-        self.done = True
-        try:
-            xbmc.Player().stop()
-        except Exception:
-            pass
-        self.close()
-
-    def onControl(self, c):
-        self._go()
-
-    def onAction(self, action):
-        aid = action.getId()
-        select = {xbmcgui.ACTION_SELECT_ITEM, xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401}
-        if aid in select or aid in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
-            self._go()
 
 
 def _play_local_wav(filename):
@@ -1441,6 +1683,8 @@ def details_sfx():
     if home.getProperty('FEFC.GuiSound') != 'always':
         _play_local_wav(ui_file('select', False))
     clip = plan['clip']
+    if not clip:
+        return
 
     def go():
         try:
@@ -1497,7 +1741,15 @@ _wall = None
 
 
 def apply_sound_now(on):
-    """Flip the live mute and the wall audio. No settings write and no keymap reload."""
+    """Flip the live mute and the wall audio. No settings write and no keymap reload.
+
+    FEFC.GuiSound here is intentionally an optimistic LIVE flag for the
+    requested state, not the persisted Kodi setting: the persist thread
+    (sound_toggle) writes the setting and then calls apply_nav_sound(),
+    which reads the setting back and corrects this property. Do not add a
+    read-back here — it would read the old value before the persist
+    thread has written the new one.
+    """
     home = xbmcgui.Window(10000)
     home.setProperty('FEFC.SoundOff', '' if on else '1')
     home.setProperty('FEFC.GuiSound', 'always' if on else 'off')
@@ -1517,21 +1769,73 @@ def apply_sound_now(on):
 
 def apply_nav_sound(on):
     """Sound On: GUI sounds play during the wall video (mode 2) and the FEFC sound skin stays selected.
-    Sound Off: GUI sounds off so Back does not ignore the mute. Does not stop the wall player."""
+    Sound Off: GUI sounds off so Back does not ignore the mute. Does not stop the wall player.
+
+    FEFC.GuiSound is set from a read-back of audiooutput.guisoundmode, not
+    from the requested value: the startup JSON-RPC set often runs before
+    guisettings is loaded, so the mode falls back and the property used to
+    say 'always' while the real setting was not 2 (silent Back) or 'off'
+    while it was 2 (double cue). The optimistic value is still set first
+    so the UI does not wait, then corrected from the read-back.
+    """
     from resources.lib.backcue import gui_sound_mode
     home = xbmcgui.Window(10000)
     home.setProperty('FEFC.GuiSound', 'always' if on else 'off')
     mode = gui_sound_mode(bool(on))
+
     def _set(setting, value):
         xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Settings.SetSettingValue',
                                         'params': {'setting': setting, 'value': value}}))
+
+    def _get(setting):
+        try:
+            r = json.loads(xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Settings.GetSettingValue',
+                                                           'params': {'setting': setting}})))
+            return (r.get('result') or {}).get('value')
+        except Exception as e:
+            log('nav sound read-back: %s' % e)
+            return None
+
     try:
         _set('audiooutput.guisoundmode', mode)
         if on:
             _set('lookandfeel.soundskin', 'resource.uisounds.fefc')
     except Exception as e:
         log('nav sound: %s' % e)
+    actual = _get('audiooutput.guisoundmode')
+    if actual is None:
+        # Read-back failed (e.g. too early at startup): keep the optimistic
+        # property as before, and let the 45 s reapply correct it later.
+        log('nav sound: could not read back guisoundmode; keeping optimistic FEFC.GuiSound')
+    else:
+        try:
+            actual_mode = int(actual)
+        except (TypeError, ValueError):
+            actual_mode = None
+        if actual_mode is not None:
+            home.setProperty('FEFC.GuiSound', 'always' if actual_mode == 2 else 'off')
+            if actual_mode != mode:
+                log('nav sound: guisoundmode read back %s, wanted %s; FEFC.GuiSound set from read-back' % (actual_mode, mode))
     _drop_stale_back_keymap()
+
+
+def _grid_kind_at(i, pos):
+    """fefc_kind of the item at absolute index i, read relative to the focused index pos.
+
+    Kodi's ".." parent row carries no fefc_kind (Kodi builds it, not the plugin), but it
+    is a real folder row skip_delta() may target, so it reads as 'folder'. It is only
+    treated that way when Kodi says the item at index 0 IS the parent row: with "show
+    parent folder items" off, or at a root without one, index 0 is an ordinary item
+    (possibly a spacer) and must be read like any other."""
+    off = i - pos
+    item = 'Container.ListItem' if off == 0 else 'Container.ListItem(%d)' % off
+    k = xbmc.getInfoLabel(item + '.Property(fefc_kind)')
+    if k:
+        return k
+    if i == 0 and (xbmc.getCondVisibility(item + '.IsParentFolder')
+                   or xbmc.getInfoLabel(item + '.Label') == '..'):
+        return 'folder'
+    return None
 
 
 def _grid_pad_loop(monitor):
@@ -1539,13 +1843,8 @@ def _grid_pad_loop(monitor):
 
     The panel cannot skip an item by itself. This only runs while that cell is
     focused, and it never touches playback."""
-    import sys
-    lib = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'lib')
-    if lib not in sys.path:
-        sys.path.insert(0, lib)
-    from shapes import skip_delta
+    from resources.lib.shapes import skip_delta
     origin = None
-    seen_path = ''
     while not monitor.abortRequested():
         try:
             cid = xbmc.getInfoLabel('System.CurrentControlId') or ''
@@ -1561,26 +1860,11 @@ def _grid_pad_loop(monitor):
                 _remember_focused_clip()
             except Exception:
                 pass
-            if path != seen_path and total:
-                seen_path = path
-                if total <= 2500:
-                    shown = 0
-                    for i in range(total):
-                        k = xbmc.getInfoLabel('Container.ListItemAbsolute(%d).Property(fefc_kind)' % i)
-                        if k != 'spacer':
-                            shown += 1
-                    if shown:
-                        xbmcgui.Window(10000).setProperty('FEFC.Shown', str(shown))
             cur = int(xbmc.getInfoLabel('Container.CurrentItem') or '0')
             pos = cur - 1 if cur else 0
 
             def lookup(i, pos=pos):
-                off = i - pos
-                if off == 0:
-                    k = xbmc.getInfoLabel('Container.ListItem.Property(fefc_kind)')
-                else:
-                    k = xbmc.getInfoLabel('Container.ListItem(%d).Property(fefc_kind)' % off)
-                return k or None
+                return _grid_kind_at(i, pos)
 
             home = xbmcgui.Window(10000)
             from_menu = home.getProperty('FEFC.GridFromMenu') == '1'
@@ -1600,9 +1884,38 @@ def _grid_pad_loop(monitor):
                 xbmc.executebuiltin('SetFocus(%s,%d)' % (cid, pos + step))
                 origin = pos
         except Exception as e:
-            log('grid pad: %s' % e)
+            _log_tick('grid pad', e)
         if monitor.waitForAbort(0.05):
             return
+
+
+# Per-site, per-message last-log time for tick errors. A persistent
+# error in a 20 Hz loop must not write the same line hundreds of
+# times a minute; the first occurrence still logs at once.
+_tick_log_last = {}
+
+
+def _log_tick(site, exc):
+    """Log a tick-loop exception, at most once per 60 s for the same site + message."""
+    try:
+        key = (site, str(exc))
+        now = time.time()
+        last = _tick_log_last.get(key, 0.0)
+        if now - last >= 60:
+            _tick_log_last[key] = now
+            log('%s: %s' % (site, exc))
+    except Exception:
+        pass
+
+
+
+def _setting_bool(setting_id, default=False):
+    """ADDON.getSettingBool() raises if the setting id does not exist
+    (e.g. after a settings.xml change). Never let that kill startup."""
+    try:
+        return bool(ADDON.getSettingBool(setting_id))
+    except Exception:
+        return default
 
 
 def main():
@@ -1611,6 +1924,10 @@ def main():
         home.setProperty('FEFC.Ready', '1')
         return  # plain Kodi: nothing to do
     monitor = xbmc.Monitor()
+    # Warm the package / external-files-dir caches (Item 68) so the
+    # first tick does not pay for the translatePath scans.
+    my_package()
+    _android_ext_files_dir()
     ensure_source()
     set_select_action()
     _drop_stale_back_keymap()
@@ -1618,14 +1935,14 @@ def main():
     if cb:
         xbmcgui.Window(10000).setProperty('FEFC.Version', 'FEFC app ' + version_label(cb))
         set_update_state(cb, state='checking')
-    if ADDON.getSettingBool('open_on_start') or ADDON.getSettingBool('play_intro'):
+    if _setting_bool('open_on_start') or _setting_bool('play_intro'):
         # wait for the home screen to be up
         for _ in range(60):
             if monitor.waitForAbort(0.5):
                 return
             if xbmc.getCondVisibility('Window.IsActive(home)'):
                 break
-        if ADDON.getSettingBool('play_intro'):
+        if _setting_bool('play_intro'):
             # Fullscreen. A dialog cannot draw above it; the video OSD can, so SKIP is a control on that OSD.
             xbmc.executebuiltin('PlayMedia(%s,noresume)' % INTRO)
             started = False
@@ -1669,15 +1986,11 @@ def main():
                 home.setProperty('FEFC.Skip', '')
                 xbmc.executebuiltin('Dialog.Close(videoosd,true)')
         home.setProperty('FEFC.Ready', '1')  # the home screen stays hidden behind a black splash until the intro has finished
-        if ADDON.getSettingBool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
+        if _setting_bool('open_on_start') and xbmc.getSkinDir() != 'skin.fefc':  # the FEFC skin's home already is the FEFC menu
             xbmc.executebuiltin('ActivateWindow(Videos,plugin://plugin.video.fefc/,return)')
     home.setProperty('FEFC.Ready', '1')
     try:
-        import sys as _sys
-        _lib = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources', 'lib')
-        if _lib not in _sys.path:
-            _sys.path.insert(0, _lib)
-        from sfxpref import sfx_enabled, should_persist_on
+        from resources.lib.sfxpref import sfx_enabled, should_persist_on
         _raw = ADDON.getSetting('play_sfx')
         if should_persist_on(_raw):
             ADDON.setSetting('play_sfx', 'true')
@@ -1718,12 +2031,16 @@ def main():
         now = time.time()
         if now >= next_nav_sound:
             try:
-                from sfxpref import sfx_enabled
+                from resources.lib.sfxpref import sfx_enabled
                 from resources.lib.cues import REAPPLY_SECONDS
                 on = sfx_enabled(ADDON.getSetting('play_sfx'))
                 home.setProperty('FEFC.SoundOff', '' if on else '1')
-                apply_nav_sound(on)
-                next_nav_sound = now + REAPPLY_SECONDS
+                if _run_in_background(apply_nav_sound, on):
+                    next_nav_sound = now + REAPPLY_SECONDS
+                else:
+                    # Background work is busy; retry soon instead of
+                    # waiting out the full 45 s reapply interval.
+                    next_nav_sound = now + 5
             except Exception as e:
                 log('nav sound reapply: %s' % e)
                 next_nav_sound = now + 45
@@ -1732,7 +2049,7 @@ def main():
         except Exception as e:
             log('notify perm ask: %s' % e)
         try:
-            consume_pending_nav()
+            consume_pending_nav(monitor)
         except Exception as e:
             log('pending nav: %s' % e)
         if now >= next_counts:  # tile counts (catalog + My List), refreshed every minute like the web app's home
@@ -1752,7 +2069,6 @@ def main():
         if now >= next_catalog:
             def refresh_catalog():
                 try:
-                    import catalog
                     base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
                     prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
                     cache = os.path.join(prof, 'cache')
@@ -1760,7 +2076,7 @@ def main():
                         mins = int(ADDON.getSetting('refresh_minutes') or 180)
                     except ValueError:
                         mins = 180
-                    catalog.load_model(base, cache, mins, log, force=True)
+                    _load_model_guarded(base, cache, mins, force=True)
                 except Exception as e:
                     log('catalogue refresh: %s' % e)
             threading.Thread(target=refresh_catalog, daemon=True).start()
@@ -1785,31 +2101,34 @@ def main():
         try:
             details_sfx()
         except Exception as e:
-            log('details sfx: %s' % e)
+            _log_tick('details sfx', e)
         try:
             transport_cues()
         except Exception as e:
-            log('transport cue: %s' % e)
+            _log_tick('transport cue', e)
         try:
             wall.tick()
         except Exception as e:
-            log('home wall: %s' % e)
+            _log_tick('home wall', e)
         try:
             if not wall.playing():
                 watcher.tick()
         except Exception as e:
-            log('watcher: %s' % e)
+            _log_tick('watcher', e)
         try:
             tracker.tick()
         except Exception as e:
-            log('tracker: %s' % e)
-        # The process can survive an APK replace. On Home, and every few seconds,
+            _log_tick('tracker', e)
+        # The process can survive an APK replace. On Home only — never on
+        # other screens and never during playback — and every few seconds,
         # compare it with the package on disk and drop a stale Update available badge.
+        # The check itself runs on a daemon thread (busy flag in
+        # _run_in_background) so it can never stall this tick loop.
         home_now = bool(xbmc.getCondVisibility('Window.IsActive(home)'))
-        if (home_now and not was_home) or now >= next_install_check:
+        if home_now and (not was_home or now >= next_install_check):
             next_install_check = now + 5
             try:
-                maybe_refresh_installed()
+                _run_in_background(maybe_refresh_installed)
             except Exception as e:
                 log('resume install check: %s' % e)
         was_home = home_now
@@ -1818,10 +2137,12 @@ def main():
             checked = True
             last_check = now
             ADDON.setSetting('last_update_check', str(now))
-            check_update(prompt=not xbmc.Player().isPlaying())
+            check_update(prompt=not _foreground_video(), monitor=monitor)
         elif checked and now - last_check > 21600:
             last_check = now
-            check_update(prompt=False)
+            # Background only: prompt=False, so no dialog and no install
+            # can be reached from this thread (see Item 66).
+            _run_in_background(check_update, prompt=False, monitor=monitor)
         if monitor.waitForAbort(0.2 if wall.playing() else 0.5):
             break
 

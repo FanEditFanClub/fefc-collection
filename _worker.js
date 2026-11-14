@@ -128,7 +128,8 @@ function mergeList(a, b) {
   return o;
 }
 const publicUser = u => u ? { email: u.email || '', name: u.name || '', picture: u.picture || '' } : null;
-const jwtPayload = t => { try { return JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); } catch { return null; } };
+// atob gives one char per byte; decode those bytes as UTF-8 so non-ASCII names (José, Zoë) are not mangled.
+const jwtPayload = t => { try { const bin = atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')); return JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)))); } catch { return null; } };
 async function readBody(req, max = 20000) {
   const raw = await req.text(); if (raw.length > max) throw Object.assign(new Error('too_large'), { status: 413 });
   try { return raw ? JSON.parse(raw) : {}; } catch { throw Object.assign(new Error('bad_request'), { status: 400 }); }
@@ -225,6 +226,8 @@ async function syncApi(req, env, url) {
     return json({ ok: true });
   }
   if (p === 'qr/claim') {
+    // The code is only 4 digits: cap guesses per IP so a pending TV link cannot be swept.
+    if (limited(req, 'qc', 12)) return json({ error: 'rate_limited' }, 429);
     const s = await authed(req, env); if (!s) return json({ error: 'unauthorized' }, 401);
     const code = String(body.code || '').replace(/\D/g, '');
     if (!/^\d{4}$/.test(code)) return json({ error: 'bad_request' }, 400);
@@ -408,7 +411,8 @@ async function feedApi(req, env, ctx, url) {
 // Fallback: GOOGLE_API_KEY (public/"anyone with the link" only), then Drive usercontent.
 // Never change Drive sharing or content. Never log token values.
 const DRIVE = 'https://www.googleapis.com/drive/v3/files/';
-const sidCache = new Map();                       // shortcut/file id -> { id, t }
+const sidCache = new Map();                       // shortcut/file id -> { id, t, ttl }
+const SID_OK_TTL = 6 * 3600e3, SID_FAIL_TTL = 60e3;   // a resolved id is stable; a failed lookup (raw id kept) is retried within a minute, not 6 h
 let driveTok = null;                              // { access, exp }
 async function driveAccessToken(env) {
   const rt = env.GOOGLE_DRIVE_REFRESH_TOKEN, cid = env.GOOGLE_DRIVE_CLIENT_ID, sec = env.GOOGLE_DRIVE_CLIENT_SECRET;
@@ -428,8 +432,8 @@ async function driveAccessToken(env) {
 }
 async function resolveDriveId(id, auth) {
   // auth: { bearer } or { key } or null (public view redirect)
-  const c = sidCache.get(id); if (c && Date.now() - c.t < 6 * 3600e3) return c.id;
-  let out = id;
+  const c = sidCache.get(id); if (c && Date.now() - c.t < (c.ttl || SID_OK_TTL)) return c.id;
+  let out = id, resolved = false;
   if (auth && (auth.bearer || auth.key)) {
     const q = DRIVE + id + '?fields=id,mimeType,shortcutDetails&supportsAllDrives=true' + (auth.key ? ('&key=' + encodeURIComponent(auth.key)) : '');
     const headers = auth.bearer ? { Authorization: 'Bearer ' + auth.bearer } : {};
@@ -437,16 +441,18 @@ async function resolveDriveId(id, auth) {
     if (!r.ok) { const e = new Error('meta ' + r.status); e.status = r.status; e.body = await r.text().catch(() => ''); throw e; }
     const m = await r.json();
     out = m.mimeType === 'application/vnd.google-apps.shortcut' && m.shortcutDetails && m.shortcutDetails.targetId ? m.shortcutDetails.targetId : m.id;
+    resolved = true;
   } else {
     // Catalog IDs are often Drive shortcuts; usercontent fails on the shortcut id ("Can't download file" HTML).
     try {
       const r = await fetch('https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view', { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(8000) });
       const loc = r.headers.get('location') || '';
       const m = loc.match(/\/file\/d\/([\w-]{10,80})(?:\/|$)/);
-      if (m) out = m[1];
-    } catch (_) { /* keep raw id */ }
+      if (m) { out = m[1]; resolved = true; }
+      else if (r.status === 200) resolved = true;   // a plain file (not a shortcut): the raw id is the answer
+    } catch (_) { /* keep raw id; not cached for long (resolved stays false) */ }
   }
-  if (sidCache.size > 5000) sidCache.clear(); sidCache.set(id, { id: out, t: Date.now() });
+  if (sidCache.size > 5000) sidCache.clear(); sidCache.set(id, { id: out, t: Date.now(), ttl: resolved ? SID_OK_TTL : SID_FAIL_TTL });
   return out;
 }
 function driveErr(status, body) {
@@ -584,7 +590,8 @@ async function streamApi(req, env, url) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
   const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range,accept-ranges,content-length,content-type,content-disposition' };
   // Accept /api/stream/{id} or /api/stream/{id}/file.ext (extension helps VLC / clients pick a demuxer).
-  const rest = decodeURIComponent(url.pathname.slice('/api/stream/'.length)).replace(/^\/+|\/+$/g, '');
+  let rest;
+  try { rest = decodeURIComponent(url.pathname.slice('/api/stream/'.length)).replace(/^\/+|\/+$/g, ''); } catch (_) { return json({ error: 'bad_id' }, 400); }
   const slash = rest.indexOf('/');
   const id = (slash < 0 ? rest : rest.slice(0, slash)).trim();
   const fileName = (slash < 0 ? '' : rest.slice(slash + 1).split('/').pop() || '').replace(/[^\w.\- ()\[\]]+/g, '_') || '';

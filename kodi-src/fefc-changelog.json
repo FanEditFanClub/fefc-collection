@@ -1,6 +1,17 @@
 {
  "versions": [
   {
+   "version": "0.6.6 Beta",
+   "date": "2026-11-14",
+   "notes": [
+    "Hundreds of fixes from a full code review of the app: catalogue loading, art, search, genres, My List, sounds, the update check, and QR codes.",
+    "On a Mac, an update shows the same centered update popup as on Android, with progress, Retry, and the manual download links.",
+    "Download latest version in Settings opens the list of downloads.",
+    "Genres with the same name are shown once, and macOS ._ junk files no longer appear as videos.",
+    "The Ridley Scott folder plays every clip in its set, including both Blade Runner themes."
+   ]
+  },
+  {
    "version": "0.6.5 Beta",
    "date": "2026-11-12",
    "notes": [

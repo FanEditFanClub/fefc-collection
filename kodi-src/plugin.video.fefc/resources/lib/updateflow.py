@@ -15,11 +15,18 @@ INSTALLER_PACKAGES = ('com.google.android.packageinstaller', 'com.android.packag
 
 def version_key(label):
     """Numeric key for an app version label. '0.6 Beta' and '0.6.0' compare equal.
-    Missing pieces are zeros, so 0.6 is (0, 6, 0) and 0.6.1 is (0, 6, 1)."""
-    text = re.sub(r'(?i)\s*beta\s*$', '', str(label or '').strip())
+    Missing pieces are zeros, so 0.6 is (0, 6, 0) and 0.6.1 is (0, 6, 1).
+    Always a 3-tuple: only the first three numeric parts count, and a
+    trailing pre-release / build-date suffix (beta, rc, alpha, preview, or
+    a parenthesised date) is ignored, so '0.6.5 RC1', '0.6.5 Beta 2' and
+    '0.6.5 (2026-11-12)' all key as (0, 6, 5)."""
+    text = str(label or '').strip()
+    text = re.sub(r'(?i)\s*(?:beta|rc|alpha|preview)\b.*$', '', text)
+    text = re.sub(r'\s*\(.*$', '', text)
     nums = [int(part) for part in re.findall(r'\d+', text)]
     if not nums:
         return (0, 0, 0)
+    nums = nums[:3]
     while len(nums) < 3:
         nums.append(0)
     return tuple(nums)
@@ -46,8 +53,13 @@ def progress_view(state, version, pct=0, done_bytes=0, total_bytes=0, detail='')
         pct = max(0, min(100, int(pct)))
     except (TypeError, ValueError):
         pct = 0
-    done_mb = max(0, int(done_bytes or 0)) >> 20
-    total_mb = max(0, int(total_bytes or 0)) >> 20
+    def _mb(v):
+        try:
+            return max(0, int(v or 0)) >> 20
+        except (TypeError, ValueError):
+            return 0
+    done_mb = _mb(done_bytes)
+    total_mb = _mb(total_bytes)
     if state == 'verifying':
         line = 'Verifying…'
         sub = version
@@ -83,6 +95,9 @@ def label_for(state):
     }.get(state, LABEL_UNABLE)
 
 
+# Test-covered (tests/kodi-repairs.test.js:77). Keep even though no runtime
+# caller uses it: it pins the "running APK build wins over a pre-confirm
+# record" rule. Do not remove in a dead-code sweep.
 def installed_from_apk(apk_record, recorded_record):
     """The build inside the running APK is the installed build. A pre-confirm record is ignored."""
     return apk_record
@@ -90,11 +105,20 @@ def installed_from_apk(apk_record, recorded_record):
 
 # Stock Kodi 21 versionCode. The FEFC build number is added to it for both APKs
 # (com.fefc.kodi and org.xbmc.kodi), so a dumpsys versionCode can be turned back into a build.
+# This MUST equal the versionCode baked into the APK by the build step: if Kodi
+# bumps its stock versionCode, update this constant in step with the APK build
+# (there is no runtime value to assert it against — the comment is the check).
 VERSIONCODE_BASE = 2103000
 
 
 def parse_pm_path(text):
-    """`pm path <pkg>` prints `package:/data/app/.../base.apk`."""
+    """`pm path <pkg>` prints `package:/data/app/.../base.apk`.
+
+    Returns the FIRST `package:` line. Callers must scope the `pm path`
+    invocation to one package (one pkg argument): with split APKs, or a
+    dump covering several packages, the first line may belong to another
+    package's split.
+    """
     for line in (text or '').splitlines():
         line = line.strip()
         if line.startswith('package:'):
@@ -103,6 +127,12 @@ def parse_pm_path(text):
 
 
 def parse_dumpsys_version_code(text):
+    """First `versionCode=` in the text, or None.
+
+    Callers must scope the dumpsys invocation to one package (`dumpsys
+    package <pkg>`): an unscoped dump can contain several versionCode
+    values, and the first one wins here.
+    """
     match = re.search(r'versionCode=(\d+)', text or '')
     return int(match.group(1)) if match else None
 
@@ -110,11 +140,12 @@ def parse_dumpsys_version_code(text):
 def build_from_version_code(version_code, base=VERSIONCODE_BASE):
     try:
         code = int(version_code)
+        base_i = int(base)
     except (TypeError, ValueError):
         return None
-    if code < int(base):
+    if code < base_i:
         return None
-    return code - int(base)
+    return code - base_i
 
 
 def resume_plan(running, live, published):
@@ -125,8 +156,15 @@ def resume_plan(running, live, published):
     Android often leaves the old process running across the replace, so those two
     differ until Kodi is restarted. A published release that matches the installed
     APK is Up to date and must not prompt. A stale process is restarted.
+
+    Intent (test-pinned, do not change): a pkg mismatch returns idle — the
+    live APK is a different package, not this app's update — and prompt is
+    always False on this path; the Home tile / launch check prompts
+    separately. When `published` is not a dict (manifest fetch failed), the
+    update state is unknown: do not clear it and do not claim 'up_to_date'.
     """
-    idle = {'restart': False, 'clear_available': False, 'label': None, 'prompt': None, 'installed': running}
+    idle = {'restart': False, 'clear_available': False, 'label': None, 'prompt': None,
+            'installed': dict(running) if isinstance(running, dict) else running}
     if not isinstance(running, dict) or not isinstance(live, dict):
         return idle
     live_pkg = str(live.get('pkg') or '')
@@ -140,11 +178,16 @@ def resume_plan(running, live, published):
         return idle
     if live_build <= running_build:
         return idle
-    live_version = str(live.get('version') or running.get('version') or '')
+    # No fallback to running's version: the comparison must use the live
+    # build's own version, not a mixed live-build / running-version pair.
+    live_version = str(live.get('version') or '')
     installed = {'build': live_build, 'version': live_version, 'pkg': live_pkg or run_pkg}
-    newer = False
-    if isinstance(published, dict):
-        newer = release_is_newer(published.get('version'), published.get('build'), live_version, live_build)
+    if not isinstance(published, dict):
+        # Manifest unknown: restart, but neither clear the badge nor claim
+        # the tile is up to date.
+        return {'restart': True, 'clear_available': False, 'label': None,
+                'prompt': False, 'installed': installed}
+    newer = release_is_newer(published.get('version'), published.get('build'), live_version, live_build)
     return {
         'restart': True,
         'clear_available': not newer,
@@ -156,12 +199,31 @@ def resume_plan(running, live, published):
 
 def package_download(manifest, pkg):
     """URL, size, sha256 for this install. com.fefc.kodi never falls back to the org.xbmc.kodi APK."""
-    entry = ((manifest or {}).get('packages') or {}).get(pkg) or {}
+    if not isinstance(manifest, dict):
+        manifest = {}
+    packages = manifest.get('packages')
+    if not isinstance(packages, dict):
+        packages = {}
+    entry = packages.get(pkg)
+    if not isinstance(entry, dict):
+        entry = {}
+
+    def _size(*dicts):
+        for d in dicts:
+            if isinstance(d, dict) and d.get('size'):
+                try:
+                    return int(d.get('size'))
+                except (TypeError, ValueError):
+                    return 0
+        return 0
+
     if pkg == 'com.fefc.kodi':
-        return entry.get('url') or '', int(entry.get('size') or 0), entry.get('sha256') or ''
-    return (entry.get('url') or (manifest or {}).get('url') or '',
-            int(entry.get('size') or (manifest or {}).get('size') or 0),
-            entry.get('sha256') or (manifest or {}).get('sha256') or '')
+        return entry.get('url') or '', _size(entry), entry.get('sha256') or ''
+    # Other packages fall back to the top-level entry, which is the
+    # org.xbmc.kodi APK. That fallback is intentional — do not reject it.
+    return (entry.get('url') or manifest.get('url') or '',
+            _size(entry, manifest),
+            entry.get('sha256') or manifest.get('sha256') or '')
 
 
 def read_apk_identity(source):
@@ -178,7 +240,11 @@ def read_apk_identity(source):
         return None
     if not isinstance(info, dict):
         return None
-    return {'pkg': str(info.get('pkg') or ''), 'build': int(info.get('build') or 0),
+    try:
+        build = int(info.get('build') or 0)
+    except (TypeError, ValueError):
+        return None
+    return {'pkg': str(info.get('pkg') or ''), 'build': build,
             'version': str(info.get('version') or '')}
 
 
@@ -198,17 +264,29 @@ def handoff_ok(identity, installed_pkg, installed_build, sha_ok):
 
 def installer_package_for(app_pkg):
     """Fire TV (org.xbmc.kodi) uses the AOSP installer. The phone package uses the Google one.
-    Kodi setPackage() cannot take an empty name."""
+    Kodi setPackage() cannot take an empty name. Unknown packages fail closed
+    ('') instead of getting the Google installer: the caller treats '' as
+    "installer could not be opened" rather than installing via the wrong app."""
     if app_pkg == 'org.xbmc.kodi':
         return INSTALLER_PACKAGES[1]
-    return INSTALLER_PACKAGES[0]
+    if app_pkg == 'com.fefc.kodi':
+        return INSTALLER_PACKAGES[0]
+    return ''
 
 
 def installer_builtin(uri, package=INSTALLER_PACKAGES[0]):
+    """StartAndroidActivity builtin that hands `uri` to the package installer.
+
+    This builds the builtin; it does not choose the installer — pass the
+    package from installer_package_for(). ',' and ')' inside the URI are
+    percent-encoded (%2C / %29), because Kodi splits builtin arguments on
+    ',' and ends the call on ')'; '"' is encoded as %22 for the same reason.
+    """
     if not uri or not package:
         return ''
+    safe = (uri or '').replace('"', '%22').replace(',', '%2C').replace(')', '%29')
     return ('StartAndroidActivity(%s,android.intent.action.VIEW,application/vnd.android.package-archive,%s,1)'
-            % (package, uri))
+            % (package, safe))
 
 
 UPDATE_HOSTS = ('fefc-collection.pages.dev', 'collection.faneditfanclub.com')
@@ -216,15 +294,20 @@ UPDATE_HOSTS = ('fefc-collection.pages.dev', 'collection.faneditfanclub.com')
 
 def classify_platform(flags):
     """Android wins when the device says it is Android. macOS and webOS are explicit.
-    An empty probe stays 'other' so the caller can keep the Android installer for an unprobed Kodi."""
+    An empty probe stays 'other' so the caller can keep the Android installer for an unprobed Kodi.
+
+    The old `if flags.get('android'): return 'android'` after the webos check
+    was dead: line 221 already returns 'android' when android is set and
+    webos is not, and line 224 returns 'webos' for every webos case, so
+    execution could never reach it with android set. 'web0s' (zero) in the
+    blob check is intentional — LG user-agent strings contain "Web0S".
+    """
     flags = flags or {}
     if flags.get('android') and not flags.get('webos'):
         return 'android'
     blob = ' '.join(str(flags.get(k) or '') for k in ('build', 'os', 'xbmc_path')).lower()
     if flags.get('webos') or 'webos' in blob or 'web0s' in blob or '/palm/' in blob:
         return 'webos'
-    if flags.get('android'):
-        return 'android'
     if flags.get('darwin') or flags.get('osx'):
         return 'macos'
     return 'other'
@@ -256,6 +339,9 @@ def allowed_update_url(url):
     return u.scheme == 'https' and host in UPDATE_HOSTS and (u.path or '').startswith('/kodi-app/')
 
 
+_PLATFORM_EXT = {'webos': '.ipk', 'tizen': '.wgt', 'macos': '.dmg'}
+
+
 def platform_download(manifest, platform, arch=''):
     """URL, size, sha256 and filename for macOS, webOS or Tizen.
     Never falls back to the Android APK. A missing entry is not available."""
@@ -281,13 +367,22 @@ def platform_download(manifest, platform, arch=''):
         size = int(entry.get('size') or 0)
     except (TypeError, ValueError):
         size = 0
+    ext = _PLATFORM_EXT.get(platform)
+    if ext:
+        # Extension of the URL path only (query/fragment stripped): a webos
+        # entry pointing at a .apk, or a tizen entry at a .ipk, is not a
+        # usable package for this platform.
+        url_path = url.split('?', 1)[0].split('#', 1)[0].lower()
+        ext_ok = url_path.endswith(ext)
+    else:
+        ext_ok = True
     return {
         'url': url,
         'size': size,
         'sha256': entry.get('sha256') or '',
         'filename': entry.get('filename') or '',
         'abi': entry.get('abi') or block.get('abi') or '',
-        'available': bool(url and entry.get('sha256') and allowed_update_url(url)),
+        'available': bool(url and entry.get('sha256') and allowed_update_url(url) and ext_ok),
     }
 
 
@@ -299,8 +394,14 @@ def platform_unavailable_message(platform, version_label):
             % (version_label or 'update', who, who))
 
 
-PHONE_APK = 'https://fefc-collection.pages.dev/kodi-app/FEFC.apk'
-PHONE_SHORT = 'https://is.gd/8la6gb'
+try:
+    from .shorturl import APK_FULL as PHONE_APK, APK_SHORT as PHONE_SHORT
+except ImportError:
+    try:
+        from shorturl import APK_FULL as PHONE_APK, APK_SHORT as PHONE_SHORT
+    except ImportError:
+        PHONE_APK = 'https://fefc-collection.pages.dev/kodi-app/FEFC.apk'
+        PHONE_SHORT = 'https://is.gd/8la6gb'
 SAMSUNG_WGT = 'https://fefc-collection.pages.dev/kodi-app/FEFC.wgt'
 SAMSUNG_GUIDE = 'https://collection.faneditfanclub.com/samsung'
 WEB_APP = 'https://collection.faneditfanclub.com'
@@ -331,14 +432,17 @@ def manual_downloads(manifest):
         {'platform': 'Samsung TV guide', 'version': version, 'url': SAMSUNG_GUIDE, 'short': ''},
         {'platform': 'Web', 'version': version, 'url': WEB_APP, 'short': ''},
     ]
-    for row in rows:
-        blob = (row['url'] + ' ' + row['short']).lower()
-        if any(bad.lower() in blob for bad in _BANNED_DOWNLOAD):
-            raise ValueError('manual download lists a banned package')
+    # The old loop raised ValueError here, but it was unreachable: apk/wgt
+    # are already replaced by defaults when banned, and the defaults contain
+    # no banned substrings. Degrade instead of raising: drop a bad row so
+    # one bad entry can never kill the whole manual-download list.
+    rows = [row for row in rows
+            if not any(bad.lower() in (row['url'] + ' ' + row['short']).lower()
+                       for bad in _BANNED_DOWNLOAD)]
     return rows
 
 
-def platform_install_message(platform, path, opened=False, abi=''):
+def platform_install_message(platform, path, opened=False, abi='', url=''):
     if platform == 'macos':
         opened_txt = 'The disk image was opened. ' if opened else ''
         return (
@@ -354,7 +458,19 @@ def platform_install_message(platform, path, opened=False, abi=''):
     if platform == 'webos':
         try:
             from webosguide import tv_text
-        except ImportError:
+        except ImportError as e:
+            # Only fall back when the failure names webosguide itself (the
+            # top-level import is unavailable in this context). An
+            # ImportError from inside webosguide is a real bug — re-raise
+            # it instead of masking it with the package import.
+            if getattr(e, 'name', None) not in (None, 'webosguide'):
+                raise
             from resources.lib.webosguide import tv_text
-        return tv_text('')
+        # url is the SERVER URL (rec['url']), not the local dst path: the TV
+        # can only install from a URL it can fetch. url='' keeps the old
+        # "not on the server yet" message for the genuinely unpublished case.
+        msg = tv_text(url or '')
+        if abi:
+            msg += '\n\nArchitecture: %s' % abi
+        return msg
     return 'No FEFC installer is available for this system.'

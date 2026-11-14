@@ -25,7 +25,9 @@ test('manual downloads list FEFC.apk, the Samsung widget, and the web app only',
   assert.match(app, /kodi-app\/FEFC\.apk/);
   assert.match(app, /kodi-app\/FEFC\.wgt/);
   assert.match(app, /collection\.faneditfanclub\.com\/samsung/);
-  assert.match(settings, /action=downloads/);
+  // The settings button opens the Manual Downloads list (action=downloads is the offline Downloads folder).
+  assert.match(settings, /action=manual_downloads\)/);
+  assert.doesNotMatch(settings, /action=downloads\)/);
   assert.match(popup, /class ManualDownloads/);
   const out = py(`
 import json, sys

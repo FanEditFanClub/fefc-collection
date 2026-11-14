@@ -215,15 +215,49 @@ def _play_queue(entries, note):
         xbmc.sleep(500)
         pl = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
         pl.clear()
-        for url, title in entries:
+        for entry in entries:
+            url, title = entry[0], entry[1]
+            vid = entry[2] if len(entry) > 2 else ''
             li = xbmcgui.ListItem(title, path=url)
             li.getVideoInfoTag().setTitle(title)
             li.setProperty('IsPlayable', 'true')
             li.setProperty('fefc_kind', 'video')
+            if vid:
+                li.setProperty('fefc_id', vid)
             pl.add(url, li)
         xbmcgui.Dialog().notification('FEFC', note, xbmcgui.NOTIFICATION_INFO, 3000)
         xbmc.Player().play(pl)
     threading.Thread(target=go, daemon=True).start()
+
+
+# Reverse index for _resolve(): target id -> item id, built once per
+# model. Keyed by id(m); the cached items object and its length are
+# stored with it, so a new model (or a changed item count) rebuilds.
+_TARGET_INDEX_CACHE = {}
+
+
+def _target_index(m):
+    items = m.get('items') or {}
+    hit = _TARGET_INDEX_CACHE.get(id(m))
+    if hit is not None and hit[0] is items and hit[1] == len(items):
+        return hit[2]
+    index = {}
+    for i, v in items.items():
+        if not isinstance(v, (list, tuple)) or len(v) <= 3:
+            continue
+        tgt = v[3]
+        if isinstance(tgt, str) and tgt and tgt not in index:
+            index[tgt] = i
+    _TARGET_INDEX_CACHE[id(m)] = (items, len(items), index)
+    while len(_TARGET_INDEX_CACHE) > 4:
+        _TARGET_INDEX_CACHE.pop(next(iter(_TARGET_INDEX_CACHE)))
+    return index
+
+
+# In-progress downloads, keyed by vid. Guards a double-tap Download race:
+# two download() calls for the same vid would write the same .part.
+_DOWNLOADING = set()
+_DOWNLOAD_LOCK = threading.Lock()
 
 
 class Router:
@@ -372,12 +406,33 @@ class Router:
         gs = [g for g in (m['vgenres'].get(vid) or []) if g != 'Uncategorized']
         if gs:
             tag.setGenres(gs)
-        if info['director']:
-            tag.setDirectors(info['director'])
-        if info['cast']:
-            tag.setCast([xbmc.Actor(c, '', i) for i, c in enumerate(info['cast'])])
-        if info['runtime']:
-            tag.setDuration(int(info['runtime']) * 60)
+        # Director/cast/runtime come from catalogue data that has had string
+        # directors, dict cast rows and string runtimes. One bad field must not
+        # stop the whole listing, so each is normalised and guarded alone.
+        try:
+            dirs = info['director']
+            if isinstance(dirs, str):
+                dirs = [dirs]
+            dirs = [str(d) for d in (dirs or []) if d]
+            if dirs:
+                tag.setDirectors(dirs)
+        except Exception as e:
+            _log('add_video directors: %r' % (e,))
+        try:
+            names = []
+            for c in (info['cast'] or []):
+                n = c.get('name') if isinstance(c, dict) else c
+                if n:
+                    names.append(str(n))
+            if names:
+                tag.setCast([xbmc.Actor(c, '', i) for i, c in enumerate(names)])
+        except Exception as e:
+            _log('add_video cast: %r' % (e,))
+        try:
+            if info['runtime']:
+                tag.setDuration(int(float(info['runtime'])) * 60)
+        except Exception as e:
+            _log('add_video runtime: %r' % (e,))
         if info['editor']:
             tag.setStudios([info['editor']])
         first = True
@@ -433,12 +488,34 @@ class Router:
         pending = self._pending
         self._pending = []
         slots = shapes.pack([k for k, _ in pending], leading=1)
+        # pack() reorders land-first, then videos; pending stays in
+        # insertion order (e.g. My List: tools, continue videos, then
+        # stars with folders/videos interleaved). Pairing by position
+        # put videos into folder slots and vice versa. Pair by kind:
+        # each slot takes the next pending item of the same kind, in
+        # insertion order within that kind.
+        queues = {}
+        for kind, emit in pending:
+            queues.setdefault(kind, []).append(emit)
         real = 0
         for slot in slots:
             if slot == 'spacer':
                 self._emit_pad()
             else:
-                pending[real][1]()
+                q = queues.get(slot)
+                if q:
+                    q.pop(0)()
+                    real += 1
+                else:
+                    # No pending item of this kind left (should not happen
+                    # if pack() and pending agree). Emit a pad rather than
+                    # pairing the wrong item into this slot.
+                    self._emit_pad()
+        # Any pending item pack() produced no slot for must still be
+        # emitted, so nothing is silently dropped.
+        for q in queues.values():
+            for emit in q:
+                emit()
                 real += 1
         try:
             xbmcgui.Window(10000).setProperty('FEFC.Shown', str(real))
@@ -483,13 +560,19 @@ class Router:
 
     def update(self):
         import service
+        _close_busy()
         service.check_update(manual=True)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def armback(self):
         """Keymap runs this, then the normal Back. Marks the press so the plugin reload does not play a second cue.
-        When the sound skin is not set to always (wall video would mute it), play the wav here instead."""
+        When the sound skin is not set to always (wall video would mute it), play the wav here instead.
+
+        FEFC.BackAt is time.monotonic() seconds (see _play_back_sfx): both
+        call sites must use monotonic together, or the 0.4 s debounce
+        compares a wall-clock stamp with a monotonic reading.
+        """
         from .sfxpref import sfx_enabled
         from . import backcue
         home = xbmcgui.Window(10000)
@@ -499,9 +582,19 @@ class Router:
             last = float(home.getProperty('FEFC.BackAt') or '0')
         except ValueError:
             last = 0.0
-        play, skip = backcue.arm_back(on, None, time.time(), last, skin_always)
+        now = time.monotonic()
+        play, skip = backcue.arm_back(on, None, now, last, skin_always)
         if skip:
             home.setProperty('FEFC.BackSkip', '1')
+        if skin_always:
+            # The skin is about to play for this press (play is False).
+            # Stamp BackAt now so the debounce window starts now; without
+            # this a fast second Back saw a stale BackAt and Python played
+            # too (skin + Python double-fire). Do NOT stamp here when
+            # Python is about to play: _play_back_sfx() stamps after its
+            # own should_play() check, and stamping first would make that
+            # check see a 0 s gap and suppress the cue entirely.
+            home.setProperty('FEFC.BackAt', str(now))
         if play:
             _play_back_sfx()
         if self.handle >= 0:
@@ -739,18 +832,33 @@ class Router:
         """Download the wav once into the add-on's data folder and return its local path ('' if unavailable).
         playSFX must never be pointed at a remote/missing URL: on Android a failed open can crash Kodi."""
         import urllib.request
+        import uuid
+        if not url:
+            return ''
         d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/sfx/')
         os.makedirs(d, exist_ok=True)
         dst = os.path.join(d, os.path.basename(url.split('?')[0]))
+        if not os.path.basename(dst):
+            return ''
         if not os.path.exists(dst) or os.path.getsize(dst) < 1000:
             req = urllib.request.Request(url, headers={'User-Agent': 'FEFC-Kodi'})
             with urllib.request.urlopen(req, timeout=8) as r:
                 data = r.read(8 * 1024 * 1024)
             if len(data) < 1000 or data[:4] != b'RIFF':
                 return ''
-            with open(dst + '.tmp', 'wb') as f:
-                f.write(data)
-            os.replace(dst + '.tmp', dst)
+            tmp = '%s.%s.tmp' % (dst, uuid.uuid4().hex)
+            try:
+                with open(tmp, 'wb') as f:
+                    f.write(data)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(tmp, dst)
+            except Exception:
+                try:
+                    os.remove(tmp)
+                except OSError:
+                    pass
+                raise
         return dst
 
     def _maybe_sfx(self, rel):
@@ -764,31 +872,35 @@ class Router:
                 return
         except Exception:
             pass
-        off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
-        from .cues import opening_plan, ui_file
-        plan = opening_plan('folder', off, rel if isinstance(rel, list) else ([rel] if rel else []))
-        # Folder select is the "select" skin action when guisoundmode stuck at "always".
-        # When it did not, play the same click here so a folder tile is not silent.
-        if plan['click'] and xbmcgui.Window(10000).getProperty('FEFC.GuiSound') != 'always':
-            try:
-                import service as _svc
-                _svc._play_local_wav(ui_file('select', False))
-            except Exception:
-                pass
-        wav = catalog.play_choice(rel, off)
-        if not wav:
+        try:
+            off = xbmcgui.Window(10000).getProperty('FEFC.SoundOff') == '1'
+            from .cues import opening_plan, ui_file
+            plan = opening_plan('folder', off, rel if isinstance(rel, list) else ([rel] if rel else []))
+            # Folder select is the "select" skin action when guisoundmode stuck at "always".
+            # When it did not, play the same click here so a folder tile is not silent.
+            if plan['click'] and xbmcgui.Window(10000).getProperty('FEFC.GuiSound') != 'always':
+                try:
+                    import service as _svc
+                    _svc._play_local_wav(ui_file('select', False))
+                except Exception:
+                    pass
+            wav = catalog.play_choice(rel, off)
+            if not wav:
+                return
+            url = catalog.abs_url(_base(), wav)
+
+            def go():
+                try:
+                    path = self._sfx_local(url)
+                    if path:
+                        xbmc.playSFX(path, False)
+                except Exception as e:
+                    _log('sfx failed: %s' % e)
+
+            threading.Thread(target=go, daemon=True).start()
+        except Exception as e:
+            _log('sfx failed: %s' % e)
             return
-        url = catalog.abs_url(_base(), wav)
-
-        def go():
-            try:
-                path = self._sfx_local(url)
-                if path:
-                    xbmc.playSFX(path, False)
-            except Exception as e:
-                _log('sfx failed: %s' % e)
-
-        threading.Thread(target=go, daemon=True).start()
 
     def _genre_entries(self):
         """Genre names and artwork from the add-on file. Does not load the catalogue.
@@ -824,6 +936,10 @@ class Router:
             _go('activate', _url('plugin://plugin.video.fefc/', action='genres'))
             return
         dark = 'special://skin/media/fefc-ol-tile.png'
+        # Import BEFORE setting FEFC.Genres: if this raises, the property
+        # was never set, so the genre folders cannot be left hidden.
+        # The try/finally below then clears it for any later failure.
+        from .genreshow import open_genre_board
         # The directory is filled so a failed dialog still has the genre folders.
         # FEFC.Genres hides that list, the wordmark, and the item count while the board is up.
         home = xbmcgui.Window(10000)
@@ -835,7 +951,6 @@ class Router:
                 self.add_folder(label, img or dark, '', landscape=dark, action='genre', genre=key, props={'fefc_kind': 'folder'})
         self.end()
         _close_busy()
-        from .genreshow import open_genre_board
         try:
             picked = open_genre_board(entries)
         finally:
@@ -863,10 +978,19 @@ class Router:
             self.add_folder('Try again', dark, '', landscape=dark, action='genre', genre=g, props={'fefc_kind': 'action'})
             self.end()
             return
+        fid = 'genre:' + g
+        key = _sort_get(fid)
         nk = lambda i: catalog.natkey(m['items'][i][0])
         folders = sorted(catalog.dedupe(m, m['genre_folders'].get(g, [])), key=nk)
         vids = sorted(catalog.dedupe(m, m['genre_videos'].get(g, [])), key=nk)
         rows = folders + vids
+        if key != 'az':
+            # Same keys and helper as folder(): az/za/added/files.
+            # _sort_get() already validates the key, defaulting to 'az'.
+            rows = _sorted_kids(m, rows, key)
+            # Keep landscape cards first: pack() pairs slots land-first,
+            # so a sort must not interleave a video ahead of a folder.
+            rows = [i for i in rows if m['items'][i][2]] + [i for i in rows if not m['items'][i][2]]
         if not rows and page == 0:
             self.add_folder('Nothing in the main collection', dark, 'To Be Catalogued is not listed here.', landscape=dark, action='genres', props={'fefc_kind': 'action'})
             self.end()
@@ -1004,7 +1128,7 @@ class Router:
         except Exception as e:
             _log('search catalogue: %s' % e)
             xbmcgui.Dialog().notification('FEFC', searchflow.result_message(q, 0, True), xbmcgui.NOTIFICATION_ERROR, 4000)
-            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            self.end(cache=False)
             return
         res = catalog.search(m, q)
         nf = nv = 0
@@ -1040,95 +1164,124 @@ class Router:
         """A saved id -> an item in the model (the id itself, else a shortcut that points at it)."""
         if sid in m['items']:
             return sid
-        for i, v in m['items'].items():
-            if v[3] == sid:
-                return i
-        return None
+        return _target_index(m).get(sid)
 
     def mylist(self):
         ml = self.mydb()
-        from . import pagepack
-        by = pagepack.id_index() if pagepack.available() else {}
-        wanted = list(ml.continue_ids()) + list(ml.ids())
-        if by and all(sid in by for sid in wanted):
-            self._mylist_from_pack(ml, by)
-            return
-        m = _model()
+        # Chunk 2, Item 11 ordering: sync BEFORE the pack-coverage
+        # decision, so a star that arrives via sync is in `wanted`.
         if ml.linked and not self.params.get('nosync'):
             err = ml.sync(timeout=4)
             if err:
                 _log('mylist sync: %s' % err)
+        from . import pagepack
+        by = pagepack.id_index() if pagepack.available() else {}
+        wanted = list(ml.continue_ids()) + list(ml.ids())
+        if by and all(sid in by for sid in wanted):
+            self._mylist_from_pack(ml, by, synced=True)
+            return
+        m = _model()
+        try:
+            page = max(0, int(self.params.get('page') or 0))
+        except (TypeError, ValueError):
+            page = 0
+        page_size = catalog.RECENT_PAGE
         who = ml.db.get('user') or 'linked'
         dark = 'special://skin/media/fefc-ol-tile.png'
         link_plot = 'Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.'
         if ml.linked:
             link_plot += ' Signed in as %s.' % who
-        self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
-        nf = nv = 0
-        shown = set()
         sortk = self.params.get('sort') or _pref('_mylist', 'date')
         if sortk not in ('date', 'az', 'za'):
             sortk = 'date'
         sort_name = {'date': 'Date added', 'az': 'Name A-Z', 'za': 'Name Z-A'}[sortk]
-        self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
-        self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
-        self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
-        try:
-            ndl = _dl().count()
-        except Exception:
-            ndl = 0
-        self.add_folder('Downloads' if not ndl else 'Downloads · %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
+        if not page:
+            # Tool folders on page 0 only — they must not repeat on
+            # every page, and they must not consume the page budget.
+            self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
+            self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
+            self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
+            self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
+            try:
+                ndl = _dl().count()
+            except Exception:
+                ndl = 0
+            self.add_folder('Downloads' if not ndl else 'Downloads · %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
+        # One ordered, deduplicated list of resolved item ids, then page it.
+        # Building a ListItem for every starred id never returns on a
+        # Fire Stick; only this page's items are built.
+        ordered = []
+        seen = set()
         ids = ml.ids()
         if sortk in ('az', 'za'):
             ids = sorted(ids, key=lambda x: catalog.natkey(m['items'][self._resolve(m, x) or x][0]) if self._resolve(m, x) else ())
             if sortk == 'za':
                 ids.reverse()
+            for sid in ids:
+                i = self._resolve(m, sid)
+                if i and i not in seen:
+                    seen.add(i)
+                    ordered.append(i)
         else:
             for sid in ml.continue_ids():
                 i = self._resolve(m, sid)
-                if i and not m['items'][i][2] and i not in shown:
-                    self.add_video(m, i)
-                    nv += 1
-                    shown.add(i)
-        for sid in ids:
-            i = self._resolve(m, sid)
-            if not i or i in shown:
-                continue
-            shown.add(i)
+                if i and not m['items'][i][2] and i not in seen:
+                    seen.add(i)
+                    ordered.append(i)
+            for sid in ids:
+                i = self._resolve(m, sid)
+                if not i or i in seen:
+                    continue
+                seen.add(i)
+                ordered.append(i)
+        chunk = ordered[page * page_size:(page + 1) * page_size]
+        nf = nv = 0
+        for i in chunk:
             if m['items'][i][2]:
                 self.add_dir_item(m, i)
                 nf += 1
             else:
                 self.add_video(m, i)
                 nv += 1
-        if not shown:
+        if (page + 1) * page_size < len(ordered):
+            self.add_folder('Next page (%d more) >>' % (len(ordered) - (page + 1) * page_size), '', action='mylist', page=page + 1, sort=sortk)
+        if not ordered and page == 0:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
         self.end(cache=False)
 
-    def _mylist_from_pack(self, ml, by):
-        """My List from the shipped index. Skips the full catalogue build."""
-        if ml.linked and not self.params.get('nosync'):
+    def _mylist_from_pack(self, ml, by, synced=False):
+        """My List from the shipped index. Skips the full catalogue build. Paged like the live path."""
+        if not synced and ml.linked and not self.params.get('nosync'):
             err = ml.sync(timeout=4)
             if err:
                 _log('mylist sync: %s' % err)
+        try:
+            page = max(0, int(self.params.get('page') or 0))
+        except (TypeError, ValueError):
+            page = 0
+        page_size = catalog.RECENT_PAGE
         dark = 'special://skin/media/fefc-ol-tile.png'
         who = ml.db.get('user') or 'linked'
         link_plot = 'Share My List with the FEFC web app and Fire TV app: sign in with Google through your phone, or enter a 6-digit sync code.'
         if ml.linked:
             link_plot += ' Signed in as %s.' % who
-        self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
         sortk = self.params.get('sort') or _pref('_mylist', 'date')
         if sortk not in ('date', 'az', 'za'):
             sortk = 'date'
         sort_name = {'date': 'Date added', 'az': 'Name A-Z', 'za': 'Name Z-A'}[sortk]
-        self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
-        self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
-        self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
-        try:
-            ndl = _dl().count()
-        except Exception:
-            ndl = 0
-        self.add_folder('Downloads' if not ndl else 'Downloads · %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
+        if not page:
+            # Tool folders on page 0 only: they must not repeat on every page.
+            self.add_folder('Sync My List' if ml.linked else 'Link My List', dark, link_plot, landscape=dark, action='mylist_sync')
+            self.add_folder('Sort: %s' % sort_name, dark, 'Date added, Name A-Z, or Name Z-A.', landscape=dark, action='mylist_sortswitch', cur=sortk)
+            self.add_folder('Shuffle Play', dark, 'Play a random mix of starred videos.', landscape=dark, action='mylist_shuffle')
+            self.add_folder('Recently Opened', dark, 'The last edits you opened or played (synced with the FEFC web app).', landscape=dark, action='history')
+            try:
+                ndl = _dl().count()
+            except Exception:
+                ndl = 0
+            self.add_folder('Downloads' if not ndl else 'Downloads \u00b7 %d' % ndl, dark, 'Videos downloaded to this device. Play offline, no streaming.', landscape=dark, action='downloads')
+        # One ordered, deduplicated list of pack rows, then page it.
+        ordered = []
         shown = set()
         ids = list(ml.ids())
         if sortk in ('az', 'za'):
@@ -1139,15 +1292,19 @@ class Router:
             for sid in ml.continue_ids():
                 row = by.get(sid)
                 if row and not row[2] and sid not in shown:
-                    self._add_pack_row(row)
                     shown.add(sid)
+                    ordered.append(row)
         for sid in ids:
             row = by.get(sid)
             if not row or sid in shown:
                 continue
             shown.add(sid)
+            ordered.append(row)
+        for row in ordered[page * page_size:(page + 1) * page_size]:
             self._add_pack_row(row)
-        if not shown:
+        if (page + 1) * page_size < len(ordered):
+            self.add_folder('Next page (%d more) >>' % (len(ordered) - (page + 1) * page_size), '', action='mylist', page=page + 1, sort=sortk)
+        if not ordered and page == 0:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
         self.end(cache=False)
 
@@ -1223,17 +1380,44 @@ class Router:
 
     def shuffle(self):
         import random
-        m = _model()
-        if self.params.get('genre'):
-            vids = catalog.dedupe(m, m['genre_videos'].get(self.params['genre'], []))
+        try:
+            m = _model()
+        except Exception as e:
+            _log('shuffle catalogue: %s' % e)
+            xbmcgui.Dialog().notification('FEFC', 'Could not load the collection. Check the connection and try again.', xbmcgui.NOTIFICATION_ERROR, 3000)
+            xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            return
+        genre = self.params.get('genre') or ''
+        q = (self.params.get('q') or '').strip()
+        fid = self.params.get('id') or ''
+        if genre:
+            vids = catalog.dedupe(m, m['genre_videos'].get(genre, []))
+        elif q:
+            # Search pages pass q= only, with no id. Shuffle the search
+            # results (catalog.search, the same fallback router.search()
+            # uses), videos only — folders cannot be queued to play.
+            try:
+                vids = [i for i in catalog.search(m, q)
+                        if i in m['items'] and not m['items'][i][2]]
+            except Exception as e:
+                _log('shuffle search: %s' % e)
+                vids = []
+        elif fid:
+            vids = catalog.dedupe(m, _descendant_videos(m, fid))
         else:
-            vids = catalog.dedupe(m, _descendant_videos(m, self.params['id']))
+            vids = []
         if not vids:
             xbmcgui.Dialog().notification('FEFC', 'Nothing to shuffle here.', xbmcgui.NOTIFICATION_INFO, 3000)
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
             return
         pick = random.sample(vids, min(25, len(vids)))
-        entries = [(_url('plugin://plugin.video.fefc/', action='play', id=v), catalog.display_title(m['items'][v][0])) for v in pick]
+        entries = []
+        for v in pick:
+            title = catalog.display_title(m['items'][v][0])
+            # n=title so play() does not reload the full catalogue for
+            # the name on every queued track; the vid rides along as
+            # the third entry element and the fefc_id property.
+            entries.append((_url('plugin://plugin.video.fefc/', action='play', id=v, n=title), title, v))
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
         _play_queue(entries, 'Shuffle Play: %d edits queued' % len(pick))
 
@@ -1271,9 +1455,9 @@ class Router:
         txt = _html.unescape(re.sub(r'<[^>]+>', '', raw)).replace('\xa0', ' ')
         return re.sub(r'\n{3,}', '\n\n', re.sub(r'[ \t]+', ' ', txt)).strip()
 
-    def downloads(self):
+    def manual_downloads(self):
         """Settings entry: the same manual links as the update popup."""
-        from .updateflow import manual_downloads
+        from .updateflow import manual_downloads as _manual_downloads
         from .updatepopup import ManualDownloads
         info = {}
         try:
@@ -1285,7 +1469,7 @@ class Router:
                 info = json.loads(r.read().decode('utf-8'))
         except Exception as e:
             _log('manual downloads: %s' % e)
-        ManualDownloads(manual_downloads(info)).doModal()
+        ManualDownloads(_manual_downloads(info)).doModal()
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
@@ -1300,6 +1484,15 @@ class Router:
     def notify_perm(self):
         import service
         from .notifyplan import MESSAGES
+        if not service.is_phone_pkg():
+            # Fire TV (org.xbmc.kodi): FefcNotifyActivity does not exist
+            # in this package, and notifications use the in-app popup.
+            # Do not fire StartAndroidActivity and do not touch the
+            # permission-result file.
+            xbmcgui.Dialog().ok('Notifications',
+                                'On this device, FEFC notifications use the in-app popup. '
+                                'There is no Android permission to allow here.')
+            return
         pkg = service.my_package()
         d = service._android_ext_files_dir() or ''
         path = os.path.join(d, 'fefc-notify-perm.txt') if d else ''
@@ -1400,14 +1593,21 @@ class Router:
     def _about_news_text(self):
         import json
         import urllib.request
-        req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json?t=%d' % time.time(), headers={'User-Agent': 'FEFC-Kodi'})
-        j = json.loads(urllib.request.urlopen(req, timeout=15).read().decode('utf-8'))
-        out = []
-        for v in j.get('changelog') or []:
-            out.append("What's new in %s  (%s)" % (v.get('version'), v.get('date', '')))
-            out.extend(u'\u2022 ' + str(n) for n in v.get('notes') or [])
-            out.append('')
-        return '\n'.join(out).strip() or 'No release notes published yet.'
+        try:
+            req = urllib.request.Request('https://fefc-collection.pages.dev/kodi-app/version.json?t=%d' % time.time(), headers={'User-Agent': 'FEFC-Kodi'})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                j = json.loads(r.read().decode('utf-8'))
+            out = []
+            for v in j.get('changelog') or []:
+                if not isinstance(v, dict):
+                    continue
+                out.append("What's new in %s  (%s)" % (v.get('version'), v.get('date', '')))
+                out.extend(u'\u2022 ' + str(n) for n in v.get('notes') or [])
+                out.append('')
+            return '\n'.join(out).strip() or 'No release notes published yet.'
+        except Exception as e:
+            _log('about news: %s' % e)
+            return 'Could not load the release notes right now.'
 
     def feedback(self):
         """Feedback form QR. The picture encodes the full form URL. The line under it is the short link."""
@@ -1421,21 +1621,38 @@ class Router:
         LinkWindow(lines, qr_path, open_url=shown).doModal()
 
     def mylist_toggle(self):
-        m = _model()
-        vid = self.params['id']
+        vid = self.params.get('id') or ''
+        if not vid:
+            xbmcgui.Dialog().notification('FEFC', 'Nothing to add to My List.', xbmcgui.NOTIFICATION_INFO, 3000)
+            return
         ml = self.mydb()
-        v = m['items'].get(vid)
-        on = ml.toggle(vid, v[0] if v else '')
-        msg = ('Added to My List' if on else 'Removed from My List') + (': ' + catalog.display_title(v[0]) if v else '')
+        # Name for the notification only. The pack index has it without
+        # loading the full catalogue, so toggling works offline.
+        name = ''
+        try:
+            from . import pagepack
+            by = pagepack.id_index() if pagepack.available() else {}
+            row = by.get(vid) if isinstance(by, dict) else None
+            if row and len(row) > 1:
+                name = row[1] or ''
+        except Exception:
+            name = ''
+        on = ml.toggle(vid, name)
+        msg = ('Added to My List' if on else 'Removed from My List') + (': ' + catalog.display_title(name) if name else '')
         xbmcgui.Dialog().notification('FEFC', msg, xbmcgui.NOTIFICATION_INFO, 3000)
         hw = xbmcgui.Window(10000)
         hw.setProperty('FEFC.MyId', vid)
         hw.setProperty('FEFC.MyLabel', 'Remove from My List' if on else 'Add to My List')
+        # Refresh first: the toggle is already saved locally, so the
+        # refresh shows it at once. Sync after it — sync only uploads.
+        xbmc.executebuiltin('Container.Refresh')
         if ml.linked:
-            err = ml.sync()
+            try:
+                err = ml.sync()
+            except Exception as e:
+                err = e
             if err:
                 _log('mylist sync: %s' % err)
-        xbmc.executebuiltin('Container.Refresh')
 
     def mylist_sync(self):
         # Folder item: open the dialog, then close the directory handle so Back does not re-run it.
@@ -1542,6 +1759,7 @@ class Router:
                 status = 'pending'
             if status in ('ok', 'expired', 'denied'):
                 break
+        timed_out = not win.closed
         win.close()
         del win
         if status == 'ok':
@@ -1549,26 +1767,55 @@ class Router:
             xbmcgui.Dialog().notification('My List', err or 'Linked and synced', xbmcgui.NOTIFICATION_ERROR if err else xbmcgui.NOTIFICATION_INFO, 4000)
         elif status in ('expired', 'denied'):
             xbmcgui.Dialog().notification('My List', 'Linking %s.' % status, xbmcgui.NOTIFICATION_ERROR, 4000)
+        elif status == 'pending' and timed_out and not mon.abortRequested():
+            xbmcgui.Dialog().notification('My List', 'Linking timed out. Try again.', xbmcgui.NOTIFICATION_ERROR, 4000)
 
     # -- Read Me / Support Us (same content as the web app) -------------------------------------------------
     def castrows(self):
         """0.3.22: whole cast for the details screen, 3 names per row (no auto-scroll)."""
-        m = _model(); vid = self.params.get('id', '')
+        try:
+            m = _model()
+        except Exception as e:
+            _log('castrows catalogue: %s' % e)
+            if self.handle >= 0:
+                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            return
+        vid = self.params.get('id', '')
         cast = []
         try:
             if vid in m['items']:
                 cast = list(catalog.video_info(m, vid).get('cast') or [])
         except Exception:
             cast = []
-        for i in range(0, len(cast), 3):
-            r = cast[i:i + 3] + ['', '']
+        # Normalise every entry to a string first: a dict cast entry
+        # (e.g. {'name': 'Daniel Radcliffe'}) becomes its name, so
+        # ListItem() never receives a dict and raises TypeError.
+        names = []
+        for entry in cast:
+            if isinstance(entry, dict):
+                names.append(str(entry.get('name') or ''))
+            elif isinstance(entry, str):
+                names.append(entry)
+            elif entry is None:
+                names.append('')
+            else:
+                names.append(str(entry))
+        for i in range(0, len(names), 3):
+            r = names[i:i + 3] + ['', '']
             li = xbmcgui.ListItem(r[0], r[1], offscreen=True)
             li.setProperty('c3', r[2])
             xbmcplugin.addDirectoryItem(self.handle, 'plugin://plugin.video.fefc/?action=noop', li, False)
-        xbmcplugin.endOfDirectory(self.handle, cacheToDisc=False)
+        if self.handle >= 0:
+            xbmcplugin.endOfDirectory(self.handle, cacheToDisc=False)
+        else:
+            _log('castrows: no handle, skipping endOfDirectory')
 
     def noop(self):
-        pass
+        if self.handle >= 0:
+            try:
+                xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+            except Exception:
+                pass
 
     def gridpad(self):
         """Selecting a cell reserved under a poster does nothing."""
@@ -1577,16 +1824,21 @@ class Router:
 
     def gdoc(self):
         """0.3.22: read-only view of a Google Doc from Fan Edit Collections (plain-text export; Drive is never changed)."""
+        import urllib.parse
         import urllib.request
-        did = self.params.get('id', '')
+        did = self.params.get('id', '') or ''
         title = self.params.get('title') or 'Document'
-        try:
-            req = urllib.request.Request('https://docs.google.com/document/d/%s/export?format=txt' % did, headers={'User-Agent': 'FEFC-Kodi'})
-            txt = urllib.request.urlopen(req, timeout=20).read().decode('utf-8-sig', 'replace').strip()
-            if txt.lstrip().startswith('<'):
-                raise ValueError('not shared publicly')
-        except Exception as e:
-            txt = 'Could not load this document right now (%s). It is also in the FEFC web app.' % e
+        if not did:
+            txt = 'Could not load this document right now (no document id). It is also in the FEFC web app.'
+        else:
+            try:
+                req = urllib.request.Request('https://docs.google.com/document/d/%s/export?format=txt' % urllib.parse.quote(did, safe=''), headers={'User-Agent': 'FEFC-Kodi'})
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    txt = r.read().decode('utf-8-sig', 'replace').strip()
+                if txt.lstrip().startswith('<'):
+                    raise ValueError('not shared publicly')
+            except Exception as e:
+                txt = 'Could not load this document right now (%s). It is also in the FEFC web app.' % e
         xbmcgui.Dialog().textviewer(title, txt)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
@@ -1615,7 +1867,26 @@ class Router:
             txt = _html.unescape(re.sub(r'<[^>]+>', '', raw)).replace('\xa0', ' ')
             txt = re.sub(r'\n{3,}', '\n\n', txt).strip()
             txt = re.sub(r'https?://\S+', '', txt)
-            txt = re.sub(r'over 5,000!?', 'over 6,000!', txt)
+            # Live count from the catalogue model, the same source home_counts()
+            # uses for the Main tile: web_counts['Main'] is (folders, files).
+            count_txt = ''
+            try:
+                m = _model()
+                web_counts = m.get('web_counts') or {}
+                if web_counts:
+                    main_wc = web_counts.get('Main')
+                    if isinstance(main_wc, (list, tuple)) and len(main_wc) >= 2:
+                        n = int(main_wc[1])
+                    else:
+                        n = 0
+                else:
+                    n = len(m.get('items') or {})
+            except Exception:
+                n = 0
+            if n:
+                rounded = (n // 500) * 500
+                count_txt = 'over %s' % format(rounded, ',')
+                txt = re.sub(r'over [\d,]+!?', count_txt + '!', txt)
         except Exception as e:
             txt = 'Could not load the Read Me right now (%s). It is also in the FEFC web app.' % e
         xbmcgui.Dialog().textviewer('Read Me: The Fan Edit Fan Club Collection', txt)
@@ -1692,13 +1963,26 @@ class Router:
         if not rec or not rec.get('url'):
             xbmcgui.Dialog().ok('FEFC', 'No link is stored for this item.')
         elif rec.get('kodi_play') and rec.get('play_url'):
-            self.play_external()
+            self.play_external(rec)
             return
         else:
             label = rec.get('open_label') or 'Open link'
-            xbmcgui.Dialog().ok(label, providers.status_line(rec) + '\n\nIn-app Play is off. Opening the provider page.')
-            _log('open provider %s' % (rec.get('name') or '')[:80])
-            xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,"%s")' % rec['url'].replace('"', '%22'))
+            url = rec.get('url') or ''
+            low = url.lower()
+            if not (low.startswith('http://') or low.startswith('https://')):
+                xbmcgui.Dialog().ok(label, 'This link cannot be opened on this device:\n%s' % url)
+            else:
+                xbmcgui.Dialog().ok(label, providers.status_line(rec) + '\n\nIn-app Play is off. Opening the provider page.')
+                _log('open provider %s' % (rec.get('name') or '')[:80])
+                if xbmc.getCondVisibility('System.Platform.Android'):
+                    safe = url.replace('"', '%22').replace(',', '%2C').replace(')', '%29')
+                    xbmc.executebuiltin('StartAndroidActivity(,android.intent.action.VIEW,,"%s")' % safe)
+                else:
+                    try:
+                        from . import shorturl
+                        shorturl.open_browser(xbmc.executebuiltin, url)
+                    except Exception:
+                        xbmcgui.Dialog().ok(label, url)
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
@@ -1720,13 +2004,14 @@ class Router:
         url = _url(self.url, action='play_external', id=rec['id'])
         self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
 
-    def play_external(self):
+    def play_external(self, rec=None):
         from . import providers
-        rec = None
-        try:
-            rec = providers.find(self._pt(), self.params.get('id') or '')
-        except Exception as e:
-            _log('external play: %s' % type(e).__name__)
+        if rec is None:
+            rec = None
+            try:
+                rec = providers.find(self._pt(), self.params.get('id') or '')
+            except Exception as e:
+                _log('external play: %s' % type(e).__name__)
         url = (rec or {}).get('play_url') or ''
         if not rec or not rec.get('kodi_play') or not url:
             xbmcgui.Dialog().ok('FEFC', providers.status_line(rec or {}))
@@ -1742,19 +2027,32 @@ class Router:
         xbmcplugin.setResolvedUrl(self.handle, True, li)
 
     def play(self):
-        vid = self.params['id']
-        name = self.params.get('n') or ''
-        if not name:
-            m = _model()
-            v = m['items'].get(vid)
-            name = v[0] if v else 'video.mp4'
-        url = catalog.stream_url(_base(), vid, name)
-        li = xbmcgui.ListItem(path=url)
-        low = name.lower()
-        mime = 'video/x-matroska' if low.endswith('.mkv') else 'video/mp4'
-        li.setMimeType(mime)
-        li.setContentLookup(False)
-        xbmcplugin.setResolvedUrl(self.handle, True, li)
+        try:
+            vid = self.params['id']
+            name = self.params.get('n') or ''
+            if not name:
+                m = _model()
+                v = m['items'].get(vid)
+                name = v[0] if v else 'video.mp4'
+            url = catalog.stream_url(_base(), vid, name)
+            if not url:
+                raise ValueError('no stream url for %s' % (vid,))
+            li = xbmcgui.ListItem(path=url)
+            low = name.lower()
+            mime = 'video/x-matroska' if low.endswith('.mkv') else 'video/mp4'
+            li.setMimeType(mime)
+            li.setContentLookup(False)
+            xbmcplugin.setResolvedUrl(self.handle, True, li)
+        except Exception as e:
+            _log('error in play: %r' % (e,))
+            try:
+                xbmcgui.Dialog().notification('FEFC', 'Could not play this video.', xbmcgui.NOTIFICATION_ERROR, 5000)
+            except Exception:
+                pass
+            try:
+                xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem())
+            except Exception:
+                pass
 
     # -- external players (same as the web / Fire TV app details page) -----------------------------------
     def _target(self, vid):
@@ -1792,59 +2090,106 @@ class Router:
         """Download the video to the device, with a progress bar. Resumable; re-runs pick up where they stopped."""
         import urllib.request
         vid = self.params['id']
-        m = _model()
-        v = m['items'].get(vid)
-        name = v[0] if v else 'video.mp4'
-        dl = _dl()
-        if dl.has(vid):
-            xbmcgui.Dialog().notification('FEFC', 'Already downloaded — find it in My List > Downloads.', xbmcgui.NOTIFICATION_INFO, 4000)
-            return
-        tid, _nm = self._target(vid)
-        url = catalog.stream_url(_base(), tid, name)
-        dst = dl.file_path(vid, name)
-        part = dst + '.part'
-        prog = xbmcgui.DialogProgressBG()
-        prog.create('FEFC download', 'Downloading %s...' % catalog.display_title(name))
+        # Double-tap guard: a second download() for the same vid shows
+        # 'already downloading' and returns. The vid is removed in a
+        # finally below, so a failed/paused download can be retried.
+        with _DOWNLOAD_LOCK:
+            if vid in _DOWNLOADING:
+                xbmcgui.Dialog().notification('FEFC', 'Already downloading — check the progress bar.', xbmcgui.NOTIFICATION_INFO, 4000)
+                return
+            _DOWNLOADING.add(vid)
         try:
-            have = os.path.getsize(part) if os.path.exists(part) else 0
-            hdr = {'User-Agent': 'FEFC-Kodi'}
-            if have:
-                hdr['Range'] = 'bytes=%d-' % have
-            with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
-                if have and r.status != 206:
-                    have = 0
-                total = have + int(r.headers.get('Content-Length') or 0)
-                with open(part, 'ab' if have else 'wb') as f:
-                    done = have
-                    while True:
-                        if prog.isFinished():
-                            prog.close()
-                            xbmcgui.Dialog().notification('FEFC', 'Download paused — pick Download again to resume.', xbmcgui.NOTIFICATION_INFO, 4000)
-                            return
-                        chunk = r.read(256 * 1024)
-                        if not chunk:
-                            break
-                        f.write(chunk)
-                        done += len(chunk)
-                        # DialogProgressBG is the same top-right background bar the software updater uses:
-                        # it stays visible on every page, hides while a video plays fullscreen, and comes
-                        # back when you hit Back. Keep it updating even when the total size is unknown.
-                        # 0.4.4: show device storage left alongside the progress.
-                        free = dl.free_bytes()
-                        free_txt = ('  ·  %s free' % downloads_mod.fmt_size(free)) if free is not None else ''
-                        if total:
-                            prog.update(min(99, int(done * 100 / total)), 'FEFC download',
-                                        '%s: %d / %d MB%s' % (catalog.display_title(name), done >> 20, total >> 20, free_txt))
-                        else:
-                            prog.update(0, 'FEFC download', '%s: %d MB downloaded%s' % (catalog.display_title(name), done >> 20, free_txt))
-            os.replace(part, dst)
-            dl.add(vid, name, dst, os.path.getsize(dst))
-            prog.close()
-            xbmcgui.Dialog().notification('FEFC', 'Download finished: ' + catalog.display_title(name), xbmcgui.NOTIFICATION_INFO, 5000)
-        except Exception as e:
-            prog.close()
-            _log('download failed: %s' % e)
-            xbmcgui.Dialog().ok('FEFC download', 'The download did not finish. Check the connection and pick Download again; it will continue where it stopped.')
+            m = _model()
+            v = m['items'].get(vid)
+            name = v[0] if v else 'video.mp4'
+            dl = _dl()
+            if dl.has(vid):
+                xbmcgui.Dialog().notification('FEFC', 'Already downloaded — find it in My List > Downloads.', xbmcgui.NOTIFICATION_INFO, 4000)
+                return
+            tid, _nm = self._target(vid)
+            url = catalog.stream_url(_base(), tid, name)
+            dst = dl.file_path(vid, name)
+            part = dst + '.part'
+            mon = xbmc.Monitor()
+            prog = xbmcgui.DialogProgressBG()
+            prog.create('FEFC download', 'Downloading %s...' % catalog.display_title(name))
+            try:
+                have = os.path.getsize(part) if os.path.exists(part) else 0
+                hdr = {'User-Agent': 'FEFC-Kodi'}
+                if have:
+                    hdr['Range'] = 'bytes=%d-' % have
+                with urllib.request.urlopen(urllib.request.Request(url, headers=hdr), timeout=30) as r:
+                    if have and r.status != 206:
+                        have = 0
+                    try:
+                        total = have + int(r.headers.get('Content-Length') or 0)
+                    except (TypeError, ValueError):
+                        total = have
+                    # Free-space check before writing anything: refuse
+                    # rather than filling the device.
+                    free = dl.free_bytes()
+                    if total and free is not None and (total - have) > free:
+                        prog.close()
+                        xbmcgui.Dialog().ok('FEFC download', 'Not enough space on this device for this download (%s needed, %s free). Free some space and try again.' % (downloads_mod.fmt_size(total - have), downloads_mod.fmt_size(free)))
+                        return
+                    free_txt = ('  ·  %s free' % downloads_mod.fmt_size(free)) if free is not None else ''
+                    last_update = 0.0
+                    last_free_check = time.time()
+                    last_free_done = have
+                    with open(part, 'ab' if have else 'wb') as f:
+                        done = have
+                        while True:
+                            if mon.abortRequested():
+                                # Shutting down: stop cleanly, leave the
+                                # .part for resume. No dialog, no install.
+                                prog.close()
+                                _log('download aborted: %s' % vid)
+                                return
+                            if prog.isFinished():
+                                prog.close()
+                                xbmcgui.Dialog().notification('FEFC', 'Download paused — pick Download again to resume.', xbmcgui.NOTIFICATION_INFO, 4000)
+                                return
+                            chunk = r.read(256 * 1024)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            done += len(chunk)
+                            # Throttle the progress bar and the statvfs
+                            # call: at most ~2x/second, or every 4 MB.
+                            now = time.time()
+                            if now - last_update >= 0.5 or (done - last_free_done) >= 4 * 1024 * 1024:
+                                last_update = now
+                                # Re-check free space periodically (~2 s
+                                # or 4 MB): stop before filling the disk.
+                                if now - last_free_check >= 2 or (done - last_free_done) >= 4 * 1024 * 1024:
+                                    last_free_check = now
+                                    last_free_done = done
+                                    free = dl.free_bytes()
+                                    free_txt = ('  ·  %s free' % downloads_mod.fmt_size(free)) if free is not None else ''
+                                    if total and free is not None and (total - done) > free:
+                                        prog.close()
+                                        xbmcgui.Dialog().ok('FEFC download', 'Not enough space on this device to finish this download. Free some space and pick Download again; it will continue where it stopped.')
+                                        return
+                                # DialogProgressBG is the same top-right background bar the software updater uses:
+                                # it stays visible on every page, hides while a video plays fullscreen, and comes
+                                # back when you hit Back. Keep it updating even when the total size is unknown.
+                                # 0.4.4: show device storage left alongside the progress.
+                                if total:
+                                    prog.update(min(99, int(done * 100 / total)), 'FEFC download',
+                                                '%s: %d / %d MB%s' % (catalog.display_title(name), done >> 20, total >> 20, free_txt))
+                                else:
+                                    prog.update(0, 'FEFC download', '%s: %d MB downloaded%s' % (catalog.display_title(name), done >> 20, free_txt))
+                os.replace(part, dst)
+                dl.add(vid, name, dst, os.path.getsize(dst))
+                prog.close()
+                xbmcgui.Dialog().notification('FEFC', 'Download finished: ' + catalog.display_title(name), xbmcgui.NOTIFICATION_INFO, 5000)
+            except Exception as e:
+                prog.close()
+                _log('download failed: %s' % e)
+                xbmcgui.Dialog().ok('FEFC download', 'The download did not finish. Check the connection and pick Download again; it will continue where it stopped.')
+        finally:
+            with _DOWNLOAD_LOCK:
+                _DOWNLOADING.discard(vid)
 
     def downloads(self):
         """Downloads section: every local copy, newest first. Plays the file on the device (no streaming).
@@ -1866,26 +2211,36 @@ class Router:
             xbmcgui.Dialog().notification('Downloads', 'Nothing downloaded yet. Open a video and pick Download.', xbmcgui.NOTIFICATION_INFO, 5000)
             self.end()
             return
+        # One model load for the whole listing, not one per row. A model
+        # failure must not fail local downloads: fall back to the
+        # placeholder poster instead.
+        try:
+            m = _model()
+        except Exception:
+            m = None
         for r in rows:
+            rid = (r or {}).get('id') or ''
+            if not rid:
+                _log('downloads: skipping row without id: %r' % (r,))
+                continue
             li = xbmcgui.ListItem(catalog.display_title(r.get('name') or 'video.mp4'), offscreen=True)
             li.setProperty('IsPlayable', 'true')
             li.setProperty('fefc_download', 'true')
             poster = 'special://skin/media/fefc-video-poster.png'
-            try:
-                m = _model()
-                if r.get('id') in m['items']:
-                    poster = catalog.poster_for(m, _base(), r['id']) or poster
-            except Exception:
-                pass
+            if m is not None and rid in m['items']:
+                try:
+                    poster = catalog.poster_for(m, _base(), rid) or poster
+                except Exception:
+                    pass
             from . import shapes
             shapes.stamp(li, 'video', poster)
             sz = r.get('size') or 0
             if sz:
                 li.getVideoInfoTag().setPlot('Downloaded to this device  ·  %.2f GB' % (sz / 1073741824.0))
-            li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=r['id']))])
-            url = _url(self.url, action='play_download', id=r['id'])
+            li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=rid))])
+            url = _url(self.url, action='play_download', id=rid)
             self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
-        self.end()
+        self.end(cache=False)
 
     def download_storage(self):
         """Storage details dialog (from the Downloads section's storage row)."""
@@ -1909,16 +2264,31 @@ class Router:
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def play_download(self):
-        vid = self.params['id']
-        r = _dl().get(vid)
-        if not r or not r.get('path') or not os.path.exists(r['path']):
-            xbmcgui.Dialog().notification('FEFC', 'That download is gone — pick Download again to re-download it.', xbmcgui.NOTIFICATION_INFO, 4000)
-            return
-        li = xbmcgui.ListItem(path=r['path'])
-        low = (r.get('name') or '').lower()
-        li.setMimeType('video/x-matroska' if low.endswith('.mkv') else 'video/mp4')
-        li.setContentLookup(False)
-        xbmcplugin.setResolvedUrl(self.handle, True, li)
+        try:
+            vid = self.params['id']
+            r = _dl().get(vid)
+            if not r or not r.get('path') or not os.path.exists(r['path']):
+                xbmcgui.Dialog().notification('FEFC', 'That download is gone — pick Download again to re-download it.', xbmcgui.NOTIFICATION_INFO, 4000)
+                try:
+                    xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem())
+                except Exception:
+                    pass
+                return
+            li = xbmcgui.ListItem(path=r['path'])
+            low = (r.get('name') or '').lower()
+            li.setMimeType('video/x-matroska' if low.endswith('.mkv') else 'video/mp4')
+            li.setContentLookup(False)
+            xbmcplugin.setResolvedUrl(self.handle, True, li)
+        except Exception as e:
+            _log('error in play_download: %r' % (e,))
+            try:
+                xbmcgui.Dialog().notification('FEFC', 'Could not play this download.', xbmcgui.NOTIFICATION_ERROR, 5000)
+            except Exception:
+                pass
+            try:
+                xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem())
+            except Exception:
+                pass
 
     def download_delete(self):
         vid = self.params['id']
@@ -1938,32 +2308,39 @@ class Router:
 
 
 def _png_rgb(path, rows):
-    """Plain 8-bit RGB PNG (Kodi decodes this everywhere; 1-bit PNGs show up black/blank)."""
-    import struct
-    import zlib
-    h, w = len(rows), len(rows[0]) // 3
-    raw = b''.join(b'\x00' + r for r in rows)
-
-    def chunk(t, d):
-        return struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
-    data = (b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0))
-            + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
-    with open(path, 'wb') as f:
-        f.write(data)
-        f.flush()
-        os.fsync(f.fileno())
-    return path
+    """Plain 8-bit RGB PNG (Kodi decodes this everywhere; 1-bit PNGs show up black/blank).
+    Delegates to qrdraw's writer: atomic (temp file + rename) with row-shape validation."""
+    from .qrdraw import _png_rgb as _write
+    return _write(path, rows)
 
 
-def _tmpdir():
-    tmp = xbmcvfs.translatePath('special://temp/')
-    for old in os.listdir(tmp):
-        if old.startswith('fefc-link-qr') or old.startswith('fefc-white'):
+
+def _prune_qr_files(keep=5):
+    """Delete old generated QR/placeholder PNGs. They were only ever created, never removed.
+
+    Keeps the newest `keep` fefc-qr-*.png files in the profile qr folder (a dialog may
+    still be showing the previous one) and drops stale fefc-link-qr-*/fefc-white-* in temp."""
+    import glob
+    try:
+        d = xbmcvfs.translatePath('special://profile/addon_data/plugin.video.fefc/qr')
+        files = sorted(glob.glob(os.path.join(d, 'fefc-qr-*.png')), key=os.path.getmtime, reverse=True)
+        stale = files[keep:]
+        tmp = xbmcvfs.translatePath('special://temp/')
+        cutoff = time.time() - 3600
+        for pat in ('fefc-link-qr-*.png', 'fefc-white-*.png'):
+            for p in glob.glob(os.path.join(tmp, pat)):
+                try:
+                    if os.path.getmtime(p) < cutoff:
+                        stale.append(p)
+                except OSError:
+                    pass
+        for p in stale:
             try:
-                os.remove(os.path.join(tmp, old))
+                os.remove(p)
             except OSError:
                 pass
-    return tmp
+    except Exception as e:
+        _log('qr prune: %s' % e)
 
 
 def _make_qr_png(url, size=600):
@@ -1973,8 +2350,10 @@ def _make_qr_png(url, size=600):
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, 'fefc-qr-%d.png' % int(time.time() * 1000))
     info = write_qr_png(path, url, size=size, quiet=4)
-    if os.path.getsize(path) < 100 or info['side'] != info['px'] * (info['modules'] + 8):
+    # info['side'] is authoritative (px flooring can differ from the requested size).
+    if os.path.getsize(path) < 100 or info['side'] != info['px'] * (info['modules'] + 2 * info.get('quiet', 4)):
         raise IOError('QR png not written')
+    _prune_qr_files()
     return path
 
 
@@ -1988,18 +2367,42 @@ def _qr_for(url):
 
 
 def _remote_qr_png(url):
-    """Fallback: a QR PNG from a public QR service, saved locally."""
+    """Fallback: a QR PNG from a public QR service, saved locally.
+
+    The response is validated as a PNG (magic bytes, sane size) before
+    it is saved. On any failure this returns '' — fail closed — and
+    never returns the remote URL for Kodi to fetch directly, which
+    would leak the pairing URL and bypass this check."""
     src = 'https://api.qrserver.com/v1/create-qr-code/?size=600x600&margin=16&format=png&data=' + quote_plus(url)
     try:
         import urllib.request
-        data = urllib.request.urlopen(urllib.request.Request(src, headers={'User-Agent': 'FEFC-Kodi'}), timeout=15).read()
+        with urllib.request.urlopen(urllib.request.Request(src, headers={'User-Agent': 'FEFC-Kodi'}), timeout=15) as r:
+            ctype = (r.headers.get('Content-Type') or '').lower()
+            if ctype and 'png' not in ctype:
+                raise IOError('remote qr: unexpected Content-Type %r' % ctype)
+            data = r.read(1024 * 1024 + 1)
+        if len(data) < 100 or len(data) > 1024 * 1024:
+            raise IOError('remote qr: implausible PNG size %d' % len(data))
+        if data[:8] != b'\x89PNG\r\n\x1a\n':
+            raise IOError('remote qr: response is not a PNG')
         path = os.path.join(xbmcvfs.translatePath('special://temp/'), 'fefc-link-qr-r%d.png' % int(time.time() * 1000))
-        with open(path, 'wb') as f:
-            f.write(data)
+        tmp = path + '.tmp'
+        try:
+            with open(tmp, 'wb') as f:
+                f.write(data)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, path)
+        except Exception:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            raise
         return path
     except Exception as e:
         _log('remote qr failed: %s' % e)
-        return src  # let Kodi fetch it directly
+        return ''
 
 
 def _white_png():
@@ -2008,7 +2411,13 @@ def _white_png():
 
 
 def _dialog_back(action):
-    """Close on Back. Play the back cue only when the sound skin will not (avoids a second click)."""
+    """Close on Back. Play the back cue only when the sound skin will not (avoids a second click).
+
+    FEFC.BackAt is time.monotonic() seconds. When the skin plays this press
+    (GuiSound == 'always', or BackSkip was set by armback for this press),
+    stamp BackAt here: otherwise the skin-played cue never entered the
+    debounce window and a fast second Back made Python play too.
+    """
     aid = action.getId()
     if aid not in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
         return False
@@ -2016,8 +2425,11 @@ def _dialog_back(action):
         home = xbmcgui.Window(10000)
         if home.getProperty('FEFC.BackSkip') == '1':
             home.clearProperty('FEFC.BackSkip')
+            home.setProperty('FEFC.BackAt', str(time.monotonic()))
         elif home.getProperty('FEFC.GuiSound') != 'always':
             _play_back_sfx()
+        else:
+            home.setProperty('FEFC.BackAt', str(time.monotonic()))
     return True
 
 
@@ -2144,7 +2556,11 @@ def _bar_action(win, button):
         win.close()
     elif button == menu[2]:
         xbmc.executebuiltin('RunPlugin(plugin://plugin.video.fefc/?action=sound_toggle)')
-        off = _sound_off()
+        # sound_toggle runs async in a separate plugin invocation, so
+        # _sound_off() still reads the PRE-toggle property here. The
+        # toggle is deterministic (toggle_plan flips it), so the new
+        # state is the opposite of the current reading — show that.
+        off = not _sound_off()
         try:
             menu[2].setLabel('SOUND OFF' if off else 'SOUND ON')
         except Exception:
@@ -2176,27 +2592,38 @@ class SupportWindow(xbmcgui.WindowDialog):
         self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
         self._frames = []
         self._closed = False
+        frames_mod = None
         try:
             from . import optimusframes
+            frames_mod = optimusframes
             media = os.path.join(xbmcvfs.translatePath(ADDON.getAddonInfo('path')), 'resources', 'media')
-            self._frames = optimusframes.support_frames(media)
+            self._frames = frames_mod.support_frames(media)
         except Exception:
             self._frames = []
-        # Silent JPEG loop of the approved hat clip. Frames are 480x640, shown 3:4.
+            frames_mod = None
+        # Silent JPEG loop of the approved hat clip. Frames are 480x933, shown 3:4.
         # The figure ends above the menu (skin y=866, scaled) so the two never overlap.
         art = self._frames[0] if self._frames else 'fefc-optimus-begging.png'
         menu_top = int(round(866 * 2 / 3.0))
-        # Frames are 480x1031 after the shoes were composited on. KEEP fits the
+        # Frames are 480x933 after the shoes were composited on. KEEP fits the
         # whole frame, and the box is shortened so it stays above the menu.
-        from . import optimusframes
+        # Fall back to the same 480x933 when the frames module failed to import,
+        # so a failed import still shows the still instead of killing the screen.
+        if frames_mod is not None:
+            sup_w = frames_mod.SUPPORT_W
+            sup_h = frames_mod.SUPPORT_H
+        else:
+            sup_w, sup_h = 480, 933
         # Full frame, shoes included, fitted above the menu. The old 640/480 box
         # cropped the extended frames.
         max_h = menu_top - 16
-        art_h = int(round(280 * optimusframes.SUPPORT_H / float(optimusframes.SUPPORT_W)))
+        art_h = int(round(280 * sup_h / float(sup_w)))
         if art_h > max_h:
             art_h = max_h
-        art_w = int(round(art_h * optimusframes.SUPPORT_W / float(optimusframes.SUPPORT_H)))
+        art_w = int(round(art_h * sup_w / float(sup_h)))
         art_y = max(8, menu_top - 8 - art_h)
+        self.art = xbmcgui.ControlImage(12, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
+        self.addControl(self.art)
         self.art = xbmcgui.ControlImage(12, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
         self.addControl(self.art)
         self.btns = []
@@ -2579,7 +3006,14 @@ class OptimusWindow(xbmcgui.WindowDialog):
         if aid in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PARENT_DIR, 110):
             if self._keyboard_open():
                 return
-            self.close()
+            # _dialog_back only handles PreviousMenu / NavBack / Stop: it plays
+            # the back cue when the sound skin will not, and honours
+            # FEFC.BackSkip. ParentDir (9) and Backspace (110) return False
+            # from it, so they close directly instead of being stranded.
+            if aid in (xbmcgui.ACTION_PARENT_DIR, 110):
+                self.close()
+            elif _dialog_back(action):
+                self.close()
             return
         if aid in (xbmcgui.ACTION_SELECT_ITEM, xbmcgui.ACTION_MOUSE_LEFT_CLICK, 401):
             try:
@@ -2627,13 +3061,20 @@ class OptimusWindow(xbmcgui.WindowDialog):
         self._opening = True
         self._halt_anim()
         text = None
+        kb_failed = False
         try:
             from . import osinput
             text = osinput.get_text('Search', self.query or '')
-        except Exception:
-            text = None
+        except Exception as e:
+            kb_failed = True
+            _log('search keyboard: %s' % e)
         self._opening = False
         if self._closed:
+            return
+        if kb_failed:
+            xbmcgui.Dialog().notification('FEFC', 'Could not open the keyboard — try again', xbmcgui.NOTIFICATION_ERROR, 4000)
+            self._park_edit()
+            self._resume_anim()
             return
         from . import searchflow
         got = searchflow.submit(text or '')
@@ -2651,15 +3092,18 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
           'mylist_sortswitch': 'mylist_sortswitch', 'mylist_shuffle': 'mylist_shuffle', 'history': 'history', 'sort': 'sort', 'shuffle': 'shuffle', 'people': 'people',
           'about': 'about', 'sound_toggle': 'sound_toggle', 'settings': 'settings', 'notify_perm': 'notify_perm',
           'open_link': 'open_link', 'play_external': 'play_external',
-          'download': 'download', 'downloads': 'downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
+          'download': 'download', 'downloads': 'downloads', 'manual_downloads': 'manual_downloads', 'play_download': 'play_download', 'download_delete': 'download_delete',
           'download_storage': 'download_storage',
           'kodi_settings': 'kodi_settings', 'gdoc': 'gdoc', 'castrows': 'castrows', 'noop': 'noop', 'gridpad': 'gridpad',
-          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr', 'cue': 'cue',
-          'downloads': 'downloads'}
+          'armback': 'armback', 'fefcmenu': 'fefcmenu', 'support_qr': 'support_qr', 'cue': 'cue'}
 
 
 def _play_back_sfx():
-    """Play the packaged back wav. Does not stop or restart the home-wall player."""
+    """Play the packaged back wav. Does not stop or restart the home-wall player.
+
+    FEFC.BackAt is time.monotonic() seconds, matching armback(): both call
+    sites must use monotonic together, or the debounce compares mixed clocks.
+    """
     from .sfxpref import sfx_enabled
     from . import backcue
     try:
@@ -2683,7 +3127,7 @@ def _play_back_sfx():
             last = float(home.getProperty('FEFC.BackAt') or '0')
         except ValueError:
             last = 0.0
-        now = time.time()
+        now = time.monotonic()
         if not backcue.should_play(True, vol, now, last):
             return
         paths = []
@@ -2709,22 +3153,20 @@ def _is_back_nav(prev, new):
     """True when `new` is the parent of `prev` (a '..' tap): folder:<child> -> folder:<parent>, or any folder -> root."""
     if not prev or not new or prev == new:
         return False
-    try:
-        m = _model()
-    except Exception:
-        return False
+    # Pure-string checks first: no catalogue load is needed for these.
     if new == 'root':
         return prev.startswith('folder:')
     if not (prev.startswith('folder:') and new.startswith('folder:')):
         return False
     child, parent = prev[7:], new[7:]
+    # Only the parent walk needs the catalogue.
+    try:
+        m = _model()
+    except Exception:
+        return False
     it = (m.get('items') or {}).get(child)
     if not it:
         return False
-    # parent id of the child folder (items[][1]); a shortcut's target is followed like everywhere else
-    p = it[1] or ''
-    if it[2] and it[3]:
-        p = it[3]
     # walk up: the new folder is a back step if it is the child's parent (or the child's own target parent)
     seen = set()
     cur = child
@@ -2740,7 +3182,26 @@ def _is_back_nav(prev, new):
 
 
 def run(argv):
-    r = Router(argv)
+    try:
+        r = Router(argv)
+    except Exception as e:
+        _log('error constructing Router: %r' % (e,))
+        try:
+            xbmcgui.Dialog().notification(
+                'FEFC', 'Could not load the catalogue',
+                xbmcgui.NOTIFICATION_ERROR, 5000)
+        except Exception:
+            pass
+        try:
+            handle = int(argv[1]) if len(argv) > 1 else -1
+        except (TypeError, ValueError):
+            handle = -1
+        if handle >= 0:
+            try:
+                xbmcplugin.endOfDirectory(handle, succeeded=False)
+            except Exception:
+                pass
+        return
     # 0.5.2: the Android back gesture plays the back UI sound, but tapping the ".." back-folder row did not —
     # Kodi's parentdir UI-sound mapping does not fire for plugin ".." navigation. Detect the parent step here
     # (new location is the parent of the previous one) and play the back sound ourselves.
