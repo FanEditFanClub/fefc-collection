@@ -957,18 +957,33 @@ def _ticker_mod():
     return ticker
 
 
+# Serialises every service-side catalog.load_model() call (refresh
+# thread, ticker thread, home-counts path). A caller that arrives
+# while a load is running waits on the lock; load_model() then returns
+# the just-loaded model from its _MEM cache instead of re-fetching.
+_catalog_lock = threading.Lock()
+
+
+def _load_model_guarded(base, cache, mins, force=False):
+    """catalog.load_model() under the service-side lock. Never call
+    catalog.load_model() directly from service.py — always go through
+    this helper, or through the same lock in refresh_home_counts()."""
+    from resources.lib import catalog
+    with _catalog_lock:
+        return catalog.load_model(base, cache, mins, log, force=force)
+
+
 def _model_recent_items(limit=12):
     """Most recently-added collection files from the live model (refreshes every 180 min = the 3h resync),
     so the ticker's 'new files' items update on the same cycle as the database, not just the daily feed."""
     try:
-        from resources.lib import catalog
         base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
         prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
         try:
             mins = int(ADDON.getSetting('refresh_minutes') or 180)
         except ValueError:
             mins = 180
-        m = catalog.load_model(base, os.path.join(prof, 'cache'), mins, log)
+        m = _load_model_guarded(base, os.path.join(prof, 'cache'), mins)
         added = m.get('added') or {}
         items = m.get('items') or {}
         # newest first by added timestamp; skip folders and anything without a title
@@ -1048,6 +1063,8 @@ class Watcher(object):
         self.last_title = ''
         self.last_list = ''     # the FEFC list the user started the video from
         self.restore_until = 0.0
+        self.restore_tries = 0  # capped: a deliberate move away is not fought forever
+        self._playing_file = ''
 
     @staticmethod
     def in_player_screens():
@@ -1065,8 +1082,26 @@ class Watcher(object):
         if not xbmc.getCondVisibility('Player.HasVideo'):
             self.mine = False
             self.seen_full = False
+            self.restore_until = 0.0
+            self.restore_tries = 0
+            self.last_list = ''
+            self._playing_file = ''
             xbmcgui.Window(10000).clearProperty('FEFC.PausedTitle')
             return
+        # Capture the starting folder when playback starts, whatever
+        # window started it — not only when the user is on a videos
+        # window at that moment. The playing file is the trigger.
+        try:
+            cur_file = pl.getPlayingFile() or ''
+        except Exception:
+            cur_file = ''
+        if cur_file and cur_file != self._playing_file:
+            self._playing_file = cur_file
+            self.restore_tries = 0
+            self.restore_until = 0.0
+            p = xbmc.getInfoLabel('Container.FolderPath') or ''
+            if p.startswith('plugin://plugin.video.fefc/'):
+                self.last_list = p
         full = xbmc.getCondVisibility('Window.IsActive(fullscreenvideo)')
         if not self.seen_full and not full and xbmc.getCondVisibility('Window.IsActive(videos)'):
             p = xbmc.getInfoLabel('Container.FolderPath') or ''
@@ -1075,6 +1110,7 @@ class Watcher(object):
         if full:
             self.seen_full = True
             self.restore_until = 0.0
+            self.restore_tries = 0
             if self.mine:  # back on the video screen: carry on playing
                 self.mine = False
                 if xbmc.getCondVisibility('Player.Paused'):
@@ -1086,8 +1122,19 @@ class Watcher(object):
         if self.restore_until and time.time() < self.restore_until and self.last_list and xbmc.getCondVisibility('Window.IsActive(videos)'):
             # one Back press can leave the video AND go up a folder: put the user back on the list they started from
             if (xbmc.getInfoLabel('Container.FolderPath') or '') != self.last_list:
-                xbmc.executebuiltin('Container.Update(%s,replace)' % self.last_list)
-                self.restore_until = time.time() + 2.5
+                if self.restore_tries < 3:
+                    xbmc.executebuiltin('Container.Update(%s,replace)' % self.last_list)
+                    self.restore_tries += 1
+                    self.restore_until = time.time() + 2.5
+                else:
+                    # Deliberate navigation: stop fighting it.
+                    self.restore_until = 0.0
+                    self.restore_tries = 0
+            else:
+                self.restore_until = 0.0
+                self.restore_tries = 0
+        elif self.restore_until and time.time() >= self.restore_until:
+            self.restore_tries = 0
         paused = xbmc.getCondVisibility('Player.Paused')
         if not paused:
             if self.mine and time.time() - self.t_pause > 1.5:
@@ -1100,6 +1147,7 @@ class Watcher(object):
                 self.mine = True
                 self.t_pause = time.time()
                 self.restore_until = time.time() + 4.0
+                self.restore_tries = 0
                 try:
                     t = xbmc.getInfoLabel('VideoPlayer.Title') or xbmc.getInfoLabel('Player.Title')
                 except Exception:
@@ -1153,7 +1201,15 @@ class Tracker(object):
         if vid != self.vid:
             if self.vid:
                 self.finish()
+            # New video: start from a clean slate, even if finish()
+            # was not called (no previous video). The old last_save
+            # must not gate the new video's first save, and the old
+            # pos/total must not be saved for it.
             self.vid = vid
+            self.name = ''
+            self.pos = 0.0
+            self.total = 0.0
+            self.last_save = 0.0
             self.name = xbmc.getInfoLabel('VideoPlayer.Title') or xbmc.getInfoLabel('Player.Title') or ''
             try:
                 self._ml().opened(vid, self.name)
@@ -1172,14 +1228,23 @@ class Tracker(object):
                 log('playback: %s' % e)
 
     def finish(self):
-        vid, ml = self.vid, None
+        # Capture the outgoing video's state, then reset everything
+        # before saving, so a later save can never use stale values.
+        vid = self.vid
+        name = self.name
+        pos = self.pos
+        total = self.total
         self.vid = None
+        self.name = ''
+        self.pos = 0.0
+        self.total = 0.0
+        self.last_save = 0.0
         try:
             ml = self._ml()
-            if self.total and self.pos >= self.total * 0.95:
+            if total and pos >= total * 0.95:
                 ml.clear_playback(vid)       # finished: no longer "continue watching"
-            elif self.pos > 5:
-                ml.set_playback(vid, self.pos, self.name, self.total)
+            elif pos > 5:
+                ml.set_playback(vid, pos, name, total)
             if ml.linked:
                 threading.Thread(target=ml.sync, daemon=True).start()
         except Exception as e:
@@ -1190,7 +1255,12 @@ def refresh_home_counts():
     try:
         from resources.lib import router
         home = xbmcgui.Window(10000)
-        for k, v in router.home_counts().items():
+        # Same lock as _load_model_guarded(): home_counts() loads the
+        # catalogue via router, so it must not run concurrently with
+        # a service-side load.
+        with _catalog_lock:
+            counts = router.home_counts()
+        for k, v in counts.items():
             home.setProperty('FEFC.Cnt.' + k, v)
     except Exception as e:
         log('home counts: %s' % e)
@@ -1218,6 +1288,16 @@ class HomeWall(object):
         self._dialog = False
         self._win = ''
         self._repeat = False
+        self._duration = 0.0   # real loop length once known; LOOP is the fallback
+        self._started_at = 0.0
+        self._stop_counted = False
+
+    def _wall_url(self):
+        base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
+        return base + '/assets/home-wall.mp4'
+
+    def _loop_len(self):
+        return self._duration if self._duration > 10 else self.LOOP
 
     def _bundled(self, sound):
         f = xbmcvfs.translatePath('special://xbmc/media/fefc-home-wall%s.mp4' % ('' if sound else '-silent'))
@@ -1226,27 +1306,46 @@ class HomeWall(object):
     def _fetch(self):
         try:
             os.makedirs(os.path.dirname(self.path), exist_ok=True)
-            req = urllib.request.Request(self.URL, headers={'User-Agent': 'FEFC-Kodi'})
+            req = urllib.request.Request(self._wall_url(), headers={'User-Agent': 'FEFC-Kodi'})
             with urllib.request.urlopen(req, timeout=30) as r:
+                clen = r.headers.get('Content-Length')
                 data = r.read(20 * 1024 * 1024)
+            if clen is not None:
+                try:
+                    want_len = int(clen)
+                except (TypeError, ValueError):
+                    want_len = 0
+                if want_len and len(data) < want_len:
+                    log('home wall download: truncated %d/%d bytes' % (len(data), want_len))
+                    return
+                if want_len > 20 * 1024 * 1024:
+                    log('home wall download: advertised %d bytes exceeds the 20 MB cap' % want_len)
+                    return
+            elif len(data) >= 20 * 1024 * 1024:
+                log('home wall download: hit the 20 MB cap with no Content-Length; treating as truncated')
+                return
             if len(data) > 100000 and data[4:8] == b'ftyp':
                 with open(self.path + '.tmp', 'wb') as f:
                     f.write(data)
                 os.replace(self.path + '.tmp', self.path)
+            else:
+                log('home wall download: %d bytes, not a usable mp4' % len(data))
         except Exception as e:
             log('home wall download: %s' % e)
-        self.fetching = False
+        finally:
+            self.fetching = False
 
     def playing(self):
         return xbmcgui.Window(10000).getProperty('FEFC.Wall') == '1'
 
     def switch_sound(self, sound):
-        """Swap the audible and silent loops now. Does not touch a real film."""
+        """Swap the audible and silent loops now. Does not touch a real film or the intro."""
         pl = xbmc.Player()
         try:
             if pl.isPlaying():
                 cur = pl.getPlayingFile() or ''
-                if cur and 'home-wall' not in cur and 'fefc-intro' not in cur:
+                if cur and 'home-wall' not in cur:
+                    # A real film, a trailer, or the intro: leave it alone.
                     self.cur_sound = sound
                     return
                 try:
@@ -1271,8 +1370,12 @@ class HomeWall(object):
 
     def _start(self, pl, sound, at=0.0):
         home = xbmcgui.Window(10000)
-        src = self._bundled(sound) or self._bundled(not sound)
+        src = self._bundled(sound)
         if not src:
+            if not sound:
+                # No silent bundled file: do not play the audible loop
+                # (bundled or downloaded) as a substitute for silence.
+                return
             if not os.path.exists(self.path):
                 if not self.fetching:
                     self.fetching = True
@@ -1282,7 +1385,8 @@ class HomeWall(object):
             src = self.path
         li = xbmcgui.ListItem('FEFC', offscreen=True)
         li.setProperty('fefc_wall', '1')
-        if at > self.LOOP - 3:
+        loop = self._loop_len()
+        if at > loop - 3:
             at = 0.0
         if at > 0.5:
             li.setProperty('StartOffset', '%.2f' % at)
@@ -1291,6 +1395,8 @@ class HomeWall(object):
         try:
             log('wall OpenFile at=%.2f sound=%s' % (at, sound))
             self._repeat = False
+            self._started_at = time.time()
+            self._stop_counted = False
             pl.play(src, li, windowed=True)
             xbmc.executebuiltin('PlayerControl(RepeatOne)')
         except Exception as e:
@@ -1318,6 +1424,9 @@ class HomeWall(object):
         home = xbmcgui.Window(10000)
         pl = xbmc.Player()
         sound = home.getProperty('FEFC.SoundOff') != '1'
+        if self._dialog and not xbmc.getCondVisibility('Window.IsVisible(11191)'):
+            # The off-screen videowindow was closed: re-arm it below.
+            self._dialog = False
         if not self._dialog and home.getProperty('FEFC.Ready') == '1':
             # One off-screen videowindow that outlives Home, so window changes do not drop the player.
             xbmc.executebuiltin('ActivateWindow(11191)')
@@ -1348,8 +1457,14 @@ class HomeWall(object):
                 home.setProperty('FEFC.Wall', '1')
             try:
                 self.pos = pl.getTime()
+                total = pl.getTotalTime()
+                if total and total > 10:
+                    self._duration = total
             except Exception:
                 pass
+            # Sustained good play resets the failure count.
+            if self._started_at and time.time() - self._started_at > 10:
+                self.fails = 0
             if not self._repeat:
                 try:
                     xbmc.executeJSONRPC('{"jsonrpc":"2.0","id":1,"method":"Player.SetRepeat","params":{"playerid":1,"repeat":"one"}}')
@@ -1361,14 +1476,15 @@ class HomeWall(object):
                 return
             # RepeatOne does not loop a file that is not in a playlist, so the player hits EOF and
             # the next start is a new OpenFile. Seek the same player back to the start instead.
-            if self.pos > self.LOOP - 1.2 and time.time() - getattr(self, '_seeked', 0) > 2:
+            loop = self._loop_len()
+            if self.pos > loop - 1.2 and time.time() - getattr(self, '_seeked', 0) > 2:
                 self._seeked = time.time()
                 try:
                     pl.seekTime(0)
                 except Exception:
                     pass
             if at_home:
-                if self.pos > self.LOOP - 0.6 or self.pos < 0.35:
+                if self.pos > loop - 0.6 or self.pos < 0.35:
                     home.setProperty('FEFC.WallSeam', '1')
                 else:
                     home.clearProperty('FEFC.WallSeam')
@@ -1378,6 +1494,18 @@ class HomeWall(object):
         # Player stopped while browsing or on Home. Resume the same loop; do not stack a second one.
         if home.getProperty('FEFC.Ready') != '1' or time.time() < self.t_next or self.fails >= 3:
             return
+        if not self._stop_counted:
+            # Count this stop once. A stop after < 10 s of play is a
+            # failed play, not a clean EOF; back off before retrying.
+            self._stop_counted = True
+            if self._started_at and time.time() - self._started_at < 10:
+                self.fails += 1
+                self.t_next = time.time() + min(60, 5 * (2 ** (self.fails - 1)))
+                if self.fails >= 3:
+                    log('home wall: giving up after %d short-lived plays' % self.fails)
+                    return
+                return
+            self.fails = 0
         self._start(pl, sound, self.pos if self.pos > 0.5 else 0.0)
 
 
@@ -1623,9 +1751,29 @@ def _grid_pad_loop(monitor):
                 xbmc.executebuiltin('SetFocus(%s,%d)' % (cid, pos + step))
                 origin = pos
         except Exception as e:
-            log('grid pad: %s' % e)
+            _log_tick('grid pad', e)
         if monitor.waitForAbort(0.05):
             return
+
+
+# Per-site, per-message last-log time for tick errors. A persistent
+# error in a 20 Hz loop must not write the same line hundreds of
+# times a minute; the first occurrence still logs at once.
+_tick_log_last = {}
+
+
+def _log_tick(site, exc):
+    """Log a tick-loop exception, at most once per 60 s for the same site + message."""
+    try:
+        key = (site, str(exc))
+        now = time.time()
+        last = _tick_log_last.get(key, 0.0)
+        if now - last >= 60:
+            _tick_log_last[key] = now
+            log('%s: %s' % (site, exc))
+    except Exception:
+        pass
+
 
 
 def _setting_bool(setting_id, default=False):
@@ -1788,7 +1936,6 @@ def main():
         if now >= next_catalog:
             def refresh_catalog():
                 try:
-                    from resources.lib import catalog
                     base = (ADDON.getSetting('base_url') or BASE).rstrip('/') or BASE
                     prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
                     cache = os.path.join(prof, 'cache')
@@ -1796,7 +1943,7 @@ def main():
                         mins = int(ADDON.getSetting('refresh_minutes') or 180)
                     except ValueError:
                         mins = 180
-                    catalog.load_model(base, cache, mins, log, force=True)
+                    _load_model_guarded(base, cache, mins, force=True)
                 except Exception as e:
                     log('catalogue refresh: %s' % e)
             threading.Thread(target=refresh_catalog, daemon=True).start()
@@ -1821,24 +1968,24 @@ def main():
         try:
             details_sfx()
         except Exception as e:
-            log('details sfx: %s' % e)
+            _log_tick('details sfx', e)
         try:
             transport_cues()
         except Exception as e:
-            log('transport cue: %s' % e)
+            _log_tick('transport cue', e)
         try:
             wall.tick()
         except Exception as e:
-            log('home wall: %s' % e)
+            _log_tick('home wall', e)
         try:
             if not wall.playing():
                 watcher.tick()
         except Exception as e:
-            log('watcher: %s' % e)
+            _log_tick('watcher', e)
         try:
             tracker.tick()
         except Exception as e:
-            log('tracker: %s' % e)
+            _log_tick('tracker', e)
         # The process can survive an APK replace. On Home only — never on
         # other screens and never during playback — and every few seconds,
         # compare it with the package on disk and drop a stale Update available badge.
