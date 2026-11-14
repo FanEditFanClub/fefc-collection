@@ -675,6 +675,23 @@ async function vlcLoad(env, url) {
 const sortByName = (a, b) => String(a.name).localeCompare(String(b.name), 'en', { numeric: true, sensitivity: 'base' });
 const xe = s => String(s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
 
+// /kodi-repo/<file>: the R2 copy (kodi-repo/<file>) written by kodi-apk.yml, or null to fall back to the static copy.
+const KODI_REPO_TYPES = { xml: 'application/xml', md5: 'text/plain', zip: 'application/zip', png: 'image/png', jpg: 'image/jpeg' };
+async function kodiRepoFile(env, url, req) {
+  if (!env.MEDIA) return null;
+  const rel = url.pathname.slice('/kodi-repo/'.length);
+  if (!/^[\w.-]+(\/[\w.-]+)?$/.test(rel) || rel.includes('..')) return null;
+  const ext = rel.split('.').pop().toLowerCase();
+  if (!KODI_REPO_TYPES[ext]) return null;
+  let obj = null;
+  try { obj = await env.MEDIA.get('kodi-repo/' + rel); } catch (_) { return null; }
+  if (!obj) return null;
+  const meta = ext === 'xml' || ext === 'md5';
+  const h = new Headers({ 'content-type': KODI_REPO_TYPES[ext], 'cache-control': meta ? 'no-cache' : 'public, max-age=300', 'access-control-allow-origin': '*' });
+  if (obj.httpEtag) h.set('etag', obj.httpEtag);
+  if (obj.size != null) h.set('content-length', String(obj.size));
+  return new Response(req.method === 'HEAD' ? null : obj.body, { status: 200, headers: h });
+}
 // ---- Kodi "HTTP directory" source: /kodi/ (Apache-style autoindex). Tree mirrors the Drive folder structure from the live index.
 // Also /kodi/Genres/<Genre>/ , /kodi/All/<Letter>/ . File links are /kodi/<path>/<name.ext>, served through streamApi (Range-aware, 206).
 const kodiNameCache = new WeakMap();              // model -> Map(folderKey -> {list:[{name,it,dir}], byName:Map})
@@ -764,7 +781,7 @@ async function kodiApi(req, env, ctx, url) {
   if (!r) return new Response('Not Found', { status: 404, headers: { 'content-type': 'text/plain' } });
   if (r.kind === 'addon') {                       // Install-from-zip: serve the static repo zips (latest names)
     const p = r.file === 'repository.fefc.zip' ? '/kodi-repo/repository.fefc.zip' : '/kodi-repo/plugin.video.fefc.zip';
-    const a = await env.ASSETS.fetch(new Request(url.origin + p, { method: req.method }));
+    const a = (await kodiRepoFile(env, new URL(url.origin + p), new Request(url.origin + p, { method: req.method }))) || await env.ASSETS.fetch(new Request(url.origin + p, { method: req.method }));
     const h = new Headers(a.headers); h.set('content-type', 'application/zip'); h.set('content-disposition', 'attachment; filename="' + r.file + '"');
     return new Response(a.body, { status: a.status, headers: h });
   }
@@ -807,6 +824,12 @@ export default {
     if (url.pathname.startsWith('/api/sync/')) {
       try { return await syncApi(req, env, url); } catch (e) { const st = e && e.status || 500; if (st >= 500) console.log('sync error:', String(e && e.message || e).slice(0, 120)); return json({ error: st === 500 ? 'server' : e.message }, st); }
     }
+    // Kodi add-on repository. kodi-apk.yml publishes it to R2 (kodi-repo/) with every release; the copy in git
+    // (static assets) is the fallback.
+    if (url.pathname.startsWith('/kodi-repo/')) {
+      const r = await kodiRepoFile(env, url, req);
+      if (r) return r;
+    }
     // Branded FEFC (Kodi-based) app: APKs + version.json + new-files feed live in R2 (kodi/).
     if (url.pathname === '/kodi-app/FEFC-Kodi.apk' || url.pathname === '/kodi-app/FEFC.apk' || url.pathname === '/kodi-app/version.json' || url.pathname === '/kodi-app/new-files.json') {
       const isApk = url.pathname.endsWith('.apk');
@@ -829,10 +852,12 @@ export default {
       } else if (obj.size != null) h.set('content-length', String(obj.size));
       return new Response(req.method === 'HEAD' ? null : obj.body, { status, headers: h });
     }
-    // macOS / webOS / Tizen packages. Nothing is uploaded here until Carson turns publishing on.
-    // A missing R2 object is a 404. The Android APK paths above are unchanged.
+    // macOS / webOS / Tizen packages from R2 (kodi/). FEFC-Mac.dmg (Apple Silicon) and FEFC-Mac-Intel.dmg are
+    // published by kodi-apk.yml with the APKs. A missing R2 object is a 404. The Android APK paths above are unchanged.
     {
       const platformFile = {
+        '/kodi-app/FEFC-Mac.dmg': ['kodi/FEFC-Mac.dmg', 'application/x-apple-diskimage', 'FEFC-Mac.dmg'],
+        '/kodi-app/FEFC-Mac-Intel.dmg': ['kodi/FEFC-Mac-Intel.dmg', 'application/x-apple-diskimage', 'FEFC-Mac-Intel.dmg'],
         '/kodi-app/FEFC-macOS-arm64.dmg': ['kodi/FEFC-macOS-arm64.dmg', 'application/x-apple-diskimage', 'FEFC-macOS-arm64.dmg'],
         '/kodi-app/FEFC-macOS-x86_64.dmg': ['kodi/FEFC-macOS-x86_64.dmg', 'application/x-apple-diskimage', 'FEFC-macOS-x86_64.dmg'],
         '/kodi-app/FEFC-webOS.ipk': ['kodi/FEFC-webOS.ipk', 'application/vnd.webos.ipk', 'FEFC-webOS.ipk'],

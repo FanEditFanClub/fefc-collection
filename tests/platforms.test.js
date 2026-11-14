@@ -315,9 +315,11 @@ test('publish script stays closed unless Carson turns the gate on', () => {
   assert.doesNotMatch(publish, /FEFC-webOS\.ipk/);
   assert.doesNotMatch(publish, /FEFC-macOS/);
   assert.match(publish, /fan-edit-media\/kodi\/FEFC\.wgt/);
-  assert.match(workflow, /runs-on: macos-latest/);
+  // The Mac is built and published with the APKs (kodi-apk.yml), not here.
+  assert.doesNotMatch(workflow, /runs-on: macos-latest/);
   const apk = fs.readFileSync(path.join(root, '.github/workflows/kodi-apk.yml'), 'utf8');
   assert.match(apk, /write-android --out version.json/);
-  assert.match(apk, /fan-edit-media\/kodi\/FEFC-Kodi.apk/);
-  assert.match(apk, /fan-edit-media\/kodi\/FEFC.apk/);
+  assert.match(apk, /npx wrangler r2 object put "fan-edit-media\/\$1"/);
+  assert.match(apk, /put kodi\/FEFC-Kodi.apk FEFC-Kodi.apk/);
+  assert.match(apk, /put kodi\/FEFC.apk FEFC.apk/);
 });

@@ -53,6 +53,18 @@ assert rows[3]['url'] == 'https://collection.faneditfanclub.com'
 bad = updateflow.manual_downloads({'version': '0.6.4 Beta', 'packages': {'org.xbmc.kodi': {'url': 'https://fefc-collection.pages.dev/kodi-app/FEFC-Kodi.apk'}}})
 assert bad[0]['url'].endswith('/FEFC.apk')
 assert 'FEFC-Kodi' not in json.dumps(bad)
+# A published Apple Silicon Mac image on the FEFC host adds one Mac row before Web. Intel is not listed.
+mac = updateflow.manual_downloads({
+  'version': '0.6.6 Beta',
+  'packages': {'com.fefc.kodi': {'url': 'https://fefc-collection.pages.dev/kodi-app/FEFC.apk'}},
+  'platforms': {'macos': {'arch': {
+      'arm64': {'url': 'https://fefc-collection.pages.dev/kodi-app/FEFC-Mac.dmg', 'sha256': 'a' * 64, 'size': 5},
+      'x86_64': {'url': 'https://fefc-collection.pages.dev/kodi-app/FEFC-Mac-Intel.dmg', 'sha256': 'b' * 64, 'size': 5}}}},
+})
+assert [r['platform'] for r in mac] == ['Fire TV & Android', 'Samsung TV', 'Samsung TV guide', 'Mac (Apple Silicon)', 'Web']
+assert mac[3]['url'].endswith('/FEFC-Mac.dmg')
+msg = updateflow.platform_install_message('macos', '/tmp/FEFC-Mac.dmg', True)
+assert 'xattr -dr com.apple.quarantine /Applications/FEFC.app' in msg and 'remove-signature' not in msg
 print('ok')
 `);
   assert.equal(out, 'ok');

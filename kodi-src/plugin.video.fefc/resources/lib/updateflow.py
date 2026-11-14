@@ -412,8 +412,9 @@ def manual_downloads(manifest):
     """One link per published platform.
 
     Fire TV and Android share the separate-ID APK (com.fefc.kodi). Samsung is
-    the widget plus the install guide. Web is the site. Mac and webOS are not
-    listed. The org.xbmc.kodi build is never listed.
+    the widget plus the install guide. Mac is FEFC-Mac.dmg (Apple Silicon), listed
+    only when version.json publishes it. Web is the site. webOS is not listed.
+    The org.xbmc.kodi build is never listed.
     """
     info = manifest or {}
     version = str(info.get('version') or '')
@@ -430,8 +431,13 @@ def manual_downloads(manifest):
         {'platform': 'Fire TV & Android', 'version': version, 'url': apk, 'short': PHONE_SHORT},
         {'platform': 'Samsung TV', 'version': version, 'url': wgt, 'short': ''},
         {'platform': 'Samsung TV guide', 'version': version, 'url': SAMSUNG_GUIDE, 'short': ''},
-        {'platform': 'Web', 'version': version, 'url': WEB_APP, 'short': ''},
     ]
+    # Mac (Apple Silicon) only when the manifest publishes it on the FEFC host as FEFC-Mac.dmg.
+    mac = platform_download(info, 'macos', 'arm64')
+    mac_url = str(mac.get('url') or '')
+    if mac.get('available') and mac_url.split('?', 1)[0].endswith('/FEFC-Mac.dmg'):
+        rows.append({'platform': 'Mac (Apple Silicon)', 'version': version, 'url': mac_url, 'short': ''})
+    rows.append({'platform': 'Web', 'version': version, 'url': WEB_APP, 'short': ''})
     # The old loop raised ValueError here, but it was unreachable: apk/wgt
     # are already replaced by defaults when banned, and the defaults contain
     # no banned substrings. Degrade instead of raising: drop a bad row so
@@ -448,12 +454,10 @@ def platform_install_message(platform, path, opened=False, abi='', url=''):
         return (
             'The update is verified. This build is not signed with an Apple Developer ID, so macOS will warn the first time it opens.\n\n'
             'Disk image:\n%s\n\n'
-            '%sDrag FEFC.app to Applications and replace the old app.\n'
-            'If macOS says the app is damaged or cannot be checked, run:\n'
-            'codesign --remove-signature /Applications/FEFC.app\n'
-            'xattr -dr com.apple.quarantine /Applications/FEFC.app\n'
-            'Then right-click FEFC.app, choose Open, then Open.\n'
-            'Then fully quit FEFC and open it again.'
+            '%sQuit FEFC, then drag FEFC.app to Applications and replace the old app.\n'
+            'Open it with right-click > Open. If macOS still blocks it, open System Settings > Privacy & Security and choose Open Anyway, '
+            'or run in Terminal:\n'
+            'xattr -dr com.apple.quarantine /Applications/FEFC.app'
         ) % (path, opened_txt)
     if platform == 'webos':
         try:
