@@ -299,7 +299,6 @@ jobs:
             hdiutil detach "$mnt"
           done
       - name: Launch test (Apple Silicon image, no window interaction)
-        continue-on-error: true
         run: |
           set +e
           # Runs the FEFC app and, for comparison, stock Kodi from the same mirror image, each with a clean
@@ -335,7 +334,18 @@ jobs:
           stock=$(ls "$RUNNER_TEMP"/kodi/*arm64*.dmg | head -1)
           launch stock "$stock"
           launch fefc dist/FEFC-Mac.dmg
-          grep -q '^\[fefc\] skin_fefc=[1-9]' dist/launch-test.txt && grep -q '^\[fefc\] plugin_fefc=[1-9]' dist/launch-test.txt
+          # GitHub's macOS runners have no GPU, so stock Kodi itself stops when it creates the OpenGL window.
+          # The gate: the FEFC app starts (signature accepted), finds the FEFC skin, add-on (this version),
+          # repository and sounds, and gets as far as stock Kodi does (CreateGUI).
+          want=$(python3 -c "import re;print(re.search(r'<addon[^>]*\bversion=\"([^\"]+)\"', open('kodi-src/plugin.video.fefc/addon.xml').read()).group(1))")
+          L=dist/launch-fefc-kodi.log
+          ok=1
+          grep -q "plugin.video.fefc v$want installed" "$L" || { echo "FEFC add-on $want not found at start"; ok=0; }
+          for a in skin.fefc repository.fefc resource.uisounds.fefc; do grep -q "FindAddons: $a v" "$L" || { echo "$a not found"; ok=0; }; done
+          grep -q "CApplication::CreateGUI" "$L" || { echo "FEFC did not reach CreateGUI"; ok=0; }
+          if grep -q "CApplication::CreateGUI" dist/launch-stock-kodi.log 2>/dev/null; then echo "stock Kodi reached CreateGUI too"; fi
+          echo "fefc_reached_gui_start=$ok" | tee -a dist/launch-test.txt
+          [ "$ok" = 1 ]
       - uses: actions/upload-artifact@v4
         with:
           name: fefc-mac
