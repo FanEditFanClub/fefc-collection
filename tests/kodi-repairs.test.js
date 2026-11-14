@@ -558,9 +558,15 @@ assert shapes.skip_delta(2, 1, lambda i: {0: 'folder', 1: 'video', 2: 'spacer'}.
 assert shapes.skip_delta(8, 2, lambda i: {2: 'video', 8: 'spacer'}.get(i)) == 'menu'
 # Up from the menu lands on a spacer with no in-grid origin. That must walk
 # up to a real tile, not straight back to the menu.
-assert shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 'menu'
 back = shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None, from_menu=True)
 assert back != 'menu' and back is not None and back < 0, back
+assert padded[last + back] not in ('spacer', None), (last, back)
+# Unknown origin (no from_menu) also tries Up first, so a trailing spacer with
+# nothing below it walks back to a real tile instead of jumping to the menu.
+unknown = shapes.skip_delta(last, None, lambda i, p=padded: p[i] if 0 <= i < len(p) else None)
+assert unknown == back, (unknown, back)
+# Only a real Down (known origin above) off the last row reaches the menu.
+assert shapes.skip_delta(last, last - shapes.COLS, lambda i, p=padded: p[i] if 0 <= i < len(p) else None) == 'menu'
 idx = json.load(open('data/index.json'))
 added = json.load(open('data/added.json'))
 m = catalog.build_model({'index': idx, 'added': added})
@@ -590,30 +596,38 @@ def grouped(kinds):
 
 def check(name, kinds):
     assert kinds, name + ' empty'
+    # A leading '' is Kodi's Back/Up ("..") row. The router never builds it: it is
+    # pack(..., leading=1), and pack() rejects an unknown kind such as ''.
+    shown = list(kinds)
+    lead = 0
+    while kinds and kinds[0] == '':
+        lead += 1
+        kinds = kinds[1:]
+    assert '' not in kinds, (name, 'blank kind after the parent row')
     mode = shapes.listing_mode('video' in kinds)
     assert mode['view'] == 501 and mode['wrap'] is False, name
     assert mode['content'] == ('movies' if 'video' in kinds else 'files'), name
-    slots = shapes.pack(kinds)
+    slots = shapes.pack(kinds, leading=lead)
     real = [s for s in slots if s != 'spacer']
     assert real == grouped(kinds), (name, 'order', real[:12])
     if 'video' in kinds:
-        assert slots.index('video') % shapes.COLS == 0, (name, 'video shared a landscape row')
+        assert (slots.index('video') + lead) % shapes.COLS == 0, (name, 'video shared a landscape row')
         # Every video row is only videos and the cells reserved under them.
         for i, s in enumerate(slots):
             if s != 'video':
                 continue
-            row = (i // shapes.COLS) * shapes.COLS
+            row = ((i + lead) // shapes.COLS) * shapes.COLS - lead
             for c in range(shapes.COLS):
                 j = row + c
-                cell = slots[j] if j < len(slots) else None
+                cell = slots[j] if 0 <= j < len(slots) else None
                 assert cell in ('video', 'spacer'), (name, 'mixed row', row, cell)
-    for k in kinds:
+    for k in shown:
         shape = shapes.shape_for_kind(k)
         if k == 'video':
             assert shape == 'portrait', (name, k, shape)
         else:
             assert shape == 'landscape', (name, k, shape)
-    problems = shapes.audit(slots)
+    problems = shapes.audit(slots, leading=lead)
     assert not problems, (name, problems[:6])
     # A poster fills the cells under it: the next real row is SPAN cells down,
     # which is the poster block, not an empty band.
@@ -625,6 +639,14 @@ def check(name, kinds):
 # A folder page: Back, then Sort, Shuffle, and Support Us, then its own rows.
 # Back is the parent row (no kind). Sort and Shuffle are action. Support Us is action.
 check('Folder with Back, Sort, Shuffle, Support Us', ['', 'action', 'action', 'action', 'folder', 'video'])
+# pack() only takes real kinds; a blank or unknown kind is an error, not a silent landscape card.
+for bad in ('', 'tool', None):
+    try:
+        shapes.pack(['folder', bad])
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('pack accepted kind %r' % (bad,))
 # Collections, including that same utility row
 check('Collections', ['action', 'action'] + kinds_for(FOLD['collections']))
 # Actors & Directors, then one person folder
