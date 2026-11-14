@@ -1,8 +1,13 @@
 name: kodi-apk
 
-# Free GitHub Actions only. Builds the branded FEFC app (a re-branded, re-signed, preconfigured build of STOCK Kodi, GPL) and
-# publishes it to R2 (fan-edit-media/kodi/FEFC-Kodi.apk + version.json -> https://fefc-collection.pages.dev/kodi-app/...).
-# Runs daily: detects a NEW stable Kodi release (or changed FEFC add-on/skin sources) and rebuilds; otherwise it does nothing.
+# Free GitHub Actions only. Builds the branded FEFC app (a re-branded, re-signed, preconfigured build of STOCK Kodi, GPL)
+# for Fire TV / Android (FEFC-Kodi.apk org.xbmc.kodi, FEFC.apk com.fefc.kodi) AND for macOS (FEFC-Mac.dmg Apple Silicon,
+# FEFC-Mac-Intel.dmg Intel), plus the Kodi add-on repository (kodi-repo/addons.xml + zips), all from the same checkout,
+# the same fefc-version.txt label and the same build number. One publish job uploads everything to R2
+# (fan-edit-media/kodi/* and fan-edit-media/kodi-repo/* -> https://fefc-collection.pages.dev/kodi-app/ and /kodi-repo/)
+# and writes version.json last. If the Mac job fails, Android still ships and version.json drops platforms.macos, so a Mac
+# never downloads an image from an older build.
+# Runs daily: detects a NEW stable Kodi release (or changed FEFC add-on/skin/build sources) and rebuilds; otherwise it does nothing.
 # Signed with the DEDICATED Kodi keystore (FEFC_KODI_*), never the FEFC WebView app key.
 on:
   workflow_dispatch:
@@ -11,6 +16,10 @@ on:
         description: "Rebuild even if nothing changed"
         type: boolean
         default: false
+      publish:
+        description: "Upload to R2 (off = build and test only, e.g. on a branch)"
+        type: boolean
+        default: true
   schedule:
     - cron: '30 12 * * *'
   push:
@@ -21,6 +30,11 @@ on:
       - 'tools/kodi_brand.py'
       - 'tools/kodi_navsfx.py'
       - 'tools/build_kodi_skin.py'
+      - 'tools/build_kodi_macos.py'
+      - 'tools/fefc_kodi_bundle.py'
+      - 'tools/kodi_upstream.py'
+      - 'tools/build_kodi_repo.py'
+      - 'tools/fefc_release_manifest.py'
       - 'assets/intro-tv.mp4'
       - '.github/workflows/kodi-apk.yml'
 
@@ -38,9 +52,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    outputs:
+      rebuild: ${{ steps.plan.outputs.REBUILD }}
+      kodi_ver: ${{ steps.plan.outputs.KODI_VER }}
+      src_hash: ${{ steps.plan.outputs.SRC_HASH }}
+      next_build: ${{ steps.apk.outputs.NEXT_BUILD }}
+      app_version: ${{ steps.apk.outputs.APP_VERSION }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -112,7 +129,7 @@ jobs:
           apk = 'kodi-%s-%s-armeabi-v7a.apk' % (ver, code)
           # hash of everything that goes into the app besides stock Kodi
           h = hashlib.sha256()
-          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'tools/build_kodi_skin.py', 'tools/kodi_navsfx.py', 'assets/sfx/ui-back.wav', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png'):
+          for base in ('kodi-src', 'tools/build_kodi_apk.py', 'tools/kodi_brand.py', 'tools/build_kodi_skin.py', 'tools/kodi_navsfx.py', 'tools/build_kodi_macos.py', 'tools/fefc_kodi_bundle.py', 'tools/build_kodi_repo.py', 'assets/sfx/ui-back.wav', 'assets/intro-tv.mp4', 'assets/fefc-logo.png', 'assets/fefc-wordmark.png'):
               paths = [base] if os.path.isfile(base) else [os.path.join(d, f) for d, _, fs in os.walk(base) for f in fs]
               for p in sorted(paths):
                   h.update(p.encode()); h.update(open(p, 'rb').read())
@@ -130,7 +147,7 @@ jobs:
           rebuild = force or cur.get('kodi') != ver or cur.get('src') != src
           print('KODI_VER=%s\nKODI_APK=%s\nSRC_HASH=%s\nREBUILD=%s\nPREV_BUILD=%s' % (ver, apk, src, str(rebuild).lower(), cur.get('build', 0)))
           PY
-          cat plan.env; cat plan.env >> "$GITHUB_ENV"
+          cat plan.env; cat plan.env >> "$GITHUB_ENV"; cat plan.env >> "$GITHUB_OUTPUT"
         env:
           FORCE: ${{ inputs.force }}
       - name: Download stock Kodi
@@ -140,6 +157,7 @@ jobs:
           # 64-bit stock Kodi (same version) for the new-package app: Pixel Fold/Tablet are 64-bit-only
           curl -fsSL -o stock64.apk "https://mirrors.kodi.tv/releases/android/arm64-v8a/${KODI_APK/armeabi-v7a/arm64-v8a}"
       - name: Build + sign branded FEFC app
+        id: apk
         if: env.REBUILD == 'true'
         env:
           FEFC_KODI_KS_PASS: ${{ secrets.FEFC_KODI_KEYSTORE_PASSWORD }}
@@ -158,6 +176,7 @@ jobs:
           # same source, same key, same versionCode: new-install package that coexists with Play Store Kodi
           FEFC_KODI_PACKAGE=com.fefc.kodi FEFC_EXTRA_ABI_APK=stock.apk python3 tools/build_kodi_apk.py stock64.apk FEFC.apk
           echo "NEXT_BUILD=$NEXT" >> "$GITHUB_ENV"
+          { echo "NEXT_BUILD=$NEXT"; echo "APP_VERSION=$APPV"; } >> "$GITHUB_OUTPUT"
       - name: Verify (signature, cert, manifest, banner, add-ons)
         if: env.REBUILD == 'true'
         run: |
@@ -184,20 +203,208 @@ jobs:
           grep -q "package: name='org.xbmc.kodi'" badging.txt
           "$BUILD_TOOLS/aapt2" dump xmltree FEFC.apk --file AndroidManifest.xml | grep -q 'com.fefc.kodi.Splash'
           ls -l FEFC-Kodi.apk FEFC.apk
-      - name: Publish to R2 (kodi/FEFC-Kodi.apk + version.json)
+      - name: Keep the APKs for the publish job
         if: env.REBUILD == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: fefc-apks
+          path: |
+            FEFC-Kodi.apk
+            FEFC.apk
+          retention-days: 7
+          if-no-files-found: error
+      - name: Nothing to do
+        if: env.REBUILD != 'true'
+        run: echo "FEFC app already built from Kodi $KODI_VER + current FEFC sources - no rebuild needed."
+
+  mac:
+    # Same checkout, label and build number as the APKs. Kodi for macOS ships separate arm64 and x86_64 images.
+    needs: build
+    if: needs.build.outputs.rebuild == 'true'
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      KODI_VER: ${{ needs.build.outputs.kodi_ver }}
+      NEXT_BUILD: ${{ needs.build.outputs.next_build }}
+      APP_VERSION: ${{ needs.build.outputs.app_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Tools
+        run: |
+          set -euo pipefail
+          brew install ffmpeg || true
+          brew install libicns || true
+          pip install pillow numpy scipy
+      - name: Download stock Kodi for macOS
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/kodi"
+          python3 - <<'PY'
+          import os, re, sys, urllib.request
+          sys.path.insert(0, 'tools')
+          import kodi_upstream
+          html = ''
+          for arch in ('arm64', 'x86_64'):
+              html += urllib.request.urlopen('https://mirrors.kodi.tv/releases/osx/%s/' % arch, timeout=60).read().decode('utf-8', 'ignore') + '\n'
+          found = kodi_upstream.stable_dmgs(re.findall(r'kodi-[^"<> ]+\.dmg', html))
+          want = os.environ['KODI_VER']
+          for arch in ('arm64', 'x86_64'):
+              have = {v: n for (v, a), n in found.items() if a == arch}
+              if want not in have:
+                  raise SystemExit('no Kodi %s %s disk image on the mirror (have %s)' % (want, arch, sorted(have)))
+              name = have[want]
+              url = kodi_upstream.dmg_url(arch, name)
+              print('get', url)
+              urllib.request.urlretrieve(url, os.path.join(os.environ['RUNNER_TEMP'], 'kodi', name))
+          PY
+      - name: Build FEFC for Mac (ad-hoc signed)
+        run: |
+          set -euo pipefail
+          python3 tools/build_kodi_macos.py --arch all --cache "$RUNNER_TEMP/kodi" --kodi-version "$KODI_VER" --build "$NEXT_BUILD" --out dist
+          mv dist/FEFC-macOS-arm64.dmg dist/FEFC-Mac.dmg
+          mv dist/FEFC-macOS-arm64.dmg.report.json dist/FEFC-Mac.dmg.report.json
+          mv dist/FEFC-macOS-x86_64.dmg dist/FEFC-Mac-Intel.dmg
+          mv dist/FEFC-macOS-x86_64.dmg.report.json dist/FEFC-Mac-Intel.dmg.report.json
+          ls -l dist
+      - name: Verify the disk images (mount, signature, architecture, FEFC add-ons, build number)
+        run: |
+          set -euo pipefail
+          for pair in "FEFC-Mac.dmg:arm64" "FEFC-Mac-Intel.dmg:x86_64"; do
+            img="dist/${pair%%:*}"; arch="${pair##*:}"
+            hdiutil verify "$img"
+            mnt="$RUNNER_TEMP/mnt-$arch"; mkdir -p "$mnt"
+            hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$img"
+            app="$mnt/FEFC.app"
+            test -f "$mnt/Read Me.txt"
+            codesign --verify --deep --strict --verbose=2 "$app"
+            exe="$app/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleName' "$app/Contents/Info.plist")" = FEFC
+            lipo -archs "$exe" | tee "$RUNNER_TEMP/archs.txt"; grep -qw "$arch" "$RUNNER_TEMP/archs.txt"
+            python3 - "$app" "$NEXT_BUILD" "$APP_VERSION" <<'PY'
+          import json, re, sys
+          app, build, label = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+          k = app + '/Contents/Resources/Kodi'
+          rec = json.load(open(k + '/fefc-build.json'))
+          assert rec['build'] == build and rec['version'] == label and rec['platform'] == 'macos', rec
+          src = re.search(r'version="([^"]+)"', open('kodi-src/plugin.video.fefc/addon.xml').read().split('<addon', 1)[1]).group(1)
+          got = re.search(r'version="([^"]+)"', open(k + '/addons/plugin.video.fefc/addon.xml').read().split('<addon', 1)[1]).group(1)
+          assert got == src, (got, src)
+          for aid in ('skin.fefc', 'repository.fefc', 'resource.uisounds.fefc'):
+              open(k + '/addons/%s/addon.xml' % aid).read()
+          print('ok', rec, 'plugin.video.fefc', got)
+          PY
+            hdiutil detach "$mnt"
+          done
+      - name: Launch test (Apple Silicon image, no window interaction)
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          mnt="$RUNNER_TEMP/mnt-run"; mkdir -p "$mnt"
+          hdiutil attach -nobrowse -readonly -mountpoint "$mnt" dist/FEFC-Mac.dmg
+          ditto "$mnt/FEFC.app" "$RUNNER_TEMP/FEFC.app"; hdiutil detach "$mnt"
+          exe="$RUNNER_TEMP/FEFC.app/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$RUNNER_TEMP/FEFC.app/Contents/Info.plist")"
+          rm -f "$HOME/Library/Logs/kodi.log"
+          "$exe" > "$RUNNER_TEMP/kodi-stdout.txt" 2>&1 &
+          pid=$!
+          for i in $(seq 1 30); do sleep 4; if ! kill -0 $pid 2>/dev/null; then break; fi; if grep -q "plugin.video.fefc" "$HOME/Library/Logs/kodi.log" 2>/dev/null && grep -q "skin.fefc" "$HOME/Library/Logs/kodi.log" 2>/dev/null; then sleep 8; break; fi; done
+          alive=no; kill -0 $pid 2>/dev/null && alive=yes
+          kill $pid 2>/dev/null; sleep 3; kill -9 $pid 2>/dev/null || true
+          log="$HOME/Library/Logs/kodi.log"
+          cp "$log" dist/launch-kodi.log 2>/dev/null || true
+          {
+            echo "running_after_test=$alive"
+            echo "skin_fefc=$(grep -c 'skin.fefc' "$log" 2>/dev/null || echo 0)"
+            echo "plugin_fefc=$(grep -c 'plugin.video.fefc' "$log" 2>/dev/null || echo 0)"
+            echo "errors=$(grep -c ' error <general>' "$log" 2>/dev/null || echo 0)"
+          } | tee dist/launch-test.txt
+          grep -E "Starting Kodi|load skin|skin.fefc|plugin.video.fefc|FEFC" "$log" 2>/dev/null | head -40 || true
+          grep -q '^skin_fefc=[1-9]' dist/launch-test.txt && grep -q '^plugin_fefc=[1-9]' dist/launch-test.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fefc-mac
+          path: |
+            dist/FEFC-Mac.dmg
+            dist/FEFC-Mac.dmg.report.json
+            dist/FEFC-Mac-Intel.dmg
+            dist/FEFC-Mac-Intel.dmg.report.json
+            dist/launch-test.txt
+            dist/launch-kodi.log
+          retention-days: 7
+          if-no-files-found: warn
+
+  publish:
+    # Android must have built. The Mac images are added when the mac job passed; otherwise platforms.macos is removed.
+    needs: [build, mac]
+    if: ${{ always() && needs.build.result == 'success' && needs.build.outputs.rebuild == 'true' && (github.event_name != 'workflow_dispatch' || inputs.publish) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      KODI_VER: ${{ needs.build.outputs.kodi_ver }}
+      SRC_HASH: ${{ needs.build.outputs.src_hash }}
+      NEXT_BUILD: ${{ needs.build.outputs.next_build }}
+      APP_VERSION: ${{ needs.build.outputs.app_version }}
+      MAC_OK: ${{ needs.mac.result == 'success' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/download-artifact@v4
+        with:
+          name: fefc-apks
+          path: .
+      - uses: actions/download-artifact@v4
+        if: env.MAC_OK == 'true'
+        with:
+          name: fefc-mac
+          path: dist
+      - name: Write version.json (Android fields, then platforms.macos from this build)
         run: |
           set -euo pipefail
           SHA=$(sha256sum FEFC-Kodi.apk | cut -d' ' -f1); SIZE=$(stat -c%s FEFC-Kodi.apk)
           SHA2=$(sha256sum FEFC.apk | cut -d' ' -f1); SIZE2=$(stat -c%s FEFC.apk)
           # Same Android fields as before. If a platforms object is already on the server, it is copied
-          # onto the new file. This step still uploads only the two APKs and version.json.
+          # onto the new file, then the Mac entry is replaced with this build's images (or removed).
           SHA="$SHA" SIZE="$SIZE" SHA2="$SHA2" SIZE2="$SIZE2" python3 tools/fefc_release_manifest.py write-android --out version.json
+          python3 tools/fefc_release_manifest.py attach-macos --manifest version.json --dir dist --build "$NEXT_BUILD" --version "$APP_VERSION" --kodi "$KODI_VER" --ok "$MAC_OK"
+          cat version.json | head -c 2000; echo
+      - name: Build the Kodi add-on repository from this checkout
+        run: |
+          set -euo pipefail
+          python3 tools/build_kodi_repo.py
+          python3 - <<'PY'
+          import re
+          src = open('kodi-src/plugin.video.fefc/addon.xml', encoding='utf-8').read()
+          want = re.search(r'<addon[^>]*\bversion="([^"]+)"', src).group(1)
+          repo = open('kodi-repo/addons.xml', encoding='utf-8').read()
+          got = re.search(r'<addon id="plugin.video.fefc"[^>]*\bversion="([^"]+)"', repo).group(1)
+          assert got == want, (got, want)
+          print('kodi-repo plugin.video.fefc', got)
+          PY
+      - name: Upload to R2 (APKs, Mac images, add-on repo, then version.json last)
+        run: |
+          set -euo pipefail
           npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1
-          npx wrangler r2 object put fan-edit-media/kodi/FEFC-Kodi.apk --file=FEFC-Kodi.apk --content-type=application/vnd.android.package-archive --remote
-          npx wrangler r2 object put fan-edit-media/kodi/FEFC.apk --file=FEFC.apk --content-type=application/vnd.android.package-archive --remote
-          npx wrangler r2 object put fan-edit-media/kodi/version.json --file=version.json --content-type=application/json --remote
-          cat version.json
-      - name: Nothing to do
-        if: env.REBUILD != 'true'
-        run: echo "FEFC app already built from Kodi $KODI_VER + current FEFC sources - no rebuild needed."
+          put() { npx wrangler r2 object put "fan-edit-media/$1" --file="$2" --content-type="$3" --remote; }
+          put kodi/FEFC-Kodi.apk FEFC-Kodi.apk application/vnd.android.package-archive
+          put kodi/FEFC.apk FEFC.apk application/vnd.android.package-archive
+          if [ "$MAC_OK" = "true" ]; then
+            put kodi/FEFC-Mac.dmg dist/FEFC-Mac.dmg application/x-apple-diskimage
+            put kodi/FEFC-Mac-Intel.dmg dist/FEFC-Mac-Intel.dmg application/x-apple-diskimage
+          fi
+          ( cd kodi-repo && find . -type f ! -name 'addons.xml' ! -name 'addons.xml.md5' | sed 's|^\./||' | sort ) | while read -r f; do
+            case "$f" in *.zip) ct=application/zip ;; *.png) ct=image/png ;; *.jpg) ct=image/jpeg ;; *) ct=application/octet-stream ;; esac
+            put "kodi-repo/$f" "kodi-repo/$f" "$ct"
+          done
+          put kodi-repo/addons.xml kodi-repo/addons.xml application/xml
+          put kodi-repo/addons.xml.md5 kodi-repo/addons.xml.md5 text/plain
+          put kodi/version.json version.json application/json
+          cat version.json | python3 -c "import json,sys;v=json.load(sys.stdin);print(v['version'],v['build'],sorted(v.get('platforms',{})))"

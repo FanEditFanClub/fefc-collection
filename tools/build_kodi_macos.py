@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Build an unsigned FEFC macOS app and disk image from the stock Kodi dmg.
+"""Build an ad-hoc signed FEFC macOS app and disk image from the stock Kodi dmg.
 
 Kodi 21 ships separate Intel (x86_64) and Apple Silicon (arm64) disk images. This does not
 merge them into one universal binary. On a Mac the image is a UDZO dmg from hdiutil. On Linux
 it is an HFS hybrid from genisoimage, which Finder may not mount; the GitHub macOS job is the
-one that produces the image to install. There is no Developer ID signature and no notarization.
+one that produces the image to install. On a Mac the app is ad-hoc signed (codesign -s -); there is
+no Developer ID signature and no notarization.
 
 usage: build_kodi_macos.py --arch arm64 --stock kodi-21.3-Omega-arm64.dmg --out dist/FEFC-macOS-arm64.dmg
        build_kodi_macos.py --arch all --cache /tmp/fefc-upstream --out dist
@@ -27,16 +28,19 @@ import kodi_upstream
 ROOT = Path(__file__).resolve().parent.parent
 README = """FEFC for Mac
 =============
-This is an unofficial FEFC build of Kodi. It is not signed with an Apple Developer ID and it is not notarized.
+This is an unofficial FEFC build of Kodi 21 with the FEFC skin, add-on, sounds, and settings
+already installed. It is ad-hoc signed, not signed with an Apple Developer ID, and not notarized,
+so macOS asks once before it opens.
 
 1. Drag FEFC.app to the Applications folder. Replace the older FEFC app if macOS asks.
-2. In Terminal, clear the stock signature and the download quarantine, then open it once by hand:
-   codesign --remove-signature /Applications/FEFC.app
+2. Right-click (or Control-click) FEFC.app in Applications, choose Open, then Open.
+3. If macOS still says it cannot check the app, open System Settings > Privacy & Security,
+   scroll down, and choose Open Anyway next to FEFC. Or run this once in Terminal:
    xattr -dr com.apple.quarantine /Applications/FEFC.app
-   Right-click FEFC.app, choose Open, then Open.
-3. Open FEFC. The first launch still asks you to confirm an unsigned app.
 
-Updates use the same version.json as the Android FEFC app.
+FEFC-Mac.dmg is for Apple Silicon Macs (M1, M2, M3, M4). FEFC-Mac-Intel.dmg is for Intel Macs.
+FEFC keeps its settings in ~/Library/Application Support/Kodi, the same folder a stock Kodi uses.
+Updates use the same version.json and build number as the Fire TV and Android FEFC app.
 """
 
 
@@ -108,6 +112,57 @@ def brand_icon(app):
         return False
 
 
+def adhoc_sign(app):
+    """Ad-hoc sign the whole bundle. Apple Silicon refuses to run arm64 code whose signature no
+    longer matches, and staging FEFC changes the bundle. Returns 'adhoc', or False off a Mac."""
+    if not shutil.which('codesign'):
+        return False
+    subprocess.check_call(['xattr', '-cr', str(app)])
+    subprocess.check_call(['codesign', '--force', '--deep', '--sign', '-', str(app)])
+    subprocess.check_call(['codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
+    return 'adhoc'
+
+
+def verify_bundle(app, rec):
+    """Structure checks on the finished FEFC.app. Raises on the first problem; returns what was checked."""
+    import re as _re
+    app = Path(app)
+    with (app / 'Contents' / 'Info.plist').open('rb') as f:
+        info = plistlib.load(f)
+    if info.get('CFBundleName') != 'FEFC' or info.get('CFBundleDisplayName') != 'FEFC':
+        raise SystemExit('Info.plist is not branded FEFC')
+    exe = app / 'Contents' / 'MacOS' / info.get('CFBundleExecutable', '')
+    if not exe.is_file() or not os.access(exe, os.X_OK):
+        raise SystemExit('bundle executable missing: %s' % exe)
+    kodi_root = app / 'Contents' / 'Resources' / 'Kodi'
+    want = ROOT / 'kodi-src' / 'plugin.video.fefc' / 'addon.xml'
+    want_ver = _re.search(r'<addon[^>]*\bversion="([^"]+)"', want.read_text(encoding='utf-8')).group(1)
+    found = {}
+    for aid in fefc_kodi_bundle.SCRIPTED:
+        axml = kodi_root / 'addons' / aid / 'addon.xml'
+        if not axml.is_file():
+            raise SystemExit('missing add-on in bundle: ' + aid)
+        found[aid] = _re.search(r'<addon[^>]*\bversion="([^"]+)"', axml.read_text(encoding='utf-8')).group(1)
+    if found['plugin.video.fefc'] != want_ver:
+        raise SystemExit('bundled plugin.video.fefc %s is not kodi-src %s' % (found['plugin.video.fefc'], want_ver))
+    manifest = (kodi_root / 'system' / 'addon-manifest.xml').read_text(encoding='utf-8')
+    for aid in fefc_kodi_bundle.SCRIPTED:
+        if '<addon>%s</addon>' % aid not in manifest:
+            raise SystemExit('add-on not enabled in addon-manifest.xml: ' + aid)
+    settings = (kodi_root / 'system' / 'settings' / 'darwin_osx.xml').read_text(encoding='utf-8')
+    if 'skin.fefc' not in settings or 'resource.uisounds.fefc' not in settings:
+        raise SystemExit('darwin_osx.xml does not default to the FEFC skin and sounds')
+    build = json.loads((kodi_root / 'fefc-build.json').read_text(encoding='utf-8'))
+    if build.get('version') != rec.get('version') or build.get('build') != rec.get('build') or build.get('platform') != 'macos':
+        raise SystemExit('fefc-build.json does not match this build')
+    for name in ('fefc-intro.mp4',):
+        if not (kodi_root / 'media' / name).is_file():
+            raise SystemExit('missing media/' + name)
+    if not (kodi_root / 'system' / 'keymaps' / 'fefc-nav.xml').is_file():
+        raise SystemExit('missing FEFC keymap')
+    return {'addons': found, 'executable': exe.name, 'build': build.get('build'), 'version': build.get('version')}
+
+
 def pack_dmg(staging, out):
     """On a Mac this is a native UDZO image. Elsewhere it is a UDIF image whose contents are an ISO 9660
     volume (Rock Ridge and Joliet), which Disk Utility can open. That needs the libdmg-hfsplus `dmg` tool."""
@@ -149,6 +204,8 @@ def build_one(stock, out, arch, kodi_version, build_num):
         fefc_app = work / 'stage' / 'FEFC.app'
         fefc_app.parent.mkdir()
         shutil.move(str(app), str(fefc_app))
+        signed = adhoc_sign(fefc_app)
+        checks = verify_bundle(fefc_app, rec)
         (work / 'stage' / 'Read Me.txt').write_text(README, encoding='utf-8')
         packer = pack_dmg(work / 'stage', out)
         report = {
@@ -162,8 +219,9 @@ def build_one(stock, out, arch, kodi_version, build_num):
             'display_name': 'FEFC',
             'fefc_version': rec.get('version'),
             'fefc_build': rec.get('build'),
-            'signed': False,
+            'signed': signed,
             'notarized': False,
+            'checks': checks,
             'extractor': tool,
             'packer': packer,
             'symlinks': links,

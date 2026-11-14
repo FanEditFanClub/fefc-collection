@@ -1,10 +1,9 @@
 name: kodi-platforms
 
-# Builds FEFC macOS disk images, the LG webOS IPK, and the Samsung Tizen widget from the same
-# add-on, skin, and version as the Android Kodi app. Runs on push to main. Does not publish.
-#
-# Publishing is off until Carson sets the repository variable FEFC_PUBLISH_NEW_PLATFORMS to the
-# exact string true. The publish job is skipped otherwise. It does not replace the Android APKs.
+# Builds the LG webOS IPK (artifact only) and the Samsung Tizen widget from the same add-on, skin,
+# and version as the Android Kodi app, and publishes the widget. Runs on push to main.
+# The Mac app (FEFC-Mac.dmg) is built and published by kodi-apk.yml together with the APKs, so it
+# always carries the same build number as Fire TV and Android. This workflow does not touch it.
 
 on:
   workflow_dispatch:
@@ -21,7 +20,6 @@ on:
     branches: [main]
     paths:
       - 'kodi-src/**'
-      - 'tools/build_kodi_macos.py'
       - 'tools/build_kodi_webos.py'
       - 'tools/build_tizen_wgt.py'
       - 'tools/fefc_kodi_bundle.py'
@@ -69,52 +67,6 @@ jobs:
             dist/FEFC-webOS.report.json
           if-no-files-found: error
 
-  macos:
-    if: ${{ github.event_name == 'push' }}
-    runs-on: macos-latest
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Tools
-        run: |
-          brew install ffmpeg
-          brew install libicns || true
-          pip install pillow numpy scipy
-      - name: Build unsigned macOS disk images
-        run: |
-          mkdir -p "$RUNNER_TEMP/kodi"
-          python3 - <<'PY'
-          import os, sys, urllib.request
-          sys.path.insert(0, 'tools')
-          import kodi_upstream
-          html_arm = urllib.request.urlopen('https://mirrors.kodi.tv/releases/osx/arm64/', timeout=60).read().decode('utf-8', 'ignore')
-          html_x64 = urllib.request.urlopen('https://mirrors.kodi.tv/releases/osx/x86_64/', timeout=60).read().decode('utf-8', 'ignore')
-          import re
-          names = re.findall(r'kodi-[^"<> ]+\.dmg', html_arm + '\n' + html_x64)
-          found = kodi_upstream.stable_dmgs(names)
-          cache = os.environ['RUNNER_TEMP'] + '/kodi'
-          for arch in ('arm64', 'x86_64'):
-              ver = kodi_upstream.choose_version({v: n for (v, a), n in found.items() if a == arch}, '21.3')
-              name = found[(ver, arch)]
-              dest = os.path.join(cache, name)
-              url = kodi_upstream.dmg_url(arch, name)
-              print('get', url)
-              urllib.request.urlretrieve(url, dest)
-          PY
-          python3 tools/build_kodi_macos.py --arch all --cache "$RUNNER_TEMP/kodi" --kodi-version 21.3 --out dist
-      - uses: actions/upload-artifact@v4
-        with:
-          name: fefc-macos
-          path: |
-            dist/FEFC-macOS-arm64.dmg
-            dist/FEFC-macOS-arm64.dmg.report.json
-            dist/FEFC-macOS-x86_64.dmg
-            dist/FEFC-macOS-x86_64.dmg.report.json
-          if-no-files-found: error
-
   tizen:
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish_tizen == true) }}
     runs-on: ubuntu-latest
@@ -136,8 +88,8 @@ jobs:
             dist/FEFC.report.json
           if-no-files-found: error
 
-  # Samsung only. Mac and webOS have no publish job. The old FEFC_PUBLISH_NEW_PLATFORMS
-  # variable does not publish them. A push uploads the unsigned widget. A dispatch
+  # Samsung only. webOS has no publish job; the Mac is published by kodi-apk.yml. The old
+  # FEFC_PUBLISH_NEW_PLATFORMS variable does not publish them. A push uploads the unsigned widget. A dispatch
   # does the same only when publish_tizen is true.
   publish-tizen:
     needs: [tizen]
@@ -189,7 +141,7 @@ jobs:
           import publish_kodi_platforms as pub
           doc = json.load(open('dist/version.json'))
           names = set((doc.get('platforms') or {}))
-          assert 'macos' not in names and 'webos' not in names
+          assert 'webos' not in names
           report = json.load(open('dist/incoming/FEFC.report.json'))
           raw = open('dist/incoming/FEFC.wgt', 'rb').read()
           label = open('kodi-src/fefc-version.txt', encoding='utf-8').read().strip()
