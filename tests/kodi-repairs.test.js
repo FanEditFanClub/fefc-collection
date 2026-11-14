@@ -360,7 +360,13 @@ print('ok', len(frames))
   assert.match(out, /^ok /);
   const router = fs.readFileSync(path.join(lib, 'router.py'), 'utf8');
   assert.match(router, /def _halt_anim/);
-  assert.match(router, /setFocus\(self\.btn\)/);
+  // Search opens focused on the search bar button, not the text field, so the clip
+  // can play; moving onto the field stops it. (The old pin matched setFocus(self.btn),
+  // which only ever existed in the earlier search window and later the Support QR dialog.)
+  const win = router.slice(router.indexOf('class OptimusWindow'));
+  const init = win.slice(0, win.indexOf('\n    def ', win.indexOf('def __init__') + 1));
+  assert.match(init, /self\.setFocus\(self\.bar_btn\)/);
+  assert.doesNotMatch(init, /setFocus\(self\.edit\)/);
   assert.doesNotMatch(router, /Player\(\)\.play\([^)]*optimus/);
   assert.doesNotMatch(router, /optimus-popcorn-search\.mp4/);
 });
