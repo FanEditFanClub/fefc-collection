@@ -1742,19 +1742,32 @@ class Router:
         xbmcplugin.setResolvedUrl(self.handle, True, li)
 
     def play(self):
-        vid = self.params['id']
-        name = self.params.get('n') or ''
-        if not name:
-            m = _model()
-            v = m['items'].get(vid)
-            name = v[0] if v else 'video.mp4'
-        url = catalog.stream_url(_base(), vid, name)
-        li = xbmcgui.ListItem(path=url)
-        low = name.lower()
-        mime = 'video/x-matroska' if low.endswith('.mkv') else 'video/mp4'
-        li.setMimeType(mime)
-        li.setContentLookup(False)
-        xbmcplugin.setResolvedUrl(self.handle, True, li)
+        try:
+            vid = self.params['id']
+            name = self.params.get('n') or ''
+            if not name:
+                m = _model()
+                v = m['items'].get(vid)
+                name = v[0] if v else 'video.mp4'
+            url = catalog.stream_url(_base(), vid, name)
+            if not url:
+                raise ValueError('no stream url for %s' % (vid,))
+            li = xbmcgui.ListItem(path=url)
+            low = name.lower()
+            mime = 'video/x-matroska' if low.endswith('.mkv') else 'video/mp4'
+            li.setMimeType(mime)
+            li.setContentLookup(False)
+            xbmcplugin.setResolvedUrl(self.handle, True, li)
+        except Exception as e:
+            _log('error in play: %r' % (e,))
+            try:
+                xbmcgui.Dialog().notification('FEFC', 'Could not play this video.', xbmcgui.NOTIFICATION_ERROR, 5000)
+            except Exception:
+                pass
+            try:
+                xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem())
+            except Exception:
+                pass
 
     # -- external players (same as the web / Fire TV app details page) -----------------------------------
     def _target(self, vid):
@@ -1909,16 +1922,31 @@ class Router:
         xbmcplugin.endOfDirectory(self.handle, succeeded=False)
 
     def play_download(self):
-        vid = self.params['id']
-        r = _dl().get(vid)
-        if not r or not r.get('path') or not os.path.exists(r['path']):
-            xbmcgui.Dialog().notification('FEFC', 'That download is gone — pick Download again to re-download it.', xbmcgui.NOTIFICATION_INFO, 4000)
-            return
-        li = xbmcgui.ListItem(path=r['path'])
-        low = (r.get('name') or '').lower()
-        li.setMimeType('video/x-matroska' if low.endswith('.mkv') else 'video/mp4')
-        li.setContentLookup(False)
-        xbmcplugin.setResolvedUrl(self.handle, True, li)
+        try:
+            vid = self.params['id']
+            r = _dl().get(vid)
+            if not r or not r.get('path') or not os.path.exists(r['path']):
+                xbmcgui.Dialog().notification('FEFC', 'That download is gone — pick Download again to re-download it.', xbmcgui.NOTIFICATION_INFO, 4000)
+                try:
+                    xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem())
+                except Exception:
+                    pass
+                return
+            li = xbmcgui.ListItem(path=r['path'])
+            low = (r.get('name') or '').lower()
+            li.setMimeType('video/x-matroska' if low.endswith('.mkv') else 'video/mp4')
+            li.setContentLookup(False)
+            xbmcplugin.setResolvedUrl(self.handle, True, li)
+        except Exception as e:
+            _log('error in play_download: %r' % (e,))
+            try:
+                xbmcgui.Dialog().notification('FEFC', 'Could not play this download.', xbmcgui.NOTIFICATION_ERROR, 5000)
+            except Exception:
+                pass
+            try:
+                xbmcplugin.setResolvedUrl(self.handle, False, xbmcgui.ListItem())
+            except Exception:
+                pass
 
     def download_delete(self):
         vid = self.params['id']
@@ -2709,22 +2737,20 @@ def _is_back_nav(prev, new):
     """True when `new` is the parent of `prev` (a '..' tap): folder:<child> -> folder:<parent>, or any folder -> root."""
     if not prev or not new or prev == new:
         return False
-    try:
-        m = _model()
-    except Exception:
-        return False
+    # Pure-string checks first: no catalogue load is needed for these.
     if new == 'root':
         return prev.startswith('folder:')
     if not (prev.startswith('folder:') and new.startswith('folder:')):
         return False
     child, parent = prev[7:], new[7:]
+    # Only the parent walk needs the catalogue.
+    try:
+        m = _model()
+    except Exception:
+        return False
     it = (m.get('items') or {}).get(child)
     if not it:
         return False
-    # parent id of the child folder (items[][1]); a shortcut's target is followed like everywhere else
-    p = it[1] or ''
-    if it[2] and it[3]:
-        p = it[3]
     # walk up: the new folder is a back step if it is the child's parent (or the child's own target parent)
     seen = set()
     cur = child
@@ -2740,7 +2766,26 @@ def _is_back_nav(prev, new):
 
 
 def run(argv):
-    r = Router(argv)
+    try:
+        r = Router(argv)
+    except Exception as e:
+        _log('error constructing Router: %r' % (e,))
+        try:
+            xbmcgui.Dialog().notification(
+                'FEFC', 'Could not load the catalogue',
+                xbmcgui.NOTIFICATION_ERROR, 5000)
+        except Exception:
+            pass
+        try:
+            handle = int(argv[1]) if len(argv) > 1 else -1
+        except (TypeError, ValueError):
+            handle = -1
+        if handle >= 0:
+            try:
+                xbmcplugin.endOfDirectory(handle, succeeded=False)
+            except Exception:
+                pass
+        return
     # 0.5.2: the Android back gesture plays the back UI sound, but tapping the ".." back-folder row did not —
     # Kodi's parentdir UI-sound mapping does not fire for plugin ".." navigation. Detect the parent step here
     # (new location is the parent of the previous one) and play the back sound ourselves.

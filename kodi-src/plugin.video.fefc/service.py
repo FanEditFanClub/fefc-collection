@@ -767,9 +767,21 @@ def check_update(manual=False, prompt=True):
         if manual:
             xbmcgui.Dialog().ok('FEFC', 'Unable to check for updates right now.')
         return
-    from resources.lib.updateflow import release_is_newer, platform_download, platform_unavailable_message
-    avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
-    set_update_state(cur, new, avail)
+    try:
+        if not isinstance(new, dict):
+            raise ValueError('update manifest is not a JSON object: %r' % (type(new).__name__,))
+        from resources.lib.updateflow import release_is_newer, platform_download, platform_unavailable_message
+        avail = release_is_newer(new.get('version'), new.get('build'), cur.get('version'), cur.get('build'))
+        set_update_state(cur, new, avail)
+    except Exception as e:
+        log('update check failed after fetch: %s' % e)
+        try:
+            set_update_state(cur, state='failed')
+        except Exception:
+            pass
+        if manual:
+            xbmcgui.Dialog().ok('FEFC', 'Unable to check for updates right now.')
+        return
     plat = _host_platform()
     if plat == 'webos' and avail and (manual or prompt):
         _show_webos_guide(new, platform_download(new, plat, _host_arch(plat)))
