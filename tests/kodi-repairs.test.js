@@ -509,6 +509,11 @@ test('folder tiles stay landscape and videos stay portrait at every depth', () =
   assert.match(router, /shapes\.stamp/);
   assert.match(router, /shapes\.pack/);
   assert.match(router, /def _enqueue/);
+  // The grid-pad lookup reads index 0 as the ".." folder only when Kodi says it is the parent row.
+  const svcSrc = fs.readFileSync(path.join(root, 'kodi-src/plugin.video.fefc/service.py'), 'utf8');
+  const kindAt = svcSrc.slice(svcSrc.indexOf('def _grid_kind_at'), svcSrc.indexOf('def _grid_pad_loop'));
+  assert.match(kindAt, /IsParentFolder/);
+  assert.doesNotMatch(kindAt, /if i == 0:\s*\n\s*(#.*\n\s*)*return 'folder'/);
   const out = py(`
 import json, sys
 sys.path.insert(0, ${JSON.stringify(lib)})

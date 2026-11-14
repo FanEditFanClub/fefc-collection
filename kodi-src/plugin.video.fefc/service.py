@@ -1819,6 +1819,25 @@ def apply_nav_sound(on):
     _drop_stale_back_keymap()
 
 
+def _grid_kind_at(i, pos):
+    """fefc_kind of the item at absolute index i, read relative to the focused index pos.
+
+    Kodi's ".." parent row carries no fefc_kind (Kodi builds it, not the plugin), but it
+    is a real folder row skip_delta() may target, so it reads as 'folder'. It is only
+    treated that way when Kodi says the item at index 0 IS the parent row: with "show
+    parent folder items" off, or at a root without one, index 0 is an ordinary item
+    (possibly a spacer) and must be read like any other."""
+    off = i - pos
+    item = 'Container.ListItem' if off == 0 else 'Container.ListItem(%d)' % off
+    k = xbmc.getInfoLabel(item + '.Property(fefc_kind)')
+    if k:
+        return k
+    if i == 0 and (xbmc.getCondVisibility(item + '.IsParentFolder')
+                   or xbmc.getInfoLabel(item + '.Label') == '..'):
+        return 'folder'
+    return None
+
+
 def _grid_pad_loop(monitor):
     """Move focus off a cell reserved under a portrait poster.
 
@@ -1845,19 +1864,7 @@ def _grid_pad_loop(monitor):
             pos = cur - 1 if cur else 0
 
             def lookup(i, pos=pos):
-                if i == 0:
-                    # Absolute index 0 is Kodi's ".." parent row. It carries
-                    # no fefc_kind property (Kodi builds it, not the plugin;
-                    # the router adds no ".." ListItem), and it is a folder
-                    # row, so skip_delta() can target it. pos = cur - 1 and
-                    # end() passes leading=1, so i == 0 is the parent.
-                    return 'folder'
-                off = i - pos
-                if off == 0:
-                    k = xbmc.getInfoLabel('Container.ListItem.Property(fefc_kind)')
-                else:
-                    k = xbmc.getInfoLabel('Container.ListItem(%d).Property(fefc_kind)' % off)
-                return k or None
+                return _grid_kind_at(i, pos)
 
             home = xbmcgui.Window(10000)
             from_menu = home.getProperty('FEFC.GridFromMenu') == '1'
