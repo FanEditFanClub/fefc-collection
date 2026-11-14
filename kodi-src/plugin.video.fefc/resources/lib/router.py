@@ -546,7 +546,12 @@ class Router:
 
     def armback(self):
         """Keymap runs this, then the normal Back. Marks the press so the plugin reload does not play a second cue.
-        When the sound skin is not set to always (wall video would mute it), play the wav here instead."""
+        When the sound skin is not set to always (wall video would mute it), play the wav here instead.
+
+        FEFC.BackAt is time.monotonic() seconds (see _play_back_sfx): both
+        call sites must use monotonic together, or the 0.4 s debounce
+        compares a wall-clock stamp with a monotonic reading.
+        """
         from .sfxpref import sfx_enabled
         from . import backcue
         home = xbmcgui.Window(10000)
@@ -556,9 +561,19 @@ class Router:
             last = float(home.getProperty('FEFC.BackAt') or '0')
         except ValueError:
             last = 0.0
-        play, skip = backcue.arm_back(on, None, time.time(), last, skin_always)
+        now = time.monotonic()
+        play, skip = backcue.arm_back(on, None, now, last, skin_always)
         if skip:
             home.setProperty('FEFC.BackSkip', '1')
+        if skin_always:
+            # The skin is about to play for this press (play is False).
+            # Stamp BackAt now so the debounce window starts now; without
+            # this a fast second Back saw a stale BackAt and Python played
+            # too (skin + Python double-fire). Do NOT stamp here when
+            # Python is about to play: _play_back_sfx() stamps after its
+            # own should_play() check, and stamping first would make that
+            # check see a 0 s gap and suppress the cue entirely.
+            home.setProperty('FEFC.BackAt', str(now))
         if play:
             _play_back_sfx()
         if self.handle >= 0:
@@ -2353,7 +2368,13 @@ def _white_png():
 
 
 def _dialog_back(action):
-    """Close on Back. Play the back cue only when the sound skin will not (avoids a second click)."""
+    """Close on Back. Play the back cue only when the sound skin will not (avoids a second click).
+
+    FEFC.BackAt is time.monotonic() seconds. When the skin plays this press
+    (GuiSound == 'always', or BackSkip was set by armback for this press),
+    stamp BackAt here: otherwise the skin-played cue never entered the
+    debounce window and a fast second Back made Python play too.
+    """
     aid = action.getId()
     if aid not in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_STOP):
         return False
@@ -2361,8 +2382,11 @@ def _dialog_back(action):
         home = xbmcgui.Window(10000)
         if home.getProperty('FEFC.BackSkip') == '1':
             home.clearProperty('FEFC.BackSkip')
+            home.setProperty('FEFC.BackAt', str(time.monotonic()))
         elif home.getProperty('FEFC.GuiSound') != 'always':
             _play_back_sfx()
+        else:
+            home.setProperty('FEFC.BackAt', str(time.monotonic()))
     return True
 
 
@@ -3032,7 +3056,11 @@ ROUTES = {'': 'root', 'root': 'root', 'folder': 'folder', 'genres': 'genres', 'g
 
 
 def _play_back_sfx():
-    """Play the packaged back wav. Does not stop or restart the home-wall player."""
+    """Play the packaged back wav. Does not stop or restart the home-wall player.
+
+    FEFC.BackAt is time.monotonic() seconds, matching armback(): both call
+    sites must use monotonic together, or the debounce compares mixed clocks.
+    """
     from .sfxpref import sfx_enabled
     from . import backcue
     try:
@@ -3056,7 +3084,7 @@ def _play_back_sfx():
             last = float(home.getProperty('FEFC.BackAt') or '0')
         except ValueError:
             last = 0.0
-        now = time.time()
+        now = time.monotonic()
         if not backcue.should_play(True, vol, now, last):
             return
         paths = []

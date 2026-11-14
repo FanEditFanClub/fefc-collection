@@ -1698,7 +1698,15 @@ _wall = None
 
 
 def apply_sound_now(on):
-    """Flip the live mute and the wall audio. No settings write and no keymap reload."""
+    """Flip the live mute and the wall audio. No settings write and no keymap reload.
+
+    FEFC.GuiSound here is intentionally an optimistic LIVE flag for the
+    requested state, not the persisted Kodi setting: the persist thread
+    (sound_toggle) writes the setting and then calls apply_nav_sound(),
+    which reads the setting back and corrects this property. Do not add a
+    read-back here — it would read the old value before the persist
+    thread has written the new one.
+    """
     home = xbmcgui.Window(10000)
     home.setProperty('FEFC.SoundOff', '' if on else '1')
     home.setProperty('FEFC.GuiSound', 'always' if on else 'off')
@@ -1718,20 +1726,53 @@ def apply_sound_now(on):
 
 def apply_nav_sound(on):
     """Sound On: GUI sounds play during the wall video (mode 2) and the FEFC sound skin stays selected.
-    Sound Off: GUI sounds off so Back does not ignore the mute. Does not stop the wall player."""
+    Sound Off: GUI sounds off so Back does not ignore the mute. Does not stop the wall player.
+
+    FEFC.GuiSound is set from a read-back of audiooutput.guisoundmode, not
+    from the requested value: the startup JSON-RPC set often runs before
+    guisettings is loaded, so the mode falls back and the property used to
+    say 'always' while the real setting was not 2 (silent Back) or 'off'
+    while it was 2 (double cue). The optimistic value is still set first
+    so the UI does not wait, then corrected from the read-back.
+    """
     from resources.lib.backcue import gui_sound_mode
     home = xbmcgui.Window(10000)
     home.setProperty('FEFC.GuiSound', 'always' if on else 'off')
     mode = gui_sound_mode(bool(on))
+
     def _set(setting, value):
         xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Settings.SetSettingValue',
                                         'params': {'setting': setting, 'value': value}}))
+
+    def _get(setting):
+        try:
+            r = json.loads(xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Settings.GetSettingValue',
+                                                           'params': {'setting': setting}})))
+            return (r.get('result') or {}).get('value')
+        except Exception as e:
+            log('nav sound read-back: %s' % e)
+            return None
+
     try:
         _set('audiooutput.guisoundmode', mode)
         if on:
             _set('lookandfeel.soundskin', 'resource.uisounds.fefc')
     except Exception as e:
         log('nav sound: %s' % e)
+    actual = _get('audiooutput.guisoundmode')
+    if actual is None:
+        # Read-back failed (e.g. too early at startup): keep the optimistic
+        # property as before, and let the 45 s reapply correct it later.
+        log('nav sound: could not read back guisoundmode; keeping optimistic FEFC.GuiSound')
+    else:
+        try:
+            actual_mode = int(actual)
+        except (TypeError, ValueError):
+            actual_mode = None
+        if actual_mode is not None:
+            home.setProperty('FEFC.GuiSound', 'always' if actual_mode == 2 else 'off')
+            if actual_mode != mode:
+                log('nav sound: guisoundmode read back %s, wanted %s; FEFC.GuiSound set from read-back' % (actual_mode, mode))
     _drop_stale_back_keymap()
 
 
@@ -1762,9 +1803,11 @@ def _grid_pad_loop(monitor):
 
             def lookup(i, pos=pos):
                 if i == 0:
-                    # Absolute index 0 is Kodi's ".." parent row. Kodi builds it, not
-                    # the plugin, so it carries no fefc_kind; it is a folder row, and
-                    # skip_delta() must be able to target it (item 133c).
+                    # Absolute index 0 is Kodi's ".." parent row. It carries
+                    # no fefc_kind property (Kodi builds it, not the plugin;
+                    # the router adds no ".." ListItem), and it is a folder
+                    # row, so skip_delta() can target it. pos = cur - 1 and
+                    # end() passes leading=1, so i == 0 is the parent.
                     return 'folder'
                 off = i - pos
                 if off == 0:

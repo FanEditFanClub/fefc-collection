@@ -7,6 +7,14 @@ video is playing during browsing, so those cues stay silent until the mode is "a
 Python plays the same wav for the plugin ".." row (Kodi does not fire parentdir for that) and
 when the sound skin will not. A short debounce stops a second cue when the skin and Python both
 run for one Back. Playback of the wall is never stopped to make room for the cue.
+
+# now/last throughout this module are time.monotonic() seconds, never wall
+# clock: a clock jump must not suppress or disable the 0.4 s debounce.
+# FEFC.BackAt stores the same monotonic value. A leftover wall-clock
+# BackAt from before the monotonic switch is smaller than no monotonic
+# reading in the wrong direction (now - last is negative), and should_play()
+# treats a negative gap as "stale, do not suppress", so it self-heals on
+# the first Back after the switch.
 """
 DEBOUNCE_S = 0.4
 # parentdir, previousmenu, nav back
@@ -23,7 +31,9 @@ WAV_CANDIDATES = (
 def sound_allowed(sound_on, volume):
     if not sound_on:
         return False
-    if volume is not None and volume <= 0:
+    # volume is None (unknown) or a number from Application.GetProperties.
+    # A non-numeric volume must not raise: treat it as unknown (allowed).
+    if volume is not None and isinstance(volume, (int, float)) and volume <= 0:
         return False
     return True
 
@@ -34,9 +44,16 @@ def gui_sound_mode(sound_on):
 
 
 def should_play(sound_on, volume, now, last, debounce=DEBOUNCE_S):
+    """True when a cue may play now. now/last are time.monotonic() seconds.
+
+    Only a gap in [0, debounce) suppresses. A negative gap (last is newer
+    than now, or a stale wall-clock BackAt left over from before the
+    monotonic switch) means the stored time cannot be trusted, so it does
+    not suppress — the cue plays and BackAt is re-stamped in monotonic time.
+    """
     if not sound_allowed(sound_on, volume):
         return False
-    if last and (now - last) < debounce:
+    if last and 0 <= (now - last) < debounce:
         return False
     return True
 
@@ -49,7 +66,8 @@ def plugin_back_should_play(sound_on, volume, now, last, skip_marked):
 
 
 def arm_back(sound_on, volume, now, last, skin_always):
-    """Keymap hook that runs before Back. Returns (play_now, mark_skip)."""
+    """Keymap hook that runs before Back. Returns (play_now, mark_skip).
+    now/last are time.monotonic() seconds (see should_play)."""
     if not sound_allowed(sound_on, volume):
         return False, False
     if skin_always:
