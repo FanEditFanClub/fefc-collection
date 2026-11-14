@@ -849,7 +849,13 @@ for n, c in hit.items():
 # A title the catalogue can already illustrate must not stay on a first frame.
 assert hit['godzilla']['art'] > 0
 assert hit['home alone 2']['art'] > 0 and hit['home alone 2']['missing'] == 0
-assert hit['gumby']['art'] > 300
+# Gumby has ~200 real episodes. The index also lists macOS AppleDouble junk
+# ('._Gumby ....mp4'); those are dropped from the model, so they are neither
+# counted nor illustrated.
+assert hit['gumby']['art'] > 150 and hit['gumby']['missing'] == 0, hit['gumby']
+raw = json.load(open('data/index.json'))['items']
+assert any(str(it.get('name') or '').startswith('._') for it in raw), 'fixture has no AppleDouble files'
+assert not any(str(v[0]).startswith('._') for v in m['items'].values())
 assert hit['astro-monster']['art'] + hit.get('astro monster', {}).get('art', 0) > 0
 `);
   assert.match(out, /ART /);
