@@ -236,8 +236,7 @@ jobs:
         run: |
           set -euo pipefail
           brew install ffmpeg || true
-          brew install libicns || true
-          pip install pillow numpy scipy
+          pip install pillow numpy scipy dmgbuild
       - name: Download stock Kodi for macOS
         run: |
           set -euo pipefail
@@ -261,6 +260,8 @@ jobs:
               urllib.request.urlretrieve(url, os.path.join(os.environ['RUNNER_TEMP'], 'kodi', name))
           PY
       - name: Build FEFC for Mac (ad-hoc signed)
+        env:
+          FEFC_REQUIRE_DMG_LAYOUT: "1"
         run: |
           set -euo pipefail
           python3 tools/build_kodi_macos.py --arch all --cache "$RUNNER_TEMP/kodi" --kodi-version "$KODI_VER" --build "$NEXT_BUILD" --out dist
@@ -279,6 +280,25 @@ jobs:
             hdiutil attach -nobrowse -readonly -mountpoint "$mnt" "$img"
             app="$mnt/FEFC.app"
             test -f "$mnt/Read Me.txt"
+            # drag-install window: Applications shortcut, Finder layout, background, volume icon
+            test -L "$mnt/Applications" && test "$(readlink "$mnt/Applications")" = /Applications
+            test -f "$mnt/.DS_Store"
+            ls "$mnt/.background/" | grep -qi "dmg-bg"
+            test -f "$mnt/.VolumeIcon.icns"
+            GetFileInfo -a "$mnt" 2>/dev/null | grep -q C && echo "volume custom icon flag set" || echo "volume custom icon flag: not readable"
+            # app icon: plist key, no asset-catalog icon name, icns with 16 to 1024 px, renders with sips
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconFile' "$app/Contents/Info.plist")" = FEFC
+            if /usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$app/Contents/Info.plist" >/dev/null 2>&1; then echo "CFBundleIconName still set"; exit 1; fi
+            icns="$app/Contents/Resources/FEFC.icns"; test -f "$icns"
+            rm -rf "$RUNNER_TEMP/check.iconset"; iconutil -c iconset "$icns" -o "$RUNNER_TEMP/check.iconset"
+            ls "$RUNNER_TEMP/check.iconset" | sort | tee "$RUNNER_TEMP/iconset.txt"
+            for n in icon_16x16 icon_16x16@2x icon_32x32 icon_32x32@2x icon_128x128 icon_128x128@2x icon_256x256 icon_256x256@2x icon_512x512 icon_512x512@2x; do
+              grep -qx "$n.png" "$RUNNER_TEMP/iconset.txt" || { echo "icns lacks $n"; exit 1; }
+            done
+            test "$(sips -g pixelWidth "$RUNNER_TEMP/check.iconset/icon_512x512@2x.png" | awk '/pixelWidth/{print $2}')" = 1024
+            test "$(sips -g pixelWidth "$RUNNER_TEMP/check.iconset/icon_16x16.png" | awk '/pixelWidth/{print $2}')" = 16
+            sips -s format png "$icns" --out "dist/FEFC-icon-$arch.png" >/dev/null
+            sips -g pixelWidth -g pixelHeight "dist/FEFC-icon-$arch.png"
             codesign --verify --deep --strict --verbose=2 "$app"
             exe="$app/Contents/MacOS/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app/Contents/Info.plist")"
             test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleName' "$app/Contents/Info.plist")" = FEFC
@@ -298,6 +318,21 @@ jobs:
           PY
             hdiutil detach "$mnt"
           done
+      - name: Screenshot of the disk image window (best effort; Finder may not draw on a headless runner)
+        continue-on-error: true
+        run: |
+          set +e
+          hdiutil attach dist/FEFC-Mac.dmg > "$RUNNER_TEMP/attach.txt"
+          vol=$(awk -F'\t' '/\/Volumes\//{print $NF}' "$RUNNER_TEMP/attach.txt" | tail -1)
+          echo "mounted at $vol"
+          open "$vol"; sleep 8
+          osascript -e 'tell application "Finder" to activate' 2>&1
+          sleep 3
+          screencapture -x dist/dmg-window-screen.png
+          wid=$(osascript -e 'tell application "Finder" to get id of front window' 2>/dev/null)
+          [ -n "$wid" ] && screencapture -x -o -l"$wid" dist/dmg-window.png 2>/dev/null
+          ls -l dist/*.png
+          hdiutil detach "$vol" -force >/dev/null
       - name: Launch test (Apple Silicon image, no window interaction)
         run: |
           set +e
@@ -357,6 +392,7 @@ jobs:
             dist/launch-test.txt
             dist/launch-*
             dist/Kodi*
+            dist/*.png
           retention-days: 7
           if-no-files-found: warn
 

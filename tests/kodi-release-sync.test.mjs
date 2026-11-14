@@ -127,3 +127,61 @@ test('worker serves FEFC-Mac.dmg and the R2 add-on repo, with the static repo as
   r = await get('/kodi-repo/../_worker.js');
   assert.notEqual(await r.text(), '<addons r2="1"/>');
 });
+
+test('Mac app icon and drag-install window: FEFC artwork, every size, Applications shortcut, verified in CI', () => {
+  const out = py(`
+import sys, os, tempfile, plistlib
+sys.path.insert(0, 'tools')
+import kodi_brand as k, build_kodi_macos as m
+from pathlib import Path
+from PIL import Image
+d = Path(tempfile.mkdtemp())
+names = k.write_iconset(d / 'FEFC.iconset')
+assert len(names) == 10, names
+for n in names:
+    im = Image.open(d / 'FEFC.iconset' / n)
+    base = int(n.split('_')[1].split('x')[0]); want = base * (2 if '@2x' in n else 1)
+    assert im.size == (want, want) and im.mode == 'RGBA', (n, im.size, im.mode)
+big = k.mac_icon(1024)
+assert big.getpixel((0, 0))[3] == 0 and big.getpixel((512, 512))[3] == 255   # rounded square, not full-bleed
+# same artwork as the Android launcher icon: the centre matches icon() closely
+a = k.icon(256).convert('RGB'); b = k.mac_icon(1024).crop((100, 100, 924, 924)).resize((256, 256)).convert('RGB')
+diff = sum(abs(x - y) for p, q in zip(a.getdata(), b.getdata()) for x, y in zip(p, q)) / (256 * 256 * 3)
+assert diff < 12, diff
+# icns parser on a Pillow-written icns
+Image.open(d / 'FEFC.iconset' / 'icon_512x512@2x.png').save(d / 't.icns')
+assert 'ic10' in m.icns_types(d / 't.icns')
+# window layout: icons inside the window, background drawn at 1x and 2x of the window size
+w, h = k.DMG_WINDOW
+for name, (x, y) in k.DMG_ICONS.items():
+    s = k.DMG_ICON_SIZE // 2
+    assert s <= x <= w - s and s <= y and y + s + 26 <= h, name
+assert k.dmg_background(1).size == (w, h) and k.dmg_background(2).size == (2 * w, 2 * h)
+# brand_icon rewrites the plist even off a Mac when an icns tool exists; here check the plist logic directly
+app = d / 'FEFC.app' / 'Contents'; (app / 'Resources').mkdir(parents=True)
+plistlib.dump({'CFBundleIconFile': 'kodi.icns', 'CFBundleIconName': 'AppIcon', 'CFBundleName': 'FEFC'}, open(app / 'Info.plist', 'wb'))
+(app / 'Resources' / 'kodi.icns').write_bytes(b'old')
+import shutil
+if shutil.which('iconutil') or shutil.which('png2icns'):
+    r = m.brand_icon(d / 'FEFC.app', d)
+    info = plistlib.load(open(app / 'Info.plist', 'rb'))
+    assert info['CFBundleIconFile'] == 'FEFC' and 'CFBundleIconName' not in info, info
+print('ok')
+`);
+  assert.equal(out, 'ok');
+  const tool = fs.readFileSync(path.join(root, 'tools/build_kodi_macos.py'), 'utf8');
+  assert.match(tool, /info\.pop\('CFBundleIconName', None\)/);
+  assert.match(tool, /'symlinks': \{'Applications': '\/Applications'\}/);
+  assert.match(tool, /FEFC_REQUIRE_DMG_LAYOUT/);
+  // the icon change happens before the ad-hoc signature
+  const b = tool.indexOf('branded_icon = brand_icon(app, work)'), s = tool.indexOf('signed = adhoc_sign(fefc_app)');
+  assert.ok(b > 0 && s > b);
+  const wf = fs.readFileSync(path.join(root, '.github/workflows/kodi-apk.yml'), 'utf8');
+  assert.match(wf, /pip install pillow numpy scipy dmgbuild/);
+  assert.match(wf, /FEFC_REQUIRE_DMG_LAYOUT: "1"/);
+  assert.match(wf, /test -L "\$mnt\/Applications"/);
+  assert.match(wf, /Print :CFBundleIconFile/);
+  assert.match(wf, /iconutil -c iconset/);
+  assert.match(wf, /icon_512x512@2x/);
+  assert.match(wf, /sips -s format png/);
+});

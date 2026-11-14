@@ -32,7 +32,7 @@ This is an unofficial FEFC build of Kodi 21 with the FEFC skin, add-on, sounds, 
 already installed. It is ad-hoc signed, not signed with an Apple Developer ID, and not notarized,
 so macOS asks once before it opens.
 
-1. Drag FEFC.app to the Applications folder. Replace the older FEFC app if macOS asks.
+1. Drag FEFC onto the Applications shortcut in this window. Replace the older FEFC app if macOS asks.
 2. Right-click (or Control-click) FEFC.app in Applications, choose Open, then Open.
 3. If macOS still says it cannot check the app, open System Settings > Privacy & Security,
    scroll down, and choose Open Anyway next to FEFC. Or run this once in Terminal:
@@ -95,21 +95,63 @@ def brand_plist(app):
     return ident
 
 
-def brand_icon(app):
+ICON_FILE = 'FEFC.icns'
+
+
+def brand_icon(app, work):
+    """Give FEFC.app the FEFC icon (the Android/Fire TV launcher artwork, macOS-shaped): an .icns with every
+    size from 16 to 1024 px built by iconutil, CFBundleIconFile pointing at it, and CFBundleIconName removed so
+    macOS does not take the Kodi icon from Assets.car. Returns a dict describing what was done, or False."""
+    import kodi_brand
     resources = app / 'Contents' / 'Resources'
-    icns = next((resources / name for name in ('icon.icns', 'kodi.icns') if (resources / name).is_file()), None)
-    if icns is None or not shutil.which('png2icns'):
+    iconset = Path(work) / 'FEFC.iconset'
+    kodi_brand.write_iconset(iconset)
+    icns = resources / ICON_FILE
+    if shutil.which('iconutil'):
+        subprocess.check_call(['iconutil', '-c', 'icns', str(iconset), '-o', str(icns)])
+        tool = 'iconutil'
+    elif shutil.which('png2icns'):
+        subprocess.check_call(['png2icns', str(icns)] + [str(iconset / n) for n in (
+            'icon_16x16.png', 'icon_32x32.png', 'icon_128x128.png', 'icon_256x256.png', 'icon_512x512.png')])
+        tool = 'png2icns'
+    else:
         return False
-    try:
-        import kodi_brand
-        png = icns.with_suffix('.png')
-        kodi_brand.icon(1024).save(png)
-        subprocess.check_call(['png2icns', str(icns), str(png)])
-        png.unlink(missing_ok=True)
-        return True
-    except Exception as e:
-        print('icon not replaced:', e)
-        return False
+    plist_path = app / 'Contents' / 'Info.plist'
+    with plist_path.open('rb') as f:
+        info = plistlib.load(f)
+    old = {k: info.get(k) for k in ('CFBundleIconFile', 'CFBundleIconName')}
+    # Older icon files that Kodi named get the same artwork, in case anything refers to them by name.
+    for name in {str(old.get('CFBundleIconFile') or ''), 'kodi.icns', 'icon.icns'}:
+        if name:
+            other = resources / (name if name.endswith('.icns') else name + '.icns')
+            if other.is_file() and other.name != ICON_FILE:
+                shutil.copyfile(icns, other)
+    info['CFBundleIconFile'] = ICON_FILE[:-5]
+    info.pop('CFBundleIconName', None)
+    with plist_path.open('wb') as f:
+        plistlib.dump(info, f, fmt=plistlib.FMT_XML)
+    return {'file': ICON_FILE, 'tool': tool, 'replaced': old, 'assets_car': (resources / 'Assets.car').is_file()}
+
+
+# icns element types for every size from 16 to 1024 px (1x and 2x), as iconutil writes them.
+ICNS_SIZES = {'icp4': 16, 'icp5': 32, 'ic11': 32, 'ic12': 64, 'ic07': 128, 'ic13': 256, 'ic08': 256,
+              'ic14': 512, 'ic09': 512, 'ic10': 1024}
+
+
+def icns_types(path):
+    """Element type codes in an .icns file (a list, in file order)."""
+    import struct
+    data = Path(path).read_bytes()
+    if data[:4] != b'icns' or struct.unpack('>I', data[4:8])[0] != len(data):
+        raise SystemExit('not an icns file: %s' % path)
+    types, i = [], 8
+    while i + 8 <= len(data):
+        t, n = data[i:i + 4].decode('latin-1'), struct.unpack('>I', data[i + 4:i + 8])[0]
+        if n < 8:
+            raise SystemExit('bad icns element in %s' % path)
+        types.append(t)
+        i += n
+    return types
 
 
 def adhoc_sign(app):
@@ -160,16 +202,76 @@ def verify_bundle(app, rec):
             raise SystemExit('missing media/' + name)
     if not (kodi_root / 'system' / 'keymaps' / 'fefc-nav.xml').is_file():
         raise SystemExit('missing FEFC keymap')
-    return {'addons': found, 'executable': exe.name, 'build': build.get('build'), 'version': build.get('version')}
+    if info.get('CFBundleIconFile') not in ('FEFC', 'FEFC.icns') or 'CFBundleIconName' in info:
+        raise SystemExit('Info.plist does not point at the FEFC icon: %r %r' % (info.get('CFBundleIconFile'), info.get('CFBundleIconName')))
+    icns = app / 'Contents' / 'Resources' / ICON_FILE
+    if not icns.is_file():
+        raise SystemExit('missing ' + ICON_FILE)
+    types = icns_types(icns)
+    sizes = sorted({ICNS_SIZES[t] for t in types if t in ICNS_SIZES})
+    if shutil.which('iconutil') and not set(ICNS_SIZES) <= set(types):
+        raise SystemExit('FEFC.icns lacks sizes: %s' % sorted(set(ICNS_SIZES) - set(types)))
+    return {'addons': found, 'executable': exe.name, 'build': build.get('build'), 'version': build.get('version'),
+            'icon': {'file': ICON_FILE, 'types': types, 'px': sizes}}
 
 
-def pack_dmg(staging, out):
-    """On a Mac this is a native UDZO image. Elsewhere it is a UDIF image whose contents are an ISO 9660
-    volume (Rock Ridge and Joliet), which Disk Utility can open. That needs the libdmg-hfsplus `dmg` tool."""
+def dmg_layout(work):
+    """Background (1x and 2x), volume icon and Finder settings for the drag-install window."""
+    import kodi_brand
+    work = Path(work)
+    bg1, bg2 = work / 'dmg-bg.png', work / 'dmg-bg@2x.png'
+    kodi_brand.dmg_background(1).save(bg1)
+    kodi_brand.dmg_background(2).save(bg2)
+    background = str(bg1)
+    if shutil.which('tiffutil'):
+        tiff = work / 'dmg-bg.tiff'
+        subprocess.check_call(['tiffutil', '-cathidpicheck', str(bg1), str(bg2), '-out', str(tiff)])
+        background = str(tiff)
+    w, h = kodi_brand.DMG_WINDOW
+    return {
+        'format': 'UDZO',
+        'filesystem': 'HFS+',
+        'symlinks': {'Applications': '/Applications'},
+        'background': background,
+        'window_rect': ((200, 120), (w, h)),
+        'default_view': 'icon-view',
+        'show_status_bar': False, 'show_tab_view': False, 'show_toolbar': False,
+        'show_pathbar': False, 'show_sidebar': False, 'show_icon_preview': False,
+        'arrange_by': None, 'grid_spacing': 100, 'label_pos': 'bottom', 'text_size': 13,
+        'icon_size': kodi_brand.DMG_ICON_SIZE,
+        'icon_locations': dict(kodi_brand.DMG_ICONS),
+        'hide_extension': ['FEFC.app', 'Read Me.txt'],
+    }
+
+
+def pack_dmg(staging, out, work=None):
+    """On a Mac with dmgbuild: a UDZO image whose window shows FEFC.app, an Applications shortcut and the
+    Read Me on the FEFC background, with the FEFC volume icon. On a Mac without it: a plain hdiutil image
+    (FEFC_REQUIRE_DMG_LAYOUT=1 makes that an error). Elsewhere it is a UDIF image whose contents are an
+    ISO 9660 volume (Rock Ridge and Joliet), which needs the libdmg-hfsplus `dmg` tool."""
     out = Path(out).resolve()
     if out.exists():
         out.unlink()
+    staging = Path(staging)
     if shutil.which('hdiutil'):
+        try:
+            import dmgbuild
+        except ImportError:
+            dmgbuild = None
+        if dmgbuild is not None:
+            settings = dmg_layout(work or staging.parent)
+            settings['files'] = [str(p) for p in sorted(staging.iterdir())]
+            icns = staging / 'FEFC.app' / 'Contents' / 'Resources' / ICON_FILE
+            if icns.is_file():
+                settings['icon'] = str(icns)
+            dmgbuild.build_dmg(str(out), 'FEFC', settings=settings)
+            return 'dmgbuild-udzo'
+        if os.environ.get('FEFC_REQUIRE_DMG_LAYOUT') == '1':
+            raise SystemExit('dmgbuild is not installed (pip install dmgbuild); refusing a disk image without the drag-install window')
+        # No dmgbuild: still give the plain image an Applications shortcut.
+        link = staging / 'Applications'
+        if not link.exists():
+            os.symlink('/Applications', link)
         subprocess.check_call(['hdiutil', 'create', '-volname', 'FEFC', '-srcfolder', str(staging), '-ov', '-format', 'UDZO', str(out)])
         return 'hdiutil-udzo'
     iso = out.with_suffix('.iso')
@@ -190,7 +292,7 @@ def build_one(stock, out, arch, kodi_version, build_num):
         tool, links = extract_dmg(Path(stock), work / 'src')
         app = find_app(work / 'src')
         ident = brand_plist(app)
-        branded_icon = brand_icon(app)
+        branded_icon = brand_icon(app, work)
         signature = app / 'Contents' / '_CodeSignature'
         if signature.is_dir():
             shutil.rmtree(signature)
@@ -207,7 +309,7 @@ def build_one(stock, out, arch, kodi_version, build_num):
         signed = adhoc_sign(fefc_app)
         checks = verify_bundle(fefc_app, rec)
         (work / 'stage' / 'Read Me.txt').write_text(README, encoding='utf-8')
-        packer = pack_dmg(work / 'stage', out)
+        packer = pack_dmg(work / 'stage', out, work)
         report = {
             'platform': 'macos',
             'arch': arch,
@@ -227,8 +329,9 @@ def build_one(stock, out, arch, kodi_version, build_num):
             'symlinks': links,
             'icon': branded_icon,
             'stock': str(stock),
-            'installable_here': packer in ('hdiutil-udzo', 'udif-iso9660'),
-            'native_hfs': packer == 'hdiutil-udzo',
+            'installable_here': packer in ('dmgbuild-udzo', 'hdiutil-udzo', 'udif-iso9660'),
+            'native_hfs': packer in ('dmgbuild-udzo', 'hdiutil-udzo'),
+            'drag_install_window': packer == 'dmgbuild-udzo',
         }
         Path(str(out) + '.report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
         print(json.dumps(report, indent=2))
