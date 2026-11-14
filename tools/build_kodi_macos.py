@@ -134,8 +134,10 @@ def brand_icon(app, work):
 
 
 # icns element types for every size from 16 to 1024 px (1x and 2x), as iconutil writes them.
-ICNS_SIZES = {'icp4': 16, 'icp5': 32, 'ic11': 32, 'ic12': 64, 'ic07': 128, 'ic13': 256, 'ic08': 256,
-              'ic14': 512, 'ic09': 512, 'ic10': 1024}
+# (iconutil writes 16 and 32 px as ic04/ic05 on current macOS; older tools use icp4/icp5 or is32/il32.)
+ICNS_SIZES = {'icp4': 16, 'ic04': 16, 'is32': 16, 'icp5': 32, 'ic05': 32, 'il32': 32, 'ic11': 32, 'ic12': 64,
+              'ic07': 128, 'ic13': 256, 'ic08': 256, 'ic14': 512, 'ic09': 512, 'ic10': 1024}
+ICNS_REQUIRED_PX = (16, 32, 64, 128, 256, 512, 1024)
 
 
 def icns_types(path):
@@ -209,8 +211,8 @@ def verify_bundle(app, rec):
         raise SystemExit('missing ' + ICON_FILE)
     types = icns_types(icns)
     sizes = sorted({ICNS_SIZES[t] for t in types if t in ICNS_SIZES})
-    if shutil.which('iconutil') and not set(ICNS_SIZES) <= set(types):
-        raise SystemExit('FEFC.icns lacks sizes: %s' % sorted(set(ICNS_SIZES) - set(types)))
+    if shutil.which('iconutil') and not set(ICNS_REQUIRED_PX) <= set(sizes):
+        raise SystemExit('FEFC.icns lacks sizes: %s (types %s)' % (sorted(set(ICNS_REQUIRED_PX) - set(sizes)), types))
     return {'addons': found, 'executable': exe.name, 'build': build.get('build'), 'version': build.get('version'),
             'icon': {'file': ICON_FILE, 'types': types, 'px': sizes}}
 
