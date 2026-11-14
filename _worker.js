@@ -590,7 +590,8 @@ async function streamApi(req, env, url) {
   if (req.method !== 'GET' && req.method !== 'HEAD') return json({ error: 'method_not_allowed' }, 405);
   const CORS = { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range,accept-ranges,content-length,content-type,content-disposition' };
   // Accept /api/stream/{id} or /api/stream/{id}/file.ext (extension helps VLC / clients pick a demuxer).
-  const rest = decodeURIComponent(url.pathname.slice('/api/stream/'.length)).replace(/^\/+|\/+$/g, '');
+  let rest;
+  try { rest = decodeURIComponent(url.pathname.slice('/api/stream/'.length)).replace(/^\/+|\/+$/g, ''); } catch (_) { return json({ error: 'bad_id' }, 400); }
   const slash = rest.indexOf('/');
   const id = (slash < 0 ? rest : rest.slice(0, slash)).trim();
   const fileName = (slash < 0 ? '' : rest.slice(slash + 1).split('/').pop() || '').replace(/[^\w.\- ()\[\]]+/g, '_') || '';
