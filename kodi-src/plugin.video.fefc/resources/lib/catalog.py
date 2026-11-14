@@ -1436,6 +1436,12 @@ def clip_list(value):
     out = []
     seen = set()
     for group in groups:
+        if isinstance(group, str):
+            # A bare path inside a clip set is its own one-file clip. Iterating
+            # it would yield single characters ('a', 's', ...) as bogus clips.
+            group = [group]
+        elif not isinstance(group, (list, tuple)):
+            continue
         paths = [p for p in group if isinstance(p, str) and os.path.basename(p)]
         if not paths:
             continue

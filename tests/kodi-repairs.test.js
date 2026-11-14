@@ -1233,6 +1233,8 @@ assert catalog.play_choice(ww, False, exists=lambda p: False) == ''
 def _boom(p):
     raise OSError('no media dir')
 assert catalog.play_choice(ww, False, exists=_boom) == ''
+# A bare path inside a clip set is one clip, never split into single characters.
+assert catalog.clip_list([['x/a.m4a', 'x/a.mp3'], 'x/b.mp3']) == ['x/a.mp3', 'x/b.mp3']
 assert catalog.sfx_up(m, 'qv') == []
 st = catalog.sfx_for(m, 'st')
 assert len(st) >= 6 and set(bases(catalog.sfx_up(m, 'rk'))) == set(bases(st))
