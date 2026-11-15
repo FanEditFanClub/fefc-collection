@@ -202,7 +202,7 @@ def verify_bundle(app, rec):
     for name in ('fefc-intro.mp4',):
         if not (kodi_root / 'media' / name).is_file():
             raise SystemExit('missing media/' + name)
-    if not (kodi_root / 'system' / 'keymaps' / 'fefc-nav.xml').is_file():
+    if not (kodi_root / 'system' / 'keymaps' / 'zz-fefc-nav.xml').is_file():
         raise SystemExit('missing FEFC keymap')
     if info.get('CFBundleIconFile') not in ('FEFC', 'FEFC.icns') or 'CFBundleIconName' in info:
         raise SystemExit('Info.plist does not point at the FEFC icon: %r %r' % (info.get('CFBundleIconFile'), info.get('CFBundleIconName')))

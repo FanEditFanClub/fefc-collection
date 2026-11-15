@@ -319,6 +319,16 @@ class Router:
         url = _url(self.url, **kw)
         self._enqueue('video' if kind == 'video' else kind, lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, True))
 
+    def _pager(self, page, more, **kw):
+        """0.6.6: Previous page / Next page cards, always after every item at the bottom of the list
+        (shapes.KIND_PAGER), landscape action style. Previous appears from page 2 on."""
+        props = {'fefc_kind': 'pager'}
+        art = 'special://skin/media/fefc-ol-tile.png'
+        if page > 0:
+            self.add_folder('<<  Previous page', art, 'Back to page %d.' % page, landscape=art, props=dict(props), page=page - 1, **kw)
+        if more > 0:
+            self.add_folder('Next page (%d more)  >>' % more, art, 'Page %d.' % (page + 2), landscape=art, props=dict(props), page=page + 1, **kw)
+
     def add_dir_item(self, m, fid):
         v = m['items'][fid]
         art = catalog.folder_art(m, _base(), fid)
@@ -750,9 +760,8 @@ class Router:
         for row in doc.get('rows') or []:
             self._add_pack_row(row)
         size = pagepack.LIST_PAGE
-        if (page + 1) * size < int(doc.get('total') or 0):
-            more = int(doc['total']) - (page + 1) * size
-            self.add_folder('Next page (%d more) >>' % more, '', action=action, page=page + 1, **kw)
+        more = max(0, int(doc.get('total') or 0) - (page + 1) * size)
+        self._pager(page, more, action=action, **kw)
         # Each open re-runs so the folder clip and every file's details clip are chosen again.
         self.end(cache=False)
 
@@ -824,8 +833,7 @@ class Router:
             else:
                 self.add_video(m, k)
                 nv += 1
-        if (page + 1) * PAGE < len(ks):
-            self.add_folder('Next page (%d more) >>' % (len(ks) - (page + 1) * PAGE), '', action='folder', id=fid, page=page + 1)
+        self._pager(page, ((len(ks) - (page + 1) * PAGE)) if ((page + 1) * PAGE < len(ks)) else 0, action='folder', id=fid)
         self.end()
 
     def _sfx_local(self, url):
@@ -1008,8 +1016,7 @@ class Router:
             else:
                 self.add_video(m, k)
                 nv += 1
-        if (page + 1) * GENRE_PAGE < len(rows):
-            self.add_folder('Next page (%d more) >>' % (len(rows) - (page + 1) * GENRE_PAGE), '', action='genre', genre=g, page=page + 1)
+        self._pager(page, ((len(rows) - (page + 1) * GENRE_PAGE)) if ((page + 1) * GENRE_PAGE < len(rows)) else 0, action='genre', genre=g)
         self.end()
 
     def recent(self):
@@ -1045,8 +1052,7 @@ class Router:
             return
         for i in chunk:
             self.add_video(m, i)
-        if (page + 1) * page_size < len(vids):
-            self.add_folder('Next page (%d more) >>' % (len(vids) - (page + 1) * page_size), '', action='recent', page=page + 1)
+        self._pager(page, ((len(vids) - (page + 1) * page_size)) if ((page + 1) * page_size < len(vids)) else 0, action='recent')
         self.end(cache=False)
 
     def cue(self):
@@ -1237,8 +1243,7 @@ class Router:
             else:
                 self.add_video(m, i)
                 nv += 1
-        if (page + 1) * page_size < len(ordered):
-            self.add_folder('Next page (%d more) >>' % (len(ordered) - (page + 1) * page_size), '', action='mylist', page=page + 1, sort=sortk)
+        self._pager(page, ((len(ordered) - (page + 1) * page_size)) if ((page + 1) * page_size < len(ordered)) else 0, action='mylist', sort=sortk)
         if not ordered and page == 0:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
         self.end(cache=False)
@@ -1296,8 +1301,7 @@ class Router:
             ordered.append(row)
         for row in ordered[page * page_size:(page + 1) * page_size]:
             self._add_pack_row(row)
-        if (page + 1) * page_size < len(ordered):
-            self.add_folder('Next page (%d more) >>' % (len(ordered) - (page + 1) * page_size), '', action='mylist', page=page + 1, sort=sortk)
+        self._pager(page, ((len(ordered) - (page + 1) * page_size)) if ((page + 1) * page_size < len(ordered)) else 0, action='mylist', sort=sortk)
         if not ordered and page == 0:
             xbmcgui.Dialog().notification('My List', 'Empty. Press the menu/context key on an edit and choose Add to My List.', xbmcgui.NOTIFICATION_INFO, 5000)
         self.end(cache=False)
@@ -2616,8 +2620,14 @@ class SupportWindow(xbmcgui.WindowDialog):
             art_h = max_h
         art_w = int(round(art_h * sup_w / float(sup_h)))
         art_y = max(8, menu_top - 8 - art_h)
-        self.art = xbmcgui.ControlImage(12, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
-        self.addControl(self.art)
+        # 0.6.6 stutter fix. This control used to be added twice: the pump animated the top copy while
+        # the bottom copy stayed frozen on frame 1. Each new JPEG loads asynchronously, the top image is
+        # blank until it has loaded, and on a Fire Stick that gap showed frame 1's standing legs for a
+        # moment on many frames: the leg stutter. Now the lower image is a back buffer that always holds
+        # the frame shown just before (already decoded, so it draws at once), and the top one takes the
+        # new frame. A slow load repeats the previous frame instead of flashing frame 1.
+        self.art_back = xbmcgui.ControlImage(12, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
+        self.addControl(self.art_back)
         self.art = xbmcgui.ControlImage(12, art_y, art_w, art_h, art, aspectRatio=self.KEEP)
         self.addControl(self.art)
         self.btns = []
@@ -2667,7 +2677,11 @@ class SupportWindow(xbmcgui.WindowDialog):
             i = int((time.monotonic() - t0) / frame_s) % n
             if i != last:
                 try:
-                    self.art.setImage(self._frames[i])
+                    # useCache=False: local frames go straight to the image loader instead of through
+                    # Kodi's thumbnail cache, which re-encoded every one of the 265 frames on first play.
+                    if last >= 0 and getattr(self, 'art_back', None) is not None:
+                        self.art_back.setImage(self._frames[last], False)
+                    self.art.setImage(self._frames[i], False)
                 except Exception:
                     pass
                 last = i
@@ -2966,7 +2980,7 @@ class OptimusWindow(xbmcgui.WindowDialog):
                 self._resume_anim()
             if self._anim and self._frames:
                 try:
-                    self.art.setImage(self._frames[i % n])
+                    self.art.setImage(self._frames[i % n], False)
                 except Exception:
                     pass
                 i += 1

@@ -23,6 +23,42 @@
  "_rules": [
   {
    "path": true,
+   "match": "curb your enthusiasm",
+   "regex": "\\bcurb your enthusiasm\\b",
+   "source": "myinstants curb-your-enthusiasm-theme-audiotrimmer.mp3 (Curb Your Enthusiasm: 'Frolic' theme, first 6 s) and pretty-good-larry-david.mp3 (Larry David: 'Pretty, pretty, pretty good'). -16 LUFS, true peak under -1.5 dBTP. 0.6.6.",
+   "file": [
+    [
+     "assets/sfx/curb-frolic.m4a",
+     "assets/sfx/curb-frolic.mp3"
+    ],
+    [
+     "assets/sfx/curb-pretty-good.m4a",
+     "assets/sfx/curb-pretty-good.mp3"
+    ]
+   ]
+  },
+  {
+   "path": true,
+   "match": "seinfeld",
+   "regex": "\\bseinfeld\\b",
+   "ids": [
+    "1cRj2zulYwsLHgbMlRt0Iypogf9opQAcB",
+    "1Kp9is8f23_vqMo4yYWMBkp6Tze4q-Id_"
+   ],
+   "source": "myinstants seinfeld-sitcom-transition-bass-riff-05.mp3 (Seinfeld: slap-bass transition riff) and no_soup.mp3 (Seinfeld: 'No soup for you!'). -16 LUFS, true peak under -1.5 dBTP. 0.6.6.",
+   "file": [
+    [
+     "assets/sfx/seinfeld-bass-riff.m4a",
+     "assets/sfx/seinfeld-bass-riff.mp3"
+    ],
+    [
+     "assets/sfx/seinfeld-no-soup.m4a",
+     "assets/sfx/seinfeld-no-soup.mp3"
+    ]
+   ]
+  },
+  {
+   "path": true,
    "match": "man in the high castle",
    "regex": "man in the high castle",
    "ids": [
@@ -1203,7 +1239,9 @@
      "assets/sfx/costner-robin-hood-theme.m4a",
      "assets/sfx/costner-robin-hood-theme.mp3"
     ],
-    ["assets/sfx/costner-build-it.mp3"],
+    [
+     "assets/sfx/costner-build-it.mp3"
+    ],
     [
      "assets/sfx/costner-jfk-back-left.m4a",
      "assets/sfx/costner-jfk-back-left.mp3"

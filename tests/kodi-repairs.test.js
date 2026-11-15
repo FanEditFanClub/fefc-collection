@@ -905,7 +905,7 @@ test('regressions: back key, menu words, genre list, nav gain', () => {
   const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
   const skin = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Includes_FEFC.xml'), 'utf8');
   const nav = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/MyVideoNav.xml'), 'utf8');
-  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=genres,return\)/);
+  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=genres(?:&amp;hub=\$INFO\[System\.Time\(hh:mm:ss\)\])?,return\)/);
   assert.doesNotMatch(home, /RunPlugin\(plugin:\/\/plugin\.video\.fefc\/\?action=genres\)/);
   assert.doesNotMatch(nav, /Video add-ons/);
   assert.doesNotMatch(nav, /Playlists/);
@@ -988,7 +988,7 @@ test('page pack, ticker windows, search open, marks, shared bar', () => {
   const endAt = searchFn.indexOf('self.end(');
   const winAt = searchFn.indexOf('OptimusWindow');
   assert.ok(endAt >= 0 && winAt > endAt, 'directory must end before the search window');
-  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search,return\)/);
+  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search(?:&amp;hub=\$INFO\[System\.Time\(hh:mm:ss\)\])?,return\)/);
   assert.match(skin, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search,return\)/);
   assert.match(searchFn, /_go\('push'/);
   assert.match(router, /osinput\.get_text\('Search'/);
@@ -1053,7 +1053,7 @@ test('0.6.2 search, genres, back, update popup, home speed', () => {
   assert.doesNotMatch(genresXml, /fefc-wordmark\.png/);
   assert.doesNotMatch(genresXml, /dedicated to the art of The Fan Edit/);
   assert.match(genresXml, /border="16">fefc-bar\.png/);
-  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search,return\)/);
+  assert.match(home, /ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=search(?:&amp;hub=\$INFO\[System\.Time\(hh:mm:ss\)\])?,return\)/);
   assert.match(router, /osinput\.get_text\('Search'/);
   assert.match(router, /_go\('push', _url\(self\.url, action='search', q=q\)\)/);
   assert.match(router, /def _bar_leave/);

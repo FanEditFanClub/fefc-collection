@@ -102,7 +102,7 @@
 				<label>NEW ARRIVALS</label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9001</onleft><onright>9003</onright><onup>9031</onup><ondown>9005</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=recent&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="button" id="9003">
 				<left>824</left><top>0</top><width>400</width><height>200</height>
@@ -118,7 +118,7 @@
 				<label></label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9006</onleft><onright>9005</onright><onup>9001</onup><ondown>9007</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder&amp;id=1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder&amp;id=1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="button" id="9005">
 				<left>412</left><top>212</top><width>400</width><height>200</height>
@@ -126,7 +126,7 @@
 				<label></label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9004</onleft><onright>9006</onright><onup>9002</onup><ondown>9008</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="image">
 				<left>412</left><top>223</top><width>400</width><height>101</height>
@@ -146,7 +146,7 @@
 				<label></label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9005</onleft><onright>9004</onright><onup>9003</onup><ondown>9009</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder&amp;id=1503Wl56hzRppaIFcQisvQksOaeYOEjnk,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=folder&amp;id=1503Wl56hzRppaIFcQisvQksOaeYOEjnk&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="button" id="9007">
 				<left>0</left><top>424</top><width>400</width><height>200</height>
@@ -154,7 +154,7 @@
 				<label></label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9009</onleft><onright>9008</onright><onup>9004</onup><ondown>9031</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=people,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=people&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="button" id="9008">
 				<left>412</left><top>424</top><width>400</width><height>200</height>
@@ -162,7 +162,7 @@
 				<label>MY LIST</label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9007</onleft><onright>9009</onright><onup>9005</onup><ondown>9031</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=mylist,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=mylist&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="button" id="9009">
 				<left>824</left><top>424</top><width>400</width><height>200</height>
@@ -170,7 +170,7 @@
 				<label>GENRES</label>
 				<wrapmultiline>true</wrapmultiline>
 				<onleft>9008</onleft><onright>9007</onright><onup>9006</onup><ondown>9031</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=genres,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=genres&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="label">
 				<left>9</left><top>359</top><width>382</width><height>38</height>
@@ -286,7 +286,7 @@
 				<label>SEARCH</label>
 				<onleft condition="Control.IsVisible(9022)">9022</onleft><onleft>9023</onleft>
 				<onright>9032</onright><onup>9008</onup><ondown>9008</ondown>
-				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search,return)</onclick>
+				<onclick>ActivateWindow(Videos,plugin://plugin.video.fefc/?action=search&amp;hub=$INFO[System.Time(hh:mm:ss)],return)</onclick>
 			</control>
 			<control type="image"><left>16</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-search.png</texture></control>
 			<control type="button" id="9032">

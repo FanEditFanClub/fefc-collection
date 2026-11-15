@@ -20,7 +20,7 @@ SOURCES = ['drive-changes', 'index', 'video-genres', 'genres', 'posters', 'editi
 VIDEO_EXTS = ('mkv', 'mp4', 'm4v', 'avi', 'mov', 'wmv', 'mpg', 'mpeg', 'ts', 'm2ts', 'webm', 'flv', 'vob', 'iso', 'divx', 'ogm', '3gp')
 VIDEO_RX = re.compile(r'\.(?:' + '|'.join(VIDEO_EXTS) + r')$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 8
+MODEL_VERSION = 9   # 0.6.6: New Arrivals main-collection rule (cached models recompute)
 UA = 'plugin.video.fefc/1.0 (Kodi)'
 # Newest files shown on New Arrivals. The web app caps at 500 and pages 60; the first
 # page has to come back in a few seconds on a Fire Stick, so the plugin only builds one page.
@@ -687,15 +687,28 @@ def _added_ts(value):
         return 0.0
 
 
+def in_main_collection(items, i, root):
+    """0.6.6 New Arrivals rule, the same as the web app's rootVids() and the genres rule: a file counts only
+    when it sits directly in the main collection root. Files in To Be Catalogued (or under it), in Fan Edit
+    Collections, in Read First or nested in sub-folders are left out; a root shortcut whose target lives in
+    To Be Catalogued is dropped by the caller. Without a known root nothing is dropped."""
+    if not root:
+        return True
+    it = items.get(i)
+    return bool(it) and it[1] == root
+
+
 def _compute_recent(m):
     added = m.get('added') or {}
     items = m.get('items') or {}
     kids = m.get('kids') or {}
     tbc_ids = tbc_members(items, kids)
+    root = m.get('root') or ''
     vids = [i for i in added
             if i in items and not items[i][2]
             and i not in tbc_ids
-            and not (items[i][3] and items[i][3] in tbc_ids)]
+            and not (items[i][3] and items[i][3] in tbc_ids)
+            and in_main_collection(items, i, root)]
     vids = dedupe(m, vids)
     vids.sort(key=lambda i: _added_ts(added.get(i)), reverse=True)
     return vids[:RECENT_CAP]

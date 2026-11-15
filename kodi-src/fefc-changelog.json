@@ -9,7 +9,8 @@
     "Download latest version in Settings opens the list of downloads.",
     "Genres with the same name are shown once, and macOS ._ junk files no longer appear as videos.",
     "The Ridley Scott folder plays every clip in its set, including both Blade Runner themes.",
-    "FEFC for Mac is published at fefc-collection.pages.dev/kodi-app/FEFC-Mac.dmg (Apple Silicon) and FEFC-Mac-Intel.dmg, built from the same release as the Fire TV and Android app. Download latest version lists it."
+    "FEFC for Mac is published at fefc-collection.pages.dev/kodi-app/FEFC-Mac.dmg (Apple Silicon) and FEFC-Mac-Intel.dmg, built from the same release as the Fire TV and Android app. Download latest version lists it.",
+    "The Mac app shows the FEFC icon and opens a drag-to-Applications window; lists page with Previous/Next at the bottom; New Arrivals shows the main collection only; Genres has tap arrows and each genre plays only its own sounds; Seinfeld and Curb Your Enthusiasm sounds; a readable download list with close buttons; Home menus open on their first page; smoother Optimus on Support Us; the ticker icons are back."
    ]
   },
   {

@@ -83,3 +83,39 @@ test('router and pagepack use the genre pool; the web app mirrors the rule', () 
     assert.match(s, /n ?\* ?2 ?>= ?u\.length/, f);
   }
 });
+
+test('New Arrivals: files directly in the main collection root only (web rootVids parity), never To Be Catalogued', () => {
+  const out = py(`
+import sys
+sys.path.insert(0, 'kodi-src/plugin.video.fefc/resources/lib')
+import catalog
+R = 'ROOT'; T = catalog.TBC_ID; FEC = '1fEaxNbFIrEwKRygETVm4jgtJGVAqKxGB'
+items = {T: ['04 - To Be Catalogued', R, 1, ''], FEC: ['03 - Fan Edit Collections', R, 1, ''],
+  'coll': ['Evil Dead', R, 1, ''], 'sub': ['Sub', 'coll', 1, ''],
+  'a': ['Root File.mp4', R, 0, ''], 'b': ['In Collection.mp4', 'coll', 0, ''], 'c': ['Deep.mp4', 'sub', 0, ''],
+  't1': ['TBC File.mp4', T, 0, ''], 'tsub': ['TBC Sub', T, 1, ''], 't2': ['TBC Deep.mp4', 'tsub', 0, ''],
+  'f1': ['Editor File.mp4', FEC, 0, ''], 'cyc1': ['Cycle', 'cyc2', 1, ''], 'cyc2': ['Cycle2', 'cyc1', 1, ''], 'x': ['Lost.mp4', 'cyc1', 0, '']}
+kids = {}
+for k, v in items.items():
+    kids.setdefault(v[1], []).append(k)
+added = {k: '2026-11-%02d' % (n + 1) for n, k in enumerate(['a', 'b', 'c', 't1', 't2', 'f1', 'x'])}
+m = {'items': items, 'kids': kids, 'root': R, 'added': added}
+got = set(catalog._compute_recent(m))
+assert got == {'a'}, got
+web = open('src/app.js').read()
+assert "f.parent===ROOT" in web.split('function rootVids')[1][:300]
+print('ok')
+`);
+  assert.equal(out, 'ok');
+});
+
+test('Home hub entries always open the hub on its first page (fresh path each press)', () => {
+  const home = fs.readFileSync(path.join(root, 'kodi-src/skin-fefc/xml/Home.xml'), 'utf8');
+  // Kodi resumes the last deep folder when ActivateWindow gets the same start path again; a time nonce
+  // makes every Home press a new path, while Back inside the session still walks the history.
+  for (const a of ['recent', 'genres', 'mylist', 'search', 'people']) {
+    assert.match(home, new RegExp('ActivateWindow\\(Videos,plugin://plugin\\.video\\.fefc/\\?action=' + a +
+      '(?:&amp;[^,]*)?&amp;hub=\\$INFO\\[System\\.Time\\(hh:mm:ss\\)\\],return\\)'), a);
+  }
+  assert.ok(!/ActivateWindow\(Videos,plugin:\/\/plugin\.video\.fefc\/\?action=(?:recent|genres|mylist|search|people),return\)/.test(home));
+});

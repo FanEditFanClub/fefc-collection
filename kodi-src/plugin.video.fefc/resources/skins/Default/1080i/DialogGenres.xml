@@ -136,6 +136,27 @@
 		<control type="label" id="9307"><left>376</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
 		<control type="label" id="9308"><left>788</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
 		<control type="label" id="9309"><left>1200</left><top>660</top><width>344</width><height>124</height><align>center</align><aligny>center</aligny><font>font11_tile</font><textcolor>FFFFFFFF</textcolor><shadowcolor>FF000000</shadowcolor></control>
+		<!-- 0.6.6: tap/click paging arrows on the screen edges, beside the middle row. Python shows the
+		     right arrow while a later page exists and the left one from page 2. They are not in the remote's
+		     focus chain (the tiles set their own left/right), so D-pad paging is unchanged. -->
+		<control type="button" id="9161">
+			<left>252</left><top>452</top><width>76</width><height>156</height>
+			<font>font_title_big</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
+			<align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+			<texturefocus border="16">fefc-bar-focus.png</texturefocus>
+			<texturenofocus border="16">fefc-bar.png</texturenofocus>
+			<label>‹</label>
+			<visible>String.IsEqual(Window(Home).Property(FEFC.GenrePrev),1)</visible>
+		</control>
+		<control type="button" id="9160">
+			<left>1592</left><top>452</top><width>76</width><height>156</height>
+			<font>font_title_big</font><textcolor>FFFFFFFF</textcolor><focusedcolor>FF000000</focusedcolor>
+			<align>center</align><aligny>center</aligny><textoffsetx>0</textoffsetx>
+			<texturefocus border="16">fefc-bar-focus.png</texturefocus>
+			<texturenofocus border="16">fefc-bar.png</texturenofocus>
+			<label>›</label>
+			<visible>String.IsEqual(Window(Home).Property(FEFC.GenreNext),1)</visible>
+		</control>
 		<control type="image">
 			<left>348</left><top>866</top><width>1224</width><height>84</height>
 			<texture border="40" colordiffuse="E6101418">fefc-lc-pill.png</texture>
@@ -182,7 +203,7 @@
 		<control type="image"><left>1218</left><top>894</top><width>28</width><height>28</height><texture>fefc-ic-gear.png</texture></control>
 		<control type="label" id="9501">
 			<left>96</left><top>984</top><width>1728</width><height>44</height>
-			<font>font12</font>
+			<font>fefc_ticker</font>
 			<textcolor>FFFFFFFF</textcolor>
 			<scroll>true</scroll>
 			<scrollspeed>48</scrollspeed>

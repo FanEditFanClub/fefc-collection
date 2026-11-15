@@ -26,6 +26,9 @@ KIND_FOLDER = 'folder'
 KIND_ACTION = 'action'
 KIND_VIDEO = 'video'
 KIND_SPACER = 'spacer'
+# 0.6.6: Previous page / Next page. A landscape action card, but always placed after every other item,
+# on its own row at the bottom of the list (they used to sit at the top with the other landscape cards).
+KIND_PAGER = 'pager'
 
 LANDSCAPE = 'landscape'
 PORTRAIT = 'portrait'
@@ -87,7 +90,7 @@ def stamp(li, kind, art=''):
         li.setProperty('fefc_kind', KIND_SPACER)
         li.setArt({'poster': '', 'landscape': '', 'thumb': '', 'icon': ''})
         return
-    use = kind if kind in (KIND_FOLDER, KIND_ACTION) else KIND_FOLDER
+    use = KIND_ACTION if kind == KIND_PAGER else (kind if kind in (KIND_FOLDER, KIND_ACTION) else KIND_FOLDER)
     li.setProperty('fefc_kind', use)
     li.setArt({
         'landscape': art or '', 'thumb': art or '', 'icon': art or '',
@@ -113,11 +116,12 @@ def pack(kinds, leading=0):
     kinds must be folder, action, video, or spacer. Any other kind raises
     ValueError instead of silently becoming a landscape card.
     """
-    known = (KIND_FOLDER, KIND_ACTION, KIND_VIDEO, KIND_SPACER)
+    known = (KIND_FOLDER, KIND_ACTION, KIND_VIDEO, KIND_SPACER, KIND_PAGER)
     for k in kinds:
         if k not in known:
-            raise ValueError('unknown kind %r (expected folder/action/video/spacer)' % (k,))
-    land = [k for k in kinds if k != KIND_VIDEO]
+            raise ValueError('unknown kind %r (expected folder/action/video/spacer/pager)' % (k,))
+    pagers = [k for k in kinds if k == KIND_PAGER]
+    land = [k for k in kinds if k not in (KIND_VIDEO, KIND_PAGER)]
     vids = [KIND_VIDEO for k in kinds if k == KIND_VIDEO]
     lead = max(0, int(leading or 0))
     rows = []
@@ -136,6 +140,14 @@ def pack(kinds, leading=0):
         rows.append(chunk)
         for _ in range(SPAN - 1):
             rows.append([KIND_SPACER] * COLS)
+    if pagers:
+        # Pagers go last, on a fresh row: after the last poster block, or after a short landscape row.
+        flat_len = sum(len(r) for r in rows)
+        if rows and (lead + flat_len) % COLS and not vids:
+            rows[-1] = rows[-1] + [KIND_SPACER] * (COLS - (lead + flat_len) % COLS)
+        elif not rows and lead:
+            rows.append([KIND_SPACER] * (COLS - lead % COLS))
+        rows.append(list(pagers))
     flat = []
     for row in rows:
         flat.extend(row)

@@ -127,9 +127,9 @@ def _font(name, px):
 
 
 # Window content size and icon centres in points (Finder coordinates). The background is drawn to match.
-DMG_WINDOW = (660, 520)
+DMG_WINDOW = (660, 560)   # window_rect includes the title bar; 560 keeps the Read Me label inside (no scroll bar)
 DMG_ICON_SIZE = 112
-DMG_ICONS = {'FEFC.app': (165, 200), 'Applications': (495, 200), 'Read Me.txt': (330, 430)}
+DMG_ICONS = {'FEFC.app': (165, 200), 'Applications': (495, 200), 'Read Me.txt': (330, 440)}
 
 
 def dmg_background(scale=1):

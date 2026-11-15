@@ -87,6 +87,10 @@ def open_genre_board(entries):
             self._focus = focus
             if self.indicator is not None:
                 self.indicator.setLabel('%d/%d' % (page + 1, max(1, len(pages))))
+            # 0.6.6: edge arrows for touch and mouse (ids 9160 next, 9161 previous).
+            _home = xbmcgui.Window(10000)
+            _home.setProperty('FEFC.GenreNext', '1' if page < len(pages) - 1 else '')
+            _home.setProperty('FEFC.GenrePrev', '1' if page > 0 else '')
             for i, btn in enumerate(self.tiles):
                 if btn is None:
                     continue
@@ -191,6 +195,12 @@ def open_genre_board(entries):
                 self.close()
 
         def onClick(self, cid):
+            if cid == 9160 and self.page < len(pages) - 1:
+                self._show(self.page + 1, 0)
+                return
+            if cid == 9161 and self.page > 0:
+                self._show(self.page - 1, 0)
+                return
             if 9101 <= cid <= 9109:
                 i = cid - 9101
                 chunk = pages[self.page] if 0 <= self.page < len(pages) else []
@@ -209,5 +219,7 @@ def open_genre_board(entries):
         picked = win.picked
     finally:
         home.clearProperty('FEFC.Genres')
+        home.clearProperty('FEFC.GenreNext')
+        home.clearProperty('FEFC.GenrePrev')
         del win
     return picked
