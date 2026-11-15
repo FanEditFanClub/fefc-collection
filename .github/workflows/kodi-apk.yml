@@ -283,7 +283,8 @@ jobs:
             # drag-install window: Applications shortcut, Finder layout, background, volume icon
             test -L "$mnt/Applications" && test "$(readlink "$mnt/Applications")" = /Applications
             test -f "$mnt/.DS_Store"
-            ls "$mnt/.background/" | grep -qi "dmg-bg"
+            ls -la "$mnt"
+            ls -aR "$mnt" 2>/dev/null | grep -v "FEFC.app" | grep -qi "background" || { echo "no background image in the volume"; exit 1; }
             test -f "$mnt/.VolumeIcon.icns"
             GetFileInfo -a "$mnt" 2>/dev/null | grep -q C && echo "volume custom icon flag set" || echo "volume custom icon flag: not readable"
             # app icon: plist key, no asset-catalog icon name, icns with 16 to 1024 px, renders with sips

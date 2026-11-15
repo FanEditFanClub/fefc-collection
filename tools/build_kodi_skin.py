@@ -81,8 +81,9 @@ def rrect_tile(size, border, fill_top, fill_bot, line, lw, radius, glow=None):
     return Image.alpha_composite(img, ol)
 
 
-def rrect_bar(w, h, fill_top, fill_bot, line, lw, radius):
-    """Wide button face. The stroke sits inside the 9-slice border so it survives stretching."""
+def rrect_bar(w, h, fill_top, fill_bot, line, lw, radius, glow=None):
+    """Wide button face. The stroke sits inside the 9-slice border so it survives stretching.
+    glow: an RGBA colour blurred just inside the stroke (the Home tiles' orange focus glow)."""
     img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     grad = Image.new('RGBA', (w, h))
     px = grad.load()
@@ -101,7 +102,26 @@ def rrect_bar(w, h, fill_top, fill_bot, line, lw, radius):
     ol = Image.new('RGBA', (w * scale, h * scale), (0, 0, 0, 0))
     ImageDraw.Draw(ol).rounded_rectangle((2 * scale, 2 * scale, (w - 3) * scale, (h - 3) * scale), radius * scale, outline=line, width=lw * scale)
     ol = ol.resize((w, h), Image.LANCZOS)
+    if glow:
+        from PIL import ImageFilter
+        g = Image.new('RGBA', (w * scale, h * scale), (0, 0, 0, 0))
+        ImageDraw.Draw(g).rounded_rectangle((2 * scale, 2 * scale, (w - 3) * scale, (h - 3) * scale), radius * scale,
+                                            outline=glow, width=8 * scale)
+        g = g.resize((w, h), Image.LANCZOS).filter(ImageFilter.GaussianBlur(3))
+        inside = Image.new('RGBA', (w, h), (0, 0, 0, 0)); inside.paste(g, (0, 0), m)
+        img = Image.alpha_composite(img, inside)
     return Image.alpha_composite(img, ol)
+
+
+# Focus look shared by the Home tiles (fefc-ol-focus.png) and every bar button: orange stroke and glow.
+FOCUS_ORANGE = (255, 156, 0, 255)
+FOCUS_GLOW = (255, 156, 0, 170)
+
+
+def bar_textures(w, h, radius=18):
+    """(normal, focused) faces for a bottom-bar button of this size."""
+    return (rrect_bar(w, h, (24, 42, 68, 235), (6, 10, 18, 245), (186, 214, 255, 230), 3, radius),
+            rrect_bar(w, h, (16, 22, 32, 245), (4, 6, 10, 250), FOCUS_ORANGE, 3, radius, glow=FOCUS_GLOW))
 
 
 def background(path):
@@ -121,6 +141,12 @@ def background(path):
     img.save(path, quality=90)
 
 
+# X for touch and mouse on the text viewer (What's new, Read Me, notes); Back still closes it.
+CLOSE_X = ('\t\t<control type="button" id="9901">\n\t\t\t<left>1792</left><top>36</top><width>80</width><height>80</height>\n'
+           '\t\t\t<texturefocus>fefc-close-on.png</texturefocus><texturenofocus>fefc-close.png</texturenofocus>\n'
+           '\t\t\t<label></label><onclick>Action(Back)</onclick>\n\t\t</control>\n')
+
+
 CHROME_WINDOWS = {'DialogTextViewer.xml', 'Settings.xml', 'SettingsCategory.xml', 'SettingsSystemInfo.xml',
                   'DialogAddonSettings.xml', 'SkinSettings.xml', 'SettingsProfile.xml'}
 
@@ -132,8 +158,9 @@ def make_textures(media):
     rrect_tile(128, 26, (30, 62, 104, 245), (8, 18, 34, 250), (47, 168, 255, 255), 4, 22, glow=(47, 168, 255, 200)).save(media / 'fefc-tile-focus.png')
     # Bottom-bar buttons, including the wider SOUND button. Taller than the old
     # 9-slice so the outline stays visible at 60px.
-    rrect_bar(240, 64, (24, 42, 68, 235), (6, 10, 18, 245), (186, 214, 255, 230), 3, 18).save(media / 'fefc-bar.png')
-    rrect_bar(240, 64, (30, 62, 104, 245), (8, 18, 34, 250), (47, 168, 255, 255), 3, 18).save(media / 'fefc-bar-focus.png')
+    # Focus = the Home tiles' orange stroke and glow (0.6.6: was a blue stroke, hard to see on hover).
+    _bar, _bar_on = bar_textures(240, 64)
+    _bar.save(media / 'fefc-bar.png'); _bar_on.save(media / 'fefc-bar-focus.png')
     rrect_tile(128, 26, (0, 0, 0, 0), (0, 0, 0, 0), (47, 168, 255, 255), 4, 22, glow=(47, 168, 255, 200)).save(media / 'fefc-tile-ring.png')
     sh = Image.new('RGBA', (4, 64))
     for y in range(64):
@@ -195,6 +222,22 @@ def make_textures(media):
         d.rectangle((40, 104, 184, 208), fill=W)                     # body
     icon(mag, 'fefc-ic-search.png'); icon(gear, 'fefc-ic-gear.png'); icon(house, 'fefc-ic-home.png')
     icon(lambda d: spk(d, True), 'fefc-ic-sound.png'); icon(lambda d: spk(d, False), 'fefc-ic-mute.png')
+    # Update button states: up to date = check in a circle, update available = download arrow,
+    # checking / could not check = circular refresh arrows. Same white, size and stroke as the icons above.
+    def check(d):
+        d.ellipse((14, 14, 210, 210), outline=W, width=20)
+        d.line([(64, 116), (100, 152), (164, 80)], fill=W, width=24, joint='curve')
+    def download(d):
+        d.rectangle((98, 20, 126, 120), fill=W)
+        d.polygon([(52, 100), (172, 100), (112, 168)], fill=W)
+        d.rectangle((26, 186, 198, 206), fill=W); d.rectangle((26, 150, 46, 206), fill=W); d.rectangle((178, 150, 198, 206), fill=W)
+    def refresh(d):
+        d.arc((30, 30, 194, 194), 200, 340, fill=W, width=22); d.arc((30, 30, 194, 194), 20, 160, fill=W, width=22)
+        d.polygon([(168, 52), (206, 92), (150, 104)], fill=W); d.polygon([(56, 172), (18, 132), (74, 120)], fill=W)
+    # X close button (same artwork as the add-on's Python dialogs)
+    for _n in ('close.png', 'close-on.png'):
+        shutil.copy(ROOT / 'kodi-src' / 'plugin.video.fefc' / 'resources' / 'media' / 'chrome' / _n, media / ('fefc-' + _n))
+    icon(check, 'fefc-ic-uptodate.png'); icon(download, 'fefc-ic-update.png'); icon(refresh, 'fefc-ic-checking.png')
     lpill = Image.new('RGBA', (96, 96), (0, 0, 0, 0)); d = ImageDraw.Draw(lpill)
     d.rounded_rectangle((0, 0, 95, 95), 47, fill=W); d.rectangle((48, 0, 95, 95), fill=W)
     lpill.save(media / 'fefc-lc-lpill.png')   # rounded left end only
@@ -488,7 +531,8 @@ def build(est, out):
             i = t2.rindex('</controls>')
             t2 = (t2[:i] + '\t<control type="group">\n\t\t<animation effect="zoom" start="100" end="121.95" center="960,540" time="0" '
                   'condition="true" type="conditional">Conditional</animation>\n\t\t<include>FefcTopBar</include>\n'
-                  '\t\t<include>FefcTicker</include>\n\t\t<include>FefcWallKeep</include>\n\t</control>\n\t' + t2[i:])
+                  '\t\t<include>FefcTicker</include>\n\t\t<include>FefcWallKeep</include>\n'
+                  + (CLOSE_X if f.name == 'DialogTextViewer.xml' else '') + '\t</control>\n\t' + t2[i:])
         else:
             t2 = re.sub(r'(<window\b[^>]*>)', lambda m: m.group(1) + zoom, t, count=1)
         if t2 != t:

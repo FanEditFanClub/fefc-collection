@@ -297,12 +297,17 @@
 			<control type="button" id="9023">
 				<left>704</left><top>0</top><width>360</width><height>60</height>
 				<include>FefcSmallButton</include>
+				<textoffsetx>52</textoffsetx><align>left</align>
 				<label>$INFO[Window(Home).Property(FEFC.UpdateLabel)]</label>
 				<onleft>9033</onleft>
 				<onright condition="Control.IsVisible(9021)">9021</onright><onright>9031</onright>
 				<onup>9008</onup><ondown>9008</ondown>
 				<onclick>RunPlugin(plugin://plugin.video.fefc/?action=update)</onclick>
 			</control>
+			<!-- 0.6.6: the update button has an icon like Search, Sound and Settings (FEFC.UpdateState from the service) -->
+			<control type="image"><left>720</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-uptodate.png</texture><visible>String.IsEqual(Window(Home).Property(FEFC.UpdateState),up_to_date)</visible></control>
+			<control type="image"><left>720</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-update.png</texture><visible>String.IsEqual(Window(Home).Property(FEFC.UpdateState),available)</visible></control>
+			<control type="image"><left>720</left><top>16</top><width>28</width><height>28</height><texture>fefc-ic-checking.png</texture><visible>!String.IsEqual(Window(Home).Property(FEFC.UpdateState),up_to_date) + !String.IsEqual(Window(Home).Property(FEFC.UpdateState),available)</visible></control>
 		</control>
 		<control type="label">
 			<left>96</left><top>954</top><width>1728</width><height>26</height>

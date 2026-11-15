@@ -567,7 +567,7 @@ class _WebOSGuide(xbmcgui.WindowXMLDialog):
             from resources.lib import shorturl
             shorturl.open_browser(xbmc.executebuiltin, 'https://collection.faneditfanclub.com/lg-update')
             return
-        if controlId == 9000:
+        if controlId in (9000, 9001):   # Close button, or the X at the top right
             self.close()
 
     def onAction(self, action):
@@ -918,16 +918,20 @@ def set_update_state(cur, new=None, avail=False, state=None):
     """Home Update tile. A failed check is never labelled Up to date."""
     from resources.lib.updateflow import label_for
     home = xbmcgui.Window(10000)
+    # FEFC.UpdateState picks the button icon in Home.xml: up_to_date, available, checking or failed.
     if state in ('checking', 'failed'):
         home.clearProperty('FEFC.UpdateAvail')
         home.setProperty('FEFC.UpdateLabel', label_for(state))
+        home.setProperty('FEFC.UpdateState', state)
         return
     if avail and new:
         home.setProperty('FEFC.UpdateAvail', '1')
         home.setProperty('FEFC.UpdateLabel', label_for('available'))
+        home.setProperty('FEFC.UpdateState', 'available')
         return
     home.clearProperty('FEFC.UpdateAvail')
     home.setProperty('FEFC.UpdateLabel', label_for('up_to_date'))
+    home.setProperty('FEFC.UpdateState', 'up_to_date')
 
 
 def check_update(manual=False, prompt=True, from_tap=False, monitor=None):

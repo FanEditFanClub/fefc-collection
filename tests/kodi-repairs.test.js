@@ -216,7 +216,7 @@ print('ok', x, y, w, h)
   assert.doesNotMatch(home, /id="9034"/);
   assert.match(home, /id="9033"[\s\S]{0,280}<onright>9023<\/onright>/);
   assert.match(home, /id="9023"[\s\S]{0,360}<onleft>9033<\/onleft>/);
-  assert.match(home, /id="9023"[\s\S]{0,420}action=update/);
+  assert.match(home, /id="9023"[\s\S]{0,520}action=update/);
   assert.match(home, /FEFC\.UpdateLabel/);
   assert.match(home, /id="9031"[\s\S]{0,180}<width>220<\/width>/);
   assert.match(home, /id="9023"[\s\S]{0,200}<width>360<\/width>/);
@@ -312,7 +312,18 @@ cta = ticker.build_text([], [])
 assert 'discord.gg' not in cta and 'http' not in cta
 assert 'Discord' in cta
 assert 'JOIN  Join' not in cta
-assert 'DISCORD  Join the FEFC Discord' in cta
+# every call to action carries its network icon (brand glyph, coloured), and the skin font has the glyph
+assert '[COLOR FF5865F2]\ue001[/COLOR]  Join the FEFC Discord' in cta
+icons = {'discord': '\ue001', 'x': '\ue003', 'facebook': '\ue002', 'reddit': '\ue004'}
+for i, (src, _t) in enumerate(ticker.CTA):
+    assert ticker._cta(i).startswith('[COLOR ') and icons[src] in ticker._cta(i), ticker._cta(i)
+for src, glyph in icons.items():
+    assert glyph in ticker._piece({'src': src, 'title': 'Post'}), src
+from fontTools.ttLib import TTFont
+cmap = TTFont('kodi-src/skin-fefc/fonts/Jura-Bold.ttf').getBestCmap()
+assert all(ord(g) in cmap for g in icons.values())
+fontxml = open('tools/build_kodi_skin.py').read()
+assert '<name>fefc_ticker</name>' in fontxml and 'Jura-Bold.ttf' in fontxml
 for piece in (ticker._cta(0), ticker._cta(1), ticker._cta(2), ticker._cta(3)):
     assert 'JOIN' not in piece, piece
 print('ok')

@@ -9,9 +9,10 @@ import xbmcgui
 
 from .updateflow import progress_view
 
-_MAX_ROWS = 6        # rows that fit on the 720 px screen: 110 + 6 * 90 = 650
-_ROW_Y0 = 110
-_ROW_H = 90
+_MAX_ROWS = 6        # rows that fit on the 720 px screen: 112 + 6 * 88 = 640
+_ROW_Y0 = 112
+_ROW_H = 88
+_ROW_BTN_H = 72
 _URL_OK = re.compile(r'^https?://\S+$', re.I)
 
 
@@ -56,31 +57,34 @@ def open_url(url):
 class ManualDownloads(xbmcgui.WindowDialog):
     """One focusable row per published platform. Selecting a row opens the URL.
 
-    A row shows its short link (when it has one) above the button; the button opens the
-    full URL. A row with no usable http(s) URL is shown as plain text with no button, so
-    nothing on screen can be selected and then do nothing. At most _MAX_ROWS rows are
-    drawn; more would run off the bottom of the screen, so when there are more, rows with no
-    usable link are dropped first and the rest are cut after the sixth. self.buttons holds
-    one button per row that has a link, in order."""
+    0.6.6: an opaque black screen (nothing behind shows through), white row labels on the
+    FEFC bar face with the Home tiles' orange focus, and each row's address as a smaller grey
+    second line inside its own row. An X at the top right closes it for touch and mouse; Back
+    closes it from a remote. A row with no usable http(s) URL is shown as plain text with no
+    button, so nothing on screen can be selected and then do nothing. At most _MAX_ROWS rows are
+    drawn; when there are more, rows with no usable link are dropped first and the rest are cut.
+    self.buttons holds one button per row that has a link, in order."""
 
     def __init__(self, rows):
         super(ManualDownloads, self).__init__()
+        from .closebtn import add_close, _media
         if not isinstance(rows, (list, tuple)):
             rows = []
         self.rows = [r for r in rows if isinstance(r, dict)]
         if len(self.rows) > _MAX_ROWS:
             _log('manual downloads: showing %d of %d rows' % (_MAX_ROWS, len(self.rows)))
-            # No room for all of them: rows with no usable link go first, then the rest are cut.
             usable = [r for r in self.rows if _clean_url(r.get('url'))]
             self.rows = (usable or self.rows)[:_MAX_ROWS]
-        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='E0000000'))
-        self.addControl(xbmcgui.ControlLabel(80, 40, 1120, 48, 'Download the latest version', font='font_title_big', textColor='FFFFFFFF'))
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF000000'))
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 6, 'fefc-white.png', colorDiffuse='FFFF9C00'))
+        self.addControl(xbmcgui.ControlLabel(80, 34, 1080, 52, 'Download the latest version', font='font_title_big', textColor='FFFFFFFF'))
+        self.close_btn = add_close(self)
         self.buttons = []
         self._entries = []
         y = _ROW_Y0
         if not self.rows:
             self.addControl(xbmcgui.ControlLabel(80, y + 30, 1120, 48, 'No download links are published yet.',
-                                                 font='font14_title', textColor='FF7F8FA6', alignment=6))
+                                                 font='font14_title', textColor='FFB8C2CC', alignment=6))
         for row in self.rows:
             version = ('  ' + str(row.get('version'))) if row.get('version') else ''
             label = '%s%s' % (row.get('platform') or '', version)
@@ -88,23 +92,30 @@ class ManualDownloads(xbmcgui.WindowDialog):
             if full:
                 short = row.get('short')
                 shown = short if isinstance(short, str) and short.strip() else full
-                self.addControl(xbmcgui.ControlLabel(80, y, 1120, 28, shown, font='font12', textColor='FF99CCFF'))
-                btn = xbmcgui.ControlButton(80, y + 30, 1120, 48, label, font='font14_title', textColor='FF000000',
-                                            focusedColor='FF000000', alignment=6,
-                                            focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+                btn = xbmcgui.ControlButton(80, y, 1120, _ROW_BTN_H, label, font='font14_title',
+                                            textColor='FFFFFFFF', focusedColor='FFFFFFFF', alignment=0,
+                                            textOffsetX=28, textOffsetY=9,
+                                            focusTexture=_media('row-on.png'), noFocusTexture=_media('row.png'))
                 self.addControl(btn)
+                # second line, inside the row under the label (drawn after the button so it sits on top)
+                self.addControl(xbmcgui.ControlLabel(108, y + 42, 1064, 24, shown, font='font12', textColor='FFA9B4C2'))
                 self.buttons.append(btn)
                 self._entries.append((row, btn))
             else:
-                self.addControl(xbmcgui.ControlLabel(80, y + 30, 1120, 48, '%s  (not published yet)' % label,
+                self.addControl(xbmcgui.ControlLabel(80, y + 12, 1120, 48, '%s  (not published yet)' % label,
                                                      font='font14_title', textColor='FF7F8FA6', alignment=6))
             y += _ROW_H
         count = len(self.buttons)
         for i, btn in enumerate(self.buttons):
             btn.controlUp(self.buttons[i - 1] if count > 1 else btn)
             btn.controlDown(self.buttons[(i + 1) % count] if count > 1 else btn)
+            btn.controlRight(self.close_btn)
+        self.close_btn.controlLeft(self.buttons[0] if self.buttons else self.close_btn)
+        self.close_btn.controlDown(self.buttons[0] if self.buttons else self.close_btn)
         if self.buttons:
             self.setFocus(self.buttons[0])
+        else:
+            self.setFocus(self.close_btn)
 
     def doModal(self):
         try:
@@ -117,6 +128,10 @@ class ManualDownloads(xbmcgui.WindowDialog):
             self.close()
 
     def onControl(self, control):
+        from .closebtn import is_close
+        if is_close(self, control):
+            self.close()
+            return
         for row, btn in self._entries:
             if control == btn:
                 try:
@@ -151,14 +166,16 @@ class UpdatePopup(xbmcgui.WindowDialog):
         self.addControl(self.line)
         self.addControl(self.sub)
         self.retry_btn = xbmcgui.ControlButton(
-            490, 490, 300, 58, 'Retry', font='font14_title', textColor='FF000000', focusedColor='FF000000', alignment=6,
+            490, 490, 300, 58, 'Retry', font='font14_title', textColor='FFFFFFFF', focusedColor='FFFFFFFF', alignment=6,
             focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.retry_btn)
         self.retry_btn.setVisible(False)
         self.manual_btn = xbmcgui.ControlButton(
-            180, 560, 920, 48, 'Download the latest version manually', font='font14_title', textColor='FF000000',
-            focusedColor='FF000000', alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
+            180, 560, 920, 48, 'Download the latest version manually', font='font14_title', textColor='FFFFFFFF',
+            focusedColor='FFFFFFFF', alignment=6, focusTexture='fefc-ol-focus.png', noFocusTexture='fefc-ol-tile.png')
         self.addControl(self.manual_btn)
+        from .closebtn import add_close
+        self.close_btn = add_close(self, 1018, 166, 50)   # X on the panel's top right: same as Back
         self._wire(False)
         # Retry starts hidden, and a hidden control cannot take focus: start on the manual
         # button so Select and the arrow keys have something to act on.
@@ -206,6 +223,11 @@ class UpdatePopup(xbmcgui.WindowDialog):
             self.close()
 
     def onControl(self, control):
+        from .closebtn import is_close
+        if is_close(self, control):
+            self.dismissed = True
+            self.close()
+            return
         if control == self.retry_btn:
             self.retry = True
             self.close()

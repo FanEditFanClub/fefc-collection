@@ -412,8 +412,8 @@ def manual_downloads(manifest):
     """One link per published platform.
 
     Fire TV and Android share the separate-ID APK (com.fefc.kodi). Samsung is
-    the widget plus the install guide. Mac is FEFC-Mac.dmg (Apple Silicon), listed
-    only when version.json publishes it. Web is the site. webOS is not listed.
+    the widget plus the install guide. Mac is FEFC-Mac.dmg (Apple Silicon) and
+    FEFC-Mac-Intel.dmg (Intel), each listed only when version.json publishes it. Web is the site. webOS is not listed.
     The org.xbmc.kodi build is never listed.
     """
     info = manifest or {}
@@ -437,6 +437,11 @@ def manual_downloads(manifest):
     mac_url = str(mac.get('url') or '')
     if mac.get('available') and mac_url.split('?', 1)[0].endswith('/FEFC-Mac.dmg'):
         rows.append({'platform': 'Mac (Apple Silicon)', 'version': version, 'url': mac_url, 'short': ''})
+    # Mac (Intel) likewise, as FEFC-Mac-Intel.dmg.
+    intel = platform_download(info, 'macos', 'x86_64')
+    intel_url = str(intel.get('url') or '')
+    if intel.get('available') and intel_url.split('?', 1)[0].endswith('/FEFC-Mac-Intel.dmg'):
+        rows.append({'platform': 'Mac (Intel)', 'version': version, 'url': intel_url, 'short': ''})
     rows.append({'platform': 'Web', 'version': version, 'url': WEB_APP, 'short': ''})
     # The old loop raised ValueError here, but it was unreachable: apk/wgt
     # are already replaced by defaults when banned, and the defaults contain

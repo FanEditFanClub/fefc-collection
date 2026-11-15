@@ -2735,7 +2735,7 @@ class PayQrWindow(xbmcgui.WindowDialog):
     def __init__(self, name, url, sub):
         super().__init__()
         self.url = url
-        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F2050608'))
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF050608'))
         self.addControl(xbmcgui.ControlLabel(80, 36, 1120, 44, name, font='font14_title', textColor='FFFFFFFF', alignment=2))
         self.addControl(xbmcgui.ControlLabel(80, 84, 1120, 32, sub, font='font13', textColor='FFFF9C00', alignment=2))
         self.addControl(xbmcgui.ControlImage(440, 130, 400, 400, 'fefc-white.png'))
@@ -2751,8 +2751,14 @@ class PayQrWindow(xbmcgui.WindowDialog):
         self.addControl(self.btn)
         self.setFocus(self.link_btn)
         self.addControl(xbmcgui.ControlLabel(80, 668, 1120, 28, 'Back to return to Support Us.', font='font12', textColor='FF7F8FA6', alignment=2))
+        from .closebtn import add_close
+        self.close_btn = add_close(self)
 
     def onControl(self, c):
+        from .closebtn import is_close
+        if is_close(self, c):
+            self.close()
+            return
         if c in (self.link_btn, self.btn):
             from . import shorturl
             shorturl.open_browser(xbmc.executebuiltin, self.shown)
@@ -2774,7 +2780,7 @@ class LinkWindow(xbmcgui.WindowDialog):
         self.open_url = open_url
         self.qr_btn = None
         self.url_btn = None
-        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='F0050A14'))
+        self.addControl(xbmcgui.ControlImage(0, 0, 1280, 720, 'fefc-white.png', colorDiffuse='FF050A14'))
         self.addControl(xbmcgui.ControlLabel(96, 54, 1088, 50, lines[0], font='font14_title', textColor='FFFFFFFF'))
         y = 120
         if qr_path:
@@ -2806,8 +2812,17 @@ class LinkWindow(xbmcgui.WindowDialog):
         elif qr_path:
             self.addControl(xbmcgui.ControlLabel(96, 552, 1088, 40, lines[-1], font='font12', textColor='FF99CCFF'))
         self.addControl(xbmcgui.ControlLabel(96, 610, 1088, 40, 'Press Back to cancel.' + ('  Select the link to open it in your browser.' if open_url else ''), font='font12', textColor='FFFF9C00'))
+        from .closebtn import add_close
+        self.close_btn = add_close(self)
+        if not open_url:
+            self.setFocus(self.close_btn)
 
     def onControl(self, c):
+        from .closebtn import is_close
+        if is_close(self, c):
+            self.closed = True
+            self.close()
+            return
         if self.open_url and c in (self.qr_btn, self.url_btn):
             from . import shorturl
             shorturl.open_browser(xbmc.executebuiltin, self.open_url)
