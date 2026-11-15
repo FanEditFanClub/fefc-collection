@@ -20,7 +20,7 @@ SOURCES = ['drive-changes', 'index', 'video-genres', 'genres', 'posters', 'editi
 VIDEO_EXTS = ('mkv', 'mp4', 'm4v', 'avi', 'mov', 'wmv', 'mpg', 'mpeg', 'ts', 'm2ts', 'webm', 'flv', 'vob', 'iso', 'divx', 'ogm', '3gp')
 VIDEO_RX = re.compile(r'\.(?:' + '|'.join(VIDEO_EXTS) + r')$', re.I)
 FOLDER = 'application/vnd.google-apps.folder'
-MODEL_VERSION = 8
+MODEL_VERSION = 9   # 0.6.6: New Arrivals main-collection rule (cached models recompute)
 UA = 'plugin.video.fefc/1.0 (Kodi)'
 # Newest files shown on New Arrivals. The web app caps at 500 and pages 60; the first
 # page has to come back in a few seconds on a Fire Stick, so the plugin only builds one page.
@@ -687,15 +687,28 @@ def _added_ts(value):
         return 0.0
 
 
+def in_main_collection(items, i, root):
+    """0.6.6 New Arrivals rule, the same as the web app's rootVids() and the genres rule: a file counts only
+    when it sits directly in the main collection root. Files in To Be Catalogued (or under it), in Fan Edit
+    Collections, in Read First or nested in sub-folders are left out; a root shortcut whose target lives in
+    To Be Catalogued is dropped by the caller. Without a known root nothing is dropped."""
+    if not root:
+        return True
+    it = items.get(i)
+    return bool(it) and it[1] == root
+
+
 def _compute_recent(m):
     added = m.get('added') or {}
     items = m.get('items') or {}
     kids = m.get('kids') or {}
     tbc_ids = tbc_members(items, kids)
+    root = m.get('root') or ''
     vids = [i for i in added
             if i in items and not items[i][2]
             and i not in tbc_ids
-            and not (items[i][3] and items[i][3] in tbc_ids)]
+            and not (items[i][3] and items[i][3] in tbc_ids)
+            and in_main_collection(items, i, root)]
     vids = dedupe(m, vids)
     vids.sort(key=lambda i: _added_ts(added.get(i)), reverse=True)
     return vids[:RECENT_CAP]
@@ -1313,6 +1326,54 @@ def sfx_genre(m, genre):
     if isinstance(picked, list):
         return picked
     return ''
+
+
+def genre_sfx_pool(m, genre, cap=24):
+    """Clips a genre page may play (0.6.6). Only the genre's own members count: collections and files
+    that sit directly in the main collection root (genre_folders / genre_videos already leave out To Be
+    Catalogued and nested items). A member's franchise clip joins the pool only when the clip belongs to
+    the genre: at least half of all root members that use that clip are tagged with this genre. That stops
+    one cross-genre title from leaking its franchise sound (the Alien & Aliens mashup is tagged Sci-Fi and
+    Comedy, so Alien's hiss used to play on Comedy). The genre's curated clip (folder-sfx.json _genres) is
+    added last, like the web app. Never a global pool: an empty list means silence."""
+    cache = m.setdefault('_gsfx', {})
+    if genre in cache:
+        return list(cache[genre])
+    members = m.setdefault('_gsfx_members', {})
+    if not members:
+        for d in ('genre_folders', 'genre_videos'):
+            for g, ids in (m.get(d) or {}).items():
+                for i in ids:
+                    members.setdefault(i, set()).add(g)
+        users = {}
+        for i in members:
+            r = sfx_up(m, i)
+            if r:
+                users.setdefault(tuple(r), []).append(i)
+        m['_gsfx_users'] = users
+    users = m.get('_gsfx_users') or {}
+    ids = [i for i in list((m.get('genre_folders') or {}).get(genre) or []) + list((m.get('genre_videos') or {}).get(genre) or [])]
+    pool, seen = [], set()
+
+    def add(files):
+        for one in files:
+            if isinstance(one, str) and one and one not in seen and len(pool) < cap:
+                seen.add(one)
+                pool.append(one)
+
+    for i in ids:
+        r = sfx_up(m, i)
+        if not r:
+            continue
+        who = users.get(tuple(r)) or [i]
+        share = sum(1 for j in who if genre in members.get(j, ())) / float(len(who))
+        if share >= 0.5:
+            add(r[:2])   # at most two files per franchise (one clip in both formats), so one big set cannot fill the pool
+    own = sfx_genre(m, genre)
+    if isinstance(own, list):
+        add(own)
+    cache[genre] = list(pool)
+    return pool
 
 
 # One ancestor limit for the sfx walk and for depth: sfx_for() and _depth()

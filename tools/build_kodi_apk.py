@@ -151,7 +151,11 @@ _km = os.path.join(A, 'system', 'keymaps')
 os.makedirs(_km, exist_ok=True)
 _nav = os.path.join(root, 'kodi-src', 'plugin.video.fefc', 'resources', 'keymaps', 'fefc-nav.xml')
 if os.path.exists(_nav):
-    shutil.copy(_nav, os.path.join(_km, 'fefc-nav.xml'))
+    # zz-: Kodi loads keymaps by file name and the last one wins; FEFC's must load after the stock
+    # keyboard/mouse/remote/touchscreen maps or their ContextMenu bindings replace FEFC's menu.
+    if os.path.exists(os.path.join(_km, 'fefc-nav.xml')):
+        os.remove(os.path.join(_km, 'fefc-nav.xml'))
+    shutil.copy(_nav, os.path.join(_km, 'zz-fefc-nav.xml'))
 open(os.path.join(_km, 'fefc-touch.xml'), 'w', encoding='utf-8').write("""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <!-- FEFC: one-finger swipe left = Back (same as remote), so phone edge-swipe pops history. -->
 <keymap>

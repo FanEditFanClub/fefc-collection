@@ -65,6 +65,14 @@
 			<wrapmultiline>true</wrapmultiline>
 			<label></label>
 		</control>
+		<!-- X for touch and mouse (Back and the Close button still work) -->
+		<control type="button" id="9001">
+			<left>1766</left><top>52</top><width>72</width><height>72</height>
+			<texturefocus>fefc-close-on.png</texturefocus>
+			<texturenofocus>fefc-close.png</texturenofocus>
+			<label></label>
+			<onleft>7003</onleft><ondown>7003</ondown>
+		</control>
 		<control type="button" id="9000">
 			<left>1500</left><top>948</top><width>280</width><height>68</height>
 			<font>font14_title</font>

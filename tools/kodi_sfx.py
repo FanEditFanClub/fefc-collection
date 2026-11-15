@@ -9,7 +9,8 @@ import os, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 
 # clip base name -> max seconds (None = full length, no truncation)
-LONG_CLIPS = {'austin-mustafa-burned-full': None, 'armageddon-detonation': None, 'stallone-if-i-can-change': None}
+LONG_CLIPS = {'austin-mustafa-burned-full': None, 'armageddon-detonation': None, 'stallone-if-i-can-change': None,
+              'curb-pretty-good': '6.5'}   # 0.6.6: the last "good" ends at 6.1 s
 import os, subprocess, sys
 from concurrent.futures import ThreadPoolExecutor
 

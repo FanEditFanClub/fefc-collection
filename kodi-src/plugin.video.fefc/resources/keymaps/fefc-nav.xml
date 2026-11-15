@@ -24,6 +24,15 @@
 		<gamepad>
 			<back>PreviousMenu</back>
 		</gamepad>
+		<!-- 0.6.6: mouse right-click and touch long-press open the same FEFC menu, so Kodi's
+		     Add to favourites never shows on FEFC items (Add to My List is the only add action).
+		     Items that are not FEFC's still get Kodi's own menu from fefcmenu. -->
+		<mouse>
+			<rightclick>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</rightclick>
+		</mouse>
+		<touchscreen>
+			<longpress>RunPlugin(plugin://plugin.video.fefc/?action=fefcmenu)</longpress>
+		</touchscreen>
 	</global>
 	<!-- Play, pause, and scan become PlayerControl. The service then plays one
 	     cue from the new player state. Leaving them as Play/Pause/FastForward

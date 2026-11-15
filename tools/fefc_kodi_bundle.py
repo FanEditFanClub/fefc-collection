@@ -145,7 +145,11 @@ def stage_fefc(kodi_root, platform, arch, pkg, kodi_version, build=None, src='lo
     keymaps.mkdir(parents=True, exist_ok=True)
     nav = ROOT / 'kodi-src' / 'plugin.video.fefc' / 'resources' / 'keymaps' / 'fefc-nav.xml'
     if nav.is_file():
-        shutil.copy(nav, keymaps / 'fefc-nav.xml')
+        # Kodi loads keymaps in file-name order and a later file wins, so the stock keyboard.xml,
+        # mouse.xml, remote.xml and touchscreen.xml used to override FEFC's menu / right-click /
+        # long-press bindings with ContextMenu. The zz- prefix makes FEFC's file load last.
+        (keymaps / 'fefc-nav.xml').unlink(missing_ok=True)
+        shutil.copy(nav, keymaps / 'zz-fefc-nav.xml')
     media = kodi_root / 'media'
     media.mkdir(parents=True, exist_ok=True)
     intro = ROOT / 'assets' / 'intro-tv.mp4'

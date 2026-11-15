@@ -78,3 +78,84 @@ def adaptive(dec):
     for d, (w, h) in (('', (320, 180)), ('-mdpi', (160, 90)), ('-hdpi', (240, 135)), ('-xhdpi', (320, 180)), ('-xxhdpi', (640, 360)), ('-xxxhdpi', (640, 360))):
         os.makedirs(os.path.join(res, 'drawable' + d), exist_ok=True)
         banner(w, h).convert('RGB').save(os.path.join(res, 'drawable' + d, 'banner.png'), optimize=False)
+
+
+# ---- macOS: app icon and the drag-install disk image window -------------------------------------
+# Same artwork as the Android/Fire TV launcher icon (icon() above: FEFC logo on the FEFC gradient),
+# shaped like a macOS app icon: a rounded square inside the 1024 canvas with Apple's standard margin.
+MAC_ICON_SIZES = (16, 32, 128, 256, 512)  # each also at @2x, so 16 ... 1024 px
+_mac_master = None
+
+
+def mac_icon(size=1024):
+    global _mac_master
+    if _mac_master is None:
+        S = 1024; body = 824; off = (S - body) // 2; radius = 185
+        art = icon(body)
+        mask = Image.new('L', (body * 4, body * 4), 0)
+        ImageDraw.Draw(mask).rounded_rectangle((0, 0, body * 4 - 1, body * 4 - 1), radius * 4, fill=255)
+        mask = mask.resize((body, body), Image.LANCZOS)
+        canvas = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+        # soft drop shadow, like other Mac app icons
+        shadow = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+        sm = Image.new('L', (S, S), 0); sm.paste(mask, (off, off + 12))
+        from PIL import ImageFilter
+        sm = sm.filter(ImageFilter.GaussianBlur(14)).point(lambda v: int(v * 0.45))
+        shadow.putalpha(sm)
+        canvas.alpha_composite(shadow)
+        art.putalpha(mask)
+        canvas.alpha_composite(art, (off, off))
+        _mac_master = canvas
+    return _mac_master if size == 1024 else _mac_master.resize((size, size), Image.LANCZOS)
+
+
+def write_iconset(folder):
+    """Apple .iconset folder (icon_16x16.png ... icon_512x512@2x.png) for iconutil."""
+    os.makedirs(folder, exist_ok=True)
+    names = []
+    for s in MAC_ICON_SIZES:
+        for scale, suffix in ((1, ''), (2, '@2x')):
+            n = 'icon_%dx%d%s.png' % (s, s, suffix)
+            mac_icon(s * scale).save(os.path.join(folder, n))
+            names.append(n)
+    return names
+
+
+def _font(name, px):
+    from PIL import ImageFont
+    return ImageFont.truetype(os.path.join(A, 'fonts', name), px)
+
+
+# Window content size and icon centres in points (Finder coordinates). The background is drawn to match.
+DMG_WINDOW = (660, 560)   # window_rect includes the title bar; 560 keeps the Read Me label inside (no scroll bar)
+DMG_ICON_SIZE = 112
+DMG_ICONS = {'FEFC.app': (165, 200), 'Applications': (495, 200), 'Read Me.txt': (330, 440)}
+
+
+def dmg_background(scale=1):
+    w, h = DMG_WINDOW; W, H = w * scale, h * scale
+    bg = Image.new('RGBA', (W, H), (0, 0, 0, 255))
+    # wordmark across the top
+    wm = wordmark(); s = min(W * 0.34 / wm.width, H * 0.13 / wm.height)
+    wm = wm.resize((int(wm.width * s), int(wm.height * s)), Image.LANCZOS)
+    bg.alpha_composite(wm, ((W - wm.width) // 2, int(22 * scale)))
+    d = ImageDraw.Draw(bg)
+    # arrow from the app to Applications
+    (ax, ay), (bx, _) = DMG_ICONS['FEFC.app'], DMG_ICONS['Applications']
+    x0 = (ax + DMG_ICON_SIZE // 2 + 26) * scale; x1 = (bx - DMG_ICON_SIZE // 2 - 26) * scale; y = ay * scale
+    t = 7 * scale
+    d.rounded_rectangle((x0, y - t, x1 - 30 * scale, y + t), t, fill=BLUE + (255,))
+    d.polygon([(x1 - 40 * scale, y - 26 * scale), (x1, y), (x1 - 40 * scale, y + 26 * scale)], fill=BLUE + (255,))
+
+    def centred(text, cy, font, fill):
+        bb = d.textbbox((0, 0), text, font=font)
+        d.text(((W - (bb[2] - bb[0])) // 2 - bb[0], int(cy * scale) - (bb[3] - bb[1]) // 2 - bb[1]), text, font=font, fill=fill)
+    # Finder draws icon names in black (light mode) or white (dark mode); a mid-grey pill keeps both readable.
+    for name, (cx, cy) in DMG_ICONS.items():
+        top = cy + DMG_ICON_SIZE // 2 + 2
+        d.rounded_rectangle(((cx - 62) * scale, top * scale, (cx + 62) * scale, (top + 24) * scale), 12 * scale, fill=(128, 138, 152, 255))
+    centred('Drag FEFC to Applications', 300, _font('source-sans-3-600.ttf', 26 * scale), (255, 255, 255, 255))
+    small = _font('source-sans-3-400.ttf', 14 * scale)
+    centred('First time: in Applications, right-click FEFC and choose Open.', 340, small, (200, 208, 220, 255))
+    centred('Still blocked? System Settings > Privacy & Security > Open Anyway.', 361, small, (200, 208, 220, 255))
+    return bg.convert('RGB')

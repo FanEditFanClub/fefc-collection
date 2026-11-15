@@ -285,19 +285,7 @@ def build_pack(model, base):
             row = row_for(i, '')
             if row:
                 rows.append(row)
-        pool = []
-        seen = set()
-        for i in ids:
-            rel = catalog.sfx_up(model, i)
-            files = rel if isinstance(rel, list) else ([rel] if rel else [])
-            for one in files:
-                if isinstance(one, str) and one not in seen:
-                    seen.add(one)
-                    pool.append(one)
-                    if len(pool) >= 24:
-                        break
-            if len(pool) >= 24:
-                break
+        pool = catalog.genre_sfx_pool(model, genre)
         index['genres'][genre] = add({'name': genre, 'sfx': pool, 'rows': rows})
 
     recent_rows = []

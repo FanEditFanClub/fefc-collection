@@ -121,9 +121,14 @@ _BADGE = {'discord': 'DISCORD', 'x': 'X', 'facebook': 'FACEBOOK', 'reddit': 'RED
 
 
 def _cta(i):
-    """Network name plus the sentence. The sentence already says Join or Follow,
-    and the private-use glyph does not draw, so a JOIN prefix read as 'JOIN Join'."""
+    """Network icon (the brand glyph in the skin's Jura font, U+E001-E004, in the network's colour)
+    plus the sentence. 0.6.6: the icons were replaced by the words DISCORD / X / FACEBOOK / REDDIT
+    in 0.6.2 on the belief that the glyph does not draw; it does in fefc_ticker (Jura-Bold.ttf in
+    skin.fefc carries them), so the icons are back. The sentence already says Join or Follow."""
     src, text = CTA[i % len(CTA)]
+    ic = ICONS.get(src)
+    if ic:
+        return '[COLOR %s]%s[/COLOR]  %s' % (ic[1], ic[0], text)
     return '%s  %s' % (_BADGE.get(src, src.upper()), text)
 
 
