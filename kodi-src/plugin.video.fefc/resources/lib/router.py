@@ -997,14 +997,8 @@ class Router:
             return
         chunk = rows[page * GENRE_PAGE:(page + 1) * GENRE_PAGE]
         if not page:
-            clips = []
-            for i in rows:
-                rel = catalog.sfx_up(m, i)
-                if isinstance(rel, list):
-                    clips.extend(rel)
-                elif rel:
-                    clips.append(rel)
-            self._maybe_sfx(clips)
+            # 0.6.6: only this genre's own clips (catalog.genre_sfx_pool), never a member's cross-genre franchise sound.
+            self._maybe_sfx(catalog.genre_sfx_pool(m, g))
             self._add_listing_actions('genre', {'genre': g})
         nf = nv = 0
         for k in chunk:

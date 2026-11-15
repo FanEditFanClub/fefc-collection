@@ -504,10 +504,14 @@ function pushClip(out,seen,L){if(!L)return;if(Array.isArray(L)&&L.length&&Array.
 function clipsForFolder(id){const f=items.get(id),out=[],seen={};const direct=FSFX[id]||(f&&FSFX[f.name]);if(direct)pushClip(out,seen,direct);
  if(f&&Array.isArray(FSFX._rules)){const nm=(f.name||'');FSFX._rules.forEach(r=>{let hit=false;if(r.ids&&r.ids.some(x=>x===id||x===(f.targetId||'')))hit=true;if(!hit&&r.regex){try{if(new RegExp(r.regex,'i').test(nm))hit=true}catch(e){}}if(!hit&&r.match&&nm.toLowerCase().includes(String(r.match).toLowerCase()))hit=true;if(hit)pushClip(out,seen,r.file||r.files)})}
  return out}
-function genreClipPool(G){const ck=items.size+':'+_sfxGen;if(_gpool[G]&&_gpool[G].k===ck)return _gpool[G].pool;const seen={},pool=[],ids={};
- Object.keys(genreMap||{}).forEach(fid=>{const g=genreMap[fid];if(g&&(g.genres||[]).indexOf(G)>=0)ids[fid]=1});
- (typeof genreColls==='function'?genreColls(G):[]).forEach(c=>(c.folders||[]).forEach(fid=>{ids[fid]=1}));
- Object.keys(ids).forEach(id=>clipsForFolder(id).forEach(L=>pushClip(pool,seen,L)));
+/* 0.6.6 genre sound pool: only root members of the genre (never To Be Catalogued or nested folders), and a member's clip joins only when at least half of the root members using that clip are tagged with the genre, so a cross-genre title (the Alien & Aliens mashup tagged Sci-Fi + Comedy) cannot leak its franchise sound. Same rule as Kodi catalog.genre_sfx_pool(). */
+function _gsfxIndex(ck){if(_gpool._ix&&_gpool._ix.k===ck)return _gpool._ix;const mem={},users={},gs={};const tag=(id,g)=>{const f=items.get(id);if(!f||(f.parent||ROOT)!==ROOT)return;(mem[id]||(mem[id]={}))[g]=1};
+ Object.keys(genreMap||{}).forEach(fid=>{const g=genreMap[fid];((g&&g.genres)||[]).forEach(x=>{gs[x]=1;tag(fid,x)})});Object.keys(FSFX._genres||{}).forEach(x=>{gs[x]=1});
+ if(typeof genreColls==='function')Object.keys(gs).forEach(x=>{try{genreColls(x).forEach(c=>(c.folders||[]).forEach(fid=>tag(fid,x)))}catch(e){}});
+ Object.keys(mem).forEach(id=>clipsForFolder(id).forEach(L=>{const k=[].concat(L).join('|');(users[k]||(users[k]=[])).push(id)}));
+ return (_gpool._ix={k:ck,mem,users})}
+function genreClipPool(G){const ck=items.size+':'+_sfxGen+':'+Object.keys(genreMap||{}).length;if(_gpool[G]&&_gpool[G].k===ck)return _gpool[G].pool;const ix=_gsfxIndex(ck),seen={},pool=[];
+ Object.keys(ix.mem).forEach(id=>{if(!ix.mem[id][G])return;clipsForFolder(id).forEach(L=>{const u=ix.users[[].concat(L).join('|')]||[id];const n=u.filter(j=>ix.mem[j]&&ix.mem[j][G]).length;if(n*2>=u.length)pushClip(pool,seen,L)})});
  pushClip(pool,seen,(FSFX._genres||{})[G]);
  return (_gpool[G]={k:ck,pool}).pool}
 let _gsfx={k:'',t:0,i:-1,n:0,order:null};

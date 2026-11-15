@@ -1315,6 +1315,54 @@ def sfx_genre(m, genre):
     return ''
 
 
+def genre_sfx_pool(m, genre, cap=24):
+    """Clips a genre page may play (0.6.6). Only the genre's own members count: collections and files
+    that sit directly in the main collection root (genre_folders / genre_videos already leave out To Be
+    Catalogued and nested items). A member's franchise clip joins the pool only when the clip belongs to
+    the genre: at least half of all root members that use that clip are tagged with this genre. That stops
+    one cross-genre title from leaking its franchise sound (the Alien & Aliens mashup is tagged Sci-Fi and
+    Comedy, so Alien's hiss used to play on Comedy). The genre's curated clip (folder-sfx.json _genres) is
+    added last, like the web app. Never a global pool: an empty list means silence."""
+    cache = m.setdefault('_gsfx', {})
+    if genre in cache:
+        return list(cache[genre])
+    members = m.setdefault('_gsfx_members', {})
+    if not members:
+        for d in ('genre_folders', 'genre_videos'):
+            for g, ids in (m.get(d) or {}).items():
+                for i in ids:
+                    members.setdefault(i, set()).add(g)
+        users = {}
+        for i in members:
+            r = sfx_up(m, i)
+            if r:
+                users.setdefault(tuple(r), []).append(i)
+        m['_gsfx_users'] = users
+    users = m.get('_gsfx_users') or {}
+    ids = [i for i in list((m.get('genre_folders') or {}).get(genre) or []) + list((m.get('genre_videos') or {}).get(genre) or [])]
+    pool, seen = [], set()
+
+    def add(files):
+        for one in files:
+            if isinstance(one, str) and one and one not in seen and len(pool) < cap:
+                seen.add(one)
+                pool.append(one)
+
+    for i in ids:
+        r = sfx_up(m, i)
+        if not r:
+            continue
+        who = users.get(tuple(r)) or [i]
+        share = sum(1 for j in who if genre in members.get(j, ())) / float(len(who))
+        if share >= 0.5:
+            add(r[:2])   # at most two files per franchise (one clip in both formats), so one big set cannot fill the pool
+    own = sfx_genre(m, genre)
+    if isinstance(own, list):
+        add(own)
+    cache[genre] = list(pool)
+    return pool
+
+
 # One ancestor limit for the sfx walk and for depth: sfx_for() and _depth()
 # used to disagree (30 vs 40). 30 is the binding one.
 ANCESTOR_LIMIT = 30

@@ -1481,11 +1481,30 @@ class HomeWall(object):
             self._stop_counted = False
             pl.play(src, li, windowed=True)
             xbmc.executebuiltin('PlayerControl(RepeatOne)')
+            self._need_stretch = True
         except Exception as e:
             log('home wall play: %s' % e)
             self.fails += 1
             home.clearProperty('FEFC.Wall')
         self.t_next = time.time() + 2
+
+    def _stretch_wall(self, pl):
+        """0.6.6: the wall is a 1920x1080 picture whose cells line up with the skin's tile rows. The skin
+        stretches to any screen shape (phone, tablet, Mac window) but the player kept the video's 16:9 shape
+        and centred it, so on a non-16:9 screen the clips slid away from the black masks (slivers beside the
+        wordmark, side clips out of line with the tiles). Stretch the wall, and only the wall, to the window
+        so its pixels map 1:1 onto skin coordinates. Kodi keeps this per file; films are untouched."""
+        try:
+            if not pl.isPlaying() or 'home-wall' not in (pl.getPlayingFile() or ''):
+                return
+        except Exception:
+            return
+        self._need_stretch = False
+        try:
+            xbmc.executeJSONRPC(json.dumps({'jsonrpc': '2.0', 'id': 1, 'method': 'Player.SetViewMode',
+                                            'params': {'viewmode': 'stretch16x9'}}))
+        except Exception as e:
+            log('wall view mode: %s' % e)
 
     def _busy_with_real_video(self, pl, home):
         if home.getProperty('FEFC.PausedTitle'):
@@ -1506,6 +1525,8 @@ class HomeWall(object):
         home = xbmcgui.Window(10000)
         pl = xbmc.Player()
         sound = home.getProperty('FEFC.SoundOff') != '1'
+        if getattr(self, '_need_stretch', False):
+            self._stretch_wall(pl)
         if self._dialog and not xbmc.getCondVisibility('Window.IsVisible(11191)'):
             # The off-screen videowindow was closed: re-arm it below.
             self._dialog = False

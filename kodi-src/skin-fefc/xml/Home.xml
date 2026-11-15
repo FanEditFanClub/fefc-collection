@@ -38,6 +38,20 @@
 			<aspectratio>scale</aspectratio>
 			<visible>!String.IsEmpty(Window(Home).Property(FEFC.WallSeam))</visible>
 		</control>
+		<!-- 0.6.6 Home mosaic masks. Only six clips show: three down each side, each cut to the same
+		     376x176 body as the menu tiles beside it (tile 400x200 minus the 12 px glow margin) and on
+		     the same rows (224, 436, 648). Everything else is solid black: the whole title band (no slivers
+		     beside the wordmark), the corner cells, the 36 px row gaps and the band under the grid.
+		     The side clips bleed off the screen edge by 52 px, as the 5x5 lattice always did.
+		     Drawn after the seam still so the loop-seam cover is cut the same way. -->
+		<control type="group" id="8980">
+			<visible>String.IsEmpty(Window(Home).Property(FEFC.Genres))</visible>
+			<control type="image"><left>0</left><top>0</top><width>1920</width><height>224</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>0</left><top>400</top><width>1920</width><height>36</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>0</left><top>612</top><width>1920</width><height>36</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>0</left><top>824</top><width>1920</width><height>256</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+			<control type="image"><left>324</left><top>224</top><width>1272</width><height>600</height><texture colordiffuse="FF000000">colors/white.png</texture></control>
+		</control>
 		<!-- 0.4.0: top band removed (it covered the corner mosaic tiles); the wall has no tiles behind the title -->
 		<!-- 0.3.22: solid black behind the 3x3 grid, so the mosaic video only shows around it -->
 		<control type="image">
