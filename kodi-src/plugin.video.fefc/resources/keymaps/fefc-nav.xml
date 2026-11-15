@@ -37,6 +37,21 @@
 	<!-- Play, pause, and scan become PlayerControl. The service then plays one
 	     cue from the new player state. Leaving them as Play/Pause/FastForward
 	     would also play the sound-skin action, so the cue would fire twice. -->
+	<!-- 0.6.6: Back on Home does nothing. Kodi's Home window otherwise switches a playing video to
+	     fullscreen on Back, which turned the mosaic wall into a fullscreen video. -->
+	<Home>
+		<keyboard>
+			<escape>noop</escape>
+			<backspace>noop</backspace>
+			<browser_back>noop</browser_back>
+		</keyboard>
+		<remote>
+			<back>noop</back>
+		</remote>
+		<gamepad>
+			<back>noop</back>
+		</gamepad>
+	</Home>
 	<FullscreenVideo>
 		<keyboard>
 			<space>PlayerControl(Play)</space>
