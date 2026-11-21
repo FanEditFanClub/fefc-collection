@@ -1868,7 +1868,7 @@ def _grid_pad_loop(monitor):
 
     The panel cannot skip an item by itself. This only runs while that cell is
     focused, and it never touches playback."""
-    from resources.lib.shapes import skip_delta
+    from resources.lib.shapes import skip_delta, owner_delta
     origin = None
     while not monitor.abortRequested():
         try:
@@ -1892,6 +1892,29 @@ def _grid_pad_loop(monitor):
                 return _grid_kind_at(i, pos)
 
             home = xbmcgui.Window(10000)
+            if lookup(pos) == 'spacer' and xbmc.getCondVisibility('Window.IsVisible(10099)'):
+                # 0.6.6 b68: the mouse pointer is showing (Mac / desktop mouse). Kodi
+                # focuses whatever cell is under the pointer; under a poster that is a
+                # reserved cell, and the D-pad skip below sent focus to a different
+                # tile (and could scroll the grid under the pointer). Focus the poster
+                # drawn there instead, or stay put on an empty padding cell. The
+                # pointer is never shown while a remote is in use, so TV navigation
+                # takes the unchanged path below.
+                owner = owner_delta(pos, lookup)
+                if owner is not None:
+                    try:
+                        in_page = int(xbmc.getInfoLabel('Container(%s).Position' % cid) or '-1')
+                    except ValueError:
+                        in_page = -1
+                    if in_page + owner >= 0:
+                        # pos excludes Kodi's ".." row; the absolute index includes it.
+                        lead = 1 if (xbmc.getCondVisibility('Container(%s).ListItemAbsolute(0).IsParentFolder' % cid)
+                                     or xbmc.getInfoLabel('Container(%s).ListItemAbsolute(0).Label' % cid) == '..') else 0
+                        xbmc.executebuiltin('SetFocus(%s,%d,absolute)' % (cid, pos + lead + owner))
+                origin = None
+                if monitor.waitForAbort(0.1):
+                    return
+                continue
             from_menu = home.getProperty('FEFC.GridFromMenu') == '1'
             step = skip_delta(pos, origin, lookup, from_menu=from_menu)
             if from_menu:

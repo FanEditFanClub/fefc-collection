@@ -57,6 +57,17 @@ def _model():
     return catalog.load_model(_base(), os.path.join(prof, 'cache'), mins, _log)
 
 
+def _record_opened(vid, name=''):
+    """0.6.6 b68: History (Recently Opened) records the moment Play, Open in VLC or
+    Open in Google Drive is picked. The service's player tracker still records the
+    playback too (that only adds to the open count). Never blocks playback."""
+    try:
+        if vid:
+            _ml().opened(vid, catalog.display_title(name) if name else '')
+    except Exception as e:
+        _log('history: %r' % (e,))
+
+
 def _ml():
     prof = xbmcvfs.translatePath(ADDON.getAddonInfo('profile'))
     return mylist_mod.MyList(os.path.join(prof, 'mylist'), _base())
@@ -270,6 +281,7 @@ class Router:
         self._land = False  # True once any landscape card (folder / tool / Support Us) is added
         self._vid = False   # True once any video file is queued (files are always portrait)
         self._pending = []  # (kind, emit) flushed by end() through shapes.pack
+        self._pending_urls = {}
 
     def mydb(self):
         if self._mydb is None:
@@ -284,20 +296,33 @@ class Router:
     def _fanart_default(self, li):
         li.setArt({'fanart': 'special://home/addons/plugin.video.fefc/resources/fanart.jpg'})
 
-    def _enqueue(self, kind, fn):
+    def _enqueue(self, kind, fn, url=None):
         self._pending.append((kind, fn))
+        # 0.6.6 b68: the URL of each video, so a cell reserved under its poster can open it on a tap.
+        self._pending_urls[id(fn)] = url
         if kind == 'video':
             self._vid = True
         else:
             self._land = True
 
-    def _emit_pad(self):
-        """A cell reserved under a portrait poster. It is not a tile and not a gap."""
+    def _emit_pad(self, owner=None, owner_url=None):
+        """A cell reserved under a portrait poster. It is not a tile and not a gap.
+
+        0.6.6 b68: the poster and its title are drawn down across these cells, but
+        Kodi's panel hit-tests one item per cell, so a tap or click on the lower half
+        of a poster (or on its title) landed on this cell instead of the video.
+        owner is the list slot of the video drawn over this cell; selecting the cell
+        hands the select to that video. The D-pad never rests here (service.py moves
+        focus off it), so TV navigation is unchanged."""
         from . import shapes
         li = xbmcgui.ListItem(' ', offscreen=True)
         shapes.stamp(li, 'spacer')
         li.setProperty('IsPlayable', 'false')
-        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, action='gridpad'), li, False)
+        kw = {'action': 'gridpad'}
+        if owner is not None and owner_url:
+            kw['to'] = str(owner)
+            kw['target'] = owner_url
+        xbmcplugin.addDirectoryItem(self.handle, _url(self.url, **kw), li, False)
 
     def add_folder(self, label, art='', info=None, landscape='', props=None, **kw):
         li = xbmcgui.ListItem(label, offscreen=True)
@@ -317,7 +342,7 @@ class Router:
         if info:
             tag.setPlot(info)
         url = _url(self.url, **kw)
-        self._enqueue('video' if kind == 'video' else kind, lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, True))
+        self._enqueue('video' if kind == 'video' else kind, lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, True), url=url)
 
     def _pager(self, page, more, **kw):
         """0.6.6: Previous page / Next page cards, always after every item at the bottom of the list
@@ -465,7 +490,7 @@ class Router:
             tag.setTrailer('plugin://plugin.video.youtube/play/?video_id=' + tr['id'])
         li.setProperty('IsPlayable', 'true')
         url = _url(self.url, action='play', id=vid)
-        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
+        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False), url=url)
 
     def _title(self):
         a = self.params.get('action') or 'root'
@@ -507,14 +532,21 @@ class Router:
         queues = {}
         for kind, emit in pending:
             queues.setdefault(kind, []).append(emit)
+        urls = self._pending_urls
+        self._pending_urls = {}
+        emitted = {}
         real = 0
-        for slot in slots:
+        for si, slot in enumerate(slots):
             if slot == 'spacer':
-                self._emit_pad()
+                owner = shapes.poster_owner(slots, si)
+                self._emit_pad(owner, emitted.get(owner) if owner is not None else None)
             else:
                 q = queues.get(slot)
                 if q:
-                    q.pop(0)()
+                    fn = q.pop(0)
+                    fn()
+                    if slot == 'video':
+                        emitted[si] = urls.get(id(fn))
                     real += 1
                 else:
                     # No pending item of this kind left (should not happen
@@ -715,7 +747,7 @@ class Router:
             if rating_src:
                 li.setProperty('fefc_rating_src', rating_src)
         url = _url(self.url, action='play', id=fid, n=name)
-        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
+        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False), url=url)
 
     def _add_listing_actions(self, action, kw):
         """Sort, Shuffle, Support Us, and the My List star on every folder-style page."""
@@ -1816,9 +1848,34 @@ class Router:
                 pass
 
     def gridpad(self):
-        """Selecting a cell reserved under a poster does nothing."""
+        """A cell reserved under a poster. Selecting it opens the video whose poster
+        or title is drawn over it (a tap on the lower half of the artwork lands here),
+        exactly as selecting the poster itself does. A padding cell with no poster
+        over it does nothing."""
         if self.handle >= 0:
             xbmcplugin.endOfDirectory(self.handle, succeeded=False)
+        target = self.params.get('target') or ''
+        try:
+            to = int(self.params.get('to') or '')
+        except ValueError:
+            return
+        if not target:
+            return
+        cid = xbmc.getInfoLabel('System.CurrentControlId') or ''
+        if cid not in ('500', '501'):
+            cid = '501'
+        # The slot counts the plugin's own items. Kodi's ".." row (when shown) is
+        # item 0, so try that shift first, then a few cells either side, and only
+        # act on the item whose path is the owning video.
+        for n in (to + 1, to, to + 2, to - 1):
+            if n < 0:
+                continue
+            path = xbmc.getInfoLabel('Container(%s).ListItemAbsolute(%d).FileNameAndPath' % (cid, n)) or ''
+            if path == target:
+                xbmc.executebuiltin('SetFocus(%s,%d,absolute)' % (cid, n))
+                xbmc.executebuiltin('Action(Select)')
+                return
+        _log('gridpad: no video %r near slot %d' % (target, to))
 
     def gdoc(self):
         """0.3.22: read-only view of a Google Doc from Fan Edit Collections (plain-text export; Drive is never changed)."""
@@ -2000,7 +2057,7 @@ class Router:
         tag.setTitle(rec.get('name') or 'Verified file')
         tag.setPlot(plot)
         url = _url(self.url, action='play_external', id=rec['id'])
-        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
+        self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False), url=url)
 
     def play_external(self, rec=None):
         from . import providers
@@ -2032,6 +2089,7 @@ class Router:
                 m = _model()
                 v = m['items'].get(vid)
                 name = v[0] if v else 'video.mp4'
+            _record_opened(vid, name)
             url = catalog.stream_url(_base(), vid, name)
             if not url:
                 raise ValueError('no stream url for %s' % (vid,))
@@ -2062,6 +2120,7 @@ class Router:
         """Open the pages.dev stream (supports Range/seek) in VLC for Android."""
         import re
         tid, name = self._target(self.params['id'])
+        _record_opened(self.params['id'], name)
         nm = re.sub(r'[^A-Za-z0-9._\-]+', '_', name.strip())
         if not re.search(r'(?i)\.(mp4|m4v|mkv|webm|mov|avi|mpg|mpeg|m2ts|ts)$', nm):
             nm = re.sub(r'\.[^.]+$', '', nm) or 'video'
@@ -2078,6 +2137,7 @@ class Router:
         0.5.1: the Drive package is named explicitly — with no package Android showed an
         'Open with' chooser first, and only opened Drive after it was dismissed."""
         tid, name = self._target(self.params['id'])
+        _record_opened(self.params['id'], name)
         url = 'https://drive.google.com/file/d/' + tid + '/view'
         _log('open in Drive: %s' % url)
         xbmc.executebuiltin('StartAndroidActivity(com.google.android.apps.docs,android.intent.action.VIEW,,%s)' % url)
@@ -2237,7 +2297,7 @@ class Router:
                 li.getVideoInfoTag().setPlot('Downloaded to this device  ·  %.2f GB' % (sz / 1073741824.0))
             li.addContextMenuItems([('Delete download', 'RunPlugin(%s)' % _url(self.url, action='download_delete', id=rid))])
             url = _url(self.url, action='play_download', id=rid)
-            self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False))
+            self._enqueue('video', lambda li=li, url=url: xbmcplugin.addDirectoryItem(self.handle, url, li, False), url=url)
         self.end(cache=False)
 
     def download_storage(self):
@@ -2272,6 +2332,7 @@ class Router:
                 except Exception:
                     pass
                 return
+            _record_opened(vid, r.get('name') or '')
             li = xbmcgui.ListItem(path=r['path'])
             low = (r.get('name') or '').lower()
             li.setMimeType('video/x-matroska' if low.endswith('.mkv') else 'video/mp4')

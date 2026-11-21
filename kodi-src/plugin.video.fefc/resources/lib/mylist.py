@@ -176,7 +176,7 @@ class MyList:
             self.reload()
             h = self.db.setdefault('history', {})
             r = h.get(i) if isinstance(h.get(i), dict) and not h.get(i, {}).get('deleted') else None
-            h[i] = {'id': i, 'lastOpened': _now(), 'count': ((r or {}).get('count') or 0) + 1, 'name': name or '', 'updatedAt': _now()}
+            h[i] = {'id': i, 'lastOpened': _now(), 'count': ((r or {}).get('count') or 0) + 1, 'name': name or (r or {}).get('name') or '', 'updatedAt': _now()}
             self.save()
 
     def history_ids(self, n=50):

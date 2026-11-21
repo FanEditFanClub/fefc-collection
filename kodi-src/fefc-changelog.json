@@ -4,6 +4,8 @@
    "version": "0.6.6 Beta",
    "date": "2026-11-14",
    "notes": [
+    "Tapping or clicking anywhere on a video's poster or title opens that video. A tap on the lower half used to land on an empty cell and pick a different tile.",
+    "History (Recently Opened) records a video the moment you pick Play, Open in VLC, or Open in Google Drive.",
     "Hundreds of fixes from a full code review of the app: catalogue loading, art, search, genres, My List, sounds, the update check, and QR codes.",
     "On a Mac, an update shows the same centered update popup as on Android, with progress, Retry, and the manual download links.",
     "Download latest version in Settings opens the list of downloads.",

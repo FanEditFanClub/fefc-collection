@@ -228,6 +228,37 @@ def audit(slots, leading=0):
     return errors
 
 
+def poster_owner(slots, index):
+    """The slot of the video whose poster is drawn over the reserved cell at index,
+    or None. slots is the list pack() returned."""
+    if index < 0 or index >= len(slots) or slots[index] != KIND_SPACER:
+        return None
+    for back in range(1, SPAN):
+        j = index - back * COLS
+        if j < 0:
+            break
+        if slots[j] == KIND_VIDEO:
+            return j
+        if slots[j] != KIND_SPACER:
+            break
+    return None
+
+
+def owner_delta(pos, lookup):
+    """Pointer (mouse) only: relative move from a reserved cell at absolute index pos
+    to the video whose poster covers it, or None when no poster covers it. lookup
+    is the same as for skip_delta()."""
+    if lookup(pos) != KIND_SPACER:
+        return None
+    for back in range(1, SPAN):
+        k = lookup(pos - back * COLS)
+        if k == KIND_VIDEO:
+            return -back * COLS
+        if k != KIND_SPACER:
+            return None
+    return None
+
+
 def skip_delta(pos, origin, lookup, from_menu=False):
     """Where to send focus when it lands on a reserved or padding cell.
 
