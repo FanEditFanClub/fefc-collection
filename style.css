@@ -1794,3 +1794,8 @@ html body .ol-tile.fold,html body .ol-tile.doc,html body .ol-tile.person,html bo
 html body #details .cast{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;max-height:24vh;overflow:auto;animation:none!important}
 
 #details .star-btn .sb-ic{font-style:normal;color:currentColor;margin-right:.45em;font-size:1.1em;line-height:1}
+/* Home tiles (Kodi parity): label fully inside the tile, centered, wrapping; app.js fitHubTiles() shrinks text that still overflows */
+#hub .hb{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;overflow:hidden!important;box-sizing:border-box;text-align:center;min-width:0;min-height:0;padding:5% 6%!important}
+#hub .hb>span,#hub .hb>small{flex:0 1 auto;max-width:100%!important;min-width:0;text-align:center;white-space:normal!important}
+#hub .hb>.hb-star{flex:0 0 auto}
+#hub .hb-logo img,#hub .hb-logo svg{flex:0 1 auto;min-height:0;width:auto!important;max-width:44%!important;max-height:44%!important;object-fit:contain}

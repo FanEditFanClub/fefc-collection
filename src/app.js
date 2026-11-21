@@ -236,6 +236,10 @@ function hubHtml(t){return t[0]==='main'?`<button class="hb hb-logo" data-hub="m
 function hubPatchOne(el,t){if(!el||!t)return;if(t[0]==='main'){const sm=el.querySelector('.hb-cnt');if(sm)sm.innerHTML=esc(countsLine(ROOT)).replace(/ · /g,' <wbr>· ');return}
  const sp=el.querySelector('span');if(sp)sp.innerHTML=esc(t[1]).replace(/\n&amp;\n/,'<br><i class="amp">&amp;</i><br>').replace(/\n/g,'<br>');
  let sm=el.querySelector('small');if(t[2]){if(!sm){sm=document.createElement('small');el.appendChild(sm)}sm.innerHTML=esc(t[2]).replace(/ · /g,' <wbr>· ')}else if(sm)sm.remove()}
+/* Home tiles: keep every label inside its tile (Kodi parity). Shrinks text only when it overflows. */
+function fitHubTiles(){try{const box=$('#hub');if(!box)return;[].slice.call(box.querySelectorAll('.hb')).forEach(el=>{const kids=[].slice.call(el.querySelectorAll(':scope>span,:scope>small,:scope>.hb-star'));kids.forEach(k=>k.style.removeProperty('font-size'));const W=el.clientWidth,H=el.clientHeight;if(!W||!H)return;const over=()=>el.scrollHeight>H+1||el.scrollWidth>W+1||kids.some(k=>k.clientWidth&&k.scrollWidth>k.clientWidth+1);if(!over())return;const base=kids.map(k=>parseFloat(getComputedStyle(k).fontSize)||12);let s=1;for(let n=0;n<16&&over();n++){s*=.9;kids.forEach((k,q)=>k.style.setProperty('font-size',Math.max(7,base[q]*s).toFixed(1)+'px','important'))}})}catch(e){}}
+let _fitHubT=0,_fitHubRO=null;function fitHubSoon(){try{const bx=$('#hub');if(bx&&!_fitHubRO&&window.ResizeObserver){_fitHubRO=new ResizeObserver(()=>fitHubSoon());_fitHubRO.observe(bx)}}catch(e){}clearTimeout(_fitHubT);_fitHubT=setTimeout(()=>requestAnimationFrame(fitHubTiles),60)}
+window.addEventListener('resize',fitHubSoon);try{document.fonts&&document.fonts.ready.then(fitHubSoon)}catch(e){}
 function hub(){try{
  if(document.body.classList.contains('genres-mode')&&window.FEFCGenres&&FEFCGenres.hub)return FEFCGenres.hub();
  const box=$('#hub');if(!box)return;let T;try{T=hubTiles()}catch(e){console.warn('hubTiles',e);T=[['readfirst','Read First',''],['arena','New Arrivals',''],['support','Support Us','Patreon · PayPal · Venmo'],['folder:'+FOLD.collections,'Fan Edit Collections',''],['main','',''],['folder:'+FOLD.tbc,'To Be Catalogued',''],['people','Actors\n&\nDirectors',''],['mylist','My List','History · 0 Starred'],['genres','Genres','']]}
@@ -246,11 +250,11 @@ function hub(){try{
  for(let i=0;i<T.length;i++){const t=T[i];const el=box.querySelector('.hb[data-hub="'+cssEsc(t[0])+'"]');if(!el){ok=false;break}hubPatchOne(el,t);have.add(t[0])}
  if(ok){[].slice.call(box.querySelectorAll('.hb[data-hub]')).forEach(el=>{if(!have.has(el.getAttribute('data-hub')))el.remove()});
   if(fhub){const el=box.querySelector('.hb[data-hub="'+cssEsc(fhub)+'"]');if(el&&document.activeElement!==el)try{focusEl(el)}catch(e){}}
-  try{if(box.querySelector('.hb'))window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()}catch(e){}
+  fitHubSoon();try{if(box.querySelector('.hb'))window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()}catch(e){}
   return}
  box.innerHTML=T.map(hubHtml).join('');mcs.forEach(x=>box.appendChild(x));
  if(fhub){const el=box.querySelector('.hb[data-hub="'+cssEsc(fhub)+'"]');if(el)try{focusEl(el)}catch(e){}}
- try{if(box.querySelector('.hb'))window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()}catch(e){}
+ fitHubSoon();try{if(box.querySelector('.hb'))window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()}catch(e){}
 }catch(e){console.warn('hub',e);try{const box=$('#hub');if(box&&!box.querySelector('.hb')){box.innerHTML='<button class="hb" data-hub="readfirst"><span>Read First</span></button><button class="hb" data-hub="arena"><span>New Arrivals</span></button><button class="hb" data-hub="support"><span>Support Us</span></button><button class="hb" data-hub="folder:'+FOLD.collections+'"><span>Fan Edit Collections</span></button><button class="hb hb-logo" data-hub="main" aria-label="Main Collection"><img src="assets/fefc-logo.png" alt=""><small>Main Collection</small></button><button class="hb" data-hub="folder:'+FOLD.tbc+'"><span>To Be Catalogued</span></button><button class="hb" data-hub="people"><span>Actors<br><i class="amp">&amp;</i><br>Directors</span></button><button class="hb" data-hub="mylist"><i class="hb-star" aria-hidden="true">★</i><span>My List</span></button><button class="hb" data-hub="genres"><span>Genres</span></button>';window.__fefcMarkHomeReady&&window.__fefcMarkHomeReady()}}catch(e2){}}}
 
 function syncTag(){placeHeader()}
@@ -1787,6 +1791,6 @@ addEventListener('load',()=>{const w=document.getElementById('wordmark');if(w)wi
 (()=>{const h=document.getElementById('hints'),pl=document.getElementById('player'),rf=document.getElementById('rfpanel'),up=()=>{if(h){const isShuf=document.body.classList.contains('shuf-player');h.style.display=(rf&&!rf.hidden)||(pl&&!pl.hidden&&!isShuf)?'none':''}};if(window.MutationObserver)[pl,rf].forEach(x=>x&&new MutationObserver(up).observe(x,{attributes:true,attributeFilter:['hidden','class']}));up()})(); // one sound/legend control on every page, hidden in the player
 
 /* keep tile subtitles inside their tiles: wrap at the dot, then shrink until nothing overflows */
-function fitSmalls(){document.querySelectorAll('#hub .hb small,#grid.gnrs .gnr small').forEach(el=>{el.style.removeProperty('font-size');const p=el.parentElement;if(!p||!el.offsetWidth)return;
+function fitSmalls(){document.querySelectorAll('#grid.gnrs .gnr small').forEach(el=>{el.style.removeProperty('font-size');const p=el.parentElement;if(!p||!el.offsetWidth)return;
  const room=()=>{const r=el.getBoundingClientRect(),q=p.getBoundingClientRect();return el.scrollWidth<=el.clientWidth+1&&r.left>=q.left-1&&r.right<=q.right+1&&r.bottom<=q.bottom+1};let fs=parseFloat(getComputedStyle(el).fontSize),i=0;while(!room()&&fs>7&&i++<30){fs-=.5;el.style.setProperty('font-size',fs+'px','important')}})}
 window.fitSmalls=fitSmalls;addEventListener('resize',()=>setTimeout(fitSmalls,60));new MutationObserver(()=>{clearTimeout(fitSmalls._t);fitSmalls._t=setTimeout(fitSmalls,80)}).observe(document.documentElement,{childList:true,subtree:true});

@@ -1150,6 +1150,45 @@ var __spreadValues = (a, b) => {
       sm.innerHTML = esc(t[2]).replace(/ · /g, " <wbr>\xB7 ");
     } else if (sm) sm.remove();
   }
+  function fitHubTiles() {
+    try {
+      const box = $("#hub");
+      if (!box) return;
+      [].slice.call(box.querySelectorAll(".hb")).forEach((el) => {
+        const kids2 = [].slice.call(el.querySelectorAll(":scope>span,:scope>small,:scope>.hb-star"));
+        kids2.forEach((k) => k.style.removeProperty("font-size"));
+        const W = el.clientWidth, H = el.clientHeight;
+        if (!W || !H) return;
+        const over = () => el.scrollHeight > H + 1 || el.scrollWidth > W + 1 || kids2.some((k) => k.clientWidth && k.scrollWidth > k.clientWidth + 1);
+        if (!over()) return;
+        const base = kids2.map((k) => parseFloat(getComputedStyle(k).fontSize) || 12);
+        let s = 1;
+        for (let n = 0; n < 16 && over(); n++) {
+          s *= 0.9;
+          kids2.forEach((k, q) => k.style.setProperty("font-size", Math.max(7, base[q] * s).toFixed(1) + "px", "important"));
+        }
+      });
+    } catch (e) {
+    }
+  }
+  let _fitHubT = 0, _fitHubRO = null;
+  function fitHubSoon() {
+    try {
+      const bx = $("#hub");
+      if (bx && !_fitHubRO && window.ResizeObserver) {
+        _fitHubRO = new ResizeObserver(() => fitHubSoon());
+        _fitHubRO.observe(bx);
+      }
+    } catch (e) {
+    }
+    clearTimeout(_fitHubT);
+    _fitHubT = setTimeout(() => requestAnimationFrame(fitHubTiles), 60);
+  }
+  window.addEventListener("resize", fitHubSoon);
+  try {
+    document.fonts && document.fonts.ready.then(fitHubSoon);
+  } catch (e) {
+  }
   function hub() {
     try {
       if (document.body.classList.contains("genres-mode") && window.FEFCGenres && FEFCGenres.hub) return FEFCGenres.hub();
@@ -1188,6 +1227,7 @@ var __spreadValues = (a, b) => {
           } catch (e) {
           }
         }
+        fitHubSoon();
         try {
           if (box.querySelector(".hb")) window.__fefcMarkHomeReady && window.__fefcMarkHomeReady();
         } catch (e) {
@@ -1203,6 +1243,7 @@ var __spreadValues = (a, b) => {
         } catch (e) {
         }
       }
+      fitHubSoon();
       try {
         if (box.querySelector(".hb")) window.__fefcMarkHomeReady && window.__fefcMarkHomeReady();
       } catch (e) {
@@ -2208,7 +2249,6 @@ var __spreadValues = (a, b) => {
     }
     return out;
   }
-  /* 0.6.6 genre sound pool: only root members of the genre (never To Be Catalogued or nested folders), and a member's clip joins only when at least half of the root members using that clip are tagged with the genre, so a cross-genre title (the Alien & Aliens mashup tagged Sci-Fi + Comedy) cannot leak its franchise sound. Same rule as Kodi catalog.genre_sfx_pool(). */
   function _gsfxIndex(ck) {
     if (_gpool._ix && _gpool._ix.k === ck) return _gpool._ix;
     const mem = {}, users = {}, gs = {};
@@ -6630,7 +6670,7 @@ addEventListener("load", () => {
   up();
 })();
 function fitSmalls() {
-  document.querySelectorAll("#hub .hb small,#grid.gnrs .gnr small").forEach((el) => {
+  document.querySelectorAll("#grid.gnrs .gnr small").forEach((el) => {
     el.style.removeProperty("font-size");
     const p = el.parentElement;
     if (!p || !el.offsetWidth) return;
